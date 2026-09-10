@@ -12,7 +12,7 @@ Keputusan berikut sudah final. Jangan diubah tanpa persetujuan pemilik proyek.
 
 | Area | Keputusan |
 |---|---|
-| Nama | Onsa. Nama program/paket `onsa`. Identifier aplikasi `io.github.<pemilik>.onsa` (placeholder pemilik diisi saat rilis). |
+| Nama | Onsa. Nama program/paket `onsa`. Identifier aplikasi `io.github.mufuyumoku.onsa`. |
 | Platform | Windows 10/11 dan Linux (x86_64). macOS tidak ditargetkan, tapi jangan sengaja memakai hal yang mustahil di-port. |
 | Shell aplikasi | Tauri 2 |
 | Backend | Rust stable, Cargo workspace dengan crate terpisah per modul (lihat §2) |
