@@ -1,0 +1,39 @@
+# Rust
+/target/
+**/*.rs.bk
+
+# Node / SvelteKit
+node_modules/
+ui/.svelte-kit/
+ui/build/
+ui/.vite/
+
+# Tauri build output
+src-tauri/gen/
+src-tauri/target/
+
+# Editors and OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+
+# Local scratch and logs
+*.log
+/tmp/
+
+# Never commit audio fixtures or copyrighted media
+*.mp3
+*.flac
+*.m4a
+*.aac
+*.ogg
+*.opus
+*.wav
+*.aiff

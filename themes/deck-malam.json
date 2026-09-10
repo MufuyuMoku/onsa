@@ -1,0 +1,79 @@
+{
+  "$schema": "onsa-theme/1",
+  "id": "deck-malam",
+  "name": {
+    "id": "Deck malam",
+    "en": "Night Deck"
+  },
+  "version": 1,
+  "builtin": true,
+  "base": "dark",
+  "fonts": {
+    "ui": "Barlow",
+    "numeric": "Barlow Condensed",
+    "label": "Barlow Condensed",
+    "cjkFallback": "Noto Sans JP"
+  },
+  "color": {
+    "surface": {
+      "app": "#232326",
+      "body": "#1A1816",
+      "bodyHighlight": "#2A2724",
+      "well": "#0D0C0B",
+      "raised": "#24211E",
+      "line": "#3A3632"
+    },
+    "text": {
+      "primary": "#EDE6DA",
+      "secondary": "#B8B1A6",
+      "silkscreen": "#B8B1A6"
+    },
+    "role": {
+      "label": "#B8B1A6",
+      "adjustable": "#F3D9A4",
+      "active": "#4B8BFF",
+      "position": "#F3D9A4",
+      "caution": "#E0A040",
+      "clip": "#C8401F"
+    },
+    "lit": {
+      "on": "#F3D9A4",
+      "ghost": "rgba(243,217,164,0.06)",
+      "glow": "rgba(243,217,164,0.25)",
+      "secondary": "#C8401F",
+      "meterFace": "#F3D9A4",
+      "needle": "#C8401F",
+      "knob": "#B8BBC1",
+      "led": "#4B8BFF"
+    }
+  },
+  "shape": {
+    "radius": {
+      "sm": 2,
+      "md": 4,
+      "lg": 10
+    },
+    "density": "comfortable",
+    "hairline": 1
+  },
+  "variants": {
+    "meter": "needle",
+    "spectrum": "soft",
+    "panelTexture": "brushed",
+    "stageIndicator": "led",
+    "timeDisplay": "plain"
+  },
+  "effects": {
+    "glow": true,
+    "glassReflection": false,
+    "grain": 0.0,
+    "labelCase": "uppercase"
+  },
+  "toneColor": {
+    "enabled": true,
+    "targets": [
+      "spectrum"
+    ],
+    "range": 50
+  }
+}

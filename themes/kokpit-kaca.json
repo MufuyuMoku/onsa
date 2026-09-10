@@ -1,0 +1,73 @@
+{
+  "$schema": "onsa-theme/1",
+  "id": "kokpit-kaca",
+  "name": {
+    "id": "Kokpit kaca",
+    "en": "Glass Cockpit"
+  },
+  "version": 1,
+  "builtin": true,
+  "base": "dark",
+  "fonts": {
+    "ui": "B612",
+    "numeric": "B612 Mono",
+    "cjkFallback": "Noto Sans JP"
+  },
+  "color": {
+    "surface": {
+      "app": "#232326",
+      "body": "#0B1320",
+      "bodyHighlight": "#1A2740",
+      "well": "#050A12",
+      "raised": "#122036",
+      "line": "#22314A"
+    },
+    "text": {
+      "primary": "#EEF2F4",
+      "secondary": "#8193AB",
+      "silkscreen": "#EEF2F4"
+    },
+    "role": {
+      "label": "#EEF2F4",
+      "adjustable": "#35D0F2",
+      "active": "#3FE08A",
+      "position": "#E04FD3",
+      "caution": "#FFB020",
+      "clip": "#FF4A4A"
+    },
+    "lit": {
+      "on": "#3FE08A",
+      "ghost": "rgba(63,224,138,0.06)",
+      "glow": "rgba(0,0,0,0)",
+      "secondary": "#35D0F2"
+    }
+  },
+  "shape": {
+    "radius": {
+      "sm": 2,
+      "md": 4,
+      "lg": 10
+    },
+    "density": "comfortable",
+    "hairline": 1
+  },
+  "variants": {
+    "meter": "bar",
+    "spectrum": "bar",
+    "panelTexture": "bezel",
+    "stageIndicator": "outline-chip",
+    "timeDisplay": "plain"
+  },
+  "effects": {
+    "glow": false,
+    "glassReflection": false,
+    "grain": 0.0
+  },
+  "toneColor": {
+    "enabled": true,
+    "targets": [
+      "spectrum"
+    ],
+    "range": 70
+  }
+}

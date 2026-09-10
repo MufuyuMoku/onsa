@@ -1,0 +1,73 @@
+{
+  "$schema": "onsa-theme/1",
+  "id": "kaca-asap",
+  "name": {
+    "id": "Kaca asap",
+    "en": "Smoked Glass"
+  },
+  "version": 1,
+  "builtin": true,
+  "base": "dark",
+  "fonts": {
+    "ui": "Chakra Petch",
+    "numeric": "Share Tech Mono",
+    "cjkFallback": "Noto Sans JP"
+  },
+  "color": {
+    "surface": {
+      "app": "#232326",
+      "body": "#161B26",
+      "bodyHighlight": "#1D2332",
+      "well": "#06080E",
+      "raised": "#232A3A",
+      "line": "#2A3242"
+    },
+    "text": {
+      "primary": "#5CF2CF",
+      "secondary": "#8E9AB0",
+      "silkscreen": "#8E9AB0"
+    },
+    "role": {
+      "label": "#8E9AB0",
+      "adjustable": "#5CF2CF",
+      "active": "#5CF2CF",
+      "position": "#5CF2CF",
+      "caution": "#FFA23A",
+      "clip": "#FF4D5E"
+    },
+    "lit": {
+      "on": "#5CF2CF",
+      "ghost": "rgba(92,242,207,0.09)",
+      "glow": "rgba(92,242,207,0.6)",
+      "secondary": "#FFA23A"
+    }
+  },
+  "shape": {
+    "radius": {
+      "sm": 3,
+      "md": 5,
+      "lg": 10
+    },
+    "density": "comfortable",
+    "hairline": 1
+  },
+  "variants": {
+    "meter": "segment",
+    "spectrum": "segment",
+    "panelTexture": "glass",
+    "stageIndicator": "glow-chip",
+    "timeDisplay": "ghost-segment"
+  },
+  "effects": {
+    "glow": true,
+    "glassReflection": true,
+    "grain": 0.0
+  },
+  "toneColor": {
+    "enabled": true,
+    "targets": [
+      "spectrum"
+    ],
+    "range": 70
+  }
+}
