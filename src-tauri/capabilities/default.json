@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Everything the Onsa window is allowed to do. Kept as small as possible; each milestone adds only what it needs.",
+  "windows": ["main"],
+  "permissions": ["core:default"]
+}
