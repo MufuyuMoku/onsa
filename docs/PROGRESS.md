@@ -66,17 +66,18 @@ Status tiap milestone dari `SPEC.md` §15. Diperbarui di akhir setiap milestone.
 
 ### Cara verifikasi
 
-- **Tes otomatis** (`cargo test --workspace`): 34 tes lulus, yaitu 11 di `src-tauri`, 13 unit dan 10 integrasi di `onsa-audio`. Tes integrasi memakai fixture yang dibuat saat tes berjalan di folder berisi aksara Jepang dan spasi:
+- **Tes otomatis** (`cargo test --workspace`): 40 tes lulus, yaitu 11 di `src-tauri`, 17 unit dan 12 integrasi di `onsa-audio`. Tes integrasi memakai fixture yang dibuat saat tes berjalan di folder berisi aksara Jepang dan spasi:
   - Gapless: dua potongan satu sinus, output sama persis dengan sinus utuh (galat < 1e-6). Dengan resampling 44,1 → 48 kHz, output sama dengan file utuh (galat < 1e-5).
   - Crossfade: level di titik silang 0,3536 untuk equal-power (0,5 × 0,7071) dan 0,25 untuk linear, durasi ≈ 1 detik. Lagu berurutan satu album tidak di-crossfade.
   - Micro-fade: tidak ada lompatan sampel saat pause/resume, seek, dan skip (langkah maksimum ≤ langkah alami sinus). Seek mendarat tepat di sampel tujuan.
   - Pergantian output (simulasi perangkat berganti ke 44,1 kHz) melanjutkan dari posisi yang sama. File rusak dilaporkan lalu dilewati.
+  - **Gapless lossy** (`tests/lossy_gapless.rs`, fixture dibuat dengan ffmpeg saat tes; dilewati dengan pesan bila ffmpeg tidak ada): dua potongan satu sinus di-encode ke MP3 (LAME 320k) dan M4A (AAC 256k). Panjang tiap potongan tepat sama dengan aslinya, sinyal selaras dengan sinus asli (galat 0,0002 MP3 / 0,0006 AAC), tidak ada lubang di sambungan, hening setelah akhir, dan output identik dengan decode ffmpeg atas file yang sama. Tes ini sempat menemukan bahwa symphonia 0.6 tidak membuang priming AAC (1024 frame per lagu); sekarang `onsa-audio` membaca edit list MP4 dan iTunSMPB sendiri (lihat DECISIONS).
 - **Perangkat nyata (Windows, WASAPI)**: `onsa-cli queue` memutar dua potongan sinus 44,1 kHz (di-resample ke 48 kHz) lewat perangkat VB-Audio Cable sampai antrean habis dalam 6,6 detik untuk 6 detik audio, lalu dua potongan 48 kHz dengan crossfade 2 detik dalam 4,3 detik. `render-wav` atas pasangan yang sama menghasilkan 6 detik penuh tanpa lompatan di titik sambung. Jalur berisi aksara Jepang dan spasi berjalan normal.
 - **Pemeriksaan**: `scripts/check.ps1` dan `scripts/check.sh` (Git Bash) hijau: fmt, clippy `-D warnings`, tes, dan `svelte-check`.
 
 ### Tertunda / belum diverifikasi
 
 - **Linux (ALSA) belum diverifikasi**: tidak ada mesin Linux di sini (WSL hanya berisi `docker-desktop`). Build dan tes Linux akan dijalankan CI Ubuntu setelah repositori dipush. Pemutaran ALSA/PipeWire perlu dicoba di mesin Linux.
-- **Uji dengar oleh pemilik proyek**: gapless untuk MP3/AAC (delay encoder), crossfade, klik saat pause/seek, dan pencabutan headphone dengan file musik sungguhan (langkahnya ada di laporan M1).
+- **Uji dengar oleh pemilik proyek**: gapless dengan album sungguhan (MP3/AAC sudah diuji otomatis), crossfade, klik saat pause/seek, dan pencabutan headphone dengan file musik sungguhan (langkahnya ada di laporan M1).
 - Mode sample rate "samakan dengan sumber" ditunda ke M4 (lihat DECISIONS).
 - Dither TPDF, volume, dan rantai DSP adalah bagian M2.

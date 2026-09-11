@@ -148,3 +148,19 @@ Catatan keputusan yang diambil saat spesifikasi kurang jelas. Format: tanggal, k
 ## 2026-09-11 · Tombol "sebelumnya"
 
 - **Keputusan**: bila posisi lebih dari 3 detik, "sebelumnya" mengulang lagu dari awal; kalau tidak, pindah ke lagu sebelumnya. Perilaku umum di pemutar musik.
+
+## 2026-09-11 · Persetujuan pemilik proyek atas keputusan M1
+
+- "Samakan dengan sumber" untuk sample rate output ditunda ke M4: **disetujui**.
+- `rust-version` workspace 1.87 (dari 1.82, karena `rubato` 5): **disetujui**.
+
+## 2026-09-11 · Trim encoder MP4 dibaca sendiri
+
+- **Konteks**: tes gapless lossy menunjukkan setiap potongan M4A (AAC dari ffmpeg) diputar 1024 frame terlalu panjang. symphonia 0.6 mem-parse `elst` tapi tidak memakainya, dan tidak membaca `iTunSMPB`, sehingga priming AAC ikut terdengar di setiap sambungan.
+- **Keputusan**: `onsa-audio` membaca sendiri trim untuk file MP4 (`.m4a`, `.m4b`, `.mp4`, `.m4p`) bila symphonia tidak melaporkan delay: `iTunSMPB` dari tag lebih dulu, lalu edit list (`media_time` untuk delay; panjang dari `segment_duration` bila timescale film minimal sama dengan sample rate, selain itu dari durasi `mdhd` dikurangi delay). Priming dibuang di awal, pembacaan dibatasi sampai panjang yang bisa diputar, dan target seek digeser sebesar priming. Parser box-nya kecil (hanya `moov/mvhd`, `trak/mdia/hdlr`, `mdhd`, `edts/elst`) dan tidak menambah dependensi.
+- **Alasan**: tanpa ini album M4A tidak gapless. Bila versi symphonia berikutnya menangani edit list sendiri (melaporkan `delay`), jalur ini otomatis tidak dipakai.
+- **Tes lossy**: `lossy_gapless` memeriksa lima hal. (1) Panjang tiap potongan tepat. (2) Keselarasan dengan sinus asli di bagian stabil (galat < 0,02). (3) Tidak ada lubang (RMS per jendela > 0,2). (4) Seluruh sinyal sama dengan decode ffmpeg atas file yang sama, disambung dengan panjang asli (selisih < 0,005). (5) Hening setelah akhir. Area sambungan tidak dibandingkan dengan sinus murni, karena encoder membuat transien sendiri saat sumbernya dipotong keras: encoder AAC ffmpeg menyimpang sampai 0,48 di awal potongan, dan decode ffmpeg menunjukkan hal yang sama. Sambungan Onsa identik bit-per-bit dengan decode ffmpeg.
+
+## 2026-09-11 · Repositori GitHub privat
+
+- **Keputusan**: repositori `MufuyuMoku/onsa` dibuat **privat**, sesuai pilihan pemilik proyek, karena lisensi belum diputuskan (SPEC §16). Kuota GitHub Actions privat berlaku (runner Windows dihitung 2×). Visibilitas bisa diubah kapan saja.
