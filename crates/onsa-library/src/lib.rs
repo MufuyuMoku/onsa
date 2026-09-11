@@ -12,7 +12,11 @@
 pub mod cover;
 mod db;
 mod error;
+pub mod overrides;
 pub mod schema;
+pub mod search;
 
 pub use db::Library;
 pub use error::{Error, Result};
+pub use overrides::Field;
+pub use search::{AlbumRow, NameCount, SearchResults, TrackRow, TrackSort};
