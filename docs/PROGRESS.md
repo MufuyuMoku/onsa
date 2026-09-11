@@ -136,6 +136,8 @@ Status tiap milestone dari `SPEC.md` §15. Diperbarui di akhir setiap milestone.
   | `a321ccf` (M2), dengan cache Rust dan npm | 8 menit 22 detik | 3 menit 32 detik |
   | `479caf6`, cache tetap disimpan saat gagal, build aplikasi debug | 4 menit 56 detik | 33 menit 39 detik |
 
+  Angka Ubuntu di `479caf6` bukan akibat perubahan workflow. 31 menit 21 detik habis di langkah `apt-get` (mirror runner yang lambat; di run sebelumnya 33 detik), sedangkan semua langkah Rust sama atau lebih cepat (build aplikasi 1:00 → 0:39). Tanpa langkah apt, job Ubuntu sekitar 2 menit 18 detik.
+
   Commit yang hanya mengubah `docs/` atau `*.md` tidak menjalankan CI.
 
 ### Tertunda / belum diverifikasi
