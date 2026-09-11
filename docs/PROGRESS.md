@@ -40,3 +40,43 @@ Status tiap milestone dari `SPEC.md` §15. Diperbarui di akhir setiap milestone.
 - Font tema belum dibundel (M4, lihat DECISIONS).
 - Log ke file bergulir (M4).
 - Tema buatan pengguna di `<app_config>/themes/` dan penyimpanan pilihan tema (M4).
+
+---
+
+## M1. Mesin audio inti (tanpa UI) — selesai (2026-09-11)
+
+**Kriteria selesai**: `onsa-cli` memutar daftar file secara gapless di kedua OS, dan tes gapless, crossfade, serta micro-fade (§12) lulus.
+
+| Kriteria | Windows 11 | Linux |
+|---|---|---|
+| `onsa-cli` memutar daftar file secara gapless | ✅ terverifikasi (WASAPI) | ⏳ belum diverifikasi (ALSA) |
+| Tes gapless, crossfade, micro-fade lulus | ✅ lewat sink offline | ⏳ akan dijalankan CI Ubuntu setelah push |
+| Skrip pemeriksaan (`check.ps1`, `check.sh`) | ✅ hijau | ⏳ belum diverifikasi |
+
+### Yang dibuat
+
+- `onsa-audio`:
+  - Decode lewat symphonia 0.6 (FLAC, MP3, AAC/M4A, ALAC, OGG Vorbis, WAV, AIFF; Opus di M11), dengan pemangkasan delay/padding encoder untuk gapless, seek akurat per sampel, dan pembacaan tag album/nomor trek.
+  - Resampler streaming di atas rubato 5 dengan preset Cepat/Seimbang/Terbaik. Jumlah frame keluaran selalu tepat.
+  - Pemetaan kanal (mono, stereo, downmix 5.1/7.1 ke stereo tanpa clipping).
+  - Output stage real-time safe di callback cpal: ring buffer `rtrb`, komunikasi hanya lewat atomics, tanpa alokasi/lock/I/O/log. Micro-fade 60 ms saat pause, resume, seek, dan stop.
+  - Sink perangkat (semua format sampel cpal) dan sink offline (dipakai semua tes).
+  - Thread mesin: antrean, pre-roll, *lane* untuk gapless (termasuk saat resampling), crossfade equal-power/linear 0–12 detik, aturan album berurutan, crossfade 0,3 detik saat skip, seek, stop, event (lagu mulai, posisi ≤ 10 Hz, status, seek, gagal, antrean habis, output), pemulihan saat perangkat hilang dengan posisi dipertahankan, dan mengikuti perangkat default sistem.
+- `onsa-cli`: `devices`, `play`, `queue` (file atau `--list`), `render-wav`, dengan kontrol keyboard berbasis baris.
+
+### Cara verifikasi
+
+- **Tes otomatis** (`cargo test --workspace`): 34 tes lulus, yaitu 11 di `src-tauri`, 13 unit dan 10 integrasi di `onsa-audio`. Tes integrasi memakai fixture yang dibuat saat tes berjalan di folder berisi aksara Jepang dan spasi:
+  - Gapless: dua potongan satu sinus, output sama persis dengan sinus utuh (galat < 1e-6). Dengan resampling 44,1 → 48 kHz, output sama dengan file utuh (galat < 1e-5).
+  - Crossfade: level di titik silang 0,3536 untuk equal-power (0,5 × 0,7071) dan 0,25 untuk linear, durasi ≈ 1 detik. Lagu berurutan satu album tidak di-crossfade.
+  - Micro-fade: tidak ada lompatan sampel saat pause/resume, seek, dan skip (langkah maksimum ≤ langkah alami sinus). Seek mendarat tepat di sampel tujuan.
+  - Pergantian output (simulasi perangkat berganti ke 44,1 kHz) melanjutkan dari posisi yang sama. File rusak dilaporkan lalu dilewati.
+- **Perangkat nyata (Windows, WASAPI)**: `onsa-cli queue` memutar dua potongan sinus 44,1 kHz (di-resample ke 48 kHz) lewat perangkat VB-Audio Cable sampai antrean habis dalam 6,6 detik untuk 6 detik audio, lalu dua potongan 48 kHz dengan crossfade 2 detik dalam 4,3 detik. `render-wav` atas pasangan yang sama menghasilkan 6 detik penuh tanpa lompatan di titik sambung. Jalur berisi aksara Jepang dan spasi berjalan normal.
+- **Pemeriksaan**: `scripts/check.ps1` dan `scripts/check.sh` (Git Bash) hijau: fmt, clippy `-D warnings`, tes, dan `svelte-check`.
+
+### Tertunda / belum diverifikasi
+
+- **Linux (ALSA) belum diverifikasi**: tidak ada mesin Linux di sini (WSL hanya berisi `docker-desktop`). Build dan tes Linux akan dijalankan CI Ubuntu setelah repositori dipush. Pemutaran ALSA/PipeWire perlu dicoba di mesin Linux.
+- **Uji dengar oleh pemilik proyek**: gapless untuk MP3/AAC (delay encoder), crossfade, klik saat pause/seek, dan pencabutan headphone dengan file musik sungguhan (langkahnya ada di laporan M1).
+- Mode sample rate "samakan dengan sumber" ditunda ke M4 (lihat DECISIONS).
+- Dither TPDF, volume, dan rantai DSP adalah bagian M2.

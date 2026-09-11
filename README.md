@@ -53,6 +53,23 @@ npx --prefix ../ui tauri dev
 
 Set `ONSA_LOG` (for example `ONSA_LOG=debug`) to change the log level.
 
+## Audio engine from the command line
+
+`onsa-cli` drives the audio engine without the interface:
+
+```sh
+cargo run -p onsa-cli -- devices
+cargo run -p onsa-cli -- play song.flac --start 30
+cargo run -p onsa-cli -- queue a.flac b.flac c.flac
+cargo run -p onsa-cli -- queue --list album.txt --crossfade 4
+cargo run -p onsa-cli -- render-wav a.flac b.flac -o out.wav --rate 48000
+```
+
+While `play` or `queue` runs, type a line and press Enter: an empty line or
+`p` pauses and resumes, `n` skips, `b` goes back, `s 90` seeks to 1:30, `+10`
+and `-10` move ten seconds, `q` quits. Run with `--help` for every option
+(device, fixed sample rate, crossfade curve, resampler quality, buffer size).
+
 ## Checks
 
 The same checks CI runs, on your own machine:

@@ -100,3 +100,51 @@ Catatan keputusan yang diambil saat spesifikasi kurang jelas. Format: tanggal, k
 ## 2026-09-11 · Advisori `cookie` dan font
 
 - Pemilik proyek menyetujui advisori `cookie` dibiarkan dan font ditunda ke M4 (lihat dua keputusan sebelumnya).
+
+## 2026-09-11 · Versi crate audio dan Rust minimum
+
+- **Konteks**: SPEC §1 mengunci pustaka audio tanpa versi.
+- **Keputusan**: versi terbaru saat M1 dimulai: `symphonia` 0.6, `rubato` 5, `cpal` 0.18, `rtrb` 0.4. `rust-version` workspace naik dari 1.82 ke **1.87** karena `rubato` 5 membutuhkannya.
+- **Alasan**: memulai dari API terbaru menghindari migrasi besar nanti. Mesin dan CI memakai stable (1.93).
+
+## 2026-09-11 · Thread kontrol dan thread decode digabung
+
+- **Konteks**: SPEC §3.1 menggambar thread kontrol dan thread decode terpisah.
+- **Keputusan**: satu thread mesin (`onsa-audio`) menangani perintah sekaligus decode. Perintah datang lewat channel dan diproses di sela pengisian buffer. Handle `Engine` di sisi pemanggil hanya mengirim perintah, jadi pemanggil tidak pernah terblokir.
+- **Alasan**: paling sederhana dan tanpa lock antar-thread. Saat pause atau stop, thread tidur di channel perintah sehingga CPU idle nol (SPEC §13.1). Saat bermain, thread bangun tiap seperempat panjang buffer (5–50 ms).
+
+## 2026-09-11 · Lane untuk gapless dengan resampling
+
+- **Konteks**: gapless harus tetap mulus meski sumber di-resample.
+- **Keputusan**: lagu berurutan dengan sample rate sama dan tanpa crossfade disambung di dalam satu *lane* yang memakai satu resampler, sehingga resampler melihat sinyal kontinu. Seek, skip, crossfade, atau pergantian sample rate memulai lane baru. Delay resampler dipangkas di awal, dan ekornya di-flush sampai jumlah frame keluaran tepat `round(input × rasio)`.
+
+## 2026-09-11 · Tempat micro-fade
+
+- **Keputusan**: pause dan resume di-fade di callback output (raised cosine, 60 ms), tanpa membuang buffer. Seek, stop, dan pergantian antrean memakai *flush*: callback fade-out, membuang isi ring buffer, lalu fade-in saat audio baru datang. Skip manual saat bermain memakai crossfade di dalam stream (default 0,3 detik, minimal sepanjang micro-fade), jadi tidak ada flush. Skip saat pause memakai flush tanpa crossfade.
+- **Alasan**: pause dan seek terasa langsung (~60 ms), sedangkan skip mendapat crossfade yang diminta SPEC. Latensi skip sama dengan panjang buffer.
+
+## 2026-09-11 · Crossfade butuh panjang lagu
+
+- **Keputusan**: crossfade dimulai saat sisa lane kurang dari durasi crossfade. Kalau panjang lagu tidak diketahui (container tanpa jumlah frame), lagu berikutnya disambung tanpa crossfade. Aturan album memakai override di `QueueItem` bila ada, lalu tag album dan nomor trek dari file. "Berurutan" berarti album sama (tidak peka huruf besar/kecil) dan nomor trek naik satu.
+
+## 2026-09-11 · Preset resampler dan ukuran buffer
+
+- **Keputusan**: Cepat = `Async` polinomial kubik; Seimbang (default) = `Fft` sinkron; Terbaik = `Async` sinc 256 tap dengan oversampling 256 dan jendela Blackman-Harris². Buffer Rendah/Normal/Besar = 50/150/500 ms ring buffer antara mesin dan callback; buffer perangkat memakai default cpal.
+
+## 2026-09-11 · Mode sample rate output di M1
+
+- **Konteks**: SPEC §3.4 menyebut ikuti perangkat, samakan dengan sumber, atau nilai tetap.
+- **Keputusan**: M1 menyediakan "ikuti perangkat" (default) dan "nilai tetap" (`--rate` di CLI). "Samakan dengan sumber" butuh membangun ulang stream setiap sample rate lagu berubah dan menjadi pengaturan di M4, jadi ditunda ke M4.
+
+## 2026-09-11 · Pemulihan dan pengikutan perangkat
+
+- **Keputusan**: bila cpal melaporkan stream hilang (perangkat dicabut, stream invalid), mesin mencatat posisi putar, menutup stream, lalu mencoba membuka perangkat default setiap 1 detik. Setelah terbuka, mesin melanjutkan dari posisi yang sama dengan fade-in. Untuk pilihan "default sistem", selama bermain mesin juga memeriksa ID perangkat default setiap 2 detik dan pindah bila berubah. Laporan `DeviceChanged` dari cpal (backend sudah memindahkan stream sendiri) tidak memicu pembangunan ulang.
+
+## 2026-09-11 · Fixture tes audio
+
+- **Konteks**: SPEC §12 menyebut fixture WAV/FLAC.
+- **Keputusan**: tes mesin M1 memakai WAV float 32-bit yang ditulis saat tes berjalan (penulis WAV sendiri di `onsa_audio::wav`), di folder bernama Jepang dan berspasi. Belum ada encoder FLAC atau lossy di dependensi, jadi gapless untuk MP3/AAC (delay encoder) diverifikasi pemilik proyek dengan telinga (langkah di laporan M1). Fixture FLAC ditambahkan saat library (M3) membutuhkannya.
+
+## 2026-09-11 · Tombol "sebelumnya"
+
+- **Keputusan**: bila posisi lebih dari 3 detik, "sebelumnya" mengulang lagu dari awal; kalau tidak, pindah ke lagu sebelumnya. Perilaku umum di pemutar musik.
