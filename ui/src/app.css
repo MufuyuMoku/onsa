@@ -1,0 +1,112 @@
+/*
+ * Base rules for every screen.
+ *
+ * Colours only ever come from `--onsa-*` custom properties, which the theme
+ * system sets on the document element. The values below are the neutral dark
+ * ones the window wears for the moment between opening and the first theme
+ * arriving, so there is never a white flash.
+ */
+
+:root {
+	--onsa-surface-app: #232326;
+	--onsa-surface-body: #161b26;
+	--onsa-surface-body-highlight: #1d2332;
+	--onsa-surface-well: #06080e;
+	--onsa-surface-raised: #232a3a;
+	--onsa-surface-line: #2a3242;
+
+	--onsa-text-primary: #eef2f4;
+	--onsa-text-secondary: #8e9ab0;
+	--onsa-text-silkscreen: #8e9ab0;
+
+	--onsa-role-label: #8e9ab0;
+	--onsa-role-adjustable: #35d0f2;
+	--onsa-role-active: #3fe08a;
+	--onsa-role-position: #e04fd3;
+	--onsa-role-caution: #ffb020;
+	--onsa-role-clip: #ff4a4a;
+
+	--onsa-lit-on: #3fe08a;
+	--onsa-lit-ghost: rgba(255, 255, 255, 0.06);
+	--onsa-lit-glow: rgba(0, 0, 0, 0);
+	--onsa-lit-secondary: #ffb020;
+	--onsa-lit-meter-face: #3fe08a;
+	--onsa-lit-needle: #ffb020;
+	--onsa-lit-knob: #eef2f4;
+	--onsa-lit-led: #3fe08a;
+
+	--onsa-radius-sm: 2px;
+	--onsa-radius-md: 4px;
+	--onsa-radius-lg: 10px;
+	--onsa-hairline: 1px;
+
+	--onsa-font-ui: system-ui, sans-serif;
+	--onsa-font-label: system-ui, sans-serif;
+	--onsa-font-numeric: ui-monospace, monospace;
+
+	--onsa-grain: 0;
+	--onsa-tone-range: 70deg;
+
+	/* Animations are short and never bounce (SPEC section 9.1). */
+	--onsa-motion-fast: 100ms;
+	--onsa-motion: 150ms;
+	--onsa-ease: cubic-bezier(0.2, 0, 0, 1);
+
+	color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+html,
+body {
+	height: 100%;
+}
+
+body {
+	margin: 0;
+	background: var(--onsa-surface-app);
+	color: var(--onsa-text-primary);
+	font-family: var(--onsa-font-ui);
+	font-size: 14px;
+	line-height: 1.5;
+	/* The window is the application; only panels scroll. */
+	overflow: hidden;
+}
+
+/* Digits must not wobble as they count (SPEC section 9.1). */
+.numeric {
+	font-family: var(--onsa-font-numeric);
+	font-variant-numeric: tabular-nums;
+	font-feature-settings: 'tnum' 1;
+}
+
+/* Printed-on-the-panel text. */
+.label {
+	font-family: var(--onsa-font-label);
+	color: var(--onsa-role-label);
+	letter-spacing: 0.06em;
+}
+
+:root[data-onsa-label-case='uppercase'] .label {
+	text-transform: uppercase;
+}
+
+/* Every control is reachable by keyboard and says so (SPEC section 9.6). */
+:focus-visible {
+	outline: 2px solid var(--onsa-role-adjustable);
+	outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		transition-duration: 0.01ms !important;
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+	}
+}
