@@ -16,6 +16,7 @@ pub mod overrides;
 pub mod schema;
 pub mod search;
 pub mod stats;
+pub mod tags;
 
 pub use db::Library;
 pub use error::{Error, Result};
