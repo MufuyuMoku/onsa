@@ -9,6 +9,7 @@
 
 #![warn(missing_docs)]
 
+pub mod cover;
 mod db;
 mod error;
 pub mod schema;
