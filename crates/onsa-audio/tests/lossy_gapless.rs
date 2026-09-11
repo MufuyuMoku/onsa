@@ -43,13 +43,17 @@ impl Drop for Fixtures {
 
 /// ffmpeg, run with an argument array and never through a shell.
 fn ffmpeg() -> Command {
-    let mut command = Command::new("ffmpeg");
+    let command = Command::new("ffmpeg");
+    // No console window on Windows (CLAUDE.md). Only this branch needs the
+    // command to be mutable, so the binding changes here and nowhere else.
     #[cfg(windows)]
-    {
+    let command = {
         use std::os::windows::process::CommandExt;
         const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        let mut command = command;
         command.creation_flags(CREATE_NO_WINDOW);
-    }
+        command
+    };
     command
 }
 
