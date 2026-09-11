@@ -11,7 +11,7 @@ Status tiap milestone dari `SPEC.md` §15. Diperbarui di akhir setiap milestone.
 | Kriteria | Windows 11 | Linux |
 |---|---|---|
 | Jendela kosong bertema terbuka | ✅ terverifikasi | ⏳ belum diverifikasi |
-| CI hijau (lewat skrip lokal) | ✅ `scripts/check.ps1` dan `scripts/check.sh` (Git Bash) lulus | ⏳ belum diverifikasi |
+| CI hijau (lewat skrip lokal) | ✅ `scripts/check.ps1` dan `scripts/check.sh` (Git Bash) lulus | ✅ CI Ubuntu dan `scripts/check.sh` di WSL Ubuntu 26.04 |
 
 ### Yang dibuat
 
@@ -49,9 +49,9 @@ Status tiap milestone dari `SPEC.md` §15. Diperbarui di akhir setiap milestone.
 
 | Kriteria | Windows 11 | Linux |
 |---|---|---|
-| `onsa-cli` memutar daftar file secara gapless | ✅ terverifikasi (WASAPI) | ⏳ belum diverifikasi (ALSA) |
+| `onsa-cli` memutar daftar file secara gapless | ✅ terverifikasi (WASAPI) | ✅ WSL: ALSA → PulseAudio WSLg |
 | Tes gapless, crossfade, micro-fade lulus | ✅ lewat sink offline | ✅ CI Ubuntu (commit `f22e6c6`) |
-| Skrip pemeriksaan (`check.ps1`, `check.sh`) | ✅ hijau | ⏳ belum diverifikasi |
+| Skrip pemeriksaan (`check.ps1`, `check.sh`) | ✅ hijau | ✅ `check.sh` hijau di WSL |
 
 ### Yang dibuat
 
@@ -77,7 +77,7 @@ Status tiap milestone dari `SPEC.md` §15. Diperbarui di akhir setiap milestone.
 
 ### Tertunda / belum diverifikasi
 
-- **Linux (ALSA) belum diverifikasi**: tidak ada mesin Linux di sini (WSL hanya berisi `docker-desktop`). Build dan seluruh tes sudah lulus di CI Ubuntu (commit `f22e6c6`); pemutaran lewat ALSA ke perangkat audio menunggu verifikasi di WSL.
+- **Linux (ALSA) belum diverifikasi**: tidak ada mesin Linux di sini (WSL hanya berisi `docker-desktop`). Build dan seluruh tes lulus di CI Ubuntu (commit `f22e6c6`), dan pemutaran lewat ALSA terverifikasi di WSL (lihat bagian M2). Uji cabut/colok perangkat di Linux tetap belum diverifikasi sampai M12.
 - **Uji dengar oleh pemilik proyek**: gapless dengan album sungguhan (MP3/AAC sudah diuji otomatis), crossfade, klik saat pause/seek, dan pencabutan headphone dengan file musik sungguhan (langkahnya ada di laporan M1).
 - Mode sample rate "samakan dengan sumber" ditunda ke M4 (lihat DECISIONS).
 - Dither TPDF, volume, dan rantai DSP adalah bagian M2.
@@ -90,9 +90,9 @@ Status tiap milestone dari `SPEC.md` §15. Diperbarui di akhir setiap milestone.
 
 | Kriteria | Windows 11 | Linux |
 |---|---|---|
-| Tes DSP (§12) lulus | ✅ | ⏳ menunggu CI Ubuntu setelah push M2 |
-| Mengubah EQ saat lagu berjalan tanpa klik | ✅ tes otomatis (unit dan lewat engine) + perangkat nyata | ⏳ belum diverifikasi |
-| Semua bisa dikendalikan dari `onsa-cli` | ✅ | ⏳ belum diverifikasi |
+| Tes DSP (§12) lulus | ✅ | ✅ CI Ubuntu dan `check.sh` di WSL |
+| Mengubah EQ saat lagu berjalan tanpa klik | ✅ tes otomatis (unit dan lewat engine) + perangkat nyata | ✅ tes otomatis di WSL; perubahan live lewat ALSA |
+| Semua bisa dikendalikan dari `onsa-cli` | ✅ | ✅ WSL |
 
 ### Yang dibuat
 
@@ -123,10 +123,24 @@ Status tiap milestone dari `SPEC.md` §15. Diperbarui di akhir setiap milestone.
   - **Analisis**: sinus 1 kHz di −6 dBFS terbaca peak −6,02 dB, RMS −9,03 dB, centroid ≈ 1 kHz. Frame hanya muncul saat analisis aktif dan lagu diputar, lalu berhenti saat pause dan saat analisis dimatikan.
 - **Perangkat nyata** (WASAPI, VB-Audio Cable): meter `--meter` membaca −8,0/−11,0 dB untuk sinus 0,4 (teori −7,96/−10,97 dB). EQ, preamp otomatis, volume, dan limiter diganti lewat stdin saat lagu berjalan dan diterapkan. `eq-check` membaca preset AutoEQ, melaporkan baris rusak, dan mengekspornya ulang.
 - **Pemeriksaan**: `scripts/check.ps1` hijau.
+- **Linux, lewat WSL** (Ubuntu 26.04.1, kernel WSL2 6.18, rustc 1.98.1, Node 24.21.0 lewat nvm, gcc 15.2):
+  - `scripts/check.sh` hijau dalam 120 detik: 83 tes yang sama lulus, `svelte-check` bersih, fmt dan clippy bersih. Build release `onsa-cli` berhasil.
+  - Pemutaran lewat ALSA ke PulseAudio WSLg (`~/.asoundrc` mengarahkan `default` ke `pulse`): antrean gapless dua potongan sinus 44,1 kHz, di-resample ke 48 kHz, habis dalam 6,137 detik untuk 6 detik audio. Meter membaca −28,0/−31,0 dB (sinus 0,4 pada volume −20 dB: teori −27,96/−30,97 dB). EQ, preamp otomatis, dan volume diganti lewat stdin saat lagu berjalan. Fixture berada di folder berisi aksara Jepang dan spasi.
+  - Saat enumerasi perangkat, libasound mencetak pesan tentang plugin yang tidak ada di WSL (JACK, OSS, card 0). Pesan itu berasal dari ALSA sendiri; daftar perangkat Onsa tetap benar (`default`, `pulse`, `null`).
+- **CI GitHub Actions** hijau di Windows dan Ubuntu untuk commit M2 (`a321ccf`).
+- **Menit CI** (repo privat; menit Windows dihitung dua kali). Durasi job:
+
+  | Run | Windows | Ubuntu |
+  |---|---|---|
+  | `f22e6c6`, tanpa cache | 24 menit 45 detik | 9 menit 42 detik |
+  | `a321ccf` (M2), dengan cache Rust dan npm | 8 menit 22 detik | 3 menit 32 detik |
+  | `479caf6`, cache tetap disimpan saat gagal, build aplikasi debug | 4 menit 56 detik | 33 menit 39 detik |
+
+  Commit yang hanya mengubah `docs/` atau `*.md` tidak menjalankan CI.
 
 ### Tertunda / belum diverifikasi
 
-- **Linux**: CI Ubuntu untuk commit M2 berjalan setelah push. Pemutaran ALSA diverifikasi lewat WSL begitu Ubuntu di WSL siap.
+- **Linux**: uji cabut/colok perangkat tetap belum diverifikasi sampai M12 (sesuai arahan pemilik proyek).
 - **Uji dengar oleh pemilik proyek**: menggeser EQ saat lagu berjalan, preset AutoEQ untuk headphone sendiri, preamp otomatis, limiter, dan ReplayGain (langkahnya ada di laporan M2).
 - Preset EQ bawaan, penyimpanan preset, dan tampilan kurva di UI ada di M4. Visualizer dan meter di UI ada di M5.
 - Analisis loudness EBU R128 untuk lagu tanpa tag tetap opsional (SPEC §4.1).
