@@ -9,7 +9,9 @@
 
 #![warn(missing_docs)]
 
+pub mod analysis;
 mod channels;
+pub mod dsp;
 mod engine;
 mod error;
 mod fade;
@@ -20,7 +22,12 @@ mod resample;
 mod source;
 pub mod wav;
 
+pub use analysis::{AnalysisFrame, AnalysisSettings};
 pub use channels::ChannelMap;
+pub use dsp::biquad::{Band, FilterKind};
+pub use dsp::chain::{DspSettings, Stage};
+pub use dsp::eq::EqMode;
+pub use dsp::replaygain::{ReplayGainMode, ReplayGainSettings, ReplayGainTags};
 pub use engine::{
     BufferSize, Engine, Event, OutputSettings, PlayState, PlaybackSettings, QueueItem,
 };

@@ -71,6 +71,8 @@ pub struct Lane {
     scratch: Vec<f32>,
     failures: Vec<Failure>,
     input_done: bool,
+    /// ReplayGain currently applied to this lane's output, once it started.
+    pub rg_gain: Option<f32>,
 }
 
 impl Lane {
@@ -106,6 +108,7 @@ impl Lane {
             scratch: vec![0.0; READ_FRAMES * channels],
             failures: Vec::new(),
             input_done: false,
+            rg_gain: None,
         };
         lane.tracks.push_back(first);
         Ok(lane)

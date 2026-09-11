@@ -17,11 +17,14 @@ use rtrb::Producer;
 use super::{
     offline_output, Command, Event, OutputSettings, PlayState, PlaybackSettings, QueueItem,
 };
+use crate::analysis::{AnalysisSettings, AnalysisThread};
+use crate::dsp::chain::{ChainParams, DspSettings};
+use crate::dsp::replaygain::ReplayGainMode;
 use crate::error::Result;
 use crate::fade::MICRO_FADE_SECONDS;
 use crate::lane::{Lane, LaneTrack};
 use crate::output::device::{default_device_id, open_device, DeviceChoice, DeviceOutput};
-use crate::output::stage::Shared;
+use crate::output::stage::{DspPort, Shared};
 use crate::source::{FileSource, TrackInfo};
 
 /// Frames mixed and pushed per step.
@@ -36,6 +39,8 @@ const DEFAULT_DEVICE_CHECK: Duration = Duration::from_secs(2);
 const OUTPUT_RETRY: Duration = Duration::from_millis(1000);
 /// Past this point "previous" restarts the track instead of going back.
 const PREVIOUS_RESTART_SECONDS: f64 = 3.0;
+/// Time constant of a ReplayGain change between tracks.
+const RG_SMOOTHING_SECONDS: f32 = 0.01;
 
 /// Where the engine sends its audio.
 pub(crate) enum OutputTarget {
@@ -52,6 +57,8 @@ pub(crate) struct Output {
     /// Keeps the device stream alive; `None` for the offline sink.
     pub device: Option<DeviceOutput>,
     pub name: String,
+    /// The engine's end of the output's DSP plumbing.
+    pub dsp: DspPort,
 }
 
 /// Where a pushed block of audio came from.
@@ -117,6 +124,14 @@ pub(crate) struct Worker {
     mix_b: Vec<f32>,
     /// The last fill stopped on its per-round budget, not on a full buffer.
     more_to_fill: bool,
+    /// DSP settings; the callback side reaches the output as ChainParams.
+    dsp: DspSettings,
+    /// ChainParams that did not fit in the output's queue yet.
+    pending_params: Option<ChainParams>,
+    /// Whether the queue is one album in order (ReplayGain auto mode).
+    queue_is_one_album: bool,
+    analysis: AnalysisSettings,
+    analysis_thread: Option<AnalysisThread>,
 }
 
 impl Worker {
@@ -153,6 +168,11 @@ impl Worker {
             mix_a: Vec::new(),
             mix_b: Vec::new(),
             more_to_fill: false,
+            dsp: DspSettings::default(),
+            pending_params: None,
+            queue_is_one_album: false,
+            analysis: AnalysisSettings::default(),
+            analysis_thread: None,
         }
     }
 
@@ -170,10 +190,12 @@ impl Worker {
         };
         let shared = Arc::new(Shared::default());
         let fault_tx = self.self_tx.clone();
-        let (device, producer) = open_device(
+        let dsp = self.dsp.clone();
+        let (device, producer, port) = open_device(
             &settings.device,
             settings.rate,
             self.settings.buffer.seconds(),
+            |rate| dsp.chain_params(rate),
             shared.clone(),
             move |fault| {
                 let _ = fault_tx.send(Command::DeviceFault(fault));
@@ -193,6 +215,7 @@ impl Worker {
             channels: device.channels,
             name: device.name.clone(),
             device: Some(device),
+            dsp: port,
         };
         self.attach_output(output);
         Ok(())
@@ -213,6 +236,9 @@ impl Worker {
         self.pushed = 0;
         self.timeline.clear();
         self.last_default_check = Instant::now();
+        // The new stage was built with the current settings already.
+        self.pending_params = None;
+        self.restart_analysis();
     }
 
     /// Drops the output after a fault and remembers where playback was.
@@ -223,6 +249,7 @@ impl Worker {
         tracing::warn!("output lost: {reason}");
         self.resume_at = self.playhead().or(self.resume_at);
         self.drop_lanes();
+        self.analysis_thread = None;
         self.output = None;
         self.retry_at = Some(Instant::now());
         self.emit(Event::OutputLost { reason });
@@ -300,6 +327,7 @@ impl Worker {
                 }
             }
             self.maintain_output();
+            self.flush_params();
             self.fill();
             self.report();
         }
@@ -310,6 +338,10 @@ impl Worker {
     fn wait_time(&self) -> Option<Duration> {
         if self.more_to_fill && self.output.is_some() {
             return Some(Duration::ZERO);
+        }
+        if self.pending_params.is_some() && self.output.is_some() {
+            // Settings are waiting for room in the output's queue.
+            return Some(Duration::from_millis(5));
         }
         if self.output.is_none() {
             return self
@@ -337,6 +369,7 @@ impl Worker {
                 self.flush();
                 self.drop_lanes();
                 self.queue = items;
+                self.queue_is_one_album = queue_is_one_album(&self.queue);
                 self.infos.clear();
                 self.reported = None;
                 self.set_state(if play {
@@ -373,6 +406,14 @@ impl Worker {
             }
             Command::Seek(seconds) => self.seek(seconds),
             Command::SetSettings(settings) => self.settings = settings,
+            Command::SetDsp(settings) => {
+                self.dsp = settings;
+                self.send_params();
+            }
+            Command::SetAnalysis(settings) => {
+                self.analysis = settings;
+                self.restart_analysis();
+            }
             Command::DeviceFault(fault) => {
                 if fault.lost {
                     self.lose_output(fault.message);
@@ -390,7 +431,10 @@ impl Worker {
             } => {
                 let at = self.playhead();
                 self.drop_lanes();
-                let (output, sink) = offline_output(sample_rate, channels, self.settings.buffer);
+                self.analysis_thread = None;
+                let params = self.dsp.chain_params(sample_rate);
+                let (output, sink) =
+                    offline_output(sample_rate, channels, self.settings.buffer, params);
                 self.attach_output(output);
                 if let Some(at) = at {
                     self.restart_at(at.queue_index, at.frame);
@@ -415,6 +459,95 @@ impl Worker {
         if self.state != state {
             self.state = state;
             self.emit(Event::StateChanged(state));
+        }
+        self.update_analysis_activity();
+    }
+
+    // ------------------------------------------------------------------ dsp
+
+    /// Sends the callback-side DSP settings to the output.
+    fn send_params(&mut self) {
+        if let Some(output) = &self.output {
+            self.pending_params = Some(self.dsp.chain_params(output.sample_rate));
+        }
+        self.flush_params();
+    }
+
+    /// Delivers settings that are waiting for room in the output's queue.
+    fn flush_params(&mut self) {
+        let Some(params) = self.pending_params else {
+            return;
+        };
+        let Some(output) = self.output.as_mut() else {
+            return;
+        };
+        if output.dsp.updates.push(params).is_ok() {
+            self.pending_params = None;
+        }
+    }
+
+    /// ReplayGain for a queue entry, as a linear gain (SPEC §4.1).
+    fn rg_gain(&self, index: usize) -> f32 {
+        let settings = &self.dsp.replaygain;
+        if settings.mode == ReplayGainMode::Off {
+            return 1.0;
+        }
+        let tags = self
+            .infos
+            .get(&index)
+            .map(|(_, info)| info.replaygain)
+            .unwrap_or_default();
+        settings.gain(&tags, settings.uses_album(self.queue_is_one_album))
+    }
+
+    fn rg_coef(&self) -> f32 {
+        let rate = self
+            .output
+            .as_ref()
+            .map_or(48_000, |output| output.sample_rate) as f32;
+        1.0 - (-1.0 / (RG_SMOOTHING_SECONDS * rate).max(1.0)).exp()
+    }
+
+    /// (Re)starts the analysis thread on the current output's tap.
+    fn restart_analysis(&mut self) {
+        let old_tap = self.analysis_thread.take().and_then(AnalysisThread::stop);
+        let Some(output) = self.output.as_mut() else {
+            return;
+        };
+        let tap = old_tap.or_else(|| output.dsp.tap.take());
+        if !self.analysis.enabled {
+            output.dsp.tap = tap;
+            self.update_analysis_activity();
+            return;
+        }
+        let Some(tap) = tap else {
+            return;
+        };
+        let shared = output.shared.clone();
+        let events = self.events.clone();
+        self.analysis_thread = Some(AnalysisThread::spawn(
+            tap,
+            output.sample_rate,
+            output.channels,
+            self.analysis,
+            move || shared.limiting.swap(false, Ordering::Relaxed),
+            move |frame| {
+                let _ = events.send(Event::Analysis(frame));
+            },
+        ));
+        self.update_analysis_activity();
+    }
+
+    /// Analysis runs only while it is on and audio is playing: a paused or
+    /// stopped player does no analysis work (SPEC §13.1).
+    fn update_analysis_activity(&self) {
+        let active =
+            self.analysis.enabled && self.state == PlayState::Playing && self.output.is_some();
+        if let Some(output) = &self.output {
+            output.shared.analysis.store(active, Ordering::Release);
+        }
+        if let Some(thread) = &self.analysis_thread {
+            thread.set_active(active);
         }
     }
 
@@ -822,6 +955,24 @@ impl Worker {
             .unwrap_or(1);
         let count = block.frames;
 
+        // ReplayGain is per track, so it is applied here, per block (SPEC §3.1).
+        let coef = self.rg_coef();
+        let target = self.rg_gain(block.queue_index);
+        if let Some(primary) = self.primary.as_mut() {
+            apply_gain(
+                &mut self.mix_a[..count * channels],
+                channels,
+                &mut primary.rg_gain,
+                target,
+                coef,
+            );
+        }
+        let outgoing_target = self
+            .outgoing
+            .as_ref()
+            .and_then(Lane::last_queue_index)
+            .map_or(1.0, |index| self.rg_gain(index));
+
         if let (Some(outgoing), Some(fade)) = (self.outgoing.as_mut(), self.fade.as_mut()) {
             let mut filled = 0;
             while filled < count {
@@ -831,6 +982,13 @@ impl Worker {
                 }
             }
             self.mix_b[filled * channels..count * channels].fill(0.0);
+            apply_gain(
+                &mut self.mix_b[..count * channels],
+                channels,
+                &mut outgoing.rg_gain,
+                outgoing_target,
+                coef,
+            );
             for frame in 0..count {
                 let t = (fade.done + frame as u64) as f32 / fade.total as f32;
                 let (gain_out, gain_in) = self.settings.curve.gains(t);
@@ -960,4 +1118,59 @@ impl Worker {
             self.emit(Event::QueueEnded);
         }
     }
+}
+
+/// Applies a gain that glides from its last value to `target`. A lane's
+/// first block starts at the target: there is nothing to glide from. Unity
+/// with nothing to glide leaves the samples untouched, bit for bit.
+fn apply_gain(
+    samples: &mut [f32],
+    channels: usize,
+    state: &mut Option<f32>,
+    target: f32,
+    coef: f32,
+) {
+    let mut gain = state.unwrap_or(target);
+    if gain == target && target == 1.0 {
+        *state = Some(1.0);
+        return;
+    }
+    for frame in samples.chunks_exact_mut(channels) {
+        gain += (target - gain) * coef;
+        if (target - gain).abs() < 1e-6 {
+            gain = target;
+        }
+        for sample in frame {
+            *sample *= gain;
+        }
+    }
+    *state = Some(gain);
+}
+
+/// Whether every queue entry names one album and the track numbers run in
+/// order without gaps, the condition for album gain in ReplayGain's auto mode
+/// (SPEC §4.1). The caller supplies album and number in each entry.
+fn queue_is_one_album(queue: &[QueueItem]) -> bool {
+    let normalise = |item: &QueueItem| {
+        item.album
+            .as_deref()
+            .map(|album| album.trim().to_lowercase())
+            .filter(|album| !album.is_empty())
+    };
+    let Some(album) = queue.first().and_then(normalise) else {
+        return false;
+    };
+    let mut previous: Option<u64> = None;
+    for item in queue {
+        let Some(number) = item.track_number else {
+            return false;
+        };
+        if normalise(item).as_deref() != Some(album.as_str())
+            || previous.is_some_and(|last| number != last + 1)
+        {
+            return false;
+        }
+        previous = Some(number);
+    }
+    true
 }

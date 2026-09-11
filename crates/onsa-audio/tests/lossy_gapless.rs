@@ -10,6 +10,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
+use onsa_audio::dsp::limiter::latency_frames;
 use onsa_audio::wav::{write_wav, WavFormat};
 use onsa_audio::{Engine, Event, PlaybackSettings, QueueItem, MICRO_FADE_SECONDS};
 
@@ -172,7 +173,13 @@ fn check_lossy_join(name: &str, extension: &str, codec_args: &[&str]) {
         "{name}: playable lengths do not match the originals"
     );
 
-    let left: Vec<f32> = out.iter().step_by(2).copied().collect();
+    // Left channel, realigned by the DSP chain's look-ahead delay.
+    let left: Vec<f32> = out
+        .iter()
+        .step_by(2)
+        .skip(latency_frames(RATE))
+        .copied()
+        .collect();
     assert!(
         left.len() >= total,
         "{name}: output too short: {}",

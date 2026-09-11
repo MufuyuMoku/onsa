@@ -13,11 +13,13 @@ use std::thread::JoinHandle;
 
 use rtrb::RingBuffer;
 
+use crate::analysis::{AnalysisFrame, AnalysisSettings};
+use crate::dsp::chain::{ChainParams, DspSettings};
 use crate::error::{Error, Result};
 use crate::fade::CrossfadeCurve;
 use crate::output::device::{DeviceChoice, DeviceFault, OutputRate};
 use crate::output::offline::OfflineSink;
-use crate::output::stage::{OutputStage, Shared};
+use crate::output::stage::{dsp_plumbing, OutputStage, Shared};
 use crate::resample::ResamplerQuality;
 use crate::source::TrackInfo;
 
@@ -173,6 +175,9 @@ pub enum Event {
         /// What the backend reported.
         reason: String,
     },
+    /// An analysis frame (spectrum, meters, centroid): at most 60 a second,
+    /// only while analysis is on and audio is playing (SPEC §4.4).
+    Analysis(AnalysisFrame),
 }
 
 /// Commands from the handle to the engine thread.
@@ -192,6 +197,8 @@ pub(crate) enum Command {
     Previous,
     Seek(f64),
     SetSettings(PlaybackSettings),
+    SetDsp(DspSettings),
+    SetAnalysis(AnalysisSettings),
     DeviceFault(DeviceFault),
     ReplaceOffline {
         sample_rate: u32,
@@ -256,7 +263,8 @@ impl Engine {
         let (commands, command_rx) = mpsc::channel();
         let (event_tx, events) = mpsc::channel();
         let self_tx = commands.clone();
-        let (output, sink) = offline_output(sample_rate, channels, settings.buffer);
+        let params = DspSettings::default().chain_params(sample_rate);
+        let (output, sink) = offline_output(sample_rate, channels, settings.buffer, params);
         let worker = std::thread::Builder::new()
             .name("onsa-audio".into())
             .spawn(move || {
@@ -355,6 +363,18 @@ impl Engine {
         self.send(Command::SetSettings(settings))
     }
 
+    /// Changes the DSP chain (SPEC §4). EQ, preamp, limiter, volume and
+    /// dither change smoothly within milliseconds; ReplayGain applies from
+    /// the next block the engine decodes.
+    pub fn set_dsp(&self, settings: DspSettings) -> Result<()> {
+        self.send(Command::SetDsp(settings))
+    }
+
+    /// Switches the analysis tap and its frames on or off (SPEC §4.4).
+    pub fn set_analysis(&self, settings: AnalysisSettings) -> Result<()> {
+        self.send(Command::SetAnalysis(settings))
+    }
+
     /// Replaces an offline output with a new one, possibly at another rate
     /// or channel count, exactly as a device change would. Test support for
     /// the device recovery path.
@@ -378,18 +398,21 @@ impl Drop for Engine {
     }
 }
 
-/// Builds an offline output: the engine side and the sink side.
+/// Builds an offline output: the engine side and the sink side. The offline
+/// sink renders float, so it never needs dither.
 pub(crate) fn offline_output(
     sample_rate: u32,
     channels: usize,
     buffer: BufferSize,
+    params: ChainParams,
 ) -> (worker::Output, OfflineSink) {
     let channels = channels.max(1);
     let capacity = ((sample_rate as f32 * buffer.seconds()) as usize).max(1024) * channels;
     let (producer, consumer) = RingBuffer::new(capacity);
     let shared = Arc::new(Shared::default());
     shared.silent.store(true, Ordering::Release);
-    let stage = OutputStage::new(consumer, shared.clone(), channels, sample_rate);
+    let (dsp, port) = dsp_plumbing(sample_rate, channels, None, params);
+    let stage = OutputStage::new(consumer, shared.clone(), channels, sample_rate, dsp);
     let output = worker::Output {
         producer,
         shared: shared.clone(),
@@ -397,6 +420,7 @@ pub(crate) fn offline_output(
         channels,
         device: None,
         name: "offline".to_string(),
+        dsp: port,
     };
     (output, OfflineSink::new(stage, shared, sample_rate))
 }

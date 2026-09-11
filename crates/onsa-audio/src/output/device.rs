@@ -9,7 +9,8 @@ use cpal::{
 };
 use rtrb::{Producer, RingBuffer};
 
-use super::stage::{OutputStage, Shared};
+use super::stage::{dsp_plumbing, DspPort, OutputStage, Shared};
+use crate::dsp::chain::ChainParams;
 use crate::error::{Error, Result};
 
 /// Largest callback the stage handles in one pass; bigger callbacks are
@@ -114,19 +115,33 @@ pub fn default_device_id() -> Option<String> {
         .map(|id| id.to_string())
 }
 
+/// Width of an integer sample format, `None` for float formats. Decides
+/// whether dither is needed (SPEC §3.4).
+pub fn integer_bits(format: SampleFormat) -> Option<u32> {
+    match format {
+        SampleFormat::I8 | SampleFormat::U8 => Some(8),
+        SampleFormat::I16 | SampleFormat::U16 => Some(16),
+        SampleFormat::I24 | SampleFormat::U24 => Some(24),
+        SampleFormat::I32 | SampleFormat::U32 => Some(32),
+        SampleFormat::I64 | SampleFormat::U64 => Some(64),
+        _ => None,
+    }
+}
+
 /// Opens a stream on the chosen device. A chosen device that no longer
 /// exists falls back to the system default.
 ///
 /// `buffer_seconds` sizes the ring buffer between the engine and the
-/// callback. `on_fault` runs on a backend thread, never inside the audio
-/// callback.
+/// callback; `params` are the DSP settings the stream starts with.
+/// `on_fault` runs on a backend thread, never inside the audio callback.
 pub fn open_device(
     choice: &DeviceChoice,
     rate: OutputRate,
     buffer_seconds: f32,
+    params: impl Fn(u32) -> ChainParams,
     shared: Arc<Shared>,
     on_fault: impl Fn(DeviceFault) + Send + 'static,
-) -> Result<(DeviceOutput, Producer<f32>)> {
+) -> Result<(DeviceOutput, Producer<f32>, DspPort)> {
     let host = cpal::default_host();
     let device = match choice {
         DeviceChoice::SystemDefault => None,
@@ -149,7 +164,13 @@ pub fn open_device(
 
     let capacity = ((sample_rate as f32 * buffer_seconds) as usize).max(1024) * channels;
     let (producer, consumer) = RingBuffer::new(capacity);
-    let stage = OutputStage::new(consumer, shared, channels, sample_rate);
+    let (dsp, port) = dsp_plumbing(
+        sample_rate,
+        channels,
+        integer_bits(sample_format),
+        params(sample_rate),
+    );
+    let stage = OutputStage::new(consumer, shared, channels, sample_rate, dsp);
 
     let stream_config: StreamConfig = config.config();
     let stream = match sample_format {
@@ -182,6 +203,7 @@ pub fn open_device(
             sample_format,
         },
         producer,
+        port,
     ))
 }
 

@@ -13,6 +13,7 @@ use symphonia::core::meta::{MetadataOptions, StandardTag};
 use symphonia::core::units::{Time, TimeBase, Timestamp};
 
 use crate::channels::ChannelMap;
+use crate::dsp::replaygain::{parse_gain, parse_peak, ReplayGainTags};
 use crate::error::{Error, Result};
 use crate::mp4::{self, Mp4Trim};
 
@@ -32,6 +33,8 @@ pub struct TrackInfo {
     pub album: Option<String>,
     /// Track number tag, when present.
     pub track_number: Option<u64>,
+    /// ReplayGain tags (SPEC §4.1).
+    pub replaygain: ReplayGainTags,
 }
 
 impl TrackInfo {
@@ -167,6 +170,7 @@ impl FileSource {
                 total_frames,
                 album: tags.album,
                 track_number: tags.track_number,
+                replaygain: tags.replaygain,
             },
             map: ChannelMap::new(channels, out_channels),
             out_channels: out_channels.max(1),
@@ -373,15 +377,18 @@ struct EngineTags {
     track_number: Option<u64>,
     /// MP4 gapless information written by iTunes and compatible encoders.
     itunsmpb: Option<String>,
+    replaygain: ReplayGainTags,
 }
 
 /// Reads the album and track number tags, the two facts the crossfade rule
-/// for consecutive album tracks needs (SPEC §3.3), and `iTunSMPB`.
+/// for consecutive album tracks needs (SPEC §3.3), the ReplayGain tags
+/// (SPEC §4.1), and `iTunSMPB`.
 fn read_tags(format: &mut dyn FormatReader) -> EngineTags {
     let mut found = EngineTags {
         album: None,
         track_number: None,
         itunsmpb: None,
+        replaygain: ReplayGainTags::default(),
     };
     let mut metadata = format.metadata();
     if let Some(revision) = metadata.skip_to_latest() {
@@ -398,6 +405,22 @@ fn read_tags(format: &mut dyn FormatReader) -> EngineTags {
                 }
                 Some(StandardTag::TrackNumber(number)) if found.track_number.is_none() => {
                     found.track_number = Some(*number);
+                }
+                Some(StandardTag::ReplayGainTrackGain(value)) => {
+                    let rg = &mut found.replaygain;
+                    rg.track_gain_db = rg.track_gain_db.or(parse_gain(value));
+                }
+                Some(StandardTag::ReplayGainTrackPeak(value)) => {
+                    let rg = &mut found.replaygain;
+                    rg.track_peak = rg.track_peak.or(parse_peak(value));
+                }
+                Some(StandardTag::ReplayGainAlbumGain(value)) => {
+                    let rg = &mut found.replaygain;
+                    rg.album_gain_db = rg.album_gain_db.or(parse_gain(value));
+                }
+                Some(StandardTag::ReplayGainAlbumPeak(value)) => {
+                    let rg = &mut found.replaygain;
+                    rg.album_peak = rg.album_peak.or(parse_peak(value));
                 }
                 _ => {}
             }

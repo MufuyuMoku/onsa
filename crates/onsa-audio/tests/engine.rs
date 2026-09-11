@@ -7,6 +7,7 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
 
+use onsa_audio::dsp::limiter::latency_frames;
 use onsa_audio::wav::{write_wav, WavFormat};
 use onsa_audio::{
     CrossfadeCurve, Engine, Event, OfflineSink, PlayState, PlaybackSettings, QueueItem,
@@ -145,14 +146,16 @@ fn gapless_join_is_sample_exact() {
     play(&engine, &sink, &[&a, &b]);
     let out = sink.render_to_end(total * 2);
 
+    // The DSP chain delays everything by the limiter's look-ahead.
+    let latency = latency_frames(RATE) * 2;
     assert!(
-        out.len() / 2 >= total,
+        out.len() >= total * 2 + latency,
         "output too short: {}",
         out.len() / 2
     );
     let start = fade_frames(RATE);
     let error = (start * 2..total * 2)
-        .map(|i| (out[i] - full[i]).abs())
+        .map(|i| (out[i + latency] - full[i]).abs())
         .fold(0.0f32, f32::max);
     assert!(
         error < 1e-6,

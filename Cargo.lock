@@ -2496,6 +2496,7 @@ name = "onsa-audio"
 version = "0.1.0"
 dependencies = [
  "cpal",
+ "realfft",
  "rtrb",
  "rubato",
  "symphonia",
