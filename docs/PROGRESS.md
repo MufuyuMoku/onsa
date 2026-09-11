@@ -135,6 +135,7 @@ Status tiap milestone dari `SPEC.md` §15. Diperbarui di akhir setiap milestone.
   | `f22e6c6`, tanpa cache | 24 menit 45 detik | 9 menit 42 detik |
   | `a321ccf` (M2), dengan cache Rust dan npm | 8 menit 22 detik | 3 menit 32 detik |
   | `479caf6`, cache tetap disimpan saat gagal, build aplikasi debug | 4 menit 56 detik | 33 menit 39 detik |
+  | `c2cfa0c` (M3), dependensi library baru | 10 menit 44 detik | 6 menit 35 detik |
 
   Angka Ubuntu di `479caf6` bukan akibat perubahan workflow. 31 menit 21 detik habis di langkah `apt-get` (mirror runner yang lambat; di run sebelumnya 33 detik), sedangkan semua langkah Rust sama atau lebih cepat (build aplikasi 1:00 → 0:39). Tanpa langkah apt, job Ubuntu sekitar 2 menit 18 detik.
 
@@ -217,4 +218,10 @@ Status tiap milestone dari `SPEC.md` §15. Diperbarui di akhir setiap milestone.
 - Library belum disambungkan ke `src-tauri` dan UI. Command, event, dan tampilan library ada di M4.
 - Smart playlist dan M3U8 ada di M6. Menulis override ke file ada di M7. Opus masuk bersama decoder-nya di M11. Tabel playlist, lirik, scrobble, dan unduhan dibuat lewat migrasi di milestone masing-masing.
 - File yang dipindah saat Onsa tidak berjalan tercatat sebagai `missing` ditambah lagu baru, sehingga statistiknya tidak ikut pindah.
-- **CI GitHub Actions** untuk commit M3 dijalankan setelah push di akhir milestone.
+- Tidak ada yang tertunda dari sisi CI. Lihat baris `c2cfa0c` di tabel menit CI (bagian M2).
+
+**CI GitHub Actions** hijau di Windows dan Ubuntu untuk commit M3 (`c2cfa0c`, sembilan commit di-push sekaligus). Job Windows makan 10 menit 44 detik, yang sebagian besar adalah biaya sekali:
+- 3 menit 22 detik untuk menyimpan cache Rust baru, karena `Cargo.lock` berubah;
+- sebagian dari 2 menit 40 detik `cargo test` untuk mengompilasi dependensi baru, termasuk SQLite dalam C.
+
+Run berikutnya dengan dependensi yang sama diperkirakan kembali ke sekitar 5–6 menit.
