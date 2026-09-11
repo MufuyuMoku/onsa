@@ -50,7 +50,7 @@ Status tiap milestone dari `SPEC.md` §15. Diperbarui di akhir setiap milestone.
 | Kriteria | Windows 11 | Linux |
 |---|---|---|
 | `onsa-cli` memutar daftar file secara gapless | ✅ terverifikasi (WASAPI) | ⏳ belum diverifikasi (ALSA) |
-| Tes gapless, crossfade, micro-fade lulus | ✅ lewat sink offline | ⏳ akan dijalankan CI Ubuntu setelah push |
+| Tes gapless, crossfade, micro-fade lulus | ✅ lewat sink offline | ✅ CI Ubuntu (commit `f22e6c6`) |
 | Skrip pemeriksaan (`check.ps1`, `check.sh`) | ✅ hijau | ⏳ belum diverifikasi |
 
 ### Yang dibuat
@@ -77,7 +77,56 @@ Status tiap milestone dari `SPEC.md` §15. Diperbarui di akhir setiap milestone.
 
 ### Tertunda / belum diverifikasi
 
-- **Linux (ALSA) belum diverifikasi**: tidak ada mesin Linux di sini (WSL hanya berisi `docker-desktop`). Build dan tes Linux akan dijalankan CI Ubuntu setelah repositori dipush. Pemutaran ALSA/PipeWire perlu dicoba di mesin Linux.
+- **Linux (ALSA) belum diverifikasi**: tidak ada mesin Linux di sini (WSL hanya berisi `docker-desktop`). Build dan seluruh tes sudah lulus di CI Ubuntu (commit `f22e6c6`); pemutaran lewat ALSA ke perangkat audio menunggu verifikasi di WSL.
 - **Uji dengar oleh pemilik proyek**: gapless dengan album sungguhan (MP3/AAC sudah diuji otomatis), crossfade, klik saat pause/seek, dan pencabutan headphone dengan file musik sungguhan (langkahnya ada di laporan M1).
 - Mode sample rate "samakan dengan sumber" ditunda ke M4 (lihat DECISIONS).
 - Dither TPDF, volume, dan rantai DSP adalah bagian M2.
+
+---
+
+## M2. Rantai DSP — selesai (2026-09-11)
+
+**Kriteria selesai**: tes DSP (§12) lulus, dan mengubah EQ saat lagu berjalan tidak menimbulkan glitch atau klik.
+
+| Kriteria | Windows 11 | Linux |
+|---|---|---|
+| Tes DSP (§12) lulus | ✅ | ⏳ menunggu CI Ubuntu setelah push M2 |
+| Mengubah EQ saat lagu berjalan tanpa klik | ✅ tes otomatis (unit dan lewat engine) + perangkat nyata | ⏳ belum diverifikasi |
+| Semua bisa dikendalikan dari `onsa-cli` | ✅ | ⏳ belum diverifikasi |
+
+### Yang dibuat
+
+- `onsa-audio/src/dsp/`:
+  - **Biquad** RBJ (peaking, low/high shelf, low/high pass, notch), state f64, dengan clamp supaya preset liar tidak membuat filter tidak stabil.
+  - **EQ** grafis (10 band tetap, Q 1,41) dan parametrik (maksimal 16 band), kurva respons pada grid logaritmik, dan **preamp otomatis** (−puncak positif kurva).
+  - **Import/export AutoEQ** (`ParametricEQ.txt`): baris tidak dikenal dilewati dengan peringatan, maksimal 16 filter, export yang bisa dibaca kembali tanpa kehilangan isi.
+  - **Limiter** lookahead 5 ms, ceiling −0,1 dBFS dijamin, release bisa diatur, delay konstan walau limiter dimatikan.
+  - **Dither** TPDF ±1 LSB, hanya untuk output integer 16-bit atau lebih sempit.
+  - **ReplayGain**: mode mati/track/album/otomatis, preamp, nilai cadangan, pencegahan clipping dari peak. Tag dibaca dari ID3 TXXX, Vorbis comment, atom MP4, dan APE.
+  - **Rantai callback**: urutan EQ/preamp/limiter bisa diubah, volume dan dither selalu terakhir. Parameter lock-free (`ChainParams` lewat `rtrb`), perubahan EQ di-crossfade 20 ms, preamp dan volume memakai penghalus dua kutub. Saat hening dan filter reda, rantai dilewati.
+- **Tap analisis** (`analysis.rs`): aktif hanya bila analisis dinyalakan dan lagu diputar. Menghasilkan spektrum FFT Hann 2048 dengan 64 band log dan peak-hold, meter peak/RMS per kanal, status clip dan limiter, serta spectral centroid, maksimal 60 fps. Thread-nya diparkir saat pause.
+- **Engine**: `Engine::set_dsp` dan `Engine::set_analysis`, event `Analysis`, ReplayGain per blok di thread decode dengan glide 10 ms antarlagu.
+- **`onsa-cli`**:
+  - opsi `--eq`, `--eq-file`, `--preamp`, `--auto-preamp`, `--no-limiter`, `--limiter-release`, `--volume`, `--replaygain`, `--rg-preamp`, `--rg-fallback`, `--no-dither`, `--meter`;
+  - perintah saat lagu berjalan: `eq BAND DB`, `eq on/off/flat`, `pre DB`, `auto`, `vol DB`, `lim on/off`, `rg MODE`, `m`;
+  - subperintah `eq-check`.
+
+### Cara verifikasi
+
+- **Tes otomatis** (`cargo test --workspace`): 83 tes lulus, yaitu 11 di `src-tauri`, 53 unit, 10 engine, 2 gapless lossy, dan 5 DSP lewat engine di `onsa-audio`, serta 2 di `onsa-cli`:
+  - **Biquad**: respons yang diukur dengan sinus sama dengan respons hitungan dalam ±0,1 dB, untuk tujuh filter di tujuh frekuensi. Peaking tepat +6 dB di frekuensi tengah, LP/HP −3,01 dB di frekuensi sudut, notch di bawah −40 dB. Preset liar tetap stabil.
+  - **Preamp otomatis** menjaga sinus full-scale yang di-boost +9 dB di bawah 0 dBFS. Tanpa preamp otomatis, puncaknya di atas 2,0.
+  - **Parser AutoEQ**: contoh valid terbaca utuh; contoh rusak (tipe tidak dikenal, Fc hilang, gain hilang, BW, baris asing) melewati baris yang salah dan tetap mempertahankan yang benar; round-trip export lalu import identik.
+  - **Tanpa klik**: menggeser EQ drastis (+12 dB di 1 kHz, −12 dB di 125 Hz) saat sinus berjalan tidak menimbulkan lonjakan turunan kedua di atas kelengkungan alami sinus, baik di unit chain maupun lewat seluruh engine. Glide volume dan preamp juga mulus.
+  - **Limiter** tidak pernah melewati −0,1 dBFS (sinus +12 dB, lonjakan tunggal ×3), transparan bit-per-bit di bawah ceiling, dan pulih setelah burst.
+  - **ReplayGain** dari FLAC bertag buatan ffmpeg: mati 0,5, track 0,25, album 0,125, otomatis mengikuti antrean, dan gain +12 dB dengan peak 0,5 dibatasi di 1,0.
+  - **Analisis**: sinus 1 kHz di −6 dBFS terbaca peak −6,02 dB, RMS −9,03 dB, centroid ≈ 1 kHz. Frame hanya muncul saat analisis aktif dan lagu diputar, lalu berhenti saat pause dan saat analisis dimatikan.
+- **Perangkat nyata** (WASAPI, VB-Audio Cable): meter `--meter` membaca −8,0/−11,0 dB untuk sinus 0,4 (teori −7,96/−10,97 dB). EQ, preamp otomatis, volume, dan limiter diganti lewat stdin saat lagu berjalan dan diterapkan. `eq-check` membaca preset AutoEQ, melaporkan baris rusak, dan mengekspornya ulang.
+- **Pemeriksaan**: `scripts/check.ps1` hijau.
+
+### Tertunda / belum diverifikasi
+
+- **Linux**: CI Ubuntu untuk commit M2 berjalan setelah push. Pemutaran ALSA diverifikasi lewat WSL begitu Ubuntu di WSL siap.
+- **Uji dengar oleh pemilik proyek**: menggeser EQ saat lagu berjalan, preset AutoEQ untuk headphone sendiri, preamp otomatis, limiter, dan ReplayGain (langkahnya ada di laporan M2).
+- Preset EQ bawaan, penyimpanan preset, dan tampilan kurva di UI ada di M4. Visualizer dan meter di UI ada di M5.
+- Analisis loudness EBU R128 untuk lagu tanpa tag tetap opsional (SPEC §4.1).

@@ -164,3 +164,15 @@ Catatan keputusan yang diambil saat spesifikasi kurang jelas. Format: tanggal, k
 ## 2026-09-11 · Repositori GitHub privat
 
 - **Keputusan**: repositori `MufuyuMoku/onsa` dibuat **privat**, sesuai pilihan pemilik proyek, karena lisensi belum diputuskan (SPEC §16). Kuota GitHub Actions privat berlaku (runner Windows dihitung 2×). Visibilitas bisa diubah kapan saja.
+
+## 2026-09-11 · Rantai DSP (M2)
+
+- **Latensi konstan 5 ms**: delay lookahead limiter selalu berjalan, juga saat limiter dimatikan. Kalau delay-nya ikut hilang dan muncul, menyalakan atau mematikan limiter di tengah lagu akan menggeser sinyal dalam waktu dan terdengar klik. Tes yang membandingkan sampel secara presisi memperhitungkan latensi ini.
+- **Limiter aktif secara default**: di bawah ceiling −0,1 dBFS limiter transparan bit-per-bit (hanya tertunda 5 ms), dan melindungi dari clipping keras saat EQ atau preamp menaikkan level.
+- **Jaminan ceiling**: gain limiter adalah rata-rata bergerak dari minimum bergerak kebutuhan gain di sepanjang jendela lookahead, sehingga gain yang dipakai tidak pernah melebihi kebutuhan frame yang sedang keluar. Release memakai satu kutub yang hanya boleh naik.
+- **Perubahan tanpa klik**: perubahan EQ di-crossfade 20 ms antara bank filter lama dan baru (bank baru mewarisi memori filter lama). Preamp dan volume memakai penghalus dua kutub berjenjang (critically damped, total sekitar 10 ms), sehingga kurva gain tidak punya sudut sama sekali.
+- **Parameter lock-free**: pengaturan diterjemahkan di thread mesin menjadi `ChainParams` berukuran tetap dan dikirim ke callback lewat `rtrb`. Callback tidak pernah mengalokasi, mengunci, atau menunggu.
+- **Dither**: TPDF ±1 LSB hanya saat perangkat memakai integer 16-bit atau lebih sempit. Output float dan 24/32-bit tidak di-dither.
+- **Hemat CPU**: setelah 1 detik input hening dan semua filter reda, rantai DSP dilewati dan output tetap hening digital (tanpa derau dither). Thread analisis diparkir saat tidak aktif, bukan polling (SPEC §13.1).
+- **ReplayGain otomatis**: gain album dipakai bila seluruh antrean adalah satu album berurutan menurut `album` dan `track_number` di `QueueItem`. Info itu diisi pemanggil: library di M3/M4, dan di CLI dari tag file. Kalau ada lagu tanpa info itu, dipakai gain per lagu. Preamp ReplayGain hanya berlaku untuk lagu bertag; lagu tanpa tag memakai nilai cadangan.
+- **Preset EQ bawaan dan penyimpanan preset** ada di M4 bersama halaman pengaturan. M2 menyediakan import/export format AutoEQ dan pengaturan lewat CLI.

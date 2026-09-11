@@ -65,10 +65,39 @@ cargo run -p onsa-cli -- queue --list album.txt --crossfade 4
 cargo run -p onsa-cli -- render-wav a.flac b.flac -o out.wav --rate 48000
 ```
 
-While `play` or `queue` runs, type a line and press Enter: an empty line or
-`p` pauses and resumes, `n` skips, `b` goes back, `s 90` seeks to 1:30, `+10`
-and `-10` move ten seconds, `q` quits. Run with `--help` for every option
-(device, fixed sample rate, crossfade curve, resampler quality, buffer size).
+The DSP chain is set with options on `play`, `queue` and `render-wav`:
+
+```sh
+cargo run -p onsa-cli -- play song.flac --eq 3,2,0,0,0,0,0,1,2,3 --auto-preamp
+cargo run -p onsa-cli -- play song.flac --eq-file ParametricEQ.txt --meter
+cargo run -p onsa-cli -- queue *.flac --replaygain auto --rg-preamp 3
+cargo run -p onsa-cli -- eq-check ParametricEQ.txt
+```
+
+`--eq` takes ten gains in dB for 31 Hz to 16 kHz; `--eq-file` reads an
+Equalizer APO / AutoEQ preset (its own `Preamp:` line is used unless
+`--preamp` is given). Other options: `--no-limiter`, `--limiter-release`,
+`--volume`, `--rg-fallback`, `--no-dither`. `eq-check` shows how a preset
+is read, which lines are skipped, and the auto preamp.
+
+While `play` or `queue` runs, type a line and press Enter:
+
+| Line | Effect |
+|---|---|
+| empty or `p` | pause / resume |
+| `n`, `b` | next, previous |
+| `s 90`, `+10`, `-10` | seek to 1:30, skip ten seconds |
+| `eq 6 +9` | set graphic band 6 (1 kHz) to +9 dB |
+| `eq on`, `eq off`, `eq flat` | EQ on, off, or flat graphic |
+| `pre -3`, `auto` | manual preamp, or toggle auto preamp |
+| `vol -6` | volume in dB |
+| `lim on`, `lim off` | limiter |
+| `rg off`, `rg track`, `rg album`, `rg auto` | ReplayGain mode |
+| `m` | peak and RMS meters, limiter state, spectral centroid |
+| `q` | quit |
+
+Run with `--help` for every option (device, fixed sample rate, crossfade
+curve, resampler quality, buffer size).
 
 ## Checks
 
