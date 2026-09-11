@@ -2,7 +2,7 @@
 
 Onsa (音叉, tuning fork) is a desktop music player for Windows and Linux, built with Tauri 2, Rust and SvelteKit. It looks like an instrument panel: calm, tidy, and honest about what is happening to the audio signal.
 
-The project is in its first milestone. The full specification lives in [`docs/SPEC.md`](docs/SPEC.md), progress in [`docs/PROGRESS.md`](docs/PROGRESS.md), and decisions taken along the way in [`docs/DECISIONS.md`](docs/DECISIONS.md).
+The project is in early development: the audio engine, DSP chain and library work without an interface so far. The full specification lives in [`docs/SPEC.md`](docs/SPEC.md), progress in [`docs/PROGRESS.md`](docs/PROGRESS.md), and decisions taken along the way in [`docs/DECISIONS.md`](docs/DECISIONS.md).
 
 ## Layout
 
@@ -98,6 +98,16 @@ While `play` or `queue` runs, type a line and press Enter:
 
 Run with `--help` for every option (device, fixed sample rate, crossfade
 curve, resampler quality, buffer size).
+
+## Library scan from the command line
+
+The library crate has an example that scans a folder twice, into a fresh
+database in the temp folder, and compares the first scan with the unchanged
+rescan. The music folder is only read.
+
+```sh
+cargo run -p onsa-library --release --example scan -- ~/Music
+```
 
 ## Checks
 

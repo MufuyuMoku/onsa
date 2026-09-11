@@ -146,3 +146,75 @@ Status tiap milestone dari `SPEC.md` §15. Diperbarui di akhir setiap milestone.
 - **Uji dengar oleh pemilik proyek**: menggeser EQ saat lagu berjalan, preset AutoEQ untuk headphone sendiri, preamp otomatis, limiter, dan ReplayGain (langkahnya ada di laporan M2).
 - Preset EQ bawaan, penyimpanan preset, dan tampilan kurva di UI ada di M4. Visualizer dan meter di UI ada di M5.
 - Analisis loudness EBU R128 untuk lagu tanpa tag tetap opsional (SPEC §4.1).
+
+---
+
+## M3. Library — selesai (2026-09-11)
+
+**Kriteria selesai**: tes library lulus, dan scan ulang folder yang tidak berubah selesai jauh lebih cepat daripada scan pertama.
+
+| Kriteria | Windows 11 | Linux |
+|---|---|---|
+| Tes library (§12) lulus | ✅ 21 tes (14 unit, 7 integrasi) | ✅ `check.sh` di WSL, pemantau lewat inotify |
+| Scan ulang folder tak berubah jauh lebih cepat | ✅ folder musik nyata, 620 file: 8,06 detik → 0,021 detik (377×) | ✅ tes otomatis di WSL (ambang ≥ 5×) |
+
+### Yang dibuat
+
+- **Database** (`onsa-library`, rusqlite dengan SQLite bundel):
+  - skema v1 lewat migrasi berversi (`PRAGMA user_version`), WAL, foreign key aktif;
+  - database dari versi yang lebih baru ditolak tanpa diubah;
+  - tabel `folders`, `tracks`, `albums`, `covers`, `overrides`, `stats`, `plays`, `settings`, view `track_view` (override di atas nilai file), dan indeks FTS5 `tracks_fts` yang dijaga trigger.
+- **Tag** lewat lofty:
+  - judul, artis, album, album artist, nomor trek dan disk (beserta totalnya), tahun, genre, komposer, ReplayGain, dan gambar tertanam;
+  - properti stream: durasi, codec, sample rate, bit depth, kanal, bitrate.
+- **Scanner bertahap**:
+  - file dilewati bila mtime dan ukurannya sama;
+  - penulisan per 200 file dalam satu transaksi, dengan callback progres;
+  - status `ok`/`missing`/`failed`; file yang hilang atau folder yang tidak terjangkau ditandai `missing`, tidak dihapus (`purge_missing` atas perintah pengguna);
+  - album dibuat otomatis dari judul dan album artist.
+- **Cache cover**:
+  - sumber: gambar tertanam, lalu `cover.*`, `folder.*`, `front.*`;
+  - thumbnail JPEG 128 dan 512 px, satu per hash SHA-256, ditulis atomik;
+  - cover yang gagal di-decode (misalnya AVIF) hanya dicatat sebagai peringatan; lagunya tetap masuk tanpa cover.
+- **Pemantau folder** (notify-debouncer-full, debounce 750 ms):
+  - tambah/ubah, hapus, dan pindah/ganti nama untuk file maupun folder;
+  - pemindahan mempertahankan id lagu, sehingga statistik dan riwayat ikut;
+  - pasangan hapus+buat dalam satu batch dikenali sebagai pemindahan (cara Windows melaporkan pemindahan antar-folder).
+- **Jelajah dan pencarian**:
+  - daftar per halaman: lagu (8 pilihan urutan), album beserta lagunya, artis, genre, folder;
+  - pencarian FTS5 berawalan, tanpa membedakan diakritik, dikelompokkan menjadi lagu/album/artis;
+  - input pengguna selalu parameter terikat, dan sintaks FTS yang diketik diperlakukan sebagai teks biasa.
+- **Override**: disimpan dan langsung terlihat di daftar maupun pencarian. Penulisan ke file ada di M7.
+- **Statistik dan riwayat**: jumlah putar, jumlah skip, terakhir diputar, rating 0–5, dan riwayat putar per lagu.
+- Contoh `scan` untuk mengukur scan pertama dan scan ulang pada folder sungguhan (lihat README).
+
+### Cara verifikasi
+
+- **Tes otomatis** (`cargo test --workspace`): 104 tes lulus, yaitu 83 dari M2 ditambah 21 di `onsa-library`. Tes integrasi (`tests/library.rs`) membuat fixture WAV bertag saat tes berjalan, di folder berisi aksara Jepang dan spasi:
+  - **Scan folder fixture**:
+    - 7 file terlihat: 6 terbaca, dan 1 FLAC palsu tercatat `failed`; `notes.txt` diabaikan;
+    - album dikelompokkan dengan benar, termasuk album artist yang kosong;
+    - dua cover unik, masing-masing dengan dua thumbnail; cover rusak dilewati tanpa menggagalkan lagunya;
+    - pencarian awalan, aksara Jepang, dan "cafe creme" menemukan "Café Crème".
+  - **Scan ulang bertahap**:
+    - tanpa perubahan, 0 file dibaca ulang;
+    - dengan 1 file diubah, 1 dihapus, dan 1 ditambah, tepat 2 file dibaca dan 1 ditandai `missing`, dan id lagu yang diubah tetap sama;
+    - file yang kembali mendapatkan identitas lamanya;
+    - folder yang tidak terjangkau membuat semua lagunya `missing`, lalu `purge_missing` membersihkannya.
+  - **Kecepatan**: 160 file dengan cover, 1,31 detik untuk scan pertama dan 4,8 milidetik untuk scan ulang (build debug). Tes mensyaratkan scan ulang minimal 5× lebih cepat.
+  - **Pemantau nyata**: file yang ditambah terdeteksi, file yang dipindah mempertahankan id dan jumlah putarnya, dan file yang dihapus menjadi `missing`. Ada juga tes deterministik untuk rename file, rename folder, pasangan hapus+buat (file dan folder), dan file lain yang tidak boleh dianggap pemindahan.
+  - **Override dan statistik**: override tampil dan bisa dicari, dan menghapusnya mengembalikan nilai file. Rating dibatasi 5, riwayat terbaru tampil lebih dulu, dan statistik bertahan setelah file dan foldernya dipindah.
+- **Temuan saat tes**:
+  - di Windows, pemindahan file antar-folder dilaporkan sebagai hapus+buat, bukan rename, sehingga lagu sempat kehilangan statistiknya; ini diperbaiki dengan mencocokkan pasangan tersebut (lihat DECISIONS);
+  - query pencarian sempat gagal karena nama kolom yang ambigu.
+- **Folder musik nyata** (Windows, build release, `examples/scan.rs`): 620 file (3,5 GB) dan 97 album, tanpa file gagal. Scan pertama 8,057 detik, scan ulang 0,021 detik.
+- **Setiap commit M3** lulus `cargo clippy -p onsa-library --all-targets -- -D warnings` secara terpisah.
+- **Pemeriksaan**: `cargo fmt --check`, clippy workspace, dan `svelte-check` (0 error) bersih di Windows.
+- **Linux, lewat WSL**: `scripts/check.sh` hijau dalam 88 detik, dengan 104 tes yang sama lulus. Di inotify, pemindahan dalam folder yang dipantau dilaporkan sebagai rename sungguhan. File yang masuk dari luar folder hanya muncul sebagai perubahan pada folder induknya, lalu ditemukan saat folder itu ditelusuri.
+
+### Tertunda / belum diverifikasi
+
+- Library belum disambungkan ke `src-tauri` dan UI. Command, event, dan tampilan library ada di M4.
+- Smart playlist dan M3U8 ada di M6. Menulis override ke file ada di M7. Opus masuk bersama decoder-nya di M11. Tabel playlist, lirik, scrobble, dan unduhan dibuat lewat migrasi di milestone masing-masing.
+- File yang dipindah saat Onsa tidak berjalan tercatat sebagai `missing` ditambah lagu baru, sehingga statistiknya tidak ikut pindah.
+- **CI GitHub Actions** untuk commit M3 dijalankan setelah push di akhir milestone.
