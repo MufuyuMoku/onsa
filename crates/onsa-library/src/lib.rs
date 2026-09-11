@@ -15,8 +15,10 @@ mod error;
 pub mod overrides;
 pub mod schema;
 pub mod search;
+pub mod stats;
 
 pub use db::Library;
 pub use error::{Error, Result};
 pub use overrides::Field;
 pub use search::{AlbumRow, NameCount, SearchResults, TrackRow, TrackSort};
+pub use stats::{Play, TrackStats};
