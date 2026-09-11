@@ -198,3 +198,9 @@ Catatan keputusan yang diambil saat spesifikasi kurang jelas. Format: tanggal, k
 - **Format**: scanner mengikuti SPEC §3.2. Opus ikut masuk bersama decoder-nya di M11.
 - **Pemantau**: debounce 750 ms. Handler berjalan di thread debouncer dan hanya menyerahkan daftar perubahan. Library diterapkan oleh thread pemiliknya lewat `apply_changes`, karena koneksi SQLite tidak dibagi antar-thread.
 - **Pengukuran di mesin pemilik**: `onsa-cli` hanya menguji mesin audio dan tidak bergantung pada `onsa-library` (modul fitur hanya disatukan di `src-tauri`). Karena itu pengukuran scan pertama dan scan ulang disediakan sebagai contoh di crate library (`cargo run -p onsa-library --release --example scan`).
+
+## 2026-09-11 · Batas waktu langkah apt di CI
+
+- **Konteks**: di run `479caf6`, langkah `apt-get` di job Ubuntu memakan 31 menit 21 detik karena mirror paket yang lambat. Biasanya langkah ini selesai di bawah satu menit (55 detik di run M3).
+- **Keputusan**: langkah itu diberi `timeout-minutes: 10`. Bila mirror macet, job gagal cepat dan bisa dijalankan ulang, alih-alih menghabiskan menit Actions. Tidak memakai action pihak ketiga untuk cache paket apt.
+- **Alasan**: satu baris konfigurasi sudah membatasi kerugian terburuk. Cache apt pihak ketiga menambah dependensi pada kode luar, padahal langkah ini biasanya cepat.
