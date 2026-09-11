@@ -52,6 +52,8 @@ pub struct OutputStage {
     fade_frames: u32,
     /// Position on the fade ramp, `0..=fade_frames`.
     gain_step: u32,
+    /// The last frame read, before gain; allocated here, reused forever.
+    last: Vec<f32>,
 }
 
 impl OutputStage {
@@ -70,6 +72,7 @@ impl OutputStage {
             channels: channels.max(1),
             fade_frames,
             gain_step: 0,
+            last: vec![0.0; channels.max(1)],
         }
     }
 
@@ -105,12 +108,25 @@ impl OutputStage {
 
             let available = self.consumer.slots() / channels;
             if available == 0 {
-                if !self.shared.producing.load(Ordering::Acquire) {
-                    // The stream has ended: whatever plays next starts from
-                    // silence and fades in.
-                    self.gain_step = 0;
-                } else if !hold {
+                if self.shared.producing.load(Ordering::Acquire) && !hold {
                     self.shared.underruns.fetch_add(1, Ordering::Relaxed);
+                }
+                // Nothing left to read: let the last frame die away along the
+                // fade ramp instead of dropping to zero, so a buffer that runs
+                // dry (end of stream, underrun, a flush with little buffered)
+                // never clicks. What plays next fades in from silence.
+                while written < frames && self.gain_step > 0 {
+                    self.gain_step -= 1;
+                    let gain = micro_fade_gain(self.gain_step as f32 / self.fade_frames as f32);
+                    let target = &mut out[written * channels..(written + 1) * channels];
+                    for (sample, value) in target.iter_mut().zip(&self.last) {
+                        *sample = value * gain;
+                    }
+                    written += 1;
+                }
+                if hold && self.gain_step == 0 && written < frames {
+                    // Faded out: go round once more to finish a flush.
+                    continue;
                 }
                 break;
             }
@@ -133,6 +149,7 @@ impl OutputStage {
                 } else if self.gain_step < self.fade_frames {
                     self.gain_step += 1;
                 }
+                self.last.copy_from_slice(frame);
                 let gain = micro_fade_gain(self.gain_step as f32 / self.fade_frames as f32);
                 let target = &mut out[(written + used) * channels..(written + used + 1) * channels];
                 for (sample, value) in target.iter_mut().zip(frame) {
@@ -222,5 +239,25 @@ mod tests {
         assert!(!shared.flush_pending());
         assert_eq!(stage.buffered_frames(), 0);
         assert_eq!(shared.consumed.load(Ordering::Acquire), 1000);
+    }
+    #[test]
+    fn a_buffer_that_runs_dry_decays_instead_of_clicking() {
+        let (mut producer, mut stage, shared) = stage(1024);
+        // 100 frames at full scale, then nothing more.
+        producer.push_entire_slice(&[1.0; 200]).unwrap();
+        let mut out = vec![0.0; 400];
+        stage.process(&mut out);
+        let left: Vec<f32> = out.iter().step_by(2).copied().collect();
+        let step = left
+            .windows(2)
+            .map(|pair| (pair[1] - pair[0]).abs())
+            .fold(0.0f32, f32::max);
+        assert!(step < 0.05, "a jump of {step}");
+        assert_eq!(left.last().copied(), Some(0.0));
+
+        // A flush with nothing buffered still completes.
+        shared.flush_request.fetch_add(1, Ordering::AcqRel);
+        stage.process(&mut out);
+        assert!(!shared.flush_pending());
     }
 }

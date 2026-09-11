@@ -115,6 +115,8 @@ pub(crate) struct Worker {
     resume_at: Option<Playhead>,
     mix_a: Vec<f32>,
     mix_b: Vec<f32>,
+    /// The last fill stopped on its per-round budget, not on a full buffer.
+    more_to_fill: bool,
 }
 
 impl Worker {
@@ -150,6 +152,7 @@ impl Worker {
             resume_at: None,
             mix_a: Vec::new(),
             mix_b: Vec::new(),
+            more_to_fill: false,
         }
     }
 
@@ -305,6 +308,9 @@ impl Worker {
     /// How long to sleep before the next round; `None` sleeps until a
     /// command arrives.
     fn wait_time(&self) -> Option<Duration> {
+        if self.more_to_fill && self.output.is_some() {
+            return Some(Duration::ZERO);
+        }
         if self.output.is_none() {
             return self
                 .retry_at
@@ -739,6 +745,8 @@ impl Worker {
 
     /// Keeps the ring buffer full.
     fn fill(&mut self) {
+        self.more_to_fill = false;
+        let mut filled = 0usize;
         if self.state == PlayState::Stopped {
             return;
         }
@@ -748,6 +756,10 @@ impl Worker {
             };
             let channels = output.channels;
             let capacity_frames = output.producer.buffer().capacity() / channels;
+            if filled >= capacity_frames {
+                self.more_to_fill = true;
+                return;
+            }
             let step = BLOCK_FRAMES.min(capacity_frames);
             if output.producer.slots() / channels < step {
                 return;
@@ -774,6 +786,7 @@ impl Worker {
                 ..entry
             });
             self.pushed += frames as u64;
+            filled += frames;
         }
     }
 
@@ -893,12 +906,29 @@ impl Worker {
         let producing = output.shared.producing.load(Ordering::Acquire);
 
         if let Some(at) = self.playhead() {
-            if self.reported != Some(at.queue_index) {
-                self.reported = Some(at.queue_index);
-                self.current = at.queue_index;
-                if let Some((path, info)) = self.infos.get(&at.queue_index) {
+            // Every track the listener has reached since the last report, in
+            // order, even one shorter than a round of the loop.
+            let mut last = self.reported;
+            let mut started = Vec::new();
+            for entry in self
+                .timeline
+                .iter()
+                .take_while(|entry| entry.out_start <= consumed)
+            {
+                if last != Some(entry.queue_index) {
+                    last = Some(entry.queue_index);
+                    started.push(entry.queue_index);
+                }
+            }
+            if started.is_empty() && self.reported.is_none() {
+                started.push(at.queue_index);
+            }
+            for index in started {
+                self.reported = Some(index);
+                self.current = index;
+                if let Some((path, info)) = self.infos.get(&index) {
                     self.emit(Event::TrackStarted {
-                        index: at.queue_index,
+                        index,
                         path: path.clone(),
                         info: info.clone(),
                     });
