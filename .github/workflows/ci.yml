@@ -3,7 +3,15 @@ name: CI
 on:
   push:
     branches: [main]
+    # Documentation-only changes do not need a build. The repository is
+    # private, so Actions minutes are limited (Windows counts double).
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
   pull_request:
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
   workflow_dispatch:
 
 concurrency:
@@ -21,6 +29,7 @@ jobs:
       matrix:
         os: [windows-latest, ubuntu-latest]
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
 
     steps:
       - uses: actions/checkout@v4
@@ -38,6 +47,12 @@ jobs:
           components: rustfmt, clippy
 
       - uses: Swatinem/rust-cache@v2
+        with:
+          # Keep compiled dependencies even when a later step fails, so the
+          # next run does not start cold. Only main writes the cache; pull
+          # requests read it.
+          cache-on-failure: true
+          save-if: ${{ github.ref == 'refs/heads/main' }}
 
       - uses: actions/setup-node@v4
         with:
@@ -67,8 +82,10 @@ jobs:
       - name: cargo test
         run: cargo test --workspace
 
-      # Installers are bundled from M12 on; until then the release build is
-      # enough to prove the application builds on both systems.
+      # A debug build proves the application builds on both systems and
+      # reuses the dependencies cargo test just compiled, instead of
+      # compiling all of them again for release. Release builds and
+      # installers join CI in M12.
       - name: Build application
         working-directory: src-tauri
-        run: npx --prefix ../ui tauri build --no-bundle
+        run: npx --prefix ../ui tauri build --debug --no-bundle
