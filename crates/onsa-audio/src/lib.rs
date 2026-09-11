@@ -14,6 +14,7 @@ mod engine;
 mod error;
 mod fade;
 mod lane;
+mod mp4;
 pub mod output;
 mod resample;
 mod source;

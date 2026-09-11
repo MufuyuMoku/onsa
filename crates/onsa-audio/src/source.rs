@@ -14,6 +14,7 @@ use symphonia::core::units::{Time, TimeBase, Timestamp};
 
 use crate::channels::ChannelMap;
 use crate::error::{Error, Result};
+use crate::mp4::{self, Mp4Trim};
 
 /// Decode errors tolerated in a row before a file is given up on.
 const MAX_CONSECUTIVE_DECODE_ERRORS: u32 = 64;
@@ -59,6 +60,10 @@ pub struct FileSource {
     pending_pos: usize,
     /// Frames still to drop after a seek landed before its target.
     skip_frames: u64,
+    /// Encoder priming the decoder does not drop by itself (MP4), in frames.
+    lead: u64,
+    /// Playable frames, when the decoder would otherwise play the padding.
+    limit: Option<u64>,
     /// Frames handed out since the start of the track.
     position: u64,
     ended: bool,
@@ -105,7 +110,8 @@ impl FileSource {
         let track_id = track.id;
         let time_base = track.time_base;
         let start_ts = track.start_ts;
-        let total_frames = track.num_frames;
+        let mut total_frames = track.num_frames;
+        let decoder_trims = track.delay.unwrap_or(0) > 0;
 
         let sample_rate = params
             .sample_rate
@@ -125,7 +131,28 @@ impl FileSource {
             .make_audio_decoder(&params, &options)
             .map_err(|error| unsupported(error.to_string()))?;
 
-        let (album, track_number) = read_album_tags(format.as_mut());
+        let tags = read_tags(format.as_mut());
+
+        // symphonia 0.6 ignores the MP4 edit list and iTunSMPB, so the AAC
+        // priming would play. Read them here, iTunSMPB first.
+        let mut trim = None;
+        if !decoder_trims && is_mp4(path) {
+            trim = tags
+                .itunsmpb
+                .as_deref()
+                .and_then(mp4::parse_itunsmpb)
+                .or_else(|| mp4::read_edit_list(path, sample_rate));
+        }
+        let (lead, limit) = match trim {
+            Some(Mp4Trim { delay, playable }) => {
+                tracing::debug!(path = %path.display(), delay, ?playable, "applying MP4 encoder trim");
+                if playable.is_some() {
+                    total_frames = playable;
+                }
+                (delay, playable)
+            }
+            None => (0, None),
+        };
 
         Ok(Self {
             path: path.to_path_buf(),
@@ -138,15 +165,17 @@ impl FileSource {
                 sample_rate,
                 channels,
                 total_frames,
-                album,
-                track_number,
+                album: tags.album,
+                track_number: tags.track_number,
             },
             map: ChannelMap::new(channels, out_channels),
             out_channels: out_channels.max(1),
             scratch: Vec::new(),
             pending: Vec::new(),
             pending_pos: 0,
-            skip_frames: 0,
+            skip_frames: lead,
+            lead,
+            limit,
             position: 0,
             ended: false,
         })
@@ -171,7 +200,11 @@ impl FileSource {
     /// how many frames were written. Zero means the track has ended.
     pub fn read(&mut self, out: &mut [f32]) -> Result<usize> {
         let channels = self.out_channels;
-        let wanted = out.len() / channels;
+        let mut wanted = out.len() / channels;
+        if let Some(limit) = self.limit {
+            let left = limit.saturating_sub(self.position);
+            wanted = wanted.min(usize::try_from(left).unwrap_or(usize::MAX));
+        }
         let mut written = 0;
         while written < wanted {
             if self.pending_pos >= self.pending.len() {
@@ -200,7 +233,8 @@ impl FileSource {
             Some(total) => frame.min(total),
             None => frame,
         };
-        let time = Time::try_from_secs_f64(target as f64 / rate).unwrap_or_default();
+        let raw_target = target + self.lead;
+        let time = Time::try_from_secs_f64(raw_target as f64 / rate).unwrap_or_default();
         let seeked = self.format.seek(
             SeekMode::Accurate,
             SeekTo::Time {
@@ -215,8 +249,10 @@ impl FileSource {
 
         match seeked {
             Ok(seeked) => {
-                let landed = self.timestamp_to_frame(seeked.actual_ts).unwrap_or(target);
-                self.skip_frames = target.saturating_sub(landed);
+                let landed = self
+                    .timestamp_to_frame(seeked.actual_ts)
+                    .unwrap_or(raw_target);
+                self.skip_frames = raw_target.saturating_sub(landed);
                 self.position = target;
                 Ok(target)
             }
@@ -331,11 +367,22 @@ impl FileSource {
     }
 }
 
+/// The tags the engine itself needs.
+struct EngineTags {
+    album: Option<String>,
+    track_number: Option<u64>,
+    /// MP4 gapless information written by iTunes and compatible encoders.
+    itunsmpb: Option<String>,
+}
+
 /// Reads the album and track number tags, the two facts the crossfade rule
-/// for consecutive album tracks needs (SPEC §3.3).
-fn read_album_tags(format: &mut dyn FormatReader) -> (Option<String>, Option<u64>) {
-    let mut album = None;
-    let mut track_number = None;
+/// for consecutive album tracks needs (SPEC §3.3), and `iTunSMPB`.
+fn read_tags(format: &mut dyn FormatReader) -> EngineTags {
+    let mut found = EngineTags {
+        album: None,
+        track_number: None,
+        itunsmpb: None,
+    };
     let mut metadata = format.metadata();
     if let Some(revision) = metadata.skip_to_latest() {
         let tags = revision.media.tags.iter().chain(
@@ -346,15 +393,30 @@ fn read_album_tags(format: &mut dyn FormatReader) -> (Option<String>, Option<u64
         );
         for tag in tags {
             match &tag.std {
-                Some(StandardTag::Album(name)) if album.is_none() => {
-                    album = Some(name.to_string());
+                Some(StandardTag::Album(name)) if found.album.is_none() => {
+                    found.album = Some(name.to_string());
                 }
-                Some(StandardTag::TrackNumber(number)) if track_number.is_none() => {
-                    track_number = Some(*number);
+                Some(StandardTag::TrackNumber(number)) if found.track_number.is_none() => {
+                    found.track_number = Some(*number);
                 }
                 _ => {}
             }
+            if found.itunsmpb.is_none() && tag.raw.key.to_ascii_lowercase().ends_with("itunsmpb") {
+                found.itunsmpb = Some(tag.raw.value.to_string());
+            }
         }
     }
-    (album, track_number)
+    found
+}
+
+/// Whether the file is an MP4 container, by extension.
+fn is_mp4(path: &Path) -> bool {
+    path.extension()
+        .and_then(|extension| extension.to_str())
+        .is_some_and(|extension| {
+            matches!(
+                extension.to_ascii_lowercase().as_str(),
+                "m4a" | "m4b" | "mp4" | "m4p"
+            )
+        })
 }
