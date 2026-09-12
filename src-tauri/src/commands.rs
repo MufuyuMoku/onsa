@@ -22,10 +22,10 @@ use crate::library::{LibraryService, ScanStatus};
 use crate::logging::Logging;
 use crate::player::{Player, Snapshot};
 use crate::session::{self, WindowMode};
-use crate::sleep::{self, SleepTimer};
-use crate::tray::{self, TrayLabels};
 use crate::settings::{self, BandPrefs, DspPrefs, OutputPrefs, PlaybackPrefs};
+use crate::sleep::{self, SleepTimer};
 use crate::theme::{self, Theme};
+use crate::tray::{self, TrayLabels};
 
 /// Points on an EQ response curve.
 const CURVE_POINTS: usize = 240;
@@ -57,7 +57,10 @@ pub fn app_info() -> AppInfo {
 
 /// The folder the user's own themes live in.
 fn theme_dir(app: &AppHandle) -> Option<PathBuf> {
-    app.path().app_config_dir().ok().map(|dir| theme::user_dir(&dir))
+    app.path()
+        .app_config_dir()
+        .ok()
+        .map(|dir| theme::user_dir(&dir))
 }
 
 /// Lists the themes that can be chosen: the built-in ones, then the user's.
@@ -370,7 +373,13 @@ pub fn library_artist_tracks(
     library: State<'_, LibraryService>,
     name: String,
 ) -> Result<Vec<TrackDto>, ErrorCode> {
-    library.read(|library| Ok(library.artist_tracks(&name)?.iter().map(TrackDto::from).collect()))
+    library.read(|library| {
+        Ok(library
+            .artist_tracks(&name)?
+            .iter()
+            .map(TrackDto::from)
+            .collect())
+    })
 }
 
 /// The tracks of one genre.
@@ -379,7 +388,13 @@ pub fn library_genre_tracks(
     library: State<'_, LibraryService>,
     name: String,
 ) -> Result<Vec<TrackDto>, ErrorCode> {
-    library.read(|library| Ok(library.genre_tracks(&name)?.iter().map(TrackDto::from).collect()))
+    library.read(|library| {
+        Ok(library
+            .genre_tracks(&name)?
+            .iter()
+            .map(TrackDto::from)
+            .collect())
+    })
 }
 
 /// The tracks inside one folder.
@@ -731,7 +746,11 @@ pub fn window_set_mini(app: AppHandle, mini: bool) -> Result<(), ErrorCode> {
         ErrorCode::Io
     })?;
     app.state::<WindowMode>().set_mini(mini);
-    session::save(&app, session::WINDOW_KEY, &session::window_state(&window, mini));
+    session::save(
+        &app,
+        session::WINDOW_KEY,
+        &session::window_state(&window, mini),
+    );
     Ok(())
 }
 

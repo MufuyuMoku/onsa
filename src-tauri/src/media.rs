@@ -104,15 +104,20 @@ fn stepped(position: f64, direction: souvlaki::SeekDirection, by: f64) -> f64 {
 
 /// Tells the system what is playing. Safe to call from any thread.
 pub fn update(app: &AppHandle, snapshot: &Snapshot) {
-    let title = snapshot
-        .track
-        .as_ref()
-        .map(|track| track.title.clone().unwrap_or_else(|| file_name(&track.path)));
+    let title = snapshot.track.as_ref().map(|track| {
+        track
+            .title
+            .clone()
+            .unwrap_or_else(|| file_name(&track.path))
+    });
     let artist = snapshot
         .track
         .as_ref()
         .and_then(|track| track.artist.clone());
-    let album = snapshot.track.as_ref().and_then(|track| track.album.clone());
+    let album = snapshot
+        .track
+        .as_ref()
+        .and_then(|track| track.album.clone());
     let cover = snapshot
         .track
         .as_ref()
@@ -156,7 +161,9 @@ pub fn update(app: &AppHandle, snapshot: &Snapshot) {
 /// A `file://` URL for a cover thumbnail, which both SMTC and MPRIS read.
 fn cover_url(app: &AppHandle, cover_id: i64) -> Option<String> {
     let library = app.try_state::<crate::library::LibraryService>()?;
-    let file = library.read(|library| library.cover_file(cover_id, 512)).ok()??;
+    let file = library
+        .read(|library| library.cover_file(cover_id, 512))
+        .ok()??;
     let path = file.to_str()?.replace('\\', "/");
     Some(format!("file:///{}", path.trim_start_matches('/')))
 }

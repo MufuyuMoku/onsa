@@ -25,7 +25,11 @@ const FADE_FLOOR: f32 = -60.0;
 
 /// When the timer should fire.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "kind", rename_all = "camelCase", rename_all_fields = "camelCase")]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
 pub enum When {
     /// After this many minutes.
     Minutes {
@@ -90,7 +94,9 @@ pub struct SleepTimer {
 }
 
 fn lock<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
-    mutex.lock().unwrap_or_else(|poisoned| poisoned.into_inner())
+    mutex
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
 }
 
 impl SleepTimer {
@@ -245,7 +251,9 @@ fn fade_out(app: &AppHandle, fade: Duration, cancel: &AtomicBool) {
     };
     let (_, _, dsp) = player.prefs();
     let from = dsp.volume_db.max(FADE_FLOOR);
-    let steps = (fade.as_secs_f32() / FADE_STEP.as_secs_f32()).round().max(1.0);
+    let steps = (fade.as_secs_f32() / FADE_STEP.as_secs_f32())
+        .round()
+        .max(1.0);
     for step in 1..=(steps as u32) {
         if cancel.load(Ordering::Relaxed) {
             break;

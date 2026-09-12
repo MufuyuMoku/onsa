@@ -1,12 +1,14 @@
-# Uji coba Onsa (M4a)
+# Uji coba Onsa (M4)
 
-Ini versi coba-coba. Isinya sudah cukup untuk dipakai mendengarkan musik sungguhan: pilih folder, scan, jelajahi, putar, atur suara, dan ganti tampilan. Yang belum dikerjakan sengaja tidak ditampilkan, jadi kalau sebuah tombol ada, artinya tombol itu memang berfungsi.
+Ini versi coba-coba yang sudah lengkap untuk dipakai sehari-hari: pilih folder, scan, jelajahi, putar, atur suara, atur antrean, ganti tampilan, dan kendalikan lewat tombol media atau tray. Yang belum dikerjakan sengaja tidak ditampilkan, jadi kalau sebuah tombol ada, artinya tombol itu memang berfungsi.
 
-Yang dibutuhkan: file `Onsa-M4a.exe`, folder musik, dan headphone atau speaker yang biasa dipakai.
+Bagian 1 sampai 13 sama seperti sebelumnya dan sudah kamu lalui; kalau mau, langsung saja ke bagian 14 dan seterusnya, yang isinya baru.
+
+Yang dibutuhkan: file `Onsa-M4.exe`, folder musik, dan headphone atau speaker yang biasa dipakai.
 
 ## Cara menjalankan
 
-1. Klik dua kali `Onsa-M4a.exe`. Tidak perlu dipasang.
+1. Klik dua kali `Onsa-M4.exe`. Tidak perlu dipasang.
 2. Kalau Windows menampilkan peringatan "Windows protected your PC", klik **More info**, lalu **Run anyway**. Peringatan itu muncul karena file ini belum ditandatangani secara resmi, dan itu memang urusan menjelang rilis.
 3. Menutup jendela berarti menutup aplikasi.
 
@@ -104,6 +106,87 @@ Perhatikan deretan kotak kecil di bawah tombol pemutar saat lagu berjalan. Klik 
 
 **Yang seharusnya terjadi:** kotak-kotak itu menunjukkan apa yang sebenarnya terjadi pada suara: format file, perubahan sample rate, ReplayGain, EQ, limiter, dan perangkat yang dipakai. Klik menyalakan atau mematikan tahap itu dan suaranya langsung berubah. Klik kanan membuka halaman pengaturannya.
 
+### 14. Jelajah lewat Artis, Genre, dan Folder
+
+Di kiri sekarang ada **Artis**, **Genre**, dan **Folder**. Buka salah satunya, klik satu nama, lalu tekan **Putar**.
+
+**Yang seharusnya terjadi:** daftarnya muncul dengan jumlah lagu di kanan, dan membukanya menampilkan lagu-lagunya. Untuk folder, nama folder ditampilkan besar dengan jalur lengkapnya di bawahnya.
+
+### 15. Mengatur antrean
+
+Di panel **Antrean** di kanan: tarik sebuah lagu untuk memindahkannya, tekan tanda silang untuk menghapusnya, lalu coba **Acak**, **Ulang**, dan **Kosongkan antrean**. Klik kanan sebuah lagu di daftar untuk **Putar berikutnya** atau **Tambah ke antrean**.
+
+**Yang seharusnya terjadi:** semua itu terjadi **tanpa memotong lagu yang sedang berbunyi**. Menyalakan Acak memindahkan lagu yang sedang diputar ke urutan pertama dan mengacak sisanya; mematikannya mengembalikan urutan semula. **Ulang** berpindah antara mati, seluruh antrean, dan satu lagu. Saat mengulang satu lagu, sambungannya harus tetap mulus, tanpa jeda.
+
+**Tolong perhatikan:** kalau ada bunyi terpotong saat mengubah antrean, catat apa yang sedang kamu lakukan.
+
+### 16. Sedang diputar
+
+Tekan tombol bulat di sebelah kanan tombol pemutar, atau **Ctrl+N**.
+
+**Yang seharusnya terjadi:** cover tampil besar, lengkap dengan judul, artis, album, bar posisi, serta keterangan format file dan perangkat output yang sedang dipakai.
+
+### 17. Mini player
+
+Tekan tombol panah mengecil di kanan, atau **Ctrl+M**.
+
+**Yang seharusnya terjadi:** jendela menyusut jadi satu baris dan selalu berada di atas jendela lain, tapi tetap bisa memutar, menggeser posisi, dan menampilkan meter. Tekan tombol panah membesar untuk kembali. Kalau Onsa ditutup dalam mode mini, ia akan terbuka lagi dalam mode mini.
+
+### 18. Sleep timer
+
+Tekan tombol jam di dekat kanan bawah. Pilih misalnya **Setelah 15 menit**, atau **Di akhir lagu ini**, lalu pilih apa yang terjadi sesudahnya: jeda, berhenti, atau tutup Onsa. Untuk mencoba cepat, isi **Menit** dengan 1 lalu tekan **Mulai**.
+
+**Yang seharusnya terjadi:** sisa waktunya terlihat di sebelah tombol. Menjelang waktunya, volume turun perlahan (lamanya bisa diatur), lalu Onsa melakukan yang kamu pilih. Setelah itu **volume kembali ke angka semula**, jadi pemutaran berikutnya tidak senyap. Tombol **Batalkan** menghentikan timer kapan saja.
+
+### 19. Tombol media di keyboard dan panel Windows
+
+Tekan tombol play/pause, berikutnya, dan sebelumnya di keyboard atau headset. Perhatikan juga panel media Windows yang muncul saat volume diubah.
+
+**Yang seharusnya terjadi:** Onsa menanggapi tombol-tombol itu, dan panel media Windows menampilkan judul, artis, album, serta covernya.
+
+### 20. Ikon tray
+
+Cari ikon Onsa di tray (dekat jam). Klik kanan untuk menu, klik kiri untuk memunculkan jendela. Di **Pengaturan → Tentang**, nyalakan **Tutup jendela hanya menyembunyikan Onsa ke tray**, lalu tutup jendelanya.
+
+**Yang seharusnya terjadi:** menu tray berisi tampilkan, putar atau jeda, sebelumnya, berikutnya, dan keluar — dalam bahasa yang sedang dipakai. Dengan pilihan tadi menyala, menutup jendela tidak menutup Onsa: musiknya jalan terus dan jendelanya bisa dipanggil lagi dari tray.
+
+### 21. Buka file lewat Onsa dan seret ke jendela
+
+Seret satu atau beberapa file lagu ke jendela Onsa. Seret juga sebuah folder. Coba pula klik kanan sebuah file lagu di Explorer, lalu **Open with → Onsa** (kalau belum ada di daftar, pilih lewat "Choose another app" dan arahkan ke `Onsa-M4.exe`).
+
+**Yang seharusnya terjadi:** file langsung diputar, folder ditambahkan ke library lalu di-scan. Kalau Onsa sudah berjalan, tidak ada jendela kedua yang terbuka: jendela yang ada maju ke depan dan memutar file itu.
+
+### 22. Samakan sample rate dengan sumber
+
+Di **Pengaturan → Output & Kualitas**, nyalakan **Samakan dengan sumber**. Putar lagu 44,1 kHz lalu lagu 48 kHz secara berurutan.
+
+**Yang seharusnya terjadi:** di strip bawah, tahap **Resample** hilang, dan perangkat output mengikuti sample rate tiap lagu. Perpindahan antar-lagu dengan sample rate berbeda mungkin terdengar jeda singkat, karena perangkat memang dibuka ulang.
+
+### 23. Antrean kembali saat dibuka lagi
+
+Putar beberapa lagu, lalu tutup Onsa di tengah lagu dan buka lagi.
+
+**Yang seharusnya terjadi:** antrean yang sama kembali, berhenti di lagu dan posisi terakhir, dalam keadaan **jeda**. Ukuran dan posisi jendela juga kembali seperti semula.
+
+### 24. Tema buatan sendiri
+
+Di **Pengaturan → Tampilan**, tekan **Buka folder tema**. Taruh file `.json` tema di situ (paling mudah: salin salah satu tema bawaan dari folder `themes/` di repositori, lalu ubah `id`, `name`, dan beberapa warnanya). Tutup dan buka Onsa lagi.
+
+**Yang seharusnya terjadi:** tema itu ikut muncul di daftar tema dan bisa dipilih. Tema yang rusak dilewati begitu saja, tidak membuat Onsa gagal terbuka.
+
+### 25. Pintasan keyboard
+
+| Tombol | Fungsi |
+|---|---|
+| Spasi | putar atau jeda |
+| ← / → | mundur atau maju 5 detik |
+| Ctrl+← / Ctrl+→ | lagu sebelumnya atau berikutnya |
+| Ctrl+↑ / Ctrl+↓ | volume naik atau turun |
+| Ctrl+F | ke kotak pencarian |
+| Ctrl+N | Sedang diputar |
+| Ctrl+M | mini player |
+| Ctrl+, | pengaturan |
+
 ---
 
 ## Kalau ada yang aneh
@@ -129,4 +212,4 @@ Log hanya berisi catatan teknis tentang jalannya aplikasi, misalnya nama file la
 
 ## Yang belum ada di versi ini
 
-Supaya tidak bingung mencari: visualizer spektrum, lirik, playlist, pengeditan tag, unduhan, scrobble Last.fm, mini player, kontrol lewat tombol media di keyboard, ikon di tray, dan pemulihan antrean saat aplikasi dibuka lagi. Semuanya ada di tahap berikutnya.
+Supaya tidak bingung mencari: visualizer spektrum dan warna nada, lirik, playlist (termasuk menyimpan antrean sebagai playlist), pengeditan tag, unduhan, scrobble Last.fm, mode hemat daya, dan pengaturan pintasan keyboard. Semuanya ada di tahap berikutnya.

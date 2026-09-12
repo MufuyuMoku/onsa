@@ -17,8 +17,8 @@ mod player;
 mod session;
 mod settings;
 mod sleep;
-mod tray;
 pub mod theme;
+mod tray;
 
 use anyhow::{Context, Result};
 use tauri::{AppHandle, Manager, WebviewWindow, WindowEvent};
@@ -200,7 +200,11 @@ fn remember_window(app: AppHandle, window: WebviewWindow) {
         }
         WindowEvent::CloseRequested { api, .. } => {
             let mini = target.app_handle().state::<WindowMode>().mini();
-            session::save(&app, session::WINDOW_KEY, &session::window_state(&target, mini));
+            session::save(
+                &app,
+                session::WINDOW_KEY,
+                &session::window_state(&target, mini),
+            );
             if close_to_tray(&app) && tray::exists(&app) {
                 api.prevent_close();
                 let _ = target.hide();
@@ -208,7 +212,11 @@ fn remember_window(app: AppHandle, window: WebviewWindow) {
         }
         WindowEvent::Focused(false) => {
             let mini = target.app_handle().state::<WindowMode>().mini();
-            session::save(&app, session::WINDOW_KEY, &session::window_state(&target, mini));
+            session::save(
+                &app,
+                session::WINDOW_KEY,
+                &session::window_state(&target, mini),
+            );
         }
         _ => {}
     });

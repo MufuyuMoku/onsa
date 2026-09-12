@@ -443,7 +443,10 @@ fn repeat_all_starts_the_queue_over() {
     let mut started = Vec::new();
     let deadline = Instant::now() + Duration::from_secs(10);
     while started.len() < 3 {
-        assert!(Instant::now() < deadline, "the queue never came round: {started:?}");
+        assert!(
+            Instant::now() < deadline,
+            "the queue never came round: {started:?}"
+        );
         sink.render(512);
         for event in drain(&engine) {
             match event {
@@ -511,10 +514,7 @@ fn the_queue_can_be_edited_while_a_track_plays() {
 
     // A track added to the end while the first one is still playing.
     engine
-        .update_queue(
-            vec![QueueItem::new(&a), QueueItem::new(&b)],
-            0,
-        )
+        .update_queue(vec![QueueItem::new(&a), QueueItem::new(&b)], 0)
         .expect("update");
     out.extend(sink.render_to_end(seconds * 4));
 
@@ -565,5 +565,8 @@ fn an_output_replaced_at_the_very_start_keeps_playing() {
     let error = (start..seconds * 2 - latency)
         .map(|i| (out[i + latency] - whole[i]).abs())
         .fold(0.0f32, f32::max);
-    assert!(error < 1e-6, "the track did not play from its start: {error}");
+    assert!(
+        error < 1e-6,
+        "the track did not play from its start: {error}"
+    );
 }

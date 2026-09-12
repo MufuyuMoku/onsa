@@ -597,7 +597,10 @@ fn browses_by_artist_genre_and_folder() {
     assert_eq!(library.genre_count().unwrap(), 2);
     let artists = library.artists_page(0, 10).unwrap();
     assert_eq!(artists[0].name, "Rian");
-    assert_eq!(artists[0].track_count, 2, "the album track and the loose one");
+    assert_eq!(
+        artists[0].track_count, 2,
+        "the album track and the loose one"
+    );
     assert_eq!(library.artist_tracks("Rian").unwrap().len(), 2);
     // The name is matched the way it is listed, whatever the case.
     assert_eq!(library.artist_tracks("rian").unwrap().len(), 2);
@@ -615,7 +618,9 @@ fn browses_by_artist_genre_and_folder() {
     let second = music.join("Second Album");
     let tracks = library.directory_tracks(second.to_str().unwrap()).unwrap();
     assert_eq!(tracks.len(), 2);
-    assert!(tracks.iter().all(|track| track.album.as_deref() == Some("Second")));
+    assert!(tracks
+        .iter()
+        .all(|track| track.album.as_deref() == Some("Second")));
     let root = library.directory_tracks(music.to_str().unwrap()).unwrap();
     assert_eq!(root.len(), 2, "the loose track and the file that failed");
 

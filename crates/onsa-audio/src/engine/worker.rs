@@ -24,7 +24,9 @@ use crate::dsp::replaygain::ReplayGainMode;
 use crate::error::Result;
 use crate::fade::MICRO_FADE_SECONDS;
 use crate::lane::{Lane, LaneTrack};
-use crate::output::device::{default_device_id, open_device, DeviceChoice, DeviceOutput, OutputRate};
+use crate::output::device::{
+    default_device_id, open_device, DeviceChoice, DeviceOutput, OutputRate,
+};
 use crate::output::stage::{DspPort, Shared};
 use crate::source::{FileSource, TrackInfo};
 

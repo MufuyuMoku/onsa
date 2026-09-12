@@ -368,7 +368,11 @@ impl Player {
             return Ok(());
         }
         let current = current.min(rows.len() - 1);
-        let position = if position.is_finite() { position.max(0.0) } else { 0.0 };
+        let position = if position.is_finite() {
+            position.max(0.0)
+        } else {
+            0.0
+        };
         let items = queue_items(&rows);
         {
             let mut state = lock(&self.shared.state);

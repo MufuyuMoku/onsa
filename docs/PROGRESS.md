@@ -281,3 +281,61 @@ Semuanya dijalankan pada build rilis portable (`dist-test/Onsa-M4a.exe`) di Wind
 - **Uji dengar oleh pemilik proyek** sesuai `docs/UJI-M4a.md`: gapless, crossfade, klik saat jeda dan seek, cabut/colok headphone, EQ saat lagu berjalan, preset AutoEQ, preamp otomatis, limiter, dan ReplayGain.
 - **Satu kejadian yang belum bisa dijelaskan**: pada percobaan pertama, klik dua kali di baris pertama berakhir memutar lagu ke-282 dalam antrean. Tidak terulang dalam tiga percobaan berikutnya, penomoran antrean terbukti benar (`next` dan lompat ke indeks tertentu), dan log tidak menunjukkan lagu yang gagal atau dilewati. Kalau terjadi lagi saat uji dengar, log debug sekarang mencatat setiap lagu yang mulai diputar.
 - **Belum masuk irisan ini** (bagian M4 dan M5 berikutnya): visualizer dan warna nada, Now Playing, mini player, sleep timer, kontrol media OS dan tray, single instance, asosiasi file dan drag-and-drop, pemulihan antrean beserta posisi terakhir, tema buatan pengguna, pengaturan pintasan, dan pengurutan ulang antrean.
+
+---
+
+## M4. UI dasar dan integrasi OS — selesai (2026-09-12)
+
+Lanjutan dari irisan uji M4a, yang sudah lulus uji dengar pemilik proyek untuk M1–M3.
+
+**Kriteria selesai**: seluruh alur dari pilih folder, scan, jelajah, putar, atur EQ, sampai ganti tema bisa dilakukan tanpa CLI di kedua OS, dan ketiga tema sesuai `palet-preview.html`.
+
+| Kriteria | Windows 11 | Linux |
+|---|---|---|
+| Alur lengkap tanpa CLI | ✅ terverifikasi pada build rilis portable | ✅ jendela terbuka lewat WSLg, library dan output ALSA jalan; dialog, tray, dan uji dengar belum dicoba di Linux |
+| Ketiga tema sesuai acuan visual | ✅ termasuk font yang dibundel dan varian meter per tema | ⏳ belum diperiksa langsung |
+| Tes (§12) | ✅ 114 tes | ✅ 114 tes di WSL |
+
+### Yang dibuat (di luar yang sudah ada di M4a)
+
+- **Jelajah** Artis, Genre, dan Folder, masing-masing dengan daftar per halaman dan halaman isinya.
+- **Antrean** (SPEC §6.1): putar berikutnya, tambah ke akhir, hapus satu entri, tarik untuk mengurutkan ulang, kosongkan, shuffle yang menyimpan urutan asli, dan repeat mati/semua/satu. Semua perubahan diterapkan **tanpa memotong lagu yang sedang berbunyi**.
+- **Sedang diputar**: cover besar, judul, artis, album, bar posisi, serta format sumber dan perangkat output.
+- **Mini player**: jendela yang sama diringkas jadi satu baris dan selalu di atas, dengan cover, judul, kontrol, posisi, dan meter.
+- **Sleep timer** (SPEC §3.5): setelah N menit, di akhir lagu, atau setelah N lagu; volume diturunkan perlahan lalu dikembalikan, dan aksinya jeda, berhenti, atau tutup Onsa.
+- **Integrasi OS** (SPEC §13): kontrol media sistem (SMTC di Windows, MPRIS di Linux) lengkap dengan judul, artis, album, cover, dan posisi; ikon tray dengan menu berbahasa UI dan opsi tutup-ke-tray; single instance; file dan folder yang diseret ke jendela atau dibuka lewat "Buka dengan Onsa"; serta deklarasi asosiasi file.
+- **Pemulihan keadaan**: antrean, lagu dan posisi terakhir (dalam keadaan jeda), volume, tema, bahasa, EQ, ukuran dan posisi jendela, serta mode mini.
+- **Mode sample rate "samakan dengan sumber"** (ditunda dari M1), dengan strip jalur sinyal yang menunjukkan tahap Resample hilang saat perangkat mengikuti rate lagu.
+- **Tema buatan pengguna** dari `<app config>/themes/*.json`, dengan tombol pembuka foldernya di Tampilan.
+- **Pintasan keyboard** bawaan SPEC §13, termasuk Ctrl+M untuk mini player dan Ctrl+N untuk Sedang diputar.
+
+### Cara verifikasi
+
+Dijalankan pada build rilis portable di Windows 11, dikendalikan lewat port debug WebView2, dengan folder musik sungguhan berisi 620 file:
+
+- **Antrean**: memutar album, menambah album lain ke akhir, menyisipkan satu lagu sebagai berikutnya, memindahkan entri, menghapus entri, lalu menyalakan dan mematikan shuffle. Setiap langkah diperiksa: posisi putar terus berjalan dan statusnya tetap "playing".
+- **Repeat**: tersimpan dan diterapkan; tes mesin membuktikan repeat seluruh antrean kembali ke lagu pertama dan repeat satu lagu menghasilkan tiga putaran yang sama persis dengan satu sinus utuh (galat < 1e-6).
+- **Jelajah**: 110 artis, 1 genre, dan 4 folder dari library nyata tampil, termasuk nama folder beraksara Jepang, dan membukanya menampilkan lagunya.
+- **Sleep timer**: dipasang 1 menit, sisa waktunya terlihat, lalu dibatalkan.
+- **Mini player**: jendela menyusut, tetap bisa memutar, dan mode itu kembali saat aplikasi dibuka lagi.
+- **Pemulihan keadaan**: setelah ditutup dan dibuka lagi, antrean kembali dalam keadaan jeda, begitu pula mode jendela.
+- **Single instance dan buka file**: menjalankan exe untuk kedua kalinya dengan sebuah file tidak membuka jendela kedua; jendela yang ada maju ke depan dan memutar file itu. Ini juga jalur yang sama dengan drag-and-drop.
+- **Tutup ke tray**: menutup jendela menyembunyikannya dan prosesnya tetap hidup; menjalankan exe lagi memunculkannya kembali.
+- **Samakan dengan sumber**: file 44,1 kHz membuat perangkat dibuka ulang di 44,1 kHz, tahap Resample hilang, dan pemutaran berlanjut.
+- **Tema pengguna**: sebuah file tema di folder tema muncul di daftar bersama tiga tema bawaan.
+- **Kontrol media**: log mencatat "system media controls ready" di kedua OS, dan di Linux `org.mpris.MediaPlayer2.onsa` benar-benar terdaftar di session bus.
+- **Linux (WSL Ubuntu + WSLg)**: build rilis berhasil, 114 tes lulus, jendela Onsa terbuka (terlihat sebagai jendela WSLg dari sisi Windows), database dibuat, dan output ALSA terbuka.
+- **Pemeriksaan**: `cargo fmt --check`, clippy `-D warnings`, `cargo test --workspace` (114 tes), dan `svelte-check` (202 file) bersih.
+
+### Temuan saat pengujian (sudah diperbaiki)
+
+- Mode "samakan dengan sumber" membuka ulang output tepat saat lagu mulai, dan saat itu belum ada posisi putar yang bisa dilanjutkan, sehingga antrean langsung dianggap habis. Sekarang lagunya dimulai dari awal dalam kasus itu, dengan tes yang menutupnya.
+- Tata letak mini player terlalu sempit pada ukuran awal, sehingga judul dan waktu berdesakan; ukurannya dan proporsinya diperbaiki.
+
+### Tertunda / belum diverifikasi
+
+- **Linux**: dialog pemilih file, ikon tray, drag-and-drop, dan uji dengar lewat aplikasi belum dicoba. Uji cabut/colok perangkat di Linux tetap menunggu M12.
+- **Uji dengar oleh pemilik proyek** untuk fitur baru (langkahnya ada di `docs/UJI-M4.md`), terutama mengubah antrean saat lagu berjalan, repeat satu lagu, sleep timer, tombol media, dan tray.
+- **Repeat satu lagu tidak memancarkan event "lagu dimulai" baru**; kalau M9 (scrobble) butuh batas pemutaran, mesin perlu penanda pemutaran keberapa (lihat DECISIONS).
+- **Asosiasi file** baru terdaftar lewat installer (M12).
+- Visualizer, warna nada, dan mode hemat daya ada di M5. Lirik di M8. Playlist, termasuk menyimpan antrean sebagai playlist, ada di M6. Pengaturan pintasan keyboard menyusul.

@@ -119,7 +119,10 @@ fn on_a_screen(window: &WebviewWindow, x: f64, y: f64) -> bool {
         let size = monitor.size();
         let right = f64::from(position.x) + f64::from(size.width);
         let bottom = f64::from(position.y) + f64::from(size.height);
-        x >= f64::from(position.x) - 32.0 && x < right && y >= f64::from(position.y) - 32.0 && y < bottom
+        x >= f64::from(position.x) - 32.0
+            && x < right
+            && y >= f64::from(position.y) - 32.0
+            && y < bottom
     })
 }
 
