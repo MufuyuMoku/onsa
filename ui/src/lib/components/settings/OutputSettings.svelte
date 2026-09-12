@@ -74,6 +74,7 @@
 				<span>{t('output.sampleRate')}</span>
 				<select
 					class="field"
+					disabled={value.output.matchSource}
 					value={value.output.sampleRate === null ? '' : String(value.output.sampleRate)}
 					onchange={(event) =>
 						updateOutput({
@@ -86,6 +87,15 @@
 					{/each}
 				</select>
 			</label>
+			<label class="check">
+				<input
+					type="checkbox"
+					checked={value.output.matchSource}
+					onchange={(event) => updateOutput({ matchSource: event.currentTarget.checked })}
+				/>
+				{t('output.matchSource')}
+			</label>
+			<p class="muted note">{t('output.matchSourceHint')}</p>
 			<p class="muted note numeric">
 				{output ? t('output.current', { name: output.name, rate: rate(output.sampleRate) }) : t('output.none')}
 			</p>

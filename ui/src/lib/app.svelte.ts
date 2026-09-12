@@ -8,10 +8,12 @@ import {
 	appState,
 	failureKey,
 	setLocaleSetting,
+	setMini,
+	traySetup,
 	type AppInfo,
 	type AppState
 } from '$lib/backend';
-import { detectLocale, isLocale, setLocale, type Locale } from '$lib/i18n/index.svelte';
+import { detectLocale, isLocale, setLocale, t, type Locale } from '$lib/i18n/index.svelte';
 import type { MessageKey } from '$lib/i18n/dictionary';
 import { initLibrary } from '$lib/library.svelte';
 import { initPlayer } from '$lib/player.svelte';
@@ -25,6 +27,13 @@ export type View =
 	| { kind: 'tracks' }
 	| { kind: 'albums' }
 	| { kind: 'album'; id: number }
+	| { kind: 'artists' }
+	| { kind: 'artist'; name: string }
+	| { kind: 'genres' }
+	| { kind: 'genre'; name: string }
+	| { kind: 'folders' }
+	| { kind: 'folder'; path: string }
+	| { kind: 'nowPlaying' }
 	| { kind: 'settings'; section: SettingsSection };
 
 let info = $state<AppInfo | null>(null);
@@ -32,6 +41,7 @@ let stored = $state<AppState | null>(null);
 let failure = $state<MessageKey | null>(null);
 let ready = $state(false);
 let firstRun = $state(false);
+let mini = $state(false);
 let view = $state<View>({ kind: 'tracks' });
 
 export const app = {
@@ -58,6 +68,10 @@ export const app = {
 	/** What the main area shows. */
 	get view() {
 		return view;
+	},
+	/** Whether the window is the mini player (SPEC section 9.2). */
+	get mini() {
+		return mini;
 	}
 };
 
@@ -73,7 +87,9 @@ export async function start(root: HTMLElement): Promise<void> {
 		if (stored.locale && isLocale(stored.locale)) setLocale(stored.locale);
 		await loadThemes(stored.themeId ?? info.defaultThemeId, root);
 		firstRun = !stored.hasFolders;
+		mini = stored.mini;
 		await Promise.all([initPlayer(), initLibrary(), loadSettings()]);
+		await refreshTray();
 		failure = null;
 		ready = true;
 	} catch (error) {
@@ -85,6 +101,33 @@ export async function start(root: HTMLElement): Promise<void> {
 export function chooseLocale(next: Locale): void {
 	setLocale(next);
 	setLocaleSetting(next).catch(() => {});
+	// The tray menu speaks the interface's language too (SPEC section 9.6).
+	void refreshTray();
+}
+
+/** Hands the tray menu its words. */
+export async function refreshTray(): Promise<void> {
+	try {
+		await traySetup({
+			show: t('tray.show'),
+			play: t('tray.play'),
+			previous: t('transport.previous'),
+			next: t('transport.next'),
+			quit: t('tray.quit')
+		});
+	} catch {
+		// A tray icon the system refuses is not worth stopping for.
+	}
+}
+
+/** Switches between the full window and the mini player. */
+export async function setMiniPlayer(next: boolean): Promise<void> {
+	try {
+		await setMini(next);
+		mini = next;
+	} catch (error) {
+		failure = failureKey(error);
+	}
 }
 
 /** Moves the main area. */

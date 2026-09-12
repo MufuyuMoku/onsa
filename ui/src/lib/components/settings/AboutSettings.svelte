@@ -1,11 +1,12 @@
 <!-- About: version, the log folder, and debug logging for problem reports. -->
 <script lang="ts">
-	import { failureKey, logOpenFolder, logSetDebug } from '$lib/backend';
+	import { failureKey, logOpenFolder, logSetDebug, setCloseToTray } from '$lib/backend';
 	import { app } from '$lib/app.svelte';
 	import { t } from '$lib/i18n/index.svelte';
 	import type { MessageKey } from '$lib/i18n/dictionary';
 
 	let debug = $state(app.state?.logDebug ?? false);
+	let tray = $state(app.state?.closeToTray ?? false);
 	let failure = $state<MessageKey | null>(null);
 
 	async function setDebug(enabled: boolean): Promise<void> {
@@ -23,6 +24,22 @@
 	<section>
 		<h2 class="label">{app.info?.name ?? ''}</h2>
 		<p class="numeric">{t('about.version', { version: app.info?.version ?? '' })}</p>
+	</section>
+	<section>
+		<h2 class="label">{t('nav.settings')}</h2>
+		<label class="check">
+			<input
+				type="checkbox"
+				checked={tray}
+				onchange={(event) => {
+					const wanted = event.currentTarget.checked;
+					setCloseToTray(wanted)
+						.then(() => (tray = wanted))
+						.catch((error) => (failure = failureKey(error)));
+				}}
+			/>
+			{t('tray.closeToTray')}
+		</label>
 	</section>
 	<section>
 		<h2 class="label">{t('about.logs')}</h2>

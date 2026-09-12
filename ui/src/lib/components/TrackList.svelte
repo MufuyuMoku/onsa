@@ -4,11 +4,18 @@
 	that row, with the rest of the list as the queue.
 -->
 <script lang="ts">
-	import { trackCount, tracksPage, type SortKey, type Track } from '$lib/backend';
+	import {
+		trackCount,
+		tracksPage,
+		type PlayContext,
+		type QueuePlace,
+		type SortKey,
+		type Track
+	} from '$lib/backend';
 	import { clock } from '$lib/format';
 	import { t } from '$lib/i18n/index.svelte';
 	import { library, sortBy } from '$lib/library.svelte';
-	import { player, playContext } from '$lib/player.svelte';
+	import { addToQueue, player, playContext } from '$lib/player.svelte';
 	import VirtualList from './VirtualList.svelte';
 
 	type Source =
@@ -47,14 +54,34 @@
 		return (offset: number, limit: number) => Promise.resolve(tracks.slice(offset, offset + limit));
 	});
 
+	function contextFor(index: number): PlayContext {
+		if (source.kind === 'library') {
+			return { kind: 'library', sort: library.sort, descending: library.descending, index };
+		}
+		if (source.kind === 'album') {
+			return { kind: 'album', albumId: source.albumId, index };
+		}
+		return { kind: 'tracks', ids: source.tracks.map((track) => track.id), index };
+	}
+
 	function activate(index: number): void {
-		const context =
-			source.kind === 'library'
-				? ({ kind: 'library', sort: library.sort, descending: library.descending, index } as const)
-				: source.kind === 'album'
-					? ({ kind: 'album', albumId: source.albumId, index } as const)
-					: ({ kind: 'tracks', ids: source.tracks.map((track) => track.id), index } as const);
-		playContext(context).catch(() => {});
+		playContext(contextFor(index)).catch(() => {});
+	}
+
+	/** The right-click menu: one track, added where the listener asks. */
+	let menu = $state<{ x: number; y: number; id: number } | null>(null);
+
+	function openMenu(event: MouseEvent, track: Track): void {
+		event.preventDefault();
+		if (track.id < 0) return;
+		menu = { x: event.clientX, y: event.clientY, id: track.id };
+	}
+
+	function addOne(place: QueuePlace): void {
+		const chosen = menu;
+		menu = null;
+		if (!chosen) return;
+		addToQueue({ kind: 'tracks', ids: [chosen.id], index: 0 }, place).catch(() => {});
 	}
 
 	function fileName(path: string): string {
@@ -111,6 +138,7 @@
 							tabindex="0"
 							title={t('track.playHint')}
 							ondblclick={() => activate(index)}
+							oncontextmenu={(event) => openMenu(event, track)}
 							onkeydown={(event) => {
 								if (event.key === 'Enter') activate(index);
 							}}
@@ -137,7 +165,72 @@
 	</div>
 </div>
 
+{#if menu}
+	<!-- Closing the menu is what the backdrop is for; it is not a control. -->
+	<div
+		class="backdrop"
+		role="presentation"
+		onclick={() => (menu = null)}
+		oncontextmenu={(event) => {
+			event.preventDefault();
+			menu = null;
+		}}
+	></div>
+	<menu class="menu" style:left="{menu.x}px" style:top="{menu.y}px">
+		<li>
+			<button type="button" onclick={() => addOne('next')}>{t('queue.playNext')}</button>
+		</li>
+		<li>
+			<button type="button" onclick={() => addOne('end')}>{t('queue.addToEnd')}</button>
+		</li>
+	</menu>
+{/if}
+
+<svelte:window
+	onkeydown={(event) => {
+		if (event.key === 'Escape') menu = null;
+	}}
+/>
+
 <style>
+	.backdrop {
+		position: fixed;
+		inset: 0;
+		z-index: 10;
+	}
+
+	.menu {
+		position: fixed;
+		z-index: 11;
+		display: grid;
+		margin: 0;
+		padding: 4px;
+		border: var(--onsa-hairline) solid var(--onsa-surface-line);
+		border-radius: var(--onsa-radius-sm);
+		background: var(--onsa-surface-raised);
+		box-shadow: 0 10px 24px rgb(0 0 0 / 0.45);
+		list-style: none;
+	}
+
+	.menu button {
+		width: 100%;
+		padding: 6px 14px 6px 10px;
+		border: 0;
+		border-radius: var(--onsa-radius-sm);
+		background: none;
+		color: var(--onsa-text-primary);
+		font: inherit;
+		font-size: 12.5px;
+		text-align: left;
+		white-space: nowrap;
+		cursor: pointer;
+	}
+
+	.menu button:hover {
+		background: var(--onsa-surface-body);
+		color: var(--onsa-role-active);
+	}
+
 	.tracklist {
 		display: grid;
 		grid-template-rows: auto 1fr;

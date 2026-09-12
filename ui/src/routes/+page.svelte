@@ -5,7 +5,7 @@
 -->
 <script lang="ts">
 	import { nextTrack, previousTrack, seek, togglePlay } from '$lib/backend';
-	import { app, navigate } from '$lib/app.svelte';
+	import { app, navigate, setMiniPlayer } from '$lib/app.svelte';
 	import { t } from '$lib/i18n/index.svelte';
 	import { library, setQuery } from '$lib/library.svelte';
 	import { player } from '$lib/player.svelte';
@@ -13,7 +13,10 @@
 	import { themeFailure } from '$lib/theme/index.svelte';
 	import AlbumList from '$lib/components/AlbumList.svelte';
 	import AlbumView from '$lib/components/AlbumView.svelte';
+	import BrowseView from '$lib/components/BrowseView.svelte';
 	import FirstRun from '$lib/components/FirstRun.svelte';
+	import MiniPlayer from '$lib/components/MiniPlayer.svelte';
+	import NowPlaying from '$lib/components/NowPlaying.svelte';
 	import Icon from '$lib/components/Icon.svelte';
 	import QueuePanel from '$lib/components/QueuePanel.svelte';
 	import SearchView from '$lib/components/SearchView.svelte';
@@ -54,6 +57,16 @@
 			navigate({ kind: 'settings', section: 'output' });
 			return;
 		}
+		if (ctrl && event.key.toLowerCase() === 'm') {
+			event.preventDefault();
+			void setMiniPlayer(!app.mini);
+			return;
+		}
+		if (ctrl && event.key.toLowerCase() === 'n') {
+			event.preventDefault();
+			navigate({ kind: app.view.kind === 'nowPlaying' ? 'tracks' : 'nowPlaying' });
+			return;
+		}
 		if (event.key === 'Escape' && event.target === searchField) {
 			setQuery('');
 			searchField?.blur();
@@ -91,6 +104,8 @@
 	<main class="center"><p class="muted">{t('shell.loading')}</p></main>
 {:else if app.firstRun}
 	<FirstRun />
+{:else if app.mini}
+	<MiniPlayer />
 {:else}
 	<div class="shell">
 		<Sidebar />
@@ -125,6 +140,20 @@
 					<AlbumList />
 				{:else if view.kind === 'album'}
 					<AlbumView id={view.id} />
+				{:else if view.kind === 'artists'}
+					<BrowseView kind="artists" />
+				{:else if view.kind === 'artist'}
+					<BrowseView kind="artists" name={view.name} />
+				{:else if view.kind === 'genres'}
+					<BrowseView kind="genres" />
+				{:else if view.kind === 'genre'}
+					<BrowseView kind="genres" name={view.name} />
+				{:else if view.kind === 'folders'}
+					<BrowseView kind="folders" />
+				{:else if view.kind === 'folder'}
+					<BrowseView kind="folders" name={view.path} />
+				{:else if view.kind === 'nowPlaying'}
+					<NowPlaying />
 				{:else}
 					<SettingsView section={view.section} />
 				{/if}

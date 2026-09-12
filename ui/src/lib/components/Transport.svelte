@@ -1,12 +1,14 @@
 <!-- Transport (SPEC section 9.2): cover, title, controls, position, volume, meter. -->
 <script lang="ts">
 	import { coverUrl, nextTrack, previousTrack, seek, togglePlay } from '$lib/backend';
+	import { app, navigate, setMiniPlayer } from '$lib/app.svelte';
 	import { clock, db } from '$lib/format';
 	import { t } from '$lib/i18n/index.svelte';
 	import { player } from '$lib/player.svelte';
 	import { settings, updateDsp } from '$lib/settings.svelte';
 	import Icon from './Icon.svelte';
 	import Meter from './Meter.svelte';
+	import SleepTimer from './SleepTimer.svelte';
 
 	/** The volume slider's range; its bottom is silence. */
 	const VOLUME_FLOOR = -60;
@@ -119,13 +121,35 @@
 		<span class="numeric value">{volume <= VOLUME_FLOOR ? db(-Infinity) : db(volume)}</span>
 	</div>
 
+	<div class="extras">
+		<button
+			type="button"
+			class="icon-btn"
+			aria-label={t('nowPlaying.open')}
+			aria-pressed={app.view.kind === 'nowPlaying'}
+			disabled={!track}
+			onclick={() => navigate({ kind: 'nowPlaying' })}
+		>
+			<Icon name="disc" />
+		</button>
+		<SleepTimer />
+		<button
+			type="button"
+			class="icon-btn"
+			aria-label={t('mini.open')}
+			onclick={() => setMiniPlayer(true)}
+		>
+			<Icon name="mini" />
+		</button>
+	</div>
+
 	<div class="meters well"><Meter /></div>
 </footer>
 
 <style>
 	.transport {
 		display: grid;
-		grid-template-columns: 76px minmax(220px, 1.6fr) auto minmax(150px, 0.7fr) minmax(190px, 0.9fr);
+		grid-template-columns: 76px minmax(220px, 1.6fr) auto minmax(140px, 0.7fr) auto minmax(190px, 0.9fr);
 		align-items: center;
 		gap: 14px;
 		padding: 12px 16px;
@@ -245,6 +269,17 @@
 		font-size: 12px;
 		color: var(--onsa-role-adjustable);
 		text-align: right;
+	}
+
+	.extras {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+	}
+
+	.icon-btn[aria-pressed='true'] {
+		border-color: var(--onsa-role-active);
+		color: var(--onsa-role-active);
 	}
 
 	.meters {

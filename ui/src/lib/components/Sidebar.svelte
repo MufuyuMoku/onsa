@@ -36,6 +36,24 @@
 		aria-current={(view.kind === 'albums' || view.kind === 'album') && !library.query}
 		onclick={() => go({ kind: 'albums' })}>{t('nav.albums')}</button
 	>
+	<button
+		type="button"
+		class="item"
+		aria-current={(view.kind === 'artists' || view.kind === 'artist') && !library.query}
+		onclick={() => go({ kind: 'artists' })}>{t('nav.artists')}</button
+	>
+	<button
+		type="button"
+		class="item"
+		aria-current={(view.kind === 'genres' || view.kind === 'genre') && !library.query}
+		onclick={() => go({ kind: 'genres' })}>{t('nav.genres')}</button
+	>
+	<button
+		type="button"
+		class="item"
+		aria-current={(view.kind === 'folders' || view.kind === 'folder') && !library.query}
+		onclick={() => go({ kind: 'folders' })}>{t('nav.folders')}</button
+	>
 
 	<h2 class="label">{t('nav.settings')}</h2>
 	{#each settingsPages as page (page.section)}

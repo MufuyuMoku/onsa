@@ -1,11 +1,14 @@
 <!-- Appearance: theme and language. -->
 <script lang="ts">
+	import { failureKey, themeOpenFolder } from '$lib/backend';
 	import { chooseLocale } from '$lib/app.svelte';
 	import { currentLocale, LOCALES, t, type Locale } from '$lib/i18n/index.svelte';
 	import type { MessageKey } from '$lib/i18n/dictionary';
 	import { activeTheme, availableThemes, selectTheme } from '$lib/theme/index.svelte';
 
 	const languageKeys: Record<Locale, MessageKey> = { id: 'language.id', en: 'language.en' };
+
+	let failure = $state<MessageKey | null>(null);
 </script>
 
 <div class="page">
@@ -21,6 +24,20 @@
 					>{theme.name[currentLocale()]}</button
 				>
 			{/each}
+		</div>
+	</section>
+	<section>
+		<h2 class="label">{t('theme.userFolder')}</h2>
+		<p class="note muted">{t('theme.userHint')}</p>
+		<div class="actions">
+			<button
+				type="button"
+				class="btn"
+				onclick={() => themeOpenFolder().catch((error) => (failure = failureKey(error)))}
+			>
+				{t('theme.openFolder')}
+			</button>
+			{#if failure}<span class="note fault-text">{t(failure)}</span>{/if}
 		</div>
 	</section>
 	<section>

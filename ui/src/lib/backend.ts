@@ -27,6 +27,37 @@ export interface AppState {
 	logDir: string;
 	graphicFreqs: number[];
 	maxBands: number;
+	mini: boolean;
+	closeToTray: boolean;
+}
+
+/** The words the tray menu shows. */
+export interface TrayLabels {
+	show: string;
+	play: string;
+	previous: string;
+	next: string;
+	quit: string;
+}
+
+/** When the sleep timer fires and what it then does (SPEC section 3.5). */
+export type SleepWhen =
+	| { kind: 'minutes'; minutes: number }
+	| { kind: 'endOfTrack' }
+	| { kind: 'tracks'; tracks: number };
+
+export interface SleepPlan {
+	when: SleepWhen;
+	action: 'pause' | 'stop' | 'quit';
+	fadeSeconds: number;
+}
+
+export interface SleepStatus {
+	armed: boolean;
+	secondsLeft: number | null;
+	tracksLeft: number | null;
+	plan: SleepPlan | null;
+	fading: boolean;
 }
 
 export interface Track {
@@ -71,7 +102,16 @@ export type SortKey = 'title' | 'artist' | 'album' | 'year' | 'duration' | 'date
 export type PlayContext =
 	| { kind: 'library'; sort: SortKey; descending: boolean; index: number }
 	| { kind: 'album'; albumId: number; index: number }
+	| { kind: 'artist'; name: string; index: number }
+	| { kind: 'genre'; name: string; index: number }
+	| { kind: 'folder'; path: string; index: number }
 	| { kind: 'tracks'; ids: number[]; index: number };
+
+/** Where added tracks join the queue. */
+export type QueuePlace = 'next' | 'end';
+
+/** What happens when a track ends. */
+export type RepeatKind = 'off' | 'all' | 'one';
 
 export interface ScanStatus {
 	running: boolean;
@@ -107,6 +147,8 @@ export interface PlayerSnapshot {
 	position: number;
 	duration: number | null;
 	volumeDb: number;
+	shuffle: boolean;
+	repeat: RepeatKind;
 	signal: SignalPath;
 	outputError: boolean;
 	failedTrack: string | null;
@@ -131,6 +173,7 @@ export interface Queue {
 export interface OutputPrefs {
 	deviceId: string | null;
 	sampleRate: number | null;
+	matchSource: boolean;
 }
 
 export interface PlaybackPrefs {
@@ -140,6 +183,7 @@ export interface PlaybackPrefs {
 	albumGapless: boolean;
 	quality: Quality;
 	buffer: BufferChoice;
+	repeat: RepeatKind;
 }
 
 export interface Band {
@@ -268,6 +312,18 @@ export const albumsPage = (offset: number, limit: number) =>
 export const albumTracks = (albumId: number) => call<Track[]>('library_album_tracks', { albumId });
 export const search = (query: string, limit: number) =>
 	call<SearchResults>('library_search', { query, limit });
+export const artistCount = () => call<number>('library_artist_count');
+export const artistsPage = (offset: number, limit: number) =>
+	call<NameCount[]>('library_artists', { offset, limit });
+export const artistTracks = (name: string) => call<Track[]>('library_artist_tracks', { name });
+export const genreCount = () => call<number>('library_genre_count');
+export const genresPage = (offset: number, limit: number) =>
+	call<NameCount[]>('library_genres', { offset, limit });
+export const genreTracks = (name: string) => call<Track[]>('library_genre_tracks', { name });
+export const folderCount = () => call<number>('library_folder_count');
+export const directoriesPage = (offset: number, limit: number) =>
+	call<NameCount[]>('library_directories', { offset, limit });
+export const folderTracks = (path: string) => call<Track[]>('library_folder_tracks', { path });
 
 // Player -------------------------------------------------------------------
 
@@ -279,6 +335,19 @@ export const seek = (seconds: number) => call<void>('player_seek', { seconds });
 export const jump = (index: number) => call<void>('player_jump', { index });
 export const playerSnapshot = () => call<PlayerSnapshot>('player_snapshot');
 export const playerQueue = () => call<Queue>('player_queue');
+export const enqueue = (context: PlayContext, place: QueuePlace) =>
+	call<void>('player_enqueue', { context, place });
+export const removeFromQueue = (index: number) => call<void>('player_remove', { index });
+export const moveInQueue = (from: number, to: number) => call<void>('player_move', { from, to });
+export const clearQueue = () => call<void>('player_clear');
+export const setShuffle = (shuffle: boolean) => call<void>('player_shuffle', { shuffle });
+export const sleepArm = (plan: SleepPlan) => call<void>('sleep_arm', { plan });
+export const sleepCancel = () => call<void>('sleep_cancel');
+export const sleepStatus = () => call<SleepStatus>('sleep_status');
+export const traySetup = (labels: TrayLabels) => call<void>('tray_setup', { labels });
+export const setCloseToTray = (enabled: boolean) => call<void>('set_close_to_tray', { enabled });
+export const setMini = (mini: boolean) => call<void>('window_set_mini', { mini });
+export const themeOpenFolder = () => call<void>('theme_open_folder');
 export const setVolume = (db: number) => call<void>('player_set_volume', { db });
 
 // Settings -----------------------------------------------------------------
@@ -307,6 +376,8 @@ export const EVENTS = {
 	playerState: 'player://state',
 	playerPosition: 'player://position',
 	playerMeter: 'player://meter',
+	playerQueue: 'player://queue',
+	sleep: 'player://sleep',
 	scan: 'library://scan',
 	libraryChanged: 'library://changed'
 } as const;
