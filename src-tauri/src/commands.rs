@@ -14,13 +14,16 @@ use tauri_plugin_dialog::{DialogExt, FilePath};
 use tauri_plugin_opener::OpenerExt;
 
 use crate::dto::{
-    AlbumDto, AutoEqDto, CurveDto, DeviceDto, NameCountDto, PlayContext, SearchDto, SortKey,
-    TrackDto,
+    AlbumDto, AutoEqDto, CurveDto, DeviceDto, NameCountDto, PlayContext, QueuePlace, SearchDto,
+    SortKey, TrackDto,
 };
 pub use crate::error::ErrorCode;
 use crate::library::{LibraryService, ScanStatus};
 use crate::logging::Logging;
 use crate::player::{Player, Snapshot};
+use crate::session::{self, WindowMode};
+use crate::sleep::{self, SleepTimer};
+use crate::tray::{self, TrayLabels};
 use crate::settings::{self, BandPrefs, DspPrefs, OutputPrefs, PlaybackPrefs};
 use crate::theme::{self, Theme};
 
@@ -52,16 +55,52 @@ pub fn app_info() -> AppInfo {
     }
 }
 
-/// Lists the themes that can be chosen.
+/// The folder the user's own themes live in.
+fn theme_dir(app: &AppHandle) -> Option<PathBuf> {
+    app.path().app_config_dir().ok().map(|dir| theme::user_dir(&dir))
+}
+
+/// Lists the themes that can be chosen: the built-in ones, then the user's.
 #[tauri::command]
-pub fn theme_list() -> Vec<Theme> {
-    theme::builtin_themes()
+pub fn theme_list(app: AppHandle) -> Vec<Theme> {
+    let mut themes = theme::builtin_themes();
+    if let Some(dir) = theme_dir(&app) {
+        themes.extend(theme::user_themes(&dir));
+    }
+    themes
 }
 
 /// Reads one theme by identifier.
 #[tauri::command]
-pub fn theme_get(id: String) -> Result<Theme, ErrorCode> {
-    theme::builtin_theme(&id).ok_or(ErrorCode::ThemeNotFound)
+pub fn theme_get(app: AppHandle, id: String) -> Result<Theme, ErrorCode> {
+    if let Some(theme) = theme::builtin_theme(&id) {
+        return Ok(theme);
+    }
+    theme_dir(&app)
+        .map(|dir| theme::user_themes(&dir))
+        .unwrap_or_default()
+        .into_iter()
+        .find(|theme| theme.id == id)
+        .ok_or(ErrorCode::ThemeNotFound)
+}
+
+/// Opens the folder the user's own themes live in, creating it first so
+/// there is somewhere to drop a theme (SPEC §9.3).
+#[tauri::command]
+pub fn theme_open_folder(app: AppHandle) -> Result<(), ErrorCode> {
+    let Some(dir) = theme_dir(&app) else {
+        return Err(ErrorCode::Io);
+    };
+    std::fs::create_dir_all(&dir).map_err(|error| {
+        tracing::warn!(dir = %dir.display(), "theme folder cannot be made: {error}");
+        ErrorCode::Io
+    })?;
+    app.opener()
+        .open_path(dir.display().to_string(), None::<&str>)
+        .map_err(|error| {
+            tracing::warn!("theme folder cannot be opened: {error}");
+            ErrorCode::Io
+        })
 }
 
 /// What the window restores at start.
@@ -82,6 +121,10 @@ pub struct AppState {
     pub graphic_freqs: [f64; 10],
     /// Most parametric bands.
     pub max_bands: usize,
+    /// Whether the window is in mini player mode.
+    pub mini: bool,
+    /// Whether closing the window leaves Onsa in the tray.
+    pub close_to_tray: bool,
 }
 
 /// Reports what the window restores at start.
@@ -89,6 +132,7 @@ pub struct AppState {
 pub fn app_state(
     library: State<'_, LibraryService>,
     logging: State<'_, Logging>,
+    mode: State<'_, WindowMode>,
 ) -> Result<AppState, ErrorCode> {
     let (theme_id, locale, has_folders) = library.read(|library| {
         Ok((
@@ -98,22 +142,27 @@ pub fn app_state(
         ))
     })?;
     Ok(AppState {
-        theme_id: theme_id.filter(|id| theme::builtin_theme(id).is_some()),
+        theme_id,
         locale,
         has_folders,
         log_debug: logging.debug(),
         log_dir: logging.dir().display().to_string(),
         graphic_freqs: GRAPHIC_FREQS,
         max_bands: MAX_BANDS,
+        mini: mode.mini(),
+        close_to_tray: library
+            .read(|library| Ok(settings::load::<bool>(library, settings::CLOSE_TO_TRAY_KEY)))?,
     })
 }
 
 /// Remembers the chosen theme.
 #[tauri::command]
-pub fn set_theme(library: State<'_, LibraryService>, id: String) -> Result<(), ErrorCode> {
-    if theme::builtin_theme(&id).is_none() {
-        return Err(ErrorCode::ThemeNotFound);
-    }
+pub fn set_theme(
+    app: AppHandle,
+    library: State<'_, LibraryService>,
+    id: String,
+) -> Result<(), ErrorCode> {
+    theme_get(app, id.clone())?;
     library.read(|library| settings::save(library, settings::THEME_KEY, &id))
 }
 
@@ -236,14 +285,12 @@ pub fn library_search(
     library.read(|library| Ok(SearchDto::from(&library.search(&query, limit.min(500))?)))
 }
 
-/// Replaces the queue and starts playing.
-#[tauri::command]
-pub fn player_play(
-    library: State<'_, LibraryService>,
-    player: State<'_, Player>,
+/// The tracks a context names, and where in them to start.
+fn rows_for(
+    library: &State<'_, LibraryService>,
     context: PlayContext,
-) -> Result<(), ErrorCode> {
-    let (rows, index) = library.read(|library| {
+) -> Result<(Vec<onsa_library::TrackRow>, usize), ErrorCode> {
+    library.read(|library| {
         Ok(match context {
             PlayContext::Library {
                 sort,
@@ -254,6 +301,9 @@ pub fn player_play(
                 index,
             ),
             PlayContext::Album { album_id, index } => (library.album_tracks(album_id)?, index),
+            PlayContext::Artist { name, index } => (library.artist_tracks(&name)?, index),
+            PlayContext::Genre { name, index } => (library.genre_tracks(&name)?, index),
+            PlayContext::Folder { path, index } => (library.directory_tracks(&path)?, index),
             PlayContext::Tracks { ids, index } => {
                 let mut rows = Vec::with_capacity(ids.len());
                 for id in ids {
@@ -264,8 +314,153 @@ pub fn player_play(
                 (rows, index)
             }
         })
-    })?;
+    })
+}
+
+/// Replaces the queue and starts playing.
+#[tauri::command]
+pub fn player_play(
+    library: State<'_, LibraryService>,
+    player: State<'_, Player>,
+    context: PlayContext,
+) -> Result<(), ErrorCode> {
+    let (rows, index) = rows_for(&library, context)?;
     player.play(rows, index)
+}
+
+/// Adds tracks to the queue, after the playing one or at the end.
+#[tauri::command]
+pub fn player_enqueue(
+    library: State<'_, LibraryService>,
+    player: State<'_, Player>,
+    context: PlayContext,
+    place: QueuePlace,
+) -> Result<(), ErrorCode> {
+    let (rows, _) = rows_for(&library, context)?;
+    player.enqueue(rows, place)
+}
+
+/// Removes one queue entry.
+#[tauri::command]
+pub fn player_remove(player: State<'_, Player>, index: usize) -> Result<(), ErrorCode> {
+    player.remove(index)
+}
+
+/// Moves a queue entry.
+#[tauri::command]
+pub fn player_move(player: State<'_, Player>, from: usize, to: usize) -> Result<(), ErrorCode> {
+    player.move_entry(from, to)
+}
+
+/// Empties the queue.
+#[tauri::command]
+pub fn player_clear(player: State<'_, Player>) -> Result<(), ErrorCode> {
+    player.clear()
+}
+
+/// Shuffles the queue, or puts the listed order back.
+#[tauri::command]
+pub fn player_shuffle(player: State<'_, Player>, shuffle: bool) -> Result<(), ErrorCode> {
+    player.set_shuffle(shuffle)
+}
+
+/// The tracks of one artist.
+#[tauri::command]
+pub fn library_artist_tracks(
+    library: State<'_, LibraryService>,
+    name: String,
+) -> Result<Vec<TrackDto>, ErrorCode> {
+    library.read(|library| Ok(library.artist_tracks(&name)?.iter().map(TrackDto::from).collect()))
+}
+
+/// The tracks of one genre.
+#[tauri::command]
+pub fn library_genre_tracks(
+    library: State<'_, LibraryService>,
+    name: String,
+) -> Result<Vec<TrackDto>, ErrorCode> {
+    library.read(|library| Ok(library.genre_tracks(&name)?.iter().map(TrackDto::from).collect()))
+}
+
+/// The tracks inside one folder.
+#[tauri::command]
+pub fn library_folder_tracks(
+    library: State<'_, LibraryService>,
+    path: String,
+) -> Result<Vec<TrackDto>, ErrorCode> {
+    library.read(|library| {
+        Ok(library
+            .directory_tracks(&path)?
+            .iter()
+            .map(TrackDto::from)
+            .collect())
+    })
+}
+
+/// Number of artists.
+#[tauri::command]
+pub fn library_artist_count(library: State<'_, LibraryService>) -> Result<u64, ErrorCode> {
+    library.read(|library| library.artist_count())
+}
+
+/// One page of artists.
+#[tauri::command]
+pub fn library_artists(
+    library: State<'_, LibraryService>,
+    offset: usize,
+    limit: usize,
+) -> Result<Vec<NameCountDto>, ErrorCode> {
+    library.read(|library| {
+        Ok(library
+            .artists_page(offset, limit.min(1000))?
+            .iter()
+            .map(NameCountDto::from)
+            .collect())
+    })
+}
+
+/// Number of genres.
+#[tauri::command]
+pub fn library_genre_count(library: State<'_, LibraryService>) -> Result<u64, ErrorCode> {
+    library.read(|library| library.genre_count())
+}
+
+/// One page of genres.
+#[tauri::command]
+pub fn library_genres(
+    library: State<'_, LibraryService>,
+    offset: usize,
+    limit: usize,
+) -> Result<Vec<NameCountDto>, ErrorCode> {
+    library.read(|library| {
+        Ok(library
+            .genres_page(offset, limit.min(1000))?
+            .iter()
+            .map(NameCountDto::from)
+            .collect())
+    })
+}
+
+/// Number of folders that hold tracks.
+#[tauri::command]
+pub fn library_folder_count(library: State<'_, LibraryService>) -> Result<u64, ErrorCode> {
+    library.read(|library| library.directory_count())
+}
+
+/// One page of the folders tracks sit in.
+#[tauri::command]
+pub fn library_directories(
+    library: State<'_, LibraryService>,
+    offset: usize,
+    limit: usize,
+) -> Result<Vec<NameCountDto>, ErrorCode> {
+    library.read(|library| {
+        Ok(library
+            .directories_page(offset, limit.min(1000))?
+            .iter()
+            .map(NameCountDto::from)
+            .collect())
+    })
 }
 
 /// Pauses or plays.
@@ -482,6 +677,64 @@ pub async fn autoeq_export(
     Ok(true)
 }
 
+/// Sets the sleep timer (SPEC §3.5).
+#[tauri::command]
+pub fn sleep_arm(
+    app: AppHandle,
+    timer: State<'_, SleepTimer>,
+    plan: sleep::Plan,
+) -> Result<(), ErrorCode> {
+    timer.arm(&app, plan);
+    Ok(())
+}
+
+/// Cancels the sleep timer.
+#[tauri::command]
+pub fn sleep_cancel(app: AppHandle, timer: State<'_, SleepTimer>) -> Result<(), ErrorCode> {
+    timer.cancel_and_publish(&app);
+    Ok(())
+}
+
+/// Where the sleep timer stands.
+#[tauri::command]
+pub fn sleep_status(timer: State<'_, SleepTimer>) -> sleep::Status {
+    timer.status()
+}
+
+/// Builds the tray icon with the interface's own words, and again when the
+/// language changes (SPEC §13).
+#[tauri::command]
+pub fn tray_setup(app: AppHandle, labels: TrayLabels) -> Result<(), ErrorCode> {
+    tray::build(&app, &labels).map_err(|error| {
+        tracing::warn!("the tray icon cannot be built: {error}");
+        ErrorCode::Io
+    })
+}
+
+/// Chooses whether closing the window leaves Onsa in the tray.
+#[tauri::command]
+pub fn set_close_to_tray(
+    library: State<'_, LibraryService>,
+    enabled: bool,
+) -> Result<(), ErrorCode> {
+    library.read(|library| settings::save(library, settings::CLOSE_TO_TRAY_KEY, &enabled))
+}
+
+/// Switches the mini player on or off (SPEC §9.2).
+#[tauri::command]
+pub fn window_set_mini(app: AppHandle, mini: bool) -> Result<(), ErrorCode> {
+    let Some(window) = app.get_webview_window(session::MAIN_WINDOW) else {
+        return Ok(());
+    };
+    session::apply_mini(&window, mini).map_err(|error| {
+        tracing::warn!("the window mode cannot change: {error}");
+        ErrorCode::Io
+    })?;
+    app.state::<WindowMode>().set_mini(mini);
+    session::save(&app, session::WINDOW_KEY, &session::window_state(&window, mini));
+    Ok(())
+}
+
 /// Opens the log folder in the file manager.
 #[tauri::command]
 pub fn log_open_folder(app: AppHandle) -> Result<(), ErrorCode> {
@@ -511,15 +764,15 @@ mod tests {
     #[test]
     fn app_info_starts_on_a_theme_that_exists() {
         let info = app_info();
-        assert!(theme_list()
+        assert!(theme::builtin_themes()
             .iter()
             .any(|theme| theme.id == info.default_theme_id));
     }
 
     #[test]
     fn an_unknown_theme_is_reported_as_a_code() {
-        let error = theme_get("tidak-ada".to_string()).expect_err("should not resolve");
-        let json = serde_json::to_string(&error).expect("serialisable");
+        assert!(theme::builtin_theme("tidak-ada").is_none());
+        let json = serde_json::to_string(&ErrorCode::ThemeNotFound).expect("serialisable");
         assert_eq!(json, r#"{"code":"theme_not_found"}"#);
     }
 

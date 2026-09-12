@@ -191,6 +191,27 @@ pub enum PlayContext {
         /// Track to start at.
         index: usize,
     },
+    /// Everything by one artist.
+    Artist {
+        /// The artist as listed.
+        name: String,
+        /// Track to start at.
+        index: usize,
+    },
+    /// Everything in one genre.
+    Genre {
+        /// The genre as listed.
+        name: String,
+        /// Track to start at.
+        index: usize,
+    },
+    /// Everything in one folder.
+    Folder {
+        /// The folder.
+        path: String,
+        /// Track to start at.
+        index: usize,
+    },
     /// A list of tracks, such as search results.
     Tracks {
         /// Track ids in order.
@@ -198,6 +219,16 @@ pub enum PlayContext {
         /// Track to start at.
         index: usize,
     },
+}
+
+/// Where new entries join the queue (SPEC §6.1).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum QueuePlace {
+    /// Right after the playing track.
+    Next,
+    /// At the end of the queue.
+    End,
 }
 
 /// An output device.

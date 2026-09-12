@@ -32,7 +32,7 @@ image = { version = "0.25", default-features = false, features = ["jpeg", "png",
 lofty = "0.25"
 notify = "8.2"
 notify-debouncer-full = "0.7"
-rusqlite = { version = "0.40", features = ["bundled"] }
+rusqlite = { version = "0.40", features = ["bundled", "functions"] }
 sha2 = "0.10"
 rubato = "5"
 symphonia = { version = "0.6", features = ["aac", "aiff", "alac", "isomp4", "mp3"] }

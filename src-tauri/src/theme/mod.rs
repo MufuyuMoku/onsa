@@ -1,9 +1,9 @@
 //! Theme loading (SPEC §9.3).
 //!
 //! Built-in themes are compiled into the binary from `themes/*.json` so the
-//! window always has something to draw with. User themes, which will live in
-//! the application configuration folder, arrive with the rest of the theme
-//! system in M4; both go through the same tolerant parser.
+//! window always has something to draw with. The user's own themes live in
+//! `<app config>/themes/*.json`. Both go through the same tolerant parser,
+//! and a damaged theme never stops the window from opening.
 
 mod model;
 mod parse;
@@ -49,6 +49,50 @@ pub fn builtin_themes() -> Vec<Theme> {
             }
         })
         .collect()
+}
+
+/// The folder the user's own themes live in.
+pub fn user_dir(config_dir: &std::path::Path) -> std::path::PathBuf {
+    config_dir.join("themes")
+}
+
+/// Reads the user's own themes from `<app config>/themes/*.json`. A theme
+/// that cannot be read is reported and left out; the rest still load.
+pub fn user_themes(dir: &std::path::Path) -> Vec<Theme> {
+    let Ok(entries) = std::fs::read_dir(dir) else {
+        return Vec::new();
+    };
+    let mut themes = Vec::new();
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.extension().and_then(|ext| ext.to_str()) != Some("json") {
+            continue;
+        }
+        let Some(id) = path.file_stem().and_then(|stem| stem.to_str()) else {
+            continue;
+        };
+        // A user theme never shadows a built-in one.
+        if BUILTIN_SOURCES.iter().any(|(name, _)| *name == id) {
+            tracing::warn!(theme = id, "user theme uses a built-in name, skipped");
+            continue;
+        }
+        match std::fs::read_to_string(&path) {
+            Ok(source) => match parse_theme(id, &source) {
+                Ok(loaded) => {
+                    for warning in &loaded.warnings {
+                        tracing::info!(theme = id, "user theme: {warning}");
+                    }
+                    themes.push(loaded.theme);
+                }
+                Err(error) => {
+                    tracing::warn!(theme = id, "user theme cannot be read: {error:#}");
+                }
+            },
+            Err(error) => tracing::warn!(file = %path.display(), "theme cannot be read: {error}"),
+        }
+    }
+    themes.sort_by(|a, b| a.id.cmp(&b.id));
+    themes
 }
 
 /// Reads one built-in theme by identifier.

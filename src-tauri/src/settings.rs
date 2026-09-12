@@ -9,7 +9,8 @@
 use onsa_audio::dsp::eq::MAX_BANDS;
 use onsa_audio::{
     Band, BufferSize, CrossfadeCurve, DeviceChoice, DspSettings, EqMode, FilterKind, OutputRate,
-    OutputSettings, PlaybackSettings, ReplayGainMode, ReplayGainSettings, ResamplerQuality,
+    OutputSettings, PlaybackSettings, RepeatMode, ReplayGainMode, ReplayGainSettings,
+    ResamplerQuality,
 };
 use onsa_library::Library;
 use serde::de::DeserializeOwned;
@@ -27,6 +28,8 @@ pub const THEME_KEY: &str = "theme";
 pub const LOCALE_KEY: &str = "locale";
 /// Whether debug logging is on.
 pub const LOG_DEBUG_KEY: &str = "logDebug";
+/// Whether closing the window leaves Onsa in the tray.
+pub const CLOSE_TO_TRAY_KEY: &str = "closeToTray";
 
 /// Reads one setting, or its default.
 pub fn load<T: DeserializeOwned + Default>(library: &Library, key: &str) -> T {
@@ -90,6 +93,29 @@ pub enum Curve {
     EqualPower,
     /// Straight lines.
     Linear,
+}
+
+/// What happens when a track ends (SPEC §6.1).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum RepeatKind {
+    /// The queue plays once and stops.
+    #[default]
+    Off,
+    /// The queue starts over.
+    All,
+    /// The current track repeats.
+    One,
+}
+
+impl From<RepeatKind> for RepeatMode {
+    fn from(kind: RepeatKind) -> Self {
+        match kind {
+            RepeatKind::Off => Self::Off,
+            RepeatKind::All => Self::All,
+            RepeatKind::One => Self::One,
+        }
+    }
 }
 
 /// ReplayGain mode (SPEC §4.1).
@@ -170,6 +196,8 @@ pub struct OutputPrefs {
     pub device_id: Option<String>,
     /// Fixed sample rate; `None` follows the device.
     pub sample_rate: Option<u32>,
+    /// Follow each track's own rate instead, when the device supports it.
+    pub match_source: bool,
 }
 
 impl OutputPrefs {
@@ -180,8 +208,9 @@ impl OutputPrefs {
                 Some(id) if !id.is_empty() => DeviceChoice::Id(id.clone()),
                 _ => DeviceChoice::SystemDefault,
             },
-            rate: match self.sample_rate {
-                Some(rate) if (8_000..=768_000).contains(&rate) => OutputRate::Fixed(rate),
+            rate: match (self.match_source, self.sample_rate) {
+                (true, _) => OutputRate::MatchSource,
+                (false, Some(rate)) if (8_000..=768_000).contains(&rate) => OutputRate::Fixed(rate),
                 _ => OutputRate::FollowDevice,
             },
         }
@@ -204,6 +233,8 @@ pub struct PlaybackPrefs {
     pub quality: Quality,
     /// Buffer size.
     pub buffer: BufferChoice,
+    /// What happens when a track ends.
+    pub repeat: RepeatKind,
 }
 
 impl Default for PlaybackPrefs {
@@ -216,6 +247,7 @@ impl Default for PlaybackPrefs {
             album_gapless: engine.album_gapless,
             quality: Quality::Balanced,
             buffer: BufferChoice::Normal,
+            repeat: RepeatKind::Off,
         }
     }
 }
@@ -241,6 +273,7 @@ impl PlaybackPrefs {
                 BufferChoice::Normal => BufferSize::Normal,
                 BufferChoice::Large => BufferSize::Large,
             },
+            repeat: self.repeat.into(),
         }
     }
 }
@@ -428,6 +461,7 @@ mod tests {
         let output = OutputPrefs {
             device_id: Some(String::new()),
             sample_rate: Some(1),
+            match_source: false,
         };
         assert_eq!(output.engine(), OutputSettings::default());
     }

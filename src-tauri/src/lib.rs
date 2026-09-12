@@ -11,21 +11,35 @@ mod dto;
 mod error;
 mod library;
 mod logging;
+mod media;
+mod open;
 mod player;
+mod session;
 mod settings;
+mod sleep;
+mod tray;
 pub mod theme;
 
 use anyhow::{Context, Result};
-use tauri::Manager;
+use tauri::{AppHandle, Manager, WebviewWindow, WindowEvent};
 
 use crate::library::LibraryService;
 use crate::logging::Logging;
 use crate::player::Player;
+use crate::session::WindowMode;
 
 /// Starts the application: sets up logging, the library and the player,
 /// builds the window and runs until the user closes it.
 pub fn run() -> Result<()> {
     tauri::Builder::default()
+        // A second Onsa hands its files to the one already running (SPEC §13).
+        .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
+            tray::show_window(app);
+            let paths = open::from_arguments(argv);
+            if !paths.is_empty() {
+                open::accept(app, paths);
+            }
+        }))
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .register_uri_scheme_protocol("onsa", library::cover_protocol)
@@ -35,6 +49,7 @@ pub fn run() -> Result<()> {
             commands::app_state,
             commands::theme_list,
             commands::theme_get,
+            commands::theme_open_folder,
             commands::set_theme,
             commands::set_locale,
             commands::pick_folder,
@@ -48,6 +63,15 @@ pub fn run() -> Result<()> {
             commands::library_albums,
             commands::library_album_tracks,
             commands::library_search,
+            commands::library_artist_count,
+            commands::library_artists,
+            commands::library_artist_tracks,
+            commands::library_genre_count,
+            commands::library_genres,
+            commands::library_genre_tracks,
+            commands::library_folder_count,
+            commands::library_directories,
+            commands::library_folder_tracks,
             commands::player_play,
             commands::player_toggle,
             commands::player_next,
@@ -56,6 +80,11 @@ pub fn run() -> Result<()> {
             commands::player_jump,
             commands::player_snapshot,
             commands::player_queue,
+            commands::player_enqueue,
+            commands::player_remove,
+            commands::player_move,
+            commands::player_clear,
+            commands::player_shuffle,
             commands::settings_get,
             commands::settings_set_output,
             commands::settings_set_playback,
@@ -64,6 +93,12 @@ pub fn run() -> Result<()> {
             commands::eq_curve,
             commands::autoeq_import,
             commands::autoeq_export,
+            commands::window_set_mini,
+            commands::tray_setup,
+            commands::sleep_arm,
+            commands::sleep_cancel,
+            commands::sleep_status,
+            commands::set_close_to_tray,
             commands::log_open_folder,
             commands::log_set_debug,
         ])
@@ -107,8 +142,81 @@ fn setup(app: &mut tauri::App) -> Result<()> {
     }
 
     let player = Player::start(app.handle().clone(), output, playback, dsp);
+
+    // The queue and the window come back as they were left (SPEC §13).
+    let stored_queue: session::QueueState = session::load(&library, session::QUEUE_KEY);
+    let position: f64 = session::load(&library, session::POSITION_KEY);
+    if !stored_queue.ids.is_empty() {
+        match library.read(|library| {
+            let mut rows = Vec::with_capacity(stored_queue.ids.len());
+            for id in &stored_queue.ids {
+                if let Some(row) = library.track(*id)? {
+                    rows.push(row);
+                }
+            }
+            Ok(rows)
+        }) {
+            Ok(rows) => {
+                tracing::info!(tracks = rows.len(), "queue restored, paused");
+                let _ = player.restore(rows, stored_queue.current, position, stored_queue.shuffle);
+            }
+            Err(code) => tracing::warn!("the queue cannot be restored: {code:?}"),
+        }
+    }
+
+    let window_state: session::WindowState = session::load(&library, session::WINDOW_KEY);
+    let mode = WindowMode::default();
+    mode.set_mini(window_state.mini);
+
     app.manage(logging);
     app.manage(library);
     app.manage(player);
+    app.manage(mode);
+    app.manage(sleep::SleepTimer::default());
+
+    if let Some(window) = app.get_webview_window(session::MAIN_WINDOW) {
+        session::restore_window(&window, &window_state);
+        remember_window(app.handle().clone(), window);
+    }
+    // The system's media keys and media display (SPEC §13).
+    media::start(app.handle());
+
+    // Files given on the command line, as "Open with Onsa" does.
+    let opened = open::from_arguments(std::env::args().collect::<Vec<_>>());
+    if !opened.is_empty() {
+        open::accept(app.handle(), opened);
+    }
     Ok(())
+}
+
+/// Follows the window: its size and place are written down when it loses
+/// focus or closes, files dropped on it are taken, and closing can leave
+/// Onsa in the tray (SPEC §13).
+fn remember_window(app: AppHandle, window: WebviewWindow) {
+    let target = window.clone();
+    window.on_window_event(move |event| match event {
+        WindowEvent::DragDrop(tauri::DragDropEvent::Drop { paths, .. }) => {
+            open::accept(&app, paths.clone());
+        }
+        WindowEvent::CloseRequested { api, .. } => {
+            let mini = target.app_handle().state::<WindowMode>().mini();
+            session::save(&app, session::WINDOW_KEY, &session::window_state(&target, mini));
+            if close_to_tray(&app) && tray::exists(&app) {
+                api.prevent_close();
+                let _ = target.hide();
+            }
+        }
+        WindowEvent::Focused(false) => {
+            let mini = target.app_handle().state::<WindowMode>().mini();
+            session::save(&app, session::WINDOW_KEY, &session::window_state(&target, mini));
+        }
+        _ => {}
+    });
+}
+
+/// Whether closing the window should only hide it.
+fn close_to_tray(app: &AppHandle) -> bool {
+    app.try_state::<LibraryService>()
+        .map(|library| session::load::<bool>(&library, settings::CLOSE_TO_TRAY_KEY))
+        .unwrap_or(false)
 }
