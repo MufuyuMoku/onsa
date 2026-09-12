@@ -14,8 +14,8 @@ use tauri_plugin_dialog::{DialogExt, FilePath};
 use tauri_plugin_opener::OpenerExt;
 
 use crate::dto::{
-    AlbumDto, AutoEqDto, CurveDto, DeviceDto, NameCountDto, PlayContext, QueuePlace, SearchDto,
-    SortKey, TrackDto,
+    AlbumDto, AutoEqDto, CurveDto, DeviceDto, NameCountDto, PlayContext, QueueEntryDto, QueuePlace,
+    SearchDto, SortKey, TrackDto,
 };
 pub use crate::error::ErrorCode;
 use crate::library::{LibraryService, ScanStatus};
@@ -343,16 +343,16 @@ pub fn player_enqueue(
     player.enqueue(rows, place)
 }
 
-/// Removes one queue entry.
+/// Removes one queue entry, named by its id.
 #[tauri::command]
-pub fn player_remove(player: State<'_, Player>, index: usize) -> Result<(), ErrorCode> {
-    player.remove(index)
+pub fn player_remove(player: State<'_, Player>, entry: u64) -> Result<(), ErrorCode> {
+    player.remove(entry)
 }
 
-/// Moves a queue entry.
+/// Moves a queue entry to another place in the queue.
 #[tauri::command]
-pub fn player_move(player: State<'_, Player>, from: usize, to: usize) -> Result<(), ErrorCode> {
-    player.move_entry(from, to)
+pub fn player_move(player: State<'_, Player>, entry: u64, to: usize) -> Result<(), ErrorCode> {
+    player.move_entry(entry, to)
 }
 
 /// Empties the queue.
@@ -502,10 +502,10 @@ pub fn player_seek(player: State<'_, Player>, seconds: f64) -> Result<(), ErrorC
     player.seek(seconds)
 }
 
-/// Plays another queue entry.
+/// Plays another queue entry, named by its id.
 #[tauri::command]
-pub fn player_jump(player: State<'_, Player>, index: usize) -> Result<(), ErrorCode> {
-    player.jump(index)
+pub fn player_jump(player: State<'_, Player>, entry: u64) -> Result<(), ErrorCode> {
+    player.jump(entry)
 }
 
 /// What the player shows.
@@ -519,9 +519,9 @@ pub fn player_snapshot(player: State<'_, Player>) -> Snapshot {
 #[serde(rename_all = "camelCase")]
 pub struct QueueDto {
     /// Entries in order.
-    pub items: Vec<TrackDto>,
-    /// The current entry.
-    pub current: Option<usize>,
+    pub items: Vec<QueueEntryDto>,
+    /// Id of the current entry.
+    pub current: Option<u64>,
 }
 
 /// Reads the queue.

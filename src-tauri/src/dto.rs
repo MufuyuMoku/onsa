@@ -64,6 +64,17 @@ impl From<&TrackRow> for TrackDto {
     }
 }
 
+/// One entry of the play queue: the track, and what tells this entry apart
+/// from another entry of the same track.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct QueueEntryDto {
+    /// Identity of the entry, stable while it sits in the queue.
+    pub entry_id: u64,
+    /// The track it plays.
+    pub track: TrackDto,
+}
+
 /// An album as listed.
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]

@@ -12,15 +12,16 @@ use std::time::{Duration, Instant};
 
 use onsa_audio::dsp::gain_to_db;
 use onsa_audio::{
-    queue_is_one_album, AnalysisFrame, AnalysisSettings, Engine, Event, PlayState, QueueItem,
+    queue_is_one_album, AnalysisFrame, AnalysisSettings, Engine, Event, PlayState, QueueId,
     TrackInfo,
 };
 use onsa_library::TrackRow;
 use serde::Serialize;
 use tauri::{AppHandle, Emitter};
 
-use crate::dto::{QueuePlace, TrackDto};
+use crate::dto::{QueueEntryDto, QueuePlace, TrackDto};
 use crate::error::ErrorCode;
+use crate::queue::Queue;
 use crate::session::{self, QueueState};
 use crate::settings::{DspPrefs, EqKind, OutputPrefs, PlaybackPrefs, RepeatKind, RgMode};
 
@@ -66,12 +67,8 @@ struct OutputInfo {
 }
 
 struct State {
-    queue: Vec<TrackRow>,
-    /// The order before shuffling, empty while shuffle is off.
-    unshuffled: Vec<TrackRow>,
-    shuffle: bool,
+    queue: Queue,
     one_album: bool,
-    current: Option<usize>,
     play_state: PlayState,
     position: f64,
     duration: Option<f64>,
@@ -97,8 +94,10 @@ fn lock<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
 pub struct Snapshot {
     /// `stopped`, `playing` or `paused`.
     pub state: &'static str,
-    /// Queue position of the current track.
+    /// Queue position of the current track, for scrolling to it.
     pub current: Option<usize>,
+    /// Identity of the current entry: what the interface compares against.
+    pub current_id: Option<u64>,
     /// Number of queue entries.
     pub queue_length: usize,
     /// The current track.
@@ -255,11 +254,8 @@ impl Player {
             remembered: Mutex::new(Instant::now()),
             engine: Mutex::new(None),
             state: Mutex::new(State {
-                queue: Vec::new(),
-                unshuffled: Vec::new(),
-                shuffle: false,
+                queue: Queue::default(),
                 one_album: false,
-                current: None,
                 play_state: PlayState::Stopped,
                 position: 0.0,
                 duration: None,
@@ -282,11 +278,19 @@ impl Player {
     }
 
     /// The queue and the current entry.
-    pub fn queue(&self) -> (Vec<TrackDto>, Option<usize>) {
+    pub fn queue(&self) -> (Vec<QueueEntryDto>, Option<u64>) {
         let state = lock(&self.shared.state);
         (
-            state.queue.iter().map(TrackDto::from).collect(),
-            state.current,
+            state
+                .queue
+                .entries()
+                .iter()
+                .map(|entry| QueueEntryDto {
+                    entry_id: entry.id.get(),
+                    track: TrackDto::from(&entry.row),
+                })
+                .collect(),
+            state.queue.current_id().map(QueueId::get),
         )
     }
 
@@ -319,31 +323,22 @@ impl Player {
         let index = clicked
             .and_then(|id| rows.iter().position(|row| row.id == id))
             .unwrap_or(0);
-        // With shuffle on, the chosen track plays first and the rest follow
-        // in a random order; the order as listed is kept to go back to.
-        let (rows, index, unshuffled) = if lock(&self.shared.state).shuffle {
-            let mut rest = rows.clone();
-            let chosen = rest.remove(index);
-            shuffle_rows(&mut rest);
-            let mut shuffled = Vec::with_capacity(rest.len() + 1);
-            shuffled.push(chosen);
-            shuffled.extend(rest);
-            (shuffled, 0, rows)
-        } else {
-            (rows, index, Vec::new())
-        };
-        let items = queue_items(&rows);
-        {
+        let (items, index) = {
             let mut state = lock(&self.shared.state);
+            state.queue.set(rows, index);
+            let items = state.queue.items();
+            let index = state.queue.current_index().unwrap_or(0);
             state.one_album = queue_is_one_album(&items);
-            state.duration = rows[index].duration_ms.map(|ms| ms as f64 / 1000.0);
-            state.queue = rows;
-            state.unshuffled = unshuffled;
-            state.current = Some(index);
+            state.duration = state
+                .queue
+                .current_row()
+                .and_then(|row| row.duration_ms)
+                .map(|ms| ms as f64 / 1000.0);
             state.position = 0.0;
             state.source = None;
             state.failed_track = None;
-        }
+            (items, index)
+        };
         if lock(&self.shared.engine).is_none() {
             self.shared.open_engine();
         }
@@ -367,22 +362,25 @@ impl Player {
         if rows.is_empty() {
             return Ok(());
         }
-        let current = current.min(rows.len() - 1);
         let position = if position.is_finite() {
             position.max(0.0)
         } else {
             0.0
         };
-        let items = queue_items(&rows);
-        {
+        let (items, current) = {
             let mut state = lock(&self.shared.state);
+            state.queue.restore(rows, current, shuffle);
+            let items = state.queue.items();
+            let current = state.queue.current_index().unwrap_or(0);
             state.one_album = queue_is_one_album(&items);
-            state.shuffle = shuffle;
-            state.duration = rows[current].duration_ms.map(|ms| ms as f64 / 1000.0);
-            state.queue = rows;
-            state.current = Some(current);
+            state.duration = state
+                .queue
+                .current_row()
+                .and_then(|row| row.duration_ms)
+                .map(|ms| ms as f64 / 1000.0);
             state.position = position;
-        }
+            (items, current)
+        };
         let result = self
             .shared
             .command(|engine| engine.set_queue(items, current, position, false));
@@ -403,22 +401,7 @@ impl Player {
             if state.queue.is_empty() {
                 true
             } else {
-                let at = match place {
-                    QueuePlace::Next => state.current.map_or(state.queue.len(), |at| at + 1),
-                    QueuePlace::End => state.queue.len(),
-                }
-                .min(state.queue.len());
-                if state.shuffle {
-                    state.unshuffled.extend(rows.iter().cloned());
-                }
-                for (offset, row) in rows.iter().enumerate() {
-                    state.queue.insert(at + offset, row.clone());
-                }
-                if let Some(current) = state.current.as_mut() {
-                    if at <= *current {
-                        *current += rows.len();
-                    }
-                }
+                state.queue.insert(rows.clone(), place);
                 false
             }
         };
@@ -429,111 +412,71 @@ impl Player {
         }
     }
 
-    /// Removes one entry. Removing the track that is playing lets it finish
-    /// and carries on from there.
-    pub fn remove(&self, index: usize) -> Result<(), ErrorCode> {
+    /// Removes one entry, named by its id: the interface may be acting on a
+    /// list that has already changed, and an id still means the entry the
+    /// listener clicked. Removing the entry that is playing moves playback
+    /// on to the one that followed it (SPEC §6.1).
+    pub fn remove(&self, entry: u64) -> Result<(), ErrorCode> {
         {
             let mut state = lock(&self.shared.state);
-            if index >= state.queue.len() {
+            let Some(id) = state.queue.id_for(entry) else {
                 return Ok(());
-            }
-            let gone = state.queue.remove(index);
-            if let Some(at) = state.unshuffled.iter().position(|row| row.id == gone.id) {
-                state.unshuffled.remove(at);
-            }
-            state.current = match state.current {
-                _ if state.queue.is_empty() => None,
-                Some(current) if index < current => Some(current - 1),
-                Some(current) if index == current => Some(current.min(state.queue.len() - 1)),
-                other => other,
             };
+            let wrap = state.playback.repeat == RepeatKind::All;
+            state.queue.remove(id, wrap);
         }
         self.push_queue()
     }
 
     /// Moves an entry, as a drag in the queue panel does.
-    pub fn move_entry(&self, from: usize, to: usize) -> Result<(), ErrorCode> {
+    pub fn move_entry(&self, entry: u64, to: usize) -> Result<(), ErrorCode> {
         {
             let mut state = lock(&self.shared.state);
-            let last = state.queue.len();
-            if from >= last || to >= last || from == to {
+            let Some(id) = state.queue.id_for(entry) else {
                 return Ok(());
-            }
-            let row = state.queue.remove(from);
-            state.queue.insert(to, row);
-            state.current = state.current.map(|current| moved_index(current, from, to));
+            };
+            state.queue.move_entry(id, to);
         }
         self.push_queue()
     }
 
-    /// Empties the queue and stops.
+    /// Empties the queue and stops. The engine is given the empty queue
+    /// rather than a stop, so it is left with nothing to play: a stop alone
+    /// would leave its old queue behind, ready to start again.
     pub fn clear(&self) -> Result<(), ErrorCode> {
-        {
-            let mut state = lock(&self.shared.state);
-            state.queue.clear();
-            state.unshuffled.clear();
-            state.current = None;
-            state.source = None;
-            state.duration = None;
-            state.position = 0.0;
-        }
-        let result = self.shared.command(Engine::stop);
-        self.shared.emit_state();
-        self.shared.emit_queue();
-        ignore_no_output(result)
+        lock(&self.shared.state).queue.clear();
+        self.push_queue()
     }
 
     /// Shuffles the queue, or puts the listed order back. The playing track
     /// keeps playing either way (SPEC §6.1).
     pub fn set_shuffle(&self, shuffle: bool) -> Result<(), ErrorCode> {
-        {
-            let mut state = lock(&self.shared.state);
-            if state.shuffle == shuffle {
-                return Ok(());
-            }
-            state.shuffle = shuffle;
-            if !state.queue.is_empty() {
-                if shuffle {
-                    state.unshuffled = state.queue.clone();
-                    match state.current {
-                        Some(current) if current < state.queue.len() => {
-                            let playing = state.queue.remove(current);
-                            shuffle_rows(&mut state.queue);
-                            state.queue.insert(0, playing);
-                            state.current = Some(0);
-                        }
-                        _ => shuffle_rows(&mut state.queue),
-                    }
-                } else {
-                    let playing = state
-                        .current
-                        .and_then(|current| state.queue.get(current))
-                        .map(|row| row.id);
-                    let listed = std::mem::take(&mut state.unshuffled);
-                    if !listed.is_empty() {
-                        state.queue = listed;
-                    }
-                    state.current = playing
-                        .and_then(|id| state.queue.iter().position(|row| row.id == id))
-                        .or(state.current);
-                }
-            }
-        }
+        lock(&self.shared.state).queue.set_shuffle(shuffle);
         self.push_queue()
     }
 
-    /// Hands the queue to the engine and tells the interface.
+    /// Hands the queue to the engine and tells the interface. The engine
+    /// finds the playing entry again by its id, so the two never disagree
+    /// about what is playing.
     fn push_queue(&self) -> Result<(), ErrorCode> {
-        let (items, current) = {
+        let items = {
             let mut state = lock(&self.shared.state);
-            let items = queue_items(&state.queue);
+            let items = state.queue.items();
             state.one_album = queue_is_one_album(&items);
-            let current = state.current.unwrap_or(0);
-            (items, current)
+            if state.queue.is_empty() {
+                state.source = None;
+                state.duration = None;
+                state.position = 0.0;
+            }
+            items
         };
-        let result = self
-            .shared
-            .command(|engine| engine.update_queue(items, current));
+        let empty = items.is_empty();
+        let result = self.shared.command(|engine| engine.update_queue(items));
+        // An empty queue means nothing is playing any more; the engine says
+        // so too, but the interface should not wait for the event.
+        if empty {
+            lock(&self.shared.state).play_state = PlayState::Stopped;
+        }
         self.shared.emit_state();
         self.shared.emit_queue();
         ignore_no_output(result)
@@ -579,8 +522,19 @@ impl Player {
         self.shared.command(|engine| engine.seek(seconds))
     }
 
-    /// Plays another queue entry.
-    pub fn jump(&self, index: usize) -> Result<(), ErrorCode> {
+    /// Plays another queue entry, named by its id.
+    pub fn jump(&self, entry: u64) -> Result<(), ErrorCode> {
+        let index = {
+            let state = lock(&self.shared.state);
+            match state
+                .queue
+                .id_for(entry)
+                .and_then(|id| state.queue.index_of(id))
+            {
+                Some(index) => index,
+                None => return Ok(()),
+            }
+        };
         self.shared.command(|engine| engine.jump(index))
     }
 
@@ -616,55 +570,11 @@ impl Player {
     }
 }
 
-/// The library's values win over the file's tags: an edit kept in Onsa
-/// counts for album gapless and ReplayGain too.
-fn queue_items(rows: &[TrackRow]) -> Vec<QueueItem> {
-    rows.iter()
-        .map(|row| QueueItem {
-            path: row.path.clone().into(),
-            album: row.album.clone(),
-            track_number: row.track_number.map(u64::from),
-        })
-        .collect()
-}
-
 /// Drops the tracks the library knows are gone.
 fn playable(rows: Vec<TrackRow>) -> Vec<TrackRow> {
     rows.into_iter()
         .filter(|row| row.status != "missing")
         .collect()
-}
-
-/// Where `index` ends up once the entry at `from` moves to `to`.
-fn moved_index(index: usize, from: usize, to: usize) -> usize {
-    if index == from {
-        to
-    } else if from < index && index <= to {
-        index - 1
-    } else if to <= index && index < from {
-        index + 1
-    } else {
-        index
-    }
-}
-
-/// Fisher-Yates with a small generator seeded from the clock. Shuffling a
-/// queue needs no cryptographic randomness, and this keeps the application
-/// free of another dependency.
-fn shuffle_rows(rows: &mut [TrackRow]) {
-    let mut seed = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map_or(0x9E37_79B9_7F4A_7C15, |since| since.as_nanos() as u64 | 1);
-    let mut next = move || {
-        seed = seed.wrapping_add(0x9E37_79B9_7F4A_7C15);
-        let mut z = seed;
-        z = (z ^ (z >> 30)).wrapping_mul(0xBF58_476D_1CE4_E5B9);
-        z = (z ^ (z >> 27)).wrapping_mul(0x94D0_49BB_1331_11EB);
-        z ^ (z >> 31)
-    };
-    for index in (1..rows.len()).rev() {
-        rows.swap(index, (next() % (index as u64 + 1)) as usize);
-    }
 }
 
 /// Settings are kept even while no output is open; they apply once one is.
@@ -723,9 +633,14 @@ impl Shared {
         let session = {
             let state = lock(&self.state);
             QueueState {
-                ids: state.queue.iter().map(|row| row.id).collect(),
-                current: state.current.unwrap_or(0),
-                shuffle: state.shuffle,
+                ids: state
+                    .queue
+                    .entries()
+                    .iter()
+                    .map(|entry| entry.row.id)
+                    .collect(),
+                current: state.queue.current_index().unwrap_or(0),
+                shuffle: state.queue.shuffled(),
             }
         };
         session::save(&self.app, session::QUEUE_KEY, &session);
@@ -763,16 +678,22 @@ impl Shared {
 
     fn on_event(&self, event: Event) {
         match event {
-            Event::TrackStarted { index, info, path } => {
+            Event::TrackStarted {
+                index,
+                id,
+                info,
+                path,
+            } => {
                 tracing::debug!(index, path = %path.display(), "track started");
                 {
                     let mut state = lock(&self.state);
-                    state.current = Some(index);
+                    // The engine has the last word on what is playing.
+                    state.queue.set_current(id);
                     state.position = 0.0;
                     state.duration = info.duration_seconds().or_else(|| {
                         state
                             .queue
-                            .get(index)
+                            .current_row()
                             .and_then(|row| row.duration_ms)
                             .map(|ms| ms as f64 / 1000.0)
                     });
@@ -862,7 +783,7 @@ fn spawn_listener(shared: Weak<Shared>, events: Receiver<Event>) {
 
 impl State {
     fn snapshot(&self) -> Snapshot {
-        let row = self.current.and_then(|index| self.queue.get(index));
+        let row = self.queue.current_row();
         let output_rate = self.output.as_ref().map(|output| output.sample_rate);
         let settings = self.dsp.engine();
         let album = settings.replaygain.uses_album(self.one_album);
@@ -893,13 +814,14 @@ impl State {
                 PlayState::Playing => "playing",
                 PlayState::Paused => "paused",
             },
-            current: self.current,
+            current: self.queue.current_index(),
+            current_id: self.queue.current_id().map(QueueId::get),
             queue_length: self.queue.len(),
             track: row.map(TrackDto::from),
             position: self.position,
             duration: self.duration,
             volume_db: self.dsp.volume_db,
-            shuffle: self.shuffle,
+            shuffle: self.queue.shuffled(),
             repeat: self.playback.repeat,
             signal: SignalPath {
                 source,
@@ -929,23 +851,5 @@ impl State {
             output_error: self.output_error,
             failed_track: self.failed_track.clone(),
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::moved_index;
-
-    #[test]
-    fn a_moved_entry_carries_the_playhead_with_it() {
-        // The playing entry itself follows the drag.
-        assert_eq!(moved_index(2, 2, 5), 5);
-        // Dragged from before the playing entry to after it.
-        assert_eq!(moved_index(3, 1, 4), 2);
-        // Dragged from after it to before it.
-        assert_eq!(moved_index(3, 5, 1), 4);
-        // Untouched on either side.
-        assert_eq!(moved_index(1, 4, 6), 1);
-        assert_eq!(moved_index(7, 4, 6), 7);
     }
 }

@@ -14,6 +14,7 @@ mod logging;
 mod media;
 mod open;
 mod player;
+mod queue;
 mod session;
 mod settings;
 mod sleep;
