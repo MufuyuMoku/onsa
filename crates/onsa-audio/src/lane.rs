@@ -124,6 +124,17 @@ impl Lane {
         self.tracks.push_back(track);
     }
 
+    /// Moves every queue position the lane remembers by `delta`, after the
+    /// queue was edited around the playing track (SPEC §6.1).
+    pub fn shift_queue(&mut self, delta: isize) {
+        for track in &mut self.tracks {
+            track.queue_index = track.queue_index.saturating_add_signed(delta);
+        }
+        for mark in &mut self.marks {
+            mark.queue_index = mark.queue_index.saturating_add_signed(delta);
+        }
+    }
+
     /// Queue index of the last track the lane will play.
     pub fn last_queue_index(&self) -> Option<usize> {
         self.tracks

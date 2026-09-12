@@ -72,6 +72,18 @@ impl BufferSize {
     }
 }
 
+/// What happens when a track ends (SPEC §6.1).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum RepeatMode {
+    /// The queue plays once and stops.
+    #[default]
+    Off,
+    /// The queue starts over after the last track.
+    All,
+    /// The current track repeats, gaplessly.
+    One,
+}
+
 /// Playback behaviour (SPEC §3.3, §3.4).
 #[derive(Debug, Clone, PartialEq)]
 pub struct PlaybackSettings {
@@ -88,6 +100,8 @@ pub struct PlaybackSettings {
     pub quality: ResamplerQuality,
     /// Buffer between the engine and the device.
     pub buffer: BufferSize,
+    /// What happens when a track ends.
+    pub repeat: RepeatMode,
 }
 
 impl Default for PlaybackSettings {
@@ -99,6 +113,7 @@ impl Default for PlaybackSettings {
             album_gapless: true,
             quality: ResamplerQuality::Balanced,
             buffer: BufferSize::Normal,
+            repeat: RepeatMode::Off,
         }
     }
 }
@@ -189,6 +204,10 @@ pub(crate) enum Command {
         start_seconds: f64,
         play: bool,
     },
+    UpdateQueue {
+        items: Vec<QueueItem>,
+        current: usize,
+    },
     Jump(usize),
     Pause,
     Resume,
@@ -202,6 +221,7 @@ pub(crate) enum Command {
     SetAnalysis(AnalysisSettings),
     DeviceFault(DeviceFault),
     SetOutput(OutputSettings),
+    MatchRate(u32),
     ReplaceOffline {
         sample_rate: u32,
         channels: usize,
@@ -317,6 +337,14 @@ impl Engine {
             start_seconds,
             play,
         })
+    }
+
+    /// Replaces the queue without disturbing what is playing: entries added,
+    /// removed, reordered or shuffled (SPEC §6.1). `current` says where the
+    /// playing track sits in the new order. A track already pre-rolled at
+    /// this moment still plays next.
+    pub fn update_queue(&self, items: Vec<QueueItem>, current: usize) -> Result<()> {
+        self.send(Command::UpdateQueue { items, current })
     }
 
     /// Plays the queue entry at `index`.

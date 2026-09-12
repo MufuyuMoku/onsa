@@ -33,6 +33,10 @@ pub enum OutputRate {
     /// Whatever the device is set to (SPEC §3.4 default).
     #[default]
     FollowDevice,
+    /// The rate of the track being played, when the device supports it. The
+    /// engine reopens the output when a track needs another rate, so nothing
+    /// is resampled that does not have to be (SPEC §3.4).
+    MatchSource,
     /// A fixed rate, when the device supports it; otherwise the device rate.
     Fixed(u32),
 }

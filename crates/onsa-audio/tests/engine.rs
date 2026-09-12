@@ -10,7 +10,7 @@ use std::time::{Duration, Instant};
 use onsa_audio::dsp::limiter::latency_frames;
 use onsa_audio::wav::{write_wav, WavFormat};
 use onsa_audio::{
-    CrossfadeCurve, Engine, Event, OfflineSink, PlayState, PlaybackSettings, QueueItem,
+    CrossfadeCurve, Engine, Event, OfflineSink, PlayState, PlaybackSettings, QueueItem, RepeatMode,
     MICRO_FADE_SECONDS,
 };
 
@@ -423,4 +423,116 @@ fn skipping_crossfades_without_jumps() {
     let limit = 0.5 * (std::f32::consts::TAU * 550.0 / RATE as f32) * 1.3;
     let step = max_step(&out);
     assert!(step < limit, "a jump of {step} (limit {limit})");
+}
+
+// ------------------------------------------------------------------- repeat
+
+#[test]
+fn repeat_all_starts_the_queue_over() {
+    let fixtures = Fixtures::new("repeat all");
+    let fifth = RATE as usize / 5;
+    let a = fixtures.wav("a.wav", RATE, &sine(fifth, RATE, 440.0, 0.3));
+    let b = fixtures.wav("b.wav", RATE, &sine(fifth, RATE, 660.0, 0.3));
+
+    let (engine, mut sink) = offline(PlaybackSettings {
+        repeat: RepeatMode::All,
+        ..PlaybackSettings::default()
+    });
+    play(&engine, &sink, &[&a, &b]);
+
+    let mut started = Vec::new();
+    let deadline = Instant::now() + Duration::from_secs(10);
+    while started.len() < 3 {
+        assert!(Instant::now() < deadline, "the queue never came round: {started:?}");
+        sink.render(512);
+        for event in drain(&engine) {
+            match event {
+                Event::TrackStarted { index, .. } => started.push(index),
+                Event::QueueEnded => panic!("a repeating queue must not end"),
+                _ => {}
+            }
+        }
+    }
+    assert_eq!(started, vec![0, 1, 0], "the queue did not start over");
+}
+
+#[test]
+fn repeat_one_loops_the_same_track_without_a_gap() {
+    let fixtures = Fixtures::new("repeat one");
+    // Forty-eight whole periods, so a seamless loop is one continuous sine.
+    let frames = RATE as usize / 10;
+    let loops = 3;
+    let whole = sine(frames * loops, RATE, 480.0, 0.5);
+    let file = fixtures.wav("loop.wav", RATE, &whole[..frames * 2]);
+
+    let (engine, mut sink) = offline(PlaybackSettings {
+        repeat: RepeatMode::One,
+        ..PlaybackSettings::default()
+    });
+    play(&engine, &sink, &[&file]);
+
+    let latency = latency_frames(RATE) * 2;
+    let wanted = frames * loops * 2 + latency;
+    let mut out = Vec::new();
+    let deadline = Instant::now() + Duration::from_secs(10);
+    while out.len() < wanted {
+        assert!(Instant::now() < deadline, "the track did not loop");
+        out.extend(sink.render(512));
+    }
+
+    let start = fade_frames(RATE) * 2;
+    let error = (start..frames * loops * 2)
+        .map(|i| (out[i + latency] - whole[i]).abs())
+        .fold(0.0f32, f32::max);
+    assert!(error < 1e-6, "the loop is not seamless: {error}");
+
+    // Three loops of audio arrived and matched one continuous sine, so the
+    // track really repeated. A looped track stays the same track: the queue
+    // never ends, and the playhead wraps instead of a new track starting.
+    assert!(
+        !drain(&engine).contains(&Event::QueueEnded),
+        "a repeating track must not end the queue"
+    );
+}
+
+// ------------------------------------------------------------- queue edits
+
+#[test]
+fn the_queue_can_be_edited_while_a_track_plays() {
+    let fixtures = Fixtures::new("queue edit");
+    let seconds = RATE as usize;
+    let first = sine(seconds, RATE, 440.0, 0.4);
+    let a = fixtures.wav("a.wav", RATE, &first);
+    let b = fixtures.wav("b.wav", RATE, &sine(RATE as usize / 5, RATE, 660.0, 0.4));
+
+    let (engine, mut sink) = offline(PlaybackSettings::default());
+    play(&engine, &sink, &[&a]);
+    let mut out = sink.render(RATE as usize / 4 * 2);
+
+    // A track added to the end while the first one is still playing.
+    engine
+        .update_queue(
+            vec![QueueItem::new(&a), QueueItem::new(&b)],
+            0,
+        )
+        .expect("update");
+    out.extend(sink.render_to_end(seconds * 4));
+
+    // The first track played through, unbroken, despite the edit.
+    let latency = latency_frames(RATE) * 2;
+    let start = fade_frames(RATE) * 2;
+    let error = (start..seconds * 2)
+        .map(|i| (out[i + latency] - first[i]).abs())
+        .fold(0.0f32, f32::max);
+    assert!(error < 1e-6, "editing the queue broke playback: {error}");
+
+    let events = collect_until(&engine, |event| *event == Event::QueueEnded);
+    let started: Vec<usize> = events
+        .iter()
+        .filter_map(|event| match event {
+            Event::TrackStarted { index, .. } => Some(*index),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(started, vec![0, 1], "the added track did not follow");
 }

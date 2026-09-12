@@ -19,7 +19,8 @@ use onsa_audio::wav::{WavFormat, WavWriter};
 use onsa_audio::{
     list_devices, AnalysisFrame, AnalysisSettings, BufferSize, CrossfadeCurve, DeviceChoice,
     DspSettings, Engine, EqMode, Event, FileSource, FilterKind, OutputRate, OutputSettings,
-    PlayState, PlaybackSettings, QueueItem, ReplayGainMode, ReplayGainSettings, ResamplerQuality,
+    PlayState, PlaybackSettings, QueueItem, RepeatMode, ReplayGainMode, ReplayGainSettings,
+    ResamplerQuality,
 };
 
 #[derive(Parser)]
@@ -123,6 +124,9 @@ struct PlaybackArgs {
     /// Buffer between the engine and the device.
     #[arg(long, value_enum, default_value_t = BufferArg::Normal)]
     buffer: BufferArg,
+    /// Repeat the queue, or one track.
+    #[arg(long, value_enum, default_value_t = RepeatArg::Off)]
+    repeat: RepeatArg,
 }
 
 #[derive(Args, Clone)]
@@ -198,6 +202,23 @@ enum BufferArg {
 }
 
 #[derive(Clone, Copy, ValueEnum)]
+enum RepeatArg {
+    Off,
+    All,
+    One,
+}
+
+impl From<RepeatArg> for RepeatMode {
+    fn from(arg: RepeatArg) -> Self {
+        match arg {
+            RepeatArg::Off => Self::Off,
+            RepeatArg::All => Self::All,
+            RepeatArg::One => Self::One,
+        }
+    }
+}
+
+#[derive(Clone, Copy, ValueEnum)]
 enum SampleArg {
     F32,
     I16,
@@ -245,6 +266,7 @@ impl PlaybackArgs {
                 BufferArg::Normal => BufferSize::Normal,
                 BufferArg::Large => BufferSize::Large,
             },
+            repeat: self.repeat.into(),
         })
     }
 }

@@ -16,6 +16,7 @@ use rtrb::Producer;
 
 use super::{
     offline_output, Command, Event, OutputSettings, PlayState, PlaybackSettings, QueueItem,
+    RepeatMode,
 };
 use crate::analysis::{AnalysisSettings, AnalysisThread};
 use crate::dsp::chain::{ChainParams, DspSettings};
@@ -23,7 +24,7 @@ use crate::dsp::replaygain::ReplayGainMode;
 use crate::error::Result;
 use crate::fade::MICRO_FADE_SECONDS;
 use crate::lane::{Lane, LaneTrack};
-use crate::output::device::{default_device_id, open_device, DeviceChoice, DeviceOutput};
+use crate::output::device::{default_device_id, open_device, DeviceChoice, DeviceOutput, OutputRate};
 use crate::output::stage::{DspPort, Shared};
 use crate::source::{FileSource, TrackInfo};
 
@@ -130,6 +131,8 @@ pub(crate) struct Worker {
     pending_params: Option<ChainParams>,
     /// Whether the queue is one album in order (ReplayGain auto mode).
     queue_is_one_album: bool,
+    /// Rate of the track being played, for the match-source rate mode.
+    source_rate: Option<u32>,
     analysis: AnalysisSettings,
     analysis_thread: Option<AnalysisThread>,
 }
@@ -171,6 +174,7 @@ impl Worker {
             dsp: DspSettings::default(),
             pending_params: None,
             queue_is_one_album: false,
+            source_rate: None,
             analysis: AnalysisSettings::default(),
             analysis_thread: None,
         }
@@ -188,12 +192,21 @@ impl Worker {
         let OutputTarget::Device(settings) = &self.target else {
             return Ok(());
         };
+        // Match-source opens the device at the rate of the track being
+        // played, when it knows one (SPEC §3.4).
+        let rate = match settings.rate {
+            OutputRate::MatchSource => match self.source_rate {
+                Some(rate) => OutputRate::Fixed(rate),
+                None => OutputRate::FollowDevice,
+            },
+            other => other,
+        };
         let shared = Arc::new(Shared::default());
         let fault_tx = self.self_tx.clone();
         let dsp = self.dsp.clone();
         let (device, producer, port) = open_device(
             &settings.device,
-            settings.rate,
+            rate,
             self.settings.buffer.seconds(),
             |rate| dsp.chain_params(rate),
             shared.clone(),
@@ -265,6 +278,11 @@ impl Worker {
         }
         tracing::info!(?settings, "output settings changed, reopening the output");
         self.target = OutputTarget::Device(settings);
+        self.reopen_output();
+    }
+
+    /// Opens the output again, picking playback up where it was.
+    fn reopen_output(&mut self) {
         if self.output.is_some() {
             self.resume_at = self.playhead().or(self.resume_at);
             // Fade out on the old device before it closes.
@@ -275,6 +293,19 @@ impl Worker {
         }
         self.retry_at = Some(Instant::now());
         self.maintain_output();
+    }
+
+    /// Follows a track's own sample rate, when that mode is on (SPEC §3.4).
+    fn match_rate(&mut self, rate: u32) {
+        self.source_rate = Some(rate);
+        if self
+            .output
+            .as_ref()
+            .is_some_and(|output| output.sample_rate != rate)
+        {
+            tracing::info!(rate, "following the track's sample rate");
+            self.reopen_output();
+        }
     }
 
     /// Reopens a lost output, and follows the system default device.
@@ -401,14 +432,19 @@ impl Worker {
                 });
                 self.start_from(start, start_seconds);
             }
+            Command::UpdateQueue { items, current } => self.update_queue(items, current),
             Command::Jump(index) => self.skip_to(index, true),
-            Command::Next => self.skip_to(self.current + 1, true),
+            Command::Next => self.skip_to(self.after(self.current), true),
             Command::Previous => {
                 let position = self.playhead().map(Playhead::seconds).unwrap_or(0.0);
-                if position > PREVIOUS_RESTART_SECONDS || self.current == 0 {
+                if position > PREVIOUS_RESTART_SECONDS {
                     self.seek(0.0);
-                } else {
+                } else if self.current > 0 {
                     self.skip_to(self.current - 1, false);
+                } else if self.settings.repeat == RepeatMode::All && !self.queue.is_empty() {
+                    self.skip_to(self.queue.len() - 1, false);
+                } else {
+                    self.seek(0.0);
                 }
             }
             Command::Pause => {
@@ -447,6 +483,7 @@ impl Worker {
                 }
             }
             Command::SetOutput(settings) => self.switch_output(settings),
+            Command::MatchRate(rate) => self.match_rate(rate),
             Command::ReplaceOffline {
                 sample_rate,
                 channels,
@@ -657,6 +694,60 @@ impl Worker {
         None
     }
 
+    /// Replaces the queue while playback carries on (SPEC §6.1). Everything
+    /// the engine remembers about queue positions moves with the playing
+    /// track, so the listener hears no break.
+    fn update_queue(&mut self, items: Vec<QueueItem>, current: usize) {
+        let current = current.min(items.len().saturating_sub(1));
+        let delta = current as isize - self.current as isize;
+        self.queue = items;
+        self.queue_is_one_album = queue_is_one_album(&self.queue);
+        self.current = current;
+        if delta != 0 {
+            for entry in &mut self.timeline {
+                entry.queue_index = entry.queue_index.saturating_add_signed(delta);
+            }
+            for lane in [self.primary.as_mut(), self.outgoing.as_mut()]
+                .into_iter()
+                .flatten()
+            {
+                lane.shift_queue(delta);
+            }
+            self.infos = std::mem::take(&mut self.infos)
+                .into_iter()
+                .map(|(index, info)| (index.saturating_add_signed(delta), info))
+                .collect();
+            self.reported = self
+                .reported
+                .map(|index| index.saturating_add_signed(delta));
+        }
+        // What comes next may have changed; it is opened again when needed.
+        self.next = None;
+    }
+
+    /// The track to play after `index`, following the repeat mode. `None`
+    /// ends the queue. Repeat One returns the same index, so the track is
+    /// pre-rolled again and loops without a gap (SPEC §6.1).
+    fn following(&self, index: usize) -> Option<usize> {
+        if self.queue.is_empty() {
+            return None;
+        }
+        match self.settings.repeat {
+            RepeatMode::One => Some(index),
+            RepeatMode::All => Some((index + 1) % self.queue.len()),
+            RepeatMode::Off => (index + 1 < self.queue.len()).then_some(index + 1),
+        }
+    }
+
+    /// Where a manual skip forward goes. Unlike [`Worker::following`], repeat
+    /// One still moves on: the listener asked for the next track.
+    fn after(&self, index: usize) -> usize {
+        match self.settings.repeat {
+            RepeatMode::All if !self.queue.is_empty() => (index + 1) % self.queue.len(),
+            _ => index + 1,
+        }
+    }
+
     /// Starts a fresh lane at `index`, `seconds` in.
     fn start_from(&mut self, index: usize, seconds: f64) {
         let Some(mut track) = self.open_from(index) else {
@@ -690,6 +781,19 @@ impl Worker {
     }
 
     fn begin_lane(&mut self, track: LaneTrack) {
+        // In match-source mode a track at another rate reopens the output.
+        // It goes through the command channel, so nothing recurses here.
+        if let OutputTarget::Device(settings) = &self.target {
+            let rate = track.source.info().sample_rate;
+            if settings.rate == OutputRate::MatchSource
+                && self
+                    .output
+                    .as_ref()
+                    .is_some_and(|output| output.sample_rate != rate)
+            {
+                let _ = self.self_tx.send(Command::MatchRate(rate));
+            }
+        }
         let Some(output) = &self.output else {
             return;
         };
@@ -836,10 +940,10 @@ impl Worker {
         let Some(last) = primary.last_queue_index() else {
             return;
         };
-        if last + 1 >= self.queue.len() {
+        let Some(upcoming) = self.following(last) else {
             return;
-        }
-        let Some(track) = self.open_from(last + 1) else {
+        };
+        let Some(track) = self.open_from(upcoming) else {
             return;
         };
         let Some(primary) = &self.primary else {
