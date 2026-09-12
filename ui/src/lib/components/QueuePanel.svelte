@@ -4,7 +4,7 @@
 	go back to.
 -->
 <script lang="ts">
-	import { jump, type Track } from '$lib/backend';
+	import { jump, type QueueEntry } from '$lib/backend';
 	import { clock } from '$lib/format';
 	import { t } from '$lib/i18n/index.svelte';
 	import {
@@ -12,7 +12,7 @@
 		emptyQueue,
 		moveQueueEntry,
 		player,
-		removeFromQueueAt,
+		removeQueueEntry,
 		toggleShuffle
 	} from '$lib/player.svelte';
 	import { settings } from '$lib/settings.svelte';
@@ -22,7 +22,10 @@
 	const ROW = 44;
 
 	const items = $derived(player.queue.items);
-	const current = $derived(player.snapshot?.current ?? null);
+	// Which entry plays is the engine's answer, carried in the snapshot; the
+	// position only says where to scroll to (SPEC section 6.1).
+	const current = $derived(player.snapshot?.currentId ?? null);
+	const at = $derived(player.snapshot?.current ?? null);
 	const shuffle = $derived(player.snapshot?.shuffle ?? false);
 	const repeat = $derived(settings.value?.playback.repeat ?? 'off');
 	const repeatLabel = $derived(
@@ -34,12 +37,12 @@
 		return (offset: number, limit: number) => Promise.resolve(list.slice(offset, offset + limit));
 	});
 
-	let list: VirtualList<Track> | undefined = $state();
+	let list: VirtualList<QueueEntry> | undefined = $state();
 	let dragging = $state<number | null>(null);
 	let over = $state<number | null>(null);
 
 	$effect(() => {
-		if (current !== null) list?.reveal(current);
+		if (at !== null) list?.reveal(at);
 	});
 
 	function fileName(path: string): string {
@@ -47,11 +50,11 @@
 	}
 
 	function drop(to: number): void {
-		const from = dragging;
+		const entry = dragging;
 		dragging = null;
 		over = null;
-		if (from === null || from === to) return;
-		moveQueueEntry(from, to).catch(() => {});
+		if (entry === null) return;
+		moveQueueEntry(entry, to).catch(() => {});
 	}
 </script>
 
@@ -105,22 +108,23 @@
 				version={items}
 				label={t('queue.title')}
 			>
-				{#snippet row(track: Track | undefined, index: number)}
-					{#if track}
+				{#snippet row(entry: QueueEntry | undefined, index: number)}
+					{#if entry}
+						{@const track = entry.track}
 						<div
 							class="item"
-							class:current={index === current}
+							class:current={entry.entryId === current}
 							class:over={over === index}
 							role="button"
 							tabindex="0"
 							draggable="true"
 							title={t('queue.dragHint')}
-							ondblclick={() => jump(index).catch(() => {})}
+							ondblclick={() => jump(entry.entryId).catch(() => {})}
 							onkeydown={(event) => {
-								if (event.key === 'Enter') jump(index).catch(() => {});
-								if (event.key === 'Delete') removeFromQueueAt(index).catch(() => {});
+								if (event.key === 'Enter') jump(entry.entryId).catch(() => {});
+								if (event.key === 'Delete') removeQueueEntry(entry.entryId).catch(() => {});
 							}}
-							ondragstart={() => (dragging = index)}
+							ondragstart={() => (dragging = entry.entryId)}
 							ondragend={() => {
 								dragging = null;
 								over = null;
@@ -146,7 +150,7 @@
 								type="button"
 								class="remove"
 								aria-label={t('queue.remove')}
-								onclick={() => removeFromQueueAt(index).catch(() => {})}
+								onclick={() => removeQueueEntry(entry.entryId).catch(() => {})}
 							>
 								<Icon name="close" />
 							</button>

@@ -132,15 +132,19 @@ export async function addToQueue(context: PlayContext, place: QueuePlace): Promi
 	await refreshQueue();
 }
 
-/** Removes one queue entry. */
-export async function removeFromQueueAt(index: number): Promise<void> {
-	await removeFromQueue(index);
+/**
+ * Removes one queue entry, named by its id. The list the listener clicked
+ * may already be out of date, and an id still means the entry they clicked
+ * (SPEC section 6.1).
+ */
+export async function removeQueueEntry(entry: number): Promise<void> {
+	await removeFromQueue(entry);
 	await refreshQueue();
 }
 
 /** Moves a queue entry, as a drag does. */
-export async function moveQueueEntry(from: number, to: number): Promise<void> {
-	await moveInQueue(from, to);
+export async function moveQueueEntry(entry: number, to: number): Promise<void> {
+	await moveInQueue(entry, to);
 	await refreshQueue();
 }
 

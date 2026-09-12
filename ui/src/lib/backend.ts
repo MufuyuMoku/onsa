@@ -141,7 +141,10 @@ export interface SignalPath {
 
 export interface PlayerSnapshot {
 	state: 'stopped' | 'playing' | 'paused';
+	/** Where the current entry sits, for scrolling to it. */
 	current: number | null;
+	/** Which entry is playing; positions change, this does not. */
+	currentId: number | null;
 	queueLength: number;
 	track: Track | null;
 	position: number;
@@ -165,8 +168,16 @@ export interface Meter {
 	limiting: boolean;
 }
 
+/** One queue entry: the track, and what tells this entry apart from another
+ * entry of the same track. */
+export interface QueueEntry {
+	entryId: number;
+	track: Track;
+}
+
 export interface Queue {
-	items: Track[];
+	items: QueueEntry[];
+	/** Id of the entry that is playing. */
 	current: number | null;
 }
 
@@ -332,13 +343,14 @@ export const togglePlay = () => call<void>('player_toggle');
 export const nextTrack = () => call<void>('player_next');
 export const previousTrack = () => call<void>('player_previous');
 export const seek = (seconds: number) => call<void>('player_seek', { seconds });
-export const jump = (index: number) => call<void>('player_jump', { index });
+export const jump = (entry: number) => call<void>('player_jump', { entry });
 export const playerSnapshot = () => call<PlayerSnapshot>('player_snapshot');
 export const playerQueue = () => call<Queue>('player_queue');
 export const enqueue = (context: PlayContext, place: QueuePlace) =>
 	call<void>('player_enqueue', { context, place });
-export const removeFromQueue = (index: number) => call<void>('player_remove', { index });
-export const moveInQueue = (from: number, to: number) => call<void>('player_move', { from, to });
+export const removeFromQueue = (entry: number) => call<void>('player_remove', { entry });
+export const moveInQueue = (entry: number, to: number) =>
+	call<void>('player_move', { entry, to });
 export const clearQueue = () => call<void>('player_clear');
 export const setShuffle = (shuffle: boolean) => call<void>('player_shuffle', { shuffle });
 export const sleepArm = (plan: SleepPlan) => call<void>('sleep_arm', { plan });
