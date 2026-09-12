@@ -1,12 +1,12 @@
 /**
  * The theme the window is wearing.
  *
- * M0 reads the built-in themes through the backend and dresses the window in
- * one of them. Remembering the choice, user themes and live preview arrive
- * with the settings screen in M4.
+ * The built-in themes come from the backend. Picking one dresses the window
+ * at once and the backend remembers the choice. User themes arrive later in
+ * M4.
  */
 
-import { themeList, BackendError } from '$lib/backend';
+import { setTheme, themeList, BackendError } from '$lib/backend';
 import type { MessageKey } from '$lib/i18n/dictionary';
 import { applyTheme } from './apply';
 import type { Theme } from './types';
@@ -48,7 +48,7 @@ export async function loadThemes(startId: string, root: HTMLElement): Promise<vo
 	wear(start, root);
 }
 
-/** Switches to another theme that is already loaded. */
+/** Switches to another theme that is already loaded, and remembers it. */
 export function selectTheme(id: string, root: HTMLElement): void {
 	const theme = themes.find((candidate) => candidate.id === id);
 	if (!theme) {
@@ -56,6 +56,7 @@ export function selectTheme(id: string, root: HTMLElement): void {
 		return;
 	}
 	wear(theme, root);
+	setTheme(id).catch(() => {});
 }
 
 function wear(theme: Theme, root: HTMLElement): void {

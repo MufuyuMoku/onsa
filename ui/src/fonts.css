@@ -1,0 +1,97 @@
+/*
+ * The fonts of the three built-in themes, bundled with the application and
+ * never loaded from the internet (SPEC sections 9.4 and 14). Sources, pinned
+ * versions and licences: ui/static/fonts/ and docs/DECISIONS.md.
+ *
+ * Only the weights the themes use are included. Hangul and scripts that
+ * Noto Sans JP does not cover fall back to the system fonts.
+ */
+
+@font-face {
+	font-family: 'Chakra Petch';
+	src: url('/fonts/chakra-petch/ChakraPetch-Regular.ttf') format('truetype');
+	font-weight: 400;
+	font-style: normal;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'Chakra Petch';
+	src: url('/fonts/chakra-petch/ChakraPetch-SemiBold.ttf') format('truetype');
+	font-weight: 600;
+	font-style: normal;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'Share Tech Mono';
+	src: url('/fonts/share-tech-mono/ShareTechMono-Regular.ttf') format('truetype');
+	font-weight: 400;
+	font-style: normal;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'B612';
+	src: url('/fonts/b612/B612-Regular.ttf') format('truetype');
+	font-weight: 400;
+	font-style: normal;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'B612';
+	src: url('/fonts/b612/B612-Bold.ttf') format('truetype');
+	font-weight: 700;
+	font-style: normal;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'B612 Mono';
+	src: url('/fonts/b612-mono/B612Mono-Regular.ttf') format('truetype');
+	font-weight: 400;
+	font-style: normal;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'Barlow';
+	src: url('/fonts/barlow/Barlow-Regular.ttf') format('truetype');
+	font-weight: 400;
+	font-style: normal;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'Barlow';
+	src: url('/fonts/barlow/Barlow-Medium.ttf') format('truetype');
+	font-weight: 500;
+	font-style: normal;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'Barlow Condensed';
+	src: url('/fonts/barlow-condensed/BarlowCondensed-Medium.ttf') format('truetype');
+	font-weight: 500;
+	font-style: normal;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'Barlow Condensed';
+	src: url('/fonts/barlow-condensed/BarlowCondensed-SemiBold.ttf') format('truetype');
+	font-weight: 600;
+	font-style: normal;
+	font-display: swap;
+}
+
+/* One variable file covers every weight the interface asks for. */
+@font-face {
+	font-family: 'Noto Sans JP';
+	src: url('/fonts/noto-sans-jp/NotoSansJP-VF.otf') format('opentype');
+	font-weight: 100 900;
+	font-style: normal;
+	font-display: swap;
+}

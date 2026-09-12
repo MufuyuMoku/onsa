@@ -37,3 +37,6 @@ Thumbs.db
 *.opus
 *.wav
 *.aiff
+
+# Portable test builds (M4a); never committed.
+dist-test/

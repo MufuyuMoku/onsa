@@ -110,3 +110,136 @@ body {
 		animation-iteration-count: 1 !important;
 	}
 }
+
+/* ---------------------------------------------------------------- controls
+ * Shared by every screen. Colours come from roles: `adjustable` for what the
+ * user sets, `active` for what is on, `position` for the playhead.
+ */
+
+.btn {
+	padding: 5px 12px;
+	border: var(--onsa-hairline) solid var(--onsa-surface-line);
+	border-radius: var(--onsa-radius-sm);
+	background: var(--onsa-surface-raised);
+	color: var(--onsa-text-primary);
+	font: inherit;
+	font-size: 13px;
+	cursor: pointer;
+	transition:
+		border-color var(--onsa-motion-fast) var(--onsa-ease),
+		color var(--onsa-motion-fast) var(--onsa-ease);
+}
+
+.btn:hover:not(:disabled) {
+	border-color: var(--onsa-role-adjustable);
+}
+
+.btn:disabled {
+	opacity: 0.45;
+	cursor: default;
+}
+
+.btn.primary {
+	border-color: var(--onsa-role-active);
+	color: var(--onsa-role-active);
+}
+
+.chip {
+	padding: 4px 10px;
+	border: var(--onsa-hairline) solid var(--onsa-surface-line);
+	border-radius: var(--onsa-radius-sm);
+	background: var(--onsa-surface-raised);
+	color: var(--onsa-text-secondary);
+	font: inherit;
+	font-size: 12px;
+	cursor: pointer;
+	transition:
+		color var(--onsa-motion-fast) var(--onsa-ease),
+		border-color var(--onsa-motion-fast) var(--onsa-ease);
+}
+
+.chip:hover {
+	color: var(--onsa-text-primary);
+}
+
+.chip[aria-pressed='true'] {
+	border-color: var(--onsa-role-active);
+	color: var(--onsa-role-active);
+}
+
+:root[data-onsa-glow='true'] .chip[aria-pressed='true'] {
+	box-shadow: 0 0 8px var(--onsa-lit-glow);
+}
+
+.icon-btn {
+	display: inline-grid;
+	place-items: center;
+	width: 34px;
+	height: 34px;
+	padding: 0;
+	border: var(--onsa-hairline) solid var(--onsa-surface-line);
+	border-radius: 50%;
+	background: var(--onsa-surface-raised);
+	color: var(--onsa-text-primary);
+	cursor: pointer;
+}
+
+.icon-btn:hover:not(:disabled) {
+	border-color: var(--onsa-role-adjustable);
+}
+
+.icon-btn:disabled {
+	opacity: 0.4;
+	cursor: default;
+}
+
+.icon-btn.large {
+	width: 42px;
+	height: 42px;
+	border-color: var(--onsa-role-active);
+	color: var(--onsa-role-active);
+}
+
+.field {
+	padding: 4px 8px;
+	border: var(--onsa-hairline) solid var(--onsa-surface-line);
+	border-radius: var(--onsa-radius-sm);
+	background: var(--onsa-surface-well);
+	color: var(--onsa-role-adjustable);
+	font: inherit;
+	font-size: 13px;
+}
+
+input[type='range'] {
+	accent-color: var(--onsa-role-adjustable);
+	cursor: pointer;
+}
+
+input[type='range']:disabled {
+	opacity: 0.4;
+	cursor: default;
+}
+
+input[type='checkbox'] {
+	accent-color: var(--onsa-role-active);
+}
+
+.well {
+	border-radius: var(--onsa-radius-md);
+	background: var(--onsa-surface-well);
+	box-shadow: inset 0 2px 8px rgb(0 0 0 / 0.55);
+}
+
+.muted {
+	color: var(--onsa-text-secondary);
+}
+
+.fault-text {
+	color: var(--onsa-role-clip);
+}
+
+.ellipsis {
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}

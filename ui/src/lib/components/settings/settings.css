@@ -1,0 +1,72 @@
+/* Layout shared by the settings pages. */
+
+.page {
+	display: grid;
+	gap: 22px;
+	max-width: 760px;
+	padding: 18px 22px 32px;
+}
+
+section {
+	display: grid;
+	gap: 10px;
+	padding: 14px 16px;
+	border-radius: var(--onsa-radius-md);
+	background: var(--onsa-surface-body);
+	box-shadow: inset 0 var(--onsa-hairline) 0 var(--onsa-surface-body-highlight);
+}
+
+h2 {
+	margin: 0 0 2px;
+	font-size: 11px;
+	font-weight: 500;
+}
+
+.field-row {
+	display: grid;
+	grid-template-columns: 200px minmax(0, 1fr) auto;
+	align-items: center;
+	gap: 12px;
+	font-size: 13px;
+}
+
+.field-row > span:first-child {
+	color: var(--onsa-text-secondary);
+}
+
+.field-row select,
+.field-row input[type='range'] {
+	width: 100%;
+}
+
+.chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.value {
+	min-width: 72px;
+	font-size: 12.5px;
+	color: var(--onsa-role-adjustable);
+	text-align: right;
+}
+
+.check {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 13px;
+}
+
+.note {
+	margin: 0;
+	font-size: 12px;
+}
+
+.actions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+}

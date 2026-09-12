@@ -1,9 +1,8 @@
 /**
  * The active interface language.
  *
- * It follows the operating system locale on first start (SPEC section 1); the
- * setting that lets the user override it arrives with the settings screen in
- * M4.
+ * It follows the operating system locale until the user picks one in
+ * Appearance; the choice is stored by the backend (SPEC section 1).
  */
 
 import { browser } from '$app/environment';
@@ -35,9 +34,15 @@ export function setLocale(next: Locale): void {
 	if (browser) document.documentElement.lang = next;
 }
 
-/** Looks up one piece of interface text. */
-export function t(key: MessageKey): string {
-	return dictionaries[locale][key];
+/** Looks up one piece of interface text, filling in `{name}` values. */
+export function t(key: MessageKey, values?: Record<string, string | number>): string {
+	let text: string = dictionaries[locale][key];
+	if (values) {
+		for (const [name, value] of Object.entries(values)) {
+			text = text.replaceAll(`{${name}}`, String(value));
+		}
+	}
+	return text;
 }
 
-export { LOCALES, type Locale, type MessageKey } from './dictionary';
+export { LOCALES, isLocale, type Locale, type MessageKey } from './dictionary';
