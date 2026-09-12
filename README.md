@@ -2,7 +2,7 @@
 
 Onsa (音叉, tuning fork) is a desktop music player for Windows and Linux, built with Tauri 2, Rust and SvelteKit. It looks like an instrument panel: calm, tidy, and honest about what is happening to the audio signal.
 
-The project is in early development: the audio engine, DSP chain and library work without an interface so far. The full specification lives in [`docs/SPEC.md`](docs/SPEC.md), progress in [`docs/PROGRESS.md`](docs/PROGRESS.md), and decisions taken along the way in [`docs/DECISIONS.md`](docs/DECISIONS.md).
+The project is in early development. The audio engine, the DSP chain and the library are in place, and a first slice of the interface drives them (see `docs/UJI-M4a.md`). The full specification lives in [`docs/SPEC.md`](docs/SPEC.md), progress in [`docs/PROGRESS.md`](docs/PROGRESS.md), and decisions taken along the way in [`docs/DECISIONS.md`](docs/DECISIONS.md).
 
 ## Layout
 
@@ -16,6 +16,7 @@ crates/onsa-cli          command line front end for the audio engine
 src-tauri/               application shell: state, commands, OS integration
 ui/                      SvelteKit interface
 themes/                  built-in themes
+ui/static/fonts/         the themes' fonts, bundled with their licences
 ```
 
 ## Requirements
@@ -108,6 +109,17 @@ rescan. The music folder is only read.
 ```sh
 cargo run -p onsa-library --release --example scan -- ~/Music
 ```
+
+## Portable build
+
+`tauri build --no-bundle` produces one executable that runs without being installed:
+
+```sh
+cd src-tauri
+npx --prefix ../ui tauri build --no-bundle
+```
+
+It lands in `target/release/` (`onsa.exe` on Windows). Test builds handed to the project owner live in `dist-test/`, which is never committed; `docs/UJI-M4a.md` is the guide that goes with them. Installers arrive in M12.
 
 ## Checks
 

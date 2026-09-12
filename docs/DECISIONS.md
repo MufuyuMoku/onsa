@@ -204,3 +204,29 @@ Catatan keputusan yang diambil saat spesifikasi kurang jelas. Format: tanggal, k
 - **Konteks**: di run `479caf6`, langkah `apt-get` di job Ubuntu memakan 31 menit 21 detik karena mirror paket yang lambat. Biasanya langkah ini selesai di bawah satu menit (55 detik di run M3).
 - **Keputusan**: langkah itu diberi `timeout-minutes: 10`. Bila mirror macet, job gagal cepat dan bisa dijalankan ulang, alih-alih menghabiskan menit Actions. Tidak memakai action pihak ketiga untuk cache paket apt.
 - **Alasan**: satu baris konfigurasi sudah membatasi kerugian terburuk. Cache apt pihak ketiga menambah dependensi pada kode luar, padahal langkah ini biasanya cepat.
+
+## 2026-09-12 · Font tema dibundel (M4a)
+
+- **Konteks**: setiap tema menyebut keluarga fontnya sendiri, dan font harus dibundel beserta lisensinya, tidak dimuat dari internet (SPEC §9.4, §14). Di M0 ini ditunda; pemilik proyek memberi izin mengunduhnya di M4a.
+- **Sumber dan versi yang dipatok**:
+  - `google/fonts` commit `8e44913e4ff26fc997e6856c1ec40ff4791c98c5`: Chakra Petch (Regular, SemiBold), Share Tech Mono (Regular), B612 (Regular, Bold), B612 Mono (Regular), Barlow (Regular, Medium), Barlow Condensed (Medium, SemiBold), masing-masing dengan `OFL.txt`-nya.
+  - `notofonts/noto-cjk` tag `Sans2.004`: `Sans/Variable/OTF/Subset/NotoSansJP-VF.otf` beserta `LICENSE`.
+- **Hanya bobot yang benar-benar dipakai tema** yang diambil. Totalnya sekitar 9 MB, dan 8,1 MB di antaranya adalah Noto Sans JP.
+- **Noto Sans JP memakai versi variable OTF** dari repo noto-cjk karena itu bentuk resmi yang paling kecil: 8,1 MB, dibanding 9,6 MB untuk TTF variable di google/fonts dan sekitar 9 MB untuk dua file statis Regular + Medium.
+- **Tanpa WOFF2**: tidak ada rilis WOFF2 resmi di kedua repo, dan mesin build tidak punya alat konversinya (fontTools/brotli maupun `woff2_compress`). Font dimuat dari dalam aplikasi, jadi ukurannya hanya memengaruhi ukuran binary, bukan waktu unduh.
+- **Aksara di luar Noto Sans JP** (Hangul, Devanagari, dan lainnya) memakai font sistem sebagai fallback terakhir pada stack font.
+
+## 2026-09-12 · Irisan uji M4a
+
+- **Konteks**: pemilik proyek ingin menguji hasil M1–M3 lewat aplikasi, bukan CLI. Irisan ini adalah bagian M4 yang sesungguhnya, dibangun di atas arsitektur final, bukan kode sementara yang dibuang.
+- **Dua tambahan di `onsa-audio`** (disetujui pemilik proyek):
+  - `Engine::set_output` untuk mengganti perangkat atau sample rate tanpa menghentikan lagu. Jalurnya sama dengan pemulihan saat perangkat hilang: posisi disimpan, output lama diredupkan lalu ditutup, output baru dibuka, dan pemutaran dilanjutkan.
+  - `Engine::take_events` menyerahkan receiver event ke thread pendengar. Tanpa itu, `src-tauri` harus memegang `Engine` di balik mutex dan melakukan polling, yang melanggar target CPU nol saat idle (SPEC §13.1).
+- **Library dengan dua koneksi**: satu koneksi melayani UI, satu lagi dimiliki thread library yang men-scan dan menerapkan perubahan dari pemantau folder. Menjelajah tidak menunggu scan, dan scan pertama berjalan di latar (SPEC §13.1). Thread-nya tidur di channel pekerjaan, jadi library yang diam tidak memakai CPU.
+- **Tiga dependensi kecil**: `tauri-plugin-dialog` (pemilih folder dan file preset), `tauri-plugin-opener` (tombol "buka folder log"), dan `tracing-appender` (file log harian). Dua yang pertama plugin resmi Tauri, dan ketiganya hanya dipakai dari sisi Rust sehingga tidak menambah izin JavaScript.
+- **Volume lewat `settings_set_dsp`**, bukan perintah tersendiri. Volume adalah bagian dari `DspSettings`; kalau ada dua jalur, pengaturan DSP yang dikirim berikutnya bisa mengembalikan volume ke nilai lama.
+- **Kurva EQ dan export AutoEQ dihitung backend** dari `DspPrefs` yang sama. Dengan begitu UI tidak menduplikasi Q tetap EQ grafis (1,41) maupun aturan preamp otomatis.
+- **Cover lewat custom protocol** `onsa://cover/<id>/<ukuran>` (SPEC §2), bukan base64 di event. CSP diperlebar khusus untuk skema itu.
+- **Pengaturan disimpan sebagai JSON** di tabel `settings` milik library, satu kunci per kelompok. Nilai yang rusak atau hilang jatuh ke default per field, dengan peringatan di log, sehingga satu setelan rusak tidak menghalangi aplikasi terbuka.
+- **Fitur yang belum dikerjakan tidak ditampilkan sama sekali**: tidak ada tombol mati atau placeholder di UI.
+- **Log**: file harian di folder log aplikasi, disimpan tujuh hari terakhir, plus toggle "Log debug" di Tentang yang mengganti filter `tracing` saat aplikasi berjalan lewat reload layer.

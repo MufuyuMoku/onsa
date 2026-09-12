@@ -225,3 +225,59 @@ Status tiap milestone dari `SPEC.md` §15. Diperbarui di akhir setiap milestone.
 - sebagian dari 2 menit 40 detik `cargo test` untuk mengompilasi dependensi baru, termasuk SQLite dalam C.
 
 Run berikutnya dengan dependensi yang sama diperkirakan kembali ke sekitar 5–6 menit.
+
+---
+
+## M4a. Irisan uji dari M4 — selesai (2026-09-12)
+
+Bagian M4 yang dikerjakan lebih dulu atas permintaan pemilik proyek, supaya hasil M1–M3 bisa diuji lewat aplikasi, bukan lewat CLI. Semua isinya adalah bagian M4 yang sesungguhnya, dibangun di atas arsitektur final, bukan kode sementara.
+
+**Kriteria yang dipakai**: seluruh alur pilih folder, scan, jelajah, putar, atur EQ, dan ganti tema bisa dilakukan tanpa CLI.
+
+| Kriteria | Windows 11 | Linux |
+|---|---|---|
+| Alur lengkap tanpa CLI | ✅ terverifikasi pada build rilis portable | ⏳ belum diverifikasi (bagian kriteria M4 penuh) |
+| Pemeriksaan (fmt, clippy, tes, `svelte-check`) | ✅ | ✅ CI Ubuntu |
+
+### Yang dibuat
+
+- **`onsa-audio`** (dua tambahan, disetujui pemilik proyek):
+  - `Engine::set_output`: ganti perangkat atau sample rate tanpa menghentikan lagu, memakai jalur yang sama dengan pemulihan perangkat hilang;
+  - `Engine::take_events`: menyerahkan receiver event supaya aplikasi tidak perlu polling.
+- **`onsa-library`**: `TrackRow` membawa codec, sample rate, bit depth, dan kanal untuk strip jalur sinyal; `album_count` untuk virtual list; `cover_file` untuk protokol cover.
+- **`src-tauri`**: 34 command dan lima event (status pemutar, posisi, meter, progres scan, perubahan library). Player dengan thread pendengar tanpa polling, library dengan dua koneksi (UI dan thread scan/pemantau), pengaturan JSON di tabel `settings`, protokol `onsa://cover/<id>/<ukuran>`, dan log harian dengan toggle debug.
+- **UI (SvelteKit)**:
+  - layar pertama: pilih folder, pilih tema dengan pratinjau langsung, lalu scan dengan progres;
+  - library: daftar lagu dan album dengan virtual list dan pengurutan per kolom, halaman album, serta pencarian yang dikelompokkan;
+  - transport: putar/jeda, lagu sebelumnya/berikutnya, bar posisi, volume, dan peak meter L/R dengan indikator CLIP dan LIM (varian batang, segmen, atau jarum VU sesuai tema);
+  - panel antrean: menyorot lagu yang berjalan dan bisa diklik untuk melompat;
+  - strip jalur sinyal: format sumber, resample, ReplayGain, EQ, limiter, dan perangkat output; klik untuk menyalakan atau mematikan, klik kanan untuk membuka pengaturannya;
+  - pengaturan Output & Kualitas (perangkat, sample rate, kualitas resampler, buffer, crossfade, ReplayGain, dither) dan DSP & EQ (EQ grafis 10 band dengan kurva respons, mode parametrik sampai 16 filter, import dan export AutoEQ lewat pemilih file, preamp otomatis, limiter);
+  - Tampilan (tema dan bahasa) dan Tentang (versi, buka folder log, toggle log debug);
+  - pintasan keyboard dasar: spasi, panah, Ctrl+panah, Ctrl+F, Ctrl+koma.
+- **Font tema dibundel** di `ui/static/fonts/` beserta lisensinya: Chakra Petch, Share Tech Mono, B612, B612 Mono, Barlow, Barlow Condensed, dan Noto Sans JP (lihat DECISIONS untuk sumber dan versi yang dipatok).
+- **`docs/UJI-M4a.md`**: panduan uji coba untuk pemilik proyek, dalam bahasa sehari-hari.
+
+### Cara verifikasi
+
+Semuanya dijalankan pada build rilis portable (`dist-test/Onsa-M4a.exe`) di Windows 11, dengan folder musik sungguhan berisi 620 file, dan dikendalikan lewat port debug WebView2 supaya setiap langkah tercatat:
+
+- **Layar pertama**: dialog folder Windows terbuka dengan judul dari kamus UI, folder terpilih, dan scan 620 file selesai dalam 3,8 detik dengan progres yang terlihat bertambah.
+- **Scan ulang**: saat aplikasi dibuka lagi, 620 file yang tidak berubah diperiksa dalam 13 milidetik.
+- **Library**: daftar lagu dan album tampil lewat virtual list, urutannya sama persis dengan urutan backend, dan judul beraksara Jepang tampil benar.
+- **Pemutaran**: klik dua kali memutar lagu yang tepat; `next` maju satu per satu (1, 2, 3) dan lompat ke antrean nomor 10 mendarat di lagu yang benar; jeda, lanjut, geser posisi ke detik 45, dan volume −12 dB semuanya diterapkan.
+- **Strip jalur sinyal** menampilkan MP3 48 kHz, EQ, limiter, dan perangkat WASAPI yang sedang dipakai, dan meter bergerak mengikuti sinyal.
+- **EQ saat lagu berjalan**: menggeser dua fader (+9 dB di 31 Hz, −6 dB di 1 kHz) langsung mengubah kurva dan diterapkan ke mesin.
+- **AutoEQ**: export menulis preset 10 filter, lalu import membacanya kembali dan memindahkan EQ ke mode parametrik dengan nilai yang sama.
+- **Ganti perangkat output** saat lagu berjalan berpindah dari satu perangkat ke perangkat lain, lagu tetap berjalan dan posisinya tidak terputus.
+- **Tema**: ketiga tema berganti langsung, termasuk bentuk meter (segmen, batang, jarum VU) dan indikator tahap (glow, outline, LED).
+- **Bahasa**: tampilan Indonesia dan Inggris, keduanya lengkap.
+- **Tersimpan setelah ditutup dan dibuka lagi**: tema, bahasa, volume, EQ, dan status log debug.
+- **Pemeriksaan**: `cargo fmt --check`, `cargo clippy --workspace --all-targets -D warnings`, `cargo test --workspace`, dan `svelte-check` bersih.
+
+### Tertunda / belum diverifikasi
+
+- **Linux belum diverifikasi untuk UI**: build dan tes lewat CI Ubuntu, tetapi jendela, dialog, dan audio lewat aplikasi belum dicoba di Linux. Itu bagian kriteria M4 penuh.
+- **Uji dengar oleh pemilik proyek** sesuai `docs/UJI-M4a.md`: gapless, crossfade, klik saat jeda dan seek, cabut/colok headphone, EQ saat lagu berjalan, preset AutoEQ, preamp otomatis, limiter, dan ReplayGain.
+- **Satu kejadian yang belum bisa dijelaskan**: pada percobaan pertama, klik dua kali di baris pertama berakhir memutar lagu ke-282 dalam antrean. Tidak terulang dalam tiga percobaan berikutnya, penomoran antrean terbukti benar (`next` dan lompat ke indeks tertentu), dan log tidak menunjukkan lagu yang gagal atau dilewati. Kalau terjadi lagi saat uji dengar, log debug sekarang mencatat setiap lagu yang mulai diputar.
+- **Belum masuk irisan ini** (bagian M4 dan M5 berikutnya): visualizer dan warna nada, Now Playing, mini player, sleep timer, kontrol media OS dan tray, single instance, asosiasi file dan drag-and-drop, pemulihan antrean beserta posisi terakhir, tema buatan pengguna, pengaturan pintasan, dan pengurutan ulang antrean.
