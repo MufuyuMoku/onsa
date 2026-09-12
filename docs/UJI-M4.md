@@ -174,7 +174,18 @@ Di **Pengaturan → Tampilan**, tekan **Buka folder tema**. Taruh file `.json` t
 
 **Yang seharusnya terjadi:** tema itu ikut muncul di daftar tema dan bisa dipilih. Tema yang rusak dilewati begitu saja, tidak membuat Onsa gagal terbuka.
 
-### 25. Pintasan keyboard
+### 25. Mengedit antrean cepat-cepat (perbaikan terbaru)
+
+Ini pengujian ulang untuk bug yang kamu temukan. Klik dua kali sebuah lagu supaya seluruh daftar masuk antrean, lalu selagi lagu berjalan:
+
+1. Hapus baris antrean secepat mungkin dengan menekan tombol x berkali-kali, termasuk baris lagu yang sedang berbunyi.
+2. Hapus semua baris sesudah lagu yang sedang berbunyi.
+3. Tekan **Kosongkan** saat lagu berjalan.
+4. Tarik-lepas beberapa baris untuk mengubah urutan, lalu nyalakan dan matikan **Acak**.
+
+**Yang seharusnya terjadi:** lagu yang disorot di antrean selalu sama dengan lagu yang terdengar, dan sama dengan judul di bawah. Menghapus lagu yang sedang berbunyi langsung memutar lagu berikutnya, tanpa bunyi klik; kalau tidak ada lagi lagu sesudahnya, pemutaran berhenti. Menghapus lagu-lagu sesudahnya tidak mengganggu lagu yang sedang berjalan sama sekali. Mengosongkan antrean menghentikan suara. Mengubah urutan dan mengacak tidak pernah menukar lagu yang sedang berbunyi.
+
+### 26. Pintasan keyboard
 
 | Tombol | Fungsi |
 |---|---|

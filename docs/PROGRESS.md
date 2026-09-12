@@ -339,3 +339,26 @@ Dijalankan pada build rilis portable di Windows 11, dikendalikan lewat port debu
 - **Repeat satu lagu tidak memancarkan event "lagu dimulai" baru**; kalau M9 (scrobble) butuh batas pemutaran, mesin perlu penanda pemutaran keberapa (lihat DECISIONS).
 - **Asosiasi file** baru terdaftar lewat installer (M12).
 - Visualizer, warna nada, dan mode hemat daya ada di M5. Lirik di M8. Playlist, termasuk menyimpan antrean sebagai playlist, ada di M6. Pengaturan pintasan keyboard menyusul.
+
+---
+
+## Perbaikan setelah uji coba M4 (2026-09-12)
+
+### Lagu yang terdengar berbeda dengan yang terlihat, setelah antrean diedit cepat
+
+Dilaporkan pemilik proyek dan bisa diulang: klik dua kali satu lagu, lalu hapus baris antrean cepat-cepat termasuk baris yang sedang berbunyi. Hasilnya UI dan suara tidak sejalan, dan baru pulih setelah memilih lagu lain lalu kembali.
+
+**Akar masalahnya satu**: nomor urut antrean dipakai sebagai identitas lagu, di tiga tempat sekaligus — mesin audio menggeser nomor yang diingatnya dengan satu selisih yang hanya benar untuk perubahan sebelum lagu yang berbunyi; aplikasi menghitung sendiri nomor lagu yang diputar, sejajar dengan perhitungan mesin; dan UI mengirim perintah memakai nomor baris dari daftar yang sudah basi saat klik berikutnya datang. Rinciannya di `docs/DECISIONS.md`.
+
+**Perbaikannya**: setiap entri antrean sekarang membawa id sendiri (`QueueId`) yang dibuat sekali dan hidup selama entri ada. Mesin audio yang menentukan lagu mana yang sedang diputar; ia mencari entrinya kembali lewat id dan memetakan ulang semua nomor yang diingatnya, sedangkan UI menyorot baris berdasarkan id dari mesin dan mengirim perintah hapus, pindah, dan lompat memakai id entri, bukan nomor baris. Antrean aplikasi dipindah ke modul `src-tauri/src/queue.rs` supaya aturannya bisa diuji langsung.
+
+**Perilaku yang ditetapkan** (lihat DECISIONS): menghapus lagu yang sedang berbunyi langsung pindah ke lagu berikutnya yang masih ada, tanpa klik, karena memakai jalur peredupan yang sama dengan seek; berhenti kalau tidak ada lagi sesudahnya; kembali ke lagu pertama kalau repeat seluruh antrean menyala.
+
+**Tes yang menutupnya** (semuanya gagal pada kode lama):
+
+- `onsa-audio`: menghapus entri yang sedang berbunyi lalu memeriksa lagu mana yang benar-benar terdengar; menghapus entri sesudahnya tanpa mengganggu yang berbunyi; empat penghapusan beruntun secepat perintah bisa dikirim; mengosongkan antrean saat lagu berjalan; dan mengurutkan ulang antrean sambil memeriksa nomor yang dilaporkan mesin.
+- `src-tauri`: sembilan tes unit untuk aturan antrean — hapus yang sedang diputar, hapus yang terakhir (dengan dan tanpa repeat), hapus semua sesudahnya, penghapusan beruntun termasuk id yang sama dua kali, kosongkan, tarik-lepas, putar berikutnya dan tambah ke akhir, shuffle beserta kembalinya urutan asli, dan mesin sebagai penentu akhir.
+
+### Ukuran folder target dan cache CI
+
+Job Ubuntu sempat gagal di langkah penyimpanan cache dengan `No space left on device`, padahal semua langkah nyata lulus. Runner kini dibersihkan dari toolchain yang tidak dipakai sebelum build (lebih dari 20 GB), dan debug info dimatikan untuk profil `dev` dan `test` di `Cargo.toml` workspace supaya `target/` dan cache-nya jauh lebih kecil.
