@@ -42,3 +42,15 @@ thiserror = "2"
 tracing = "0.1"
 tracing-appender = "0.2"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Debug information is the biggest thing in `target/`, and neither the tests
+# nor a development build needs it: panics still name the functions they
+# came from. Leaving it out keeps the folder, and the CI cache built from
+# it, a fraction of the size. `strip` alone would not do: it only tidies the
+# finished binaries, not the libraries every crate leaves behind. Add
+# `debug = true` back locally when a debugger is needed.
+[profile.dev]
+debug = false
+
+[profile.test]
+debug = false
