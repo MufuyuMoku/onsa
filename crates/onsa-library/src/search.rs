@@ -5,7 +5,7 @@
 //! and every value from the user is a bound parameter: nothing typed by the
 //! user ever becomes part of the SQL.
 
-use rusqlite::{params, Row};
+use rusqlite::{params, OptionalExtension, Row};
 
 use crate::db::Library;
 use crate::error::Result;
@@ -41,6 +41,14 @@ pub struct TrackRow {
     pub cover_id: Option<i64>,
     /// `ok`, `missing` or `failed`.
     pub status: String,
+    /// Container or codec name, for the signal path.
+    pub codec: Option<String>,
+    /// Sample rate of the file in Hz.
+    pub sample_rate: Option<u32>,
+    /// Bits per sample, for lossless formats.
+    pub bit_depth: Option<u8>,
+    /// Channel count of the file.
+    pub channels: Option<u8>,
 }
 
 /// An album as the interface lists it.
@@ -122,7 +130,7 @@ impl TrackSort {
 
 pub(crate) const TRACK_COLUMNS: &str =
     "id, path, title, artist, album, album_artist, track_number, \
-     disc_number, year, genre, duration_ms, album_id, cover_id, status";
+     disc_number, year, genre, duration_ms, album_id, cover_id, status,      codec, sample_rate, bit_depth, channels";
 
 pub(crate) fn track_row(row: &Row<'_>) -> rusqlite::Result<TrackRow> {
     Ok(TrackRow {
@@ -140,6 +148,10 @@ pub(crate) fn track_row(row: &Row<'_>) -> rusqlite::Result<TrackRow> {
         album_id: row.get(11)?,
         cover_id: row.get(12)?,
         status: row.get(13)?,
+        codec: row.get(14)?,
+        sample_rate: row.get(15)?,
+        bit_depth: row.get(16)?,
+        channels: row.get(17)?,
     })
 }
 
@@ -250,6 +262,36 @@ impl Library {
             .query_map(params![limit as i64, offset as i64], track_row)?
             .collect::<std::result::Result<Vec<_>, _>>()?;
         Ok(rows)
+    }
+
+    /// Number of albums with at least one track that is not missing.
+    pub fn album_count(&self) -> Result<u64> {
+        let count: i64 = self.conn.query_row(
+            "SELECT COUNT(DISTINCT album_id) FROM tracks
+             WHERE album_id IS NOT NULL AND status != 'missing'",
+            [],
+            |row| row.get(0),
+        )?;
+        Ok(count as u64)
+    }
+
+    /// The thumbnail file of a cover, `size` being 128 or 512 (anything
+    /// else gets the larger one). `None` when the cover is unknown.
+    pub fn cover_file(&self, cover_id: i64, size: u32) -> Result<Option<std::path::PathBuf>> {
+        let column = if size <= 128 {
+            "thumb_128"
+        } else {
+            "thumb_512"
+        };
+        let name: Option<String> = self
+            .conn
+            .query_row(
+                &format!("SELECT {column} FROM covers WHERE id = ?1"),
+                [cover_id],
+                |row| row.get(0),
+            )
+            .optional()?;
+        Ok(name.map(|name| self.covers_dir.join(name)))
     }
 
     /// One page of albums, by album artist then title.
