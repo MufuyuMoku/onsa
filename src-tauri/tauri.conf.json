@@ -45,6 +45,14 @@
       "icons/icon.png"
     ],
     "category": "Music",
+    "fileAssociations": [
+      {
+        "ext": ["flac", "mp3", "m4a", "m4b", "aac", "ogg", "oga", "wav", "wave", "aiff", "aif"],
+        "name": "Onsa audio",
+        "description": "Audio file",
+        "role": "Viewer"
+      }
+    ],
     "shortDescription": "Onsa music player",
     "longDescription": "Onsa is a desktop music player that shows what is happening to the signal.",
     "linux": {

@@ -22,7 +22,7 @@ pub const WINDOW_KEY: &str = "window";
 pub const MAIN_WINDOW: &str = "main";
 
 /// Size of the mini player (SPEC §9.2): one line of instrument panel.
-pub const MINI_SIZE: (f64, f64) = (560.0, 148.0);
+pub const MINI_SIZE: (f64, f64) = (660.0, 146.0);
 /// Smallest useful full window, matching `tauri.conf.json`.
 pub const FULL_MIN_SIZE: (f64, f64) = (880.0, 560.0);
 
