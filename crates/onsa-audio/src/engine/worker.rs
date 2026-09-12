@@ -255,6 +255,28 @@ impl Worker {
         self.emit(Event::OutputLost { reason });
     }
 
+    /// Moves to another device or rate; playback resumes where it was.
+    fn switch_output(&mut self, settings: OutputSettings) {
+        let OutputTarget::Device(current) = &self.target else {
+            return;
+        };
+        if *current == settings {
+            return;
+        }
+        tracing::info!(?settings, "output settings changed, reopening the output");
+        self.target = OutputTarget::Device(settings);
+        if self.output.is_some() {
+            self.resume_at = self.playhead().or(self.resume_at);
+            // Fade out on the old device before it closes.
+            self.flush();
+            self.drop_lanes();
+            self.analysis_thread = None;
+            self.output = None;
+        }
+        self.retry_at = Some(Instant::now());
+        self.maintain_output();
+    }
+
     /// Reopens a lost output, and follows the system default device.
     fn maintain_output(&mut self) {
         let OutputTarget::Device(settings) = &self.target else {
@@ -424,6 +446,7 @@ impl Worker {
                     self.last_default_check = Instant::now();
                 }
             }
+            Command::SetOutput(settings) => self.switch_output(settings),
             Command::ReplaceOffline {
                 sample_rate,
                 channels,
@@ -1150,7 +1173,9 @@ fn apply_gain(
 /// Whether every queue entry names one album and the track numbers run in
 /// order without gaps, the condition for album gain in ReplayGain's auto mode
 /// (SPEC §4.1). The caller supplies album and number in each entry.
-fn queue_is_one_album(queue: &[QueueItem]) -> bool {
+/// Whether the queue is one album in order: same album, consecutive track
+/// numbers. ReplayGain's auto mode uses album gain exactly then (SPEC §4.1).
+pub fn queue_is_one_album(queue: &[QueueItem]) -> bool {
     let normalise = |item: &QueueItem| {
         item.album
             .as_deref()

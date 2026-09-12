@@ -23,6 +23,7 @@ use crate::output::stage::{dsp_plumbing, OutputStage, Shared};
 use crate::resample::ResamplerQuality;
 use crate::source::TrackInfo;
 
+pub use worker::queue_is_one_album;
 use worker::{OutputTarget, Worker};
 
 /// One entry of the play queue.
@@ -200,6 +201,7 @@ pub(crate) enum Command {
     SetDsp(DspSettings),
     SetAnalysis(AnalysisSettings),
     DeviceFault(DeviceFault),
+    SetOutput(OutputSettings),
     ReplaceOffline {
         sample_rate: u32,
         channels: usize,
@@ -373,6 +375,19 @@ impl Engine {
     /// Switches the analysis tap and its frames on or off (SPEC §4.4).
     pub fn set_analysis(&self, settings: AnalysisSettings) -> Result<()> {
         self.send(Command::SetAnalysis(settings))
+    }
+
+    /// Moves playback to another device or sample rate. The old output fades
+    /// out, the new one opens, and playback continues from the same position.
+    pub fn set_output(&self, output: OutputSettings) -> Result<()> {
+        self.send(Command::SetOutput(output))
+    }
+
+    /// Hands the event receiver over, so a listener thread can block on it
+    /// without sharing the engine (an idle listener then costs no CPU).
+    /// Afterwards [`Engine::events`] reports nothing.
+    pub fn take_events(&mut self) -> Receiver<Event> {
+        std::mem::replace(&mut self.events, mpsc::channel().1)
     }
 
     /// Replaces an offline output with a new one, possibly at another rate
