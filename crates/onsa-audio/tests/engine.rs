@@ -536,3 +536,34 @@ fn the_queue_can_be_edited_while_a_track_plays() {
         .collect();
     assert_eq!(started, vec![0, 1], "the added track did not follow");
 }
+
+#[test]
+fn an_output_replaced_at_the_very_start_keeps_playing() {
+    // Match-source reopens the output as soon as a track begins, before any
+    // audio has been heard; playback must carry on from the start.
+    let fixtures = Fixtures::new("output at start");
+    let seconds = RATE as usize / 2;
+    let whole = sine(seconds, RATE, 440.0, 0.4);
+    let file = fixtures.wav("a.wav", RATE, &whole);
+
+    let (engine, _sink) = offline(PlaybackSettings::default());
+    engine
+        .set_queue(vec![QueueItem::new(&file)], 0, 0.0, true)
+        .expect("queue");
+    let mut sink = engine
+        .replace_offline_output(RATE, 2)
+        .expect("the output should be replaced");
+
+    let out = sink.render_to_end(seconds * 4);
+    let latency = latency_frames(RATE) * 2;
+    assert!(
+        out.len() >= seconds * 2,
+        "playback stopped after the output changed: {} frames",
+        out.len() / 2
+    );
+    let start = fade_frames(RATE) * 2;
+    let error = (start..seconds * 2 - latency)
+        .map(|i| (out[i + latency] - whole[i]).abs())
+        .fold(0.0f32, f32::max);
+    assert!(error < 1e-6, "the track did not play from its start: {error}");
+}

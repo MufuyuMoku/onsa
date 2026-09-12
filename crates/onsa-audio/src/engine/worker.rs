@@ -295,6 +295,23 @@ impl Worker {
         self.maintain_output();
     }
 
+    /// Picks playback up after the output changed. Without a playhead the
+    /// output was replaced before anything was heard (the match-source mode
+    /// does that at the start of a track), so the track starts from its
+    /// beginning rather than the queue ending.
+    fn resume_after_output(&mut self, at: Option<Playhead>) {
+        match at {
+            Some(at) => self.restart_at(at.queue_index, at.frame),
+            None if self.state == PlayState::Playing
+                && self.primary.is_none()
+                && self.current < self.queue.len() =>
+            {
+                self.start_from(self.current, 0.0);
+            }
+            None => {}
+        }
+    }
+
     /// Follows a track's own sample rate, when that mode is on (SPEC §3.4).
     fn match_rate(&mut self, rate: u32) {
         self.source_rate = Some(rate);
@@ -323,9 +340,8 @@ impl Worker {
             match self.open_device_output() {
                 Ok(()) => {
                     self.retry_at = None;
-                    if let Some(at) = self.resume_at.take() {
-                        self.restart_at(at.queue_index, at.frame);
-                    }
+                    let at = self.resume_at.take();
+                    self.resume_after_output(at);
                 }
                 Err(error) => {
                     tracing::debug!("output still unavailable: {error}");
@@ -496,9 +512,7 @@ impl Worker {
                 let (output, sink) =
                     offline_output(sample_rate, channels, self.settings.buffer, params);
                 self.attach_output(output);
-                if let Some(at) = at {
-                    self.restart_at(at.queue_index, at.frame);
-                }
+                self.resume_after_output(at);
                 let _ = reply.send(sink);
             }
             Command::Shutdown => {
