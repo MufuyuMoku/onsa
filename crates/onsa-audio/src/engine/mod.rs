@@ -6,7 +6,7 @@
 mod worker;
 
 use std::path::PathBuf;
-use std::sync::atomic::Ordering;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::Arc;
 use std::thread::JoinHandle;
@@ -26,9 +26,40 @@ use crate::source::TrackInfo;
 pub use worker::queue_is_one_album;
 use worker::{OutputTarget, Worker};
 
+/// Identity of one queue entry.
+///
+/// A position in the queue cannot say which track is playing: the queue is
+/// edited while it plays, so the entry at index three before an edit is a
+/// different entry after it. Every entry carries an id instead, minted once
+/// when the entry is made and kept as long as the entry lives, and the
+/// engine follows the id (SPEC §6.1).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct QueueId(u64);
+
+impl QueueId {
+    /// A fresh id, unique for as long as the program runs.
+    pub fn next() -> Self {
+        static NEXT: AtomicU64 = AtomicU64::new(1);
+        Self(NEXT.fetch_add(1, Ordering::Relaxed))
+    }
+
+    /// The number behind the id, for callers that have to send it elsewhere.
+    pub fn get(self) -> u64 {
+        self.0
+    }
+}
+
+impl From<QueueId> for u64 {
+    fn from(id: QueueId) -> Self {
+        id.0
+    }
+}
+
 /// One entry of the play queue.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct QueueItem {
+    /// What tells this entry apart from every other one.
+    pub id: QueueId,
     /// The file to play.
     pub path: PathBuf,
     /// Album, when the caller knows better than the file's tags (for example
@@ -42,6 +73,7 @@ impl QueueItem {
     /// A queue entry that trusts the file's own tags.
     pub fn new(path: impl Into<PathBuf>) -> Self {
         Self {
+            id: QueueId::next(),
             path: path.into(),
             album: None,
             track_number: None,
@@ -145,6 +177,8 @@ pub enum Event {
     TrackStarted {
         /// Position in the queue.
         index: usize,
+        /// The queue entry it came from, which survives queue edits.
+        id: QueueId,
         /// The file.
         path: PathBuf,
         /// What the engine knows about it.
@@ -206,7 +240,6 @@ pub(crate) enum Command {
     },
     UpdateQueue {
         items: Vec<QueueItem>,
-        current: usize,
     },
     Jump(usize),
     Pause,
@@ -340,11 +373,14 @@ impl Engine {
     }
 
     /// Replaces the queue without disturbing what is playing: entries added,
-    /// removed, reordered or shuffled (SPEC §6.1). `current` says where the
-    /// playing track sits in the new order. A track already pre-rolled at
-    /// this moment still plays next.
-    pub fn update_queue(&self, items: Vec<QueueItem>, current: usize) -> Result<()> {
-        self.send(Command::UpdateQueue { items, current })
+    /// removed, reordered or shuffled (SPEC §6.1).
+    ///
+    /// The engine finds the playing entry again by its [`QueueId`], so it
+    /// needs no help saying where the track went. When the playing entry is
+    /// no longer in the queue, playback moves to the first entry that
+    /// followed it and survived, and stops when there is none.
+    pub fn update_queue(&self, items: Vec<QueueItem>) -> Result<()> {
+        self.send(Command::UpdateQueue { items })
     }
 
     /// Plays the queue entry at `index`.

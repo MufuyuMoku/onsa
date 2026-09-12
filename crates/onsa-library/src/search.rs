@@ -11,7 +11,7 @@ use crate::db::Library;
 use crate::error::Result;
 
 /// A track as the interface lists it (displayed values, overrides applied).
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct TrackRow {
     /// Track id.
     pub id: i64,

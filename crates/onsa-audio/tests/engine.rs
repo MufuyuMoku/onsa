@@ -509,12 +509,15 @@ fn the_queue_can_be_edited_while_a_track_plays() {
     let b = fixtures.wav("b.wav", RATE, &sine(RATE as usize / 5, RATE, 660.0, 0.4));
 
     let (engine, mut sink) = offline(PlaybackSettings::default());
-    play(&engine, &sink, &[&a]);
+    let playing = QueueItem::new(&a);
+    play_items(&engine, &sink, std::slice::from_ref(&playing), 0);
     let mut out = sink.render(RATE as usize / 4 * 2);
 
-    // A track added to the end while the first one is still playing.
+    // A track added to the end while the first one is still playing. The
+    // entry already in the queue keeps its id, so the engine knows it is
+    // the same one.
     engine
-        .update_queue(vec![QueueItem::new(&a), QueueItem::new(&b)], 0)
+        .update_queue(vec![playing, QueueItem::new(&b)])
         .expect("update");
     out.extend(sink.render_to_end(seconds * 4));
 
@@ -569,4 +572,233 @@ fn an_output_replaced_at_the_very_start_keeps_playing() {
         error < 1e-6,
         "the track did not play from its start: {error}"
     );
+}
+
+// --------------------------------------------------------- queue identity
+
+/// A queue of steady tones, each at its own level, so a test can tell from
+/// the audio alone which entry is being heard.
+fn levels(fixtures: &Fixtures, seconds: usize, amplitudes: &[f32]) -> Vec<QueueItem> {
+    amplitudes
+        .iter()
+        .enumerate()
+        .map(|(n, &amplitude)| {
+            let frames = seconds * RATE as usize;
+            let path = fixtures.wav(
+                &format!("{n}.wav"),
+                RATE,
+                &one_sided(frames, amplitude, amplitude),
+            );
+            QueueItem::new(path)
+        })
+        .collect()
+}
+
+/// Plays a queue the test keeps a copy of, so it can edit it afterwards.
+fn play_items(engine: &Engine, sink: &OfflineSink, items: &[QueueItem], start: usize) {
+    engine
+        .set_queue(items.to_vec(), start, 0.0, true)
+        .expect("queue");
+    assert!(sink.wait_for_audio(1024), "the engine never produced audio");
+}
+
+/// Mean level of the last `frames` frames: which tone is being heard.
+fn tail_level(out: &[f32], frames: usize) -> f32 {
+    let tail = &out[out.len().saturating_sub(frames * 2)..];
+    tail.iter().map(|sample| sample.abs()).sum::<f32>() / tail.len().max(1) as f32
+}
+
+/// Renders until the engine reports the playhead at `place`. Position events
+/// come at most ten times a second, so a test cannot expect one to be waiting
+/// the moment an edit is applied.
+fn wait_for_place(engine: &Engine, sink: &mut OfflineSink, out: &mut Vec<f32>, place: usize) {
+    let deadline = Instant::now() + Duration::from_secs(10);
+    let mut seen = None;
+    loop {
+        for event in engine.events().try_iter() {
+            if let Event::Position { index, .. } = event {
+                seen = Some(index);
+            }
+        }
+        if seen == Some(place) {
+            return;
+        }
+        assert!(
+            Instant::now() < deadline,
+            "the engine reports the playing entry at {seen:?}, not {place}"
+        );
+        out.extend(sink.render(256));
+    }
+}
+
+/// Renders in small steps, giving the engine time to work through an edit.
+fn settle(sink: &mut OfflineSink, out: &mut Vec<f32>, frames: usize) {
+    let mut left = frames;
+    while left > 0 {
+        let step = left.min(1024);
+        out.extend(sink.render(step));
+        left -= step;
+    }
+}
+
+#[test]
+fn removing_the_playing_entry_plays_the_next_one() {
+    let fixtures = Fixtures::new("remove playing");
+    let items = levels(&fixtures, 2, &[0.5, 0.25, 0.125]);
+
+    let (engine, mut sink) = offline(PlaybackSettings::default());
+    play_items(&engine, &sink, &items, 0);
+    let mut out = sink.render(RATE as usize / 4);
+    assert!(
+        (tail_level(&out, 1000) - 0.5).abs() < 0.01,
+        "the first entry should be heard"
+    );
+    let _ = drain(&engine);
+
+    // The entry being heard leaves the queue.
+    engine
+        .update_queue(vec![items[1].clone(), items[2].clone()])
+        .expect("update");
+    let started = wait_for(
+        &engine,
+        Some((&mut sink, &mut out)),
+        |event| matches!(event, Event::TrackStarted { id, .. } if *id == items[1].id),
+    );
+    assert!(
+        matches!(started, Event::TrackStarted { index, .. } if index == 0),
+        "the entry that followed should now be first: {started:?}"
+    );
+    settle(&mut sink, &mut out, RATE as usize / 4);
+    let level = tail_level(&out, 1000);
+    assert!(
+        (level - 0.25).abs() < 0.01,
+        "the removed entry is still being heard: {level}"
+    );
+}
+
+#[test]
+fn removing_entries_after_the_playing_one_leaves_it_alone() {
+    let fixtures = Fixtures::new("remove after");
+    let items = levels(&fixtures, 1, &[0.5, 0.25, 0.125, 0.0625]);
+
+    let (engine, mut sink) = offline(PlaybackSettings::default());
+    play_items(&engine, &sink, &items, 0);
+    let mut out = sink.render(RATE as usize / 4);
+
+    // Everything behind the playing entry goes, in two quick edits.
+    engine
+        .update_queue(vec![items[0].clone(), items[1].clone(), items[2].clone()])
+        .expect("update");
+    engine
+        .update_queue(vec![items[0].clone(), items[1].clone()])
+        .expect("update");
+    settle(&mut sink, &mut out, RATE as usize / 4);
+    let level = tail_level(&out, 1000);
+    assert!(
+        (level - 0.5).abs() < 0.01,
+        "the playing entry was disturbed: {level}"
+    );
+    assert!(
+        max_step(&out[fade_frames(RATE) * 2..]) < 0.01,
+        "the edit broke the signal"
+    );
+
+    out.extend(sink.render_to_end(RATE as usize * 4));
+    let events = collect_until(&engine, |event| *event == Event::QueueEnded);
+    let started: Vec<usize> = events
+        .iter()
+        .filter_map(|event| match event {
+            Event::TrackStarted { index, .. } => Some(*index),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(
+        started,
+        vec![0, 1],
+        "the playing entry and then the one left behind it"
+    );
+}
+
+#[test]
+fn many_quick_removals_keep_the_playing_entry() {
+    let fixtures = Fixtures::new("quick removals");
+    let items = levels(&fixtures, 2, &[0.5, 0.25, 0.125, 0.0625, 0.03125]);
+
+    let (engine, mut sink) = offline(PlaybackSettings::default());
+    play_items(&engine, &sink, &items, 2);
+    let mut out = sink.render(RATE as usize / 8);
+    let _ = drain(&engine);
+
+    // The listener empties the queue around the playing entry as fast as
+    // the interface can send it: the last one, the first, the second, then
+    // the one right after the playing entry.
+    for keep in [vec![0, 1, 2, 3], vec![1, 2, 3], vec![2, 3], vec![2]] {
+        let edited: Vec<QueueItem> = keep.iter().map(|&n| items[n].clone()).collect();
+        engine.update_queue(edited).expect("update");
+    }
+    settle(&mut sink, &mut out, RATE as usize / 2);
+
+    let level = tail_level(&out, 1000);
+    assert!(
+        (level - 0.125).abs() < 0.01,
+        "the playing entry was lost: {level}"
+    );
+    assert!(
+        max_step(&out[fade_frames(RATE) * 2..]) < 0.01,
+        "the removals broke the signal"
+    );
+    wait_for_place(&engine, &mut sink, &mut out, 0);
+}
+
+#[test]
+fn removing_the_playing_entry_and_all_after_it_ends_the_queue() {
+    let fixtures = Fixtures::new("remove to end");
+    let items = levels(&fixtures, 2, &[0.5, 0.25]);
+
+    let (engine, mut sink) = offline(PlaybackSettings::default());
+    play_items(&engine, &sink, &items, 0);
+    let mut out = sink.render(RATE as usize / 8);
+
+    engine.update_queue(Vec::new()).expect("update");
+    let ended = wait_for(&engine, Some((&mut sink, &mut out)), |event| {
+        *event == Event::QueueEnded
+    });
+    assert_eq!(ended, Event::QueueEnded);
+    out.clear();
+    settle(&mut sink, &mut out, RATE as usize / 8);
+    let level = tail_level(&out, 1000);
+    assert!(
+        level < 1e-6,
+        "emptying the queue left audio playing: {level}"
+    );
+}
+
+#[test]
+fn reordering_the_queue_follows_the_playing_entry() {
+    let fixtures = Fixtures::new("reorder");
+    let items = levels(&fixtures, 2, &[0.5, 0.25, 0.125]);
+
+    let (engine, mut sink) = offline(PlaybackSettings::default());
+    play_items(&engine, &sink, &items, 1);
+    let mut out = sink.render(RATE as usize / 8);
+    let _ = drain(&engine);
+
+    // A drag puts the playing entry last.
+    engine
+        .update_queue(vec![items[2].clone(), items[0].clone(), items[1].clone()])
+        .expect("update");
+    settle(&mut sink, &mut out, RATE as usize / 4);
+    let level = tail_level(&out, 1000);
+    assert!(
+        (level - 0.25).abs() < 0.01,
+        "the reorder changed what was heard: {level}"
+    );
+    wait_for_place(&engine, &mut sink, &mut out, 2);
+
+    // What plays next is what follows it in the new order: nothing.
+    engine.next().expect("next");
+    let ended = wait_for(&engine, Some((&mut sink, &mut out)), |event| {
+        *event == Event::QueueEnded
+    });
+    assert_eq!(ended, Event::QueueEnded);
 }

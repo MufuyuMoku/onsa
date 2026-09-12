@@ -124,14 +124,30 @@ impl Lane {
         self.tracks.push_back(track);
     }
 
-    /// Moves every queue position the lane remembers by `delta`, after the
-    /// queue was edited around the playing track (SPEC §6.1).
-    pub fn shift_queue(&mut self, delta: isize) {
+    /// Every queue position the lane still refers to, so the engine can
+    /// check they all survived a queue edit.
+    pub fn queue_positions(&self) -> Vec<usize> {
+        self.tracks
+            .iter()
+            .map(|track| track.queue_index)
+            .chain(self.marks.iter().map(|mark| mark.queue_index))
+            .collect()
+    }
+
+    /// Points every queue position the lane remembers at where that entry
+    /// sits now, after the queue was edited around the playing track
+    /// (SPEC §6.1). Positions the caller cannot place are left alone; it
+    /// only calls this when they all can be placed.
+    pub fn remap(&mut self, place: impl Fn(usize) -> Option<usize>) {
         for track in &mut self.tracks {
-            track.queue_index = track.queue_index.saturating_add_signed(delta);
+            if let Some(moved) = place(track.queue_index) {
+                track.queue_index = moved;
+            }
         }
         for mark in &mut self.marks {
-            mark.queue_index = mark.queue_index.saturating_add_signed(delta);
+            if let Some(moved) = place(mark.queue_index) {
+                mark.queue_index = moved;
+            }
         }
     }
 

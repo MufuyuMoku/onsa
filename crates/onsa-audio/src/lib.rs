@@ -30,7 +30,7 @@ pub use dsp::eq::EqMode;
 pub use dsp::replaygain::{ReplayGainMode, ReplayGainSettings, ReplayGainTags};
 pub use engine::{
     queue_is_one_album, BufferSize, Engine, Event, OutputSettings, PlayState, PlaybackSettings,
-    QueueItem, RepeatMode,
+    QueueId, QueueItem, RepeatMode,
 };
 pub use error::{Error, Result};
 pub use fade::{CrossfadeCurve, MICRO_FADE_SECONDS};

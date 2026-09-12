@@ -692,7 +692,9 @@ fn play(
         }
 
         match engine.events().recv_timeout(Duration::from_millis(50)) {
-            Ok(Event::TrackStarted { index, path, info }) => {
+            Ok(Event::TrackStarted {
+                index, path, info, ..
+            }) => {
                 current = index;
                 duration = info.duration_seconds();
                 let rg = &info.replaygain;

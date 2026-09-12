@@ -15,8 +15,8 @@ use std::time::{Duration, Instant};
 use rtrb::Producer;
 
 use super::{
-    offline_output, Command, Event, OutputSettings, PlayState, PlaybackSettings, QueueItem,
-    RepeatMode,
+    offline_output, Command, Event, OutputSettings, PlayState, PlaybackSettings, QueueId,
+    QueueItem, RepeatMode,
 };
 use crate::analysis::{AnalysisSettings, AnalysisThread};
 use crate::dsp::chain::{ChainParams, DspSettings};
@@ -450,7 +450,7 @@ impl Worker {
                 });
                 self.start_from(start, start_seconds);
             }
-            Command::UpdateQueue { items, current } => self.update_queue(items, current),
+            Command::UpdateQueue { items } => self.update_queue(items),
             Command::Jump(index) => self.skip_to(index, true),
             Command::Next => self.skip_to(self.after(self.current), true),
             Command::Previous => {
@@ -710,35 +710,129 @@ impl Worker {
         None
     }
 
-    /// Replaces the queue while playback carries on (SPEC §6.1). Everything
-    /// the engine remembers about queue positions moves with the playing
-    /// track, so the listener hears no break.
-    fn update_queue(&mut self, items: Vec<QueueItem>, current: usize) {
-        let current = current.min(items.len().saturating_sub(1));
-        let delta = current as isize - self.current as isize;
+    /// Replaces the queue while playback carries on (SPEC §6.1).
+    ///
+    /// Queue positions mean nothing across an edit, so every position the
+    /// engine remembers is placed again by the [`QueueId`] of the entry it
+    /// pointed at. As long as the entries being played are still there, the
+    /// listener hears no break. When one of them is gone, the engine cannot
+    /// keep playing it: it fades out what is buffered and carries on from
+    /// the first surviving entry after it, or stops when there is none.
+    fn update_queue(&mut self, items: Vec<QueueItem>) {
+        let places: HashMap<QueueId, usize> = items
+            .iter()
+            .enumerate()
+            .map(|(index, item)| (item.id, index))
+            .collect();
+        // Where every old position went, by index: `None` means removed.
+        let moved: Vec<Option<usize>> = self
+            .queue
+            .iter()
+            .map(|item| places.get(&item.id).copied())
+            .collect();
+        let place = |index: usize| moved.get(index).copied().flatten();
+
+        let old_current = self.current;
+        let at = self.playhead();
+        let audible = at.map(|at| at.queue_index);
+        let mut playing: Vec<usize> = self
+            .timeline
+            .iter()
+            .map(|entry| entry.queue_index)
+            .collect();
+        for lane in [self.primary.as_ref(), self.outgoing.as_ref()]
+            .into_iter()
+            .flatten()
+        {
+            playing.extend(lane.queue_positions());
+        }
+        let intact = playing.iter().all(|&index| place(index).is_some());
+
         self.queue = items;
         self.queue_is_one_album = queue_is_one_album(&self.queue);
-        self.current = current;
-        if delta != 0 {
+        // What comes next may have changed; it is opened again when needed.
+        self.next = None;
+
+        if intact {
             for entry in &mut self.timeline {
-                entry.queue_index = entry.queue_index.saturating_add_signed(delta);
+                if let Some(to) = place(entry.queue_index) {
+                    entry.queue_index = to;
+                }
             }
             for lane in [self.primary.as_mut(), self.outgoing.as_mut()]
                 .into_iter()
                 .flatten()
             {
-                lane.shift_queue(delta);
+                lane.remap(place);
             }
             self.infos = std::mem::take(&mut self.infos)
                 .into_iter()
-                .map(|(index, info)| (index.saturating_add_signed(delta), info))
+                .filter_map(|(index, info)| place(index).map(|to| (to, info)))
                 .collect();
+            // Keeping this pointing at the audible track stops the listener
+            // being told a second time that it started.
             self.reported = self
                 .reported
-                .map(|index| index.saturating_add_signed(delta));
+                .and_then(place)
+                .or_else(|| audible.and_then(place));
+            self.current = place(old_current)
+                .or_else(|| self.surviving_from(old_current, &moved))
+                .unwrap_or(self.queue.len());
+            return;
         }
-        // What comes next may have changed; it is opened again when needed.
-        self.next = None;
+
+        // A track being heard, or one already decoded ahead of it, has left
+        // the queue. What is buffered cannot stand, so it is faded out and
+        // dropped, exactly as a seek does, and playback set up again.
+        let playing = self.state != PlayState::Stopped;
+        self.infos.clear();
+        self.flush();
+        self.drop_lanes();
+        self.reported = None;
+
+        // The track being heard may itself have survived: only what was
+        // decoded behind it went. Then it carries on from where the listener
+        // had reached, rather than starting over.
+        if let Some((index, frame)) =
+            at.and_then(|at| place(at.queue_index).map(|to| (to, at.frame)))
+        {
+            self.current = index;
+            if playing {
+                self.restart_at(index, frame);
+            }
+            return;
+        }
+        match self.surviving_from(old_current, &moved) {
+            Some(index) => {
+                self.current = index;
+                if playing {
+                    self.start_from(index, 0.0);
+                }
+            }
+            None => {
+                self.current = self.queue.len();
+                if playing {
+                    self.set_state(PlayState::Stopped);
+                    self.emit(Event::QueueEnded);
+                }
+            }
+        }
+    }
+
+    /// Where playback goes when the entry it was on is removed: the first
+    /// entry that followed it and is still in the queue. With the whole
+    /// queue repeating, it wraps round to the first entry left.
+    fn surviving_from(&self, from: usize, moved: &[Option<usize>]) -> Option<usize> {
+        moved
+            .iter()
+            .skip(from)
+            .flatten()
+            .copied()
+            .next()
+            .or(match self.settings.repeat {
+                RepeatMode::All if !self.queue.is_empty() => Some(0),
+                _ => None,
+            })
     }
 
     /// The track to play after `index`, following the repeat mode. `None`
@@ -1227,9 +1321,12 @@ impl Worker {
             for index in started {
                 self.reported = Some(index);
                 self.current = index;
-                if let Some((path, info)) = self.infos.get(&index) {
+                if let (Some((path, info)), Some(item)) =
+                    (self.infos.get(&index), self.queue.get(index))
+                {
                     self.emit(Event::TrackStarted {
                         index,
+                        id: item.id,
                         path: path.clone(),
                         info: info.clone(),
                     });
