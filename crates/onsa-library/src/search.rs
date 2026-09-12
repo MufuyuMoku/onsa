@@ -345,6 +345,87 @@ impl Library {
         Ok(rows)
     }
 
+    /// Number of distinct artists.
+    pub fn artist_count(&self) -> Result<u64> {
+        self.grouped_count("artist")
+    }
+
+    /// Number of distinct genres.
+    pub fn genre_count(&self) -> Result<u64> {
+        self.grouped_count("genre")
+    }
+
+    /// `column` is one of the two fixed names above, never user input.
+    fn grouped_count(&self, column: &str) -> Result<u64> {
+        let count: i64 = self.conn.query_row(
+            &format!(
+                "SELECT COUNT(DISTINCT {column} COLLATE NOCASE) FROM track_view
+                 WHERE {column} IS NOT NULL AND status != 'missing'"
+            ),
+            [],
+            |row| row.get(0),
+        )?;
+        Ok(count as u64)
+    }
+
+    /// The tracks of one artist, in album order.
+    pub fn artist_tracks(&self, artist: &str) -> Result<Vec<TrackRow>> {
+        self.grouped_tracks("artist", artist)
+    }
+
+    /// The tracks of one genre, in album order.
+    pub fn genre_tracks(&self, genre: &str) -> Result<Vec<TrackRow>> {
+        self.grouped_tracks("genre", genre)
+    }
+
+    fn grouped_tracks(&self, column: &str, value: &str) -> Result<Vec<TrackRow>> {
+        let mut statement = self.conn.prepare_cached(&format!(
+            "SELECT {TRACK_COLUMNS} FROM track_view
+             WHERE {column} = ?1 COLLATE NOCASE AND status != 'missing'
+             ORDER BY album COLLATE NOCASE, disc_number, track_number, title COLLATE NOCASE"
+        ))?;
+        let rows = statement
+            .query_map([value], track_row)?
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+        Ok(rows)
+    }
+
+    /// Number of folders that hold at least one track.
+    pub fn directory_count(&self) -> Result<u64> {
+        let count: i64 = self.conn.query_row(
+            "SELECT COUNT(DISTINCT onsa_parent(path)) FROM tracks WHERE status != 'missing'",
+            [],
+            |row| row.get(0),
+        )?;
+        Ok(count as u64)
+    }
+
+    /// One page of the folders tracks sit in, with their track counts.
+    pub fn directories_page(&self, offset: usize, limit: usize) -> Result<Vec<NameCount>> {
+        let mut statement = self.conn.prepare_cached(
+            "SELECT onsa_parent(path) AS dir, COUNT(*) FROM tracks
+             WHERE status != 'missing'
+             GROUP BY dir ORDER BY dir LIMIT ?1 OFFSET ?2",
+        )?;
+        let rows = statement
+            .query_map(params![limit as i64, offset as i64], name_count)?
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+        Ok(rows)
+    }
+
+    /// The tracks directly inside one folder, in track order.
+    pub fn directory_tracks(&self, dir: &str) -> Result<Vec<TrackRow>> {
+        let mut statement = self.conn.prepare_cached(&format!(
+            "SELECT {TRACK_COLUMNS} FROM track_view
+             WHERE onsa_parent(path) = ?1 AND status != 'missing'
+             ORDER BY disc_number, track_number, title COLLATE NOCASE"
+        ))?;
+        let rows = statement
+            .query_map([dir], track_row)?
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+        Ok(rows)
+    }
+
     /// The watched folders with their track counts.
     pub fn folders(&self) -> Result<Vec<NameCount>> {
         let mut statement = self.conn.prepare_cached(

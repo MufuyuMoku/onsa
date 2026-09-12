@@ -584,6 +584,45 @@ fn a_removal_and_an_addition_of_the_same_file_is_a_move() {
     let _ = std::fs::remove_dir_all(&dir);
 }
 
+#[test]
+fn browses_by_artist_genre_and_folder() {
+    let dir = temp_dir("browse");
+    let music = dir.join("音楽 folder");
+    fixture(&music);
+    let mut library = open(&dir);
+    library.add_folder(&music).unwrap();
+    library.scan(|_| {}).unwrap();
+
+    assert_eq!(library.artist_count().unwrap(), 3);
+    assert_eq!(library.genre_count().unwrap(), 2);
+    let artists = library.artists_page(0, 10).unwrap();
+    assert_eq!(artists[0].name, "Rian");
+    assert_eq!(artists[0].track_count, 2, "the album track and the loose one");
+    assert_eq!(library.artist_tracks("Rian").unwrap().len(), 2);
+    // The name is matched the way it is listed, whatever the case.
+    assert_eq!(library.artist_tracks("rian").unwrap().len(), 2);
+    assert_eq!(library.artist_tracks("ミナ").unwrap().len(), 3);
+    assert_eq!(library.genre_tracks("Jazz").unwrap().len(), 3);
+
+    // Folders: the two album folders and the root the loose files sit in.
+    assert_eq!(library.directory_count().unwrap(), 3);
+    let folders = library.directories_page(0, 10).unwrap();
+    let names: Vec<&str> = folders.iter().map(|folder| folder.name.as_str()).collect();
+    assert!(
+        names.iter().any(|name| name.ends_with("Second Album")),
+        "{names:?}"
+    );
+    let second = music.join("Second Album");
+    let tracks = library.directory_tracks(second.to_str().unwrap()).unwrap();
+    assert_eq!(tracks.len(), 2);
+    assert!(tracks.iter().all(|track| track.album.as_deref() == Some("Second")));
+    let root = library.directory_tracks(music.to_str().unwrap()).unwrap();
+    assert_eq!(root.len(), 2, "the loose track and the file that failed");
+
+    drop(library);
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
 /// Receives watcher batches and applies them until `done` holds.
 fn apply_until(
     library: &mut Library,

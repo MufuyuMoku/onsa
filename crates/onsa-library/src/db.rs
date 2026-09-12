@@ -3,6 +3,7 @@
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
+use rusqlite::functions::FunctionFlags;
 use rusqlite::{Connection, OptionalExtension};
 
 use crate::error::{Error, Result};
@@ -43,6 +44,7 @@ impl Library {
 
     fn with_connection(conn: &mut Connection, cache_dir: &Path) -> Result<()> {
         conn.pragma_update(None, "foreign_keys", "ON")?;
+        register_functions(conn)?;
         conn.pragma_update(None, "synchronous", "NORMAL")?;
         conn.busy_timeout(Duration::from_secs(5))?;
         let covers = cache_dir.join("covers");
@@ -79,6 +81,31 @@ impl Library {
             [key, json],
         )?;
         Ok(())
+    }
+}
+
+/// Adds `onsa_parent(path)`, the folder a file sits in, so the folder view
+/// can group and filter tracks in SQL (SPEC §5.3).
+fn register_functions(conn: &Connection) -> Result<()> {
+    conn.create_scalar_function(
+        "onsa_parent",
+        1,
+        FunctionFlags::SQLITE_UTF8 | FunctionFlags::SQLITE_DETERMINISTIC,
+        |context| {
+            let path = context.get_raw(0).as_str()?;
+            Ok(parent_of(path).to_owned())
+        },
+    )?;
+    Ok(())
+}
+
+/// The folder part of a path, without its separator. Both separators count,
+/// so a database written on one system still groups on the other.
+pub(crate) fn parent_of(path: &str) -> &str {
+    match path.rfind(['/', '\\']) {
+        Some(0) => &path[..1],
+        Some(cut) => &path[..cut],
+        None => "",
     }
 }
 
