@@ -105,7 +105,101 @@ export type PlayContext =
 	| { kind: 'artist'; name: string; index: number }
 	| { kind: 'genre'; name: string; index: number }
 	| { kind: 'folder'; path: string; index: number }
-	| { kind: 'tracks'; ids: number[]; index: number };
+	| { kind: 'tracks'; ids: number[]; index: number }
+	| { kind: 'playlist'; playlistId: number; index: number }
+	| { kind: 'queue' };
+
+// Playlists (SPEC section 6) ------------------------------------------------
+
+/** What a smart rule looks at. */
+export type RuleField =
+	| 'title'
+	| 'artist'
+	| 'album'
+	| 'album_artist'
+	| 'genre'
+	| 'year'
+	| 'rating'
+	| 'play_count'
+	| 'last_played'
+	| 'added_at'
+	| 'codec'
+	| 'duration'
+	| 'folder';
+
+/** The kinds of value a field holds, which decide the operators it takes. */
+export type RuleKind = 'text' | 'number' | 'date';
+
+/** How a rule compares. */
+export type RuleOp =
+	| 'contains'
+	| 'not_contains'
+	| 'is'
+	| 'is_not'
+	| 'starts_with'
+	| 'not_starts_with'
+	| '='
+	| '!='
+	| '<'
+	| '<='
+	| '>'
+	| '>='
+	| 'between'
+	| 'in_last'
+	| 'not_in_last'
+	| 'before'
+	| 'after';
+
+/** What a rule compares with: text, a number, `[a, b]` or `{ days }`. */
+export type RuleValue = string | number | [number, number] | { days: number };
+
+export interface Rule {
+	field: RuleField;
+	op: RuleOp;
+	value: RuleValue;
+}
+
+export type SortField =
+	| 'title'
+	| 'artist'
+	| 'album'
+	| 'year'
+	| 'duration'
+	| 'rating'
+	| 'play_count'
+	| 'last_played'
+	| 'added_at'
+	| 'random';
+
+export interface RuleSort {
+	field: SortField;
+	descending: boolean;
+}
+
+export interface Rules {
+	match: 'all' | 'any';
+	rules: Rule[];
+	sort: RuleSort;
+	limit: number | null;
+}
+
+export interface Playlist {
+	id: number;
+	name: string;
+	kind: 'manual' | 'smart';
+	rules: Rules | null;
+	trackCount: number;
+	createdAt: number;
+	updatedAt: number;
+}
+
+/** What came of reading a playlist file. */
+export interface PlaylistImport {
+	playlistId: number | null;
+	name: string;
+	found: number;
+	missing: string[];
+}
 
 /** Where added tracks join the queue. */
 export type QueuePlace = 'next' | 'end';
@@ -385,6 +479,34 @@ export const setMini = (mini: boolean) => call<boolean>('window_set_mini', { min
 export const themeOpenFolder = () => call<void>('theme_open_folder');
 export const setVolume = (db: number) => call<void>('player_set_volume', { db });
 
+// Playlists ----------------------------------------------------------------
+
+export const playlists = () => call<Playlist[]>('playlist_list');
+export const playlistGet = (id: number) => call<Playlist | null>('playlist_get', { id });
+export const playlistTracks = (id: number) => call<Track[]>('playlist_tracks', { id });
+export const playlistCreate = (name: string, rules: Rules | null = null) =>
+	call<number>('playlist_create', { name, rules });
+export const playlistRename = (id: number, name: string) =>
+	call<void>('playlist_rename', { id, name });
+export const playlistSetRules = (id: number, rules: Rules) =>
+	call<void>('playlist_set_rules', { id, rules });
+export const playlistDelete = (id: number) => call<void>('playlist_delete', { id });
+export const playlistDuplicate = (id: number, name: string) =>
+	call<number>('playlist_duplicate', { id, name });
+export const playlistAdd = (id: number, context: PlayContext) =>
+	call<number>('playlist_add', { id, context });
+export const playlistRemove = (id: number, position: number) =>
+	call<void>('playlist_remove', { id, position });
+export const playlistMove = (id: number, from: number, to: number) =>
+	call<void>('playlist_move', { id, from, to });
+export const playlistFromQueue = (name: string) => call<number>('playlist_from_queue', { name });
+export const playlistExport = (id: number, title: string, filterName: string) =>
+	call<string | null>('playlist_export', { id, title, filterName });
+export const playlistImport = (title: string, filterName: string) =>
+	call<PlaylistImport | null>('playlist_import', { title, filterName });
+export const smartPreview = (rules: Rules, limit: number) =>
+	call<Track[]>('smart_preview', { rules, limit });
+
 // Settings -----------------------------------------------------------------
 
 export const settingsGet = () => call<Settings>('settings_get');
@@ -418,6 +540,7 @@ export const EVENTS = {
 	sleep: 'player://sleep',
 	scan: 'library://scan',
 	libraryChanged: 'library://changed',
+	playlists: 'library://playlists',
 	windowMode: 'window://mode'
 } as const;
 

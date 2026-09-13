@@ -104,6 +104,21 @@ pub fn run() -> Result<()> {
             commands::set_close_to_tray,
             commands::log_open_folder,
             commands::log_set_debug,
+            commands::playlist_list,
+            commands::playlist_get,
+            commands::playlist_tracks,
+            commands::playlist_create,
+            commands::playlist_rename,
+            commands::playlist_set_rules,
+            commands::playlist_delete,
+            commands::playlist_duplicate,
+            commands::playlist_add,
+            commands::playlist_remove,
+            commands::playlist_move,
+            commands::playlist_from_queue,
+            commands::playlist_export,
+            commands::playlist_import,
+            commands::smart_preview,
         ])
         .run(tauri::generate_context!())
         .context("the application window could not be started")

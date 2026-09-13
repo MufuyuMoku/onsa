@@ -19,6 +19,7 @@ import { detectLocale, isLocale, setLocale, t, type Locale } from '$lib/i18n/ind
 import type { MessageKey } from '$lib/i18n/dictionary';
 import { initLibrary } from '$lib/library.svelte';
 import { initPlayer } from '$lib/player.svelte';
+import { initPlaylists } from '$lib/playlists.svelte';
 import { loadSettings } from '$lib/settings.svelte';
 import { loadThemes } from '$lib/theme/index.svelte';
 
@@ -35,6 +36,8 @@ export type View =
 	| { kind: 'genre'; name: string }
 	| { kind: 'folders' }
 	| { kind: 'folder'; path: string }
+	| { kind: 'playlists' }
+	| { kind: 'playlist'; id: number }
 	| { kind: 'nowPlaying' }
 	| { kind: 'settings'; section: SettingsSection };
 
@@ -92,7 +95,7 @@ export async function start(root: HTMLElement): Promise<void> {
 		mini = stored.mini;
 		// The window decides its own mode; the interface follows it.
 		await on<boolean>(EVENTS.windowMode, (next) => (mini = next));
-		await Promise.all([initPlayer(), initLibrary(), loadSettings()]);
+		await Promise.all([initPlayer(), initLibrary(), initPlaylists(), loadSettings()]);
 		await refreshTray();
 		failure = null;
 		ready = true;

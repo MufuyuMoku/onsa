@@ -8,17 +8,19 @@ use std::path::PathBuf;
 
 use onsa_audio::dsp::autoeq;
 use onsa_audio::dsp::eq::{auto_preamp_db, response_curve, GRAPHIC_FREQS, MAX_BANDS};
+use onsa_library::m3u::{read_m3u8, write_m3u8};
+use onsa_library::{PathStyle, Rules};
 use serde::Serialize;
-use tauri::{AppHandle, Manager, State};
+use tauri::{AppHandle, Emitter, Manager, State};
 use tauri_plugin_dialog::{DialogExt, FilePath};
 use tauri_plugin_opener::OpenerExt;
 
 use crate::dto::{
-    AlbumDto, AutoEqDto, CurveDto, DeviceDto, NameCountDto, PlayContext, QueueEntryDto, QueuePlace,
-    SearchDto, SortKey, TrackDto,
+    AlbumDto, AutoEqDto, CurveDto, DeviceDto, ImportDto, NameCountDto, PlayContext, PlaylistDto,
+    QueueEntryDto, QueuePlace, SearchDto, SortKey, TrackDto,
 };
 pub use crate::error::ErrorCode;
-use crate::library::{LibraryService, ScanStatus};
+use crate::library::{LibraryService, ScanStatus, PLAYLISTS_EVENT};
 use crate::logging::Logging;
 use crate::player::{Player, Snapshot, Watching};
 use crate::session::{self, WindowMode};
@@ -323,6 +325,12 @@ fn rows_for(
             PlayContext::Artist { name, index } => (library.artist_tracks(&name)?, index),
             PlayContext::Genre { name, index } => (library.genre_tracks(&name)?, index),
             PlayContext::Folder { path, index } => (library.directory_tracks(&path)?, index),
+            // The queue is only ever a source for a playlist: `tracks_of`
+            // reads it from the player, and playing it is already happening.
+            PlayContext::Queue => (Vec::new(), 0),
+            PlayContext::Playlist { playlist_id, index } => {
+                (library.playlist_tracks(playlist_id)?, index)
+            }
             PlayContext::Tracks { ids, index } => {
                 let mut rows = Vec::with_capacity(ids.len());
                 for id in ids {
@@ -793,6 +801,319 @@ pub fn log_set_debug(
 ) -> Result<(), ErrorCode> {
     logging.set_debug(enabled);
     library.read(|library| settings::save(library, settings::LOG_DEBUG_KEY, &enabled))
+}
+
+// ----------------------------------------------------------- playlists (M6)
+
+/// Lists every playlist, manual and smart.
+#[tauri::command]
+pub fn playlist_list(library: State<'_, LibraryService>) -> Result<Vec<PlaylistDto>, ErrorCode> {
+    library.read(|library| Ok(library.playlists()?.iter().map(PlaylistDto::from).collect()))
+}
+
+/// One playlist, if it is still there.
+#[tauri::command]
+pub fn playlist_get(
+    library: State<'_, LibraryService>,
+    id: i64,
+) -> Result<Option<PlaylistDto>, ErrorCode> {
+    library.read(|library| Ok(library.playlist(id)?.as_ref().map(PlaylistDto::from)))
+}
+
+/// The tracks of a playlist: the stored order for a manual one, and what the
+/// rules match right now for a smart one.
+#[tauri::command]
+pub fn playlist_tracks(
+    library: State<'_, LibraryService>,
+    id: i64,
+) -> Result<Vec<TrackDto>, ErrorCode> {
+    library.read(|library| {
+        Ok(library
+            .playlist_tracks(id)?
+            .iter()
+            .map(TrackDto::from)
+            .collect())
+    })
+}
+
+/// Makes a playlist. With rules it is a smart one, without them a manual one.
+#[tauri::command]
+pub fn playlist_create(
+    app: AppHandle,
+    library: State<'_, LibraryService>,
+    name: String,
+    rules: Option<Rules>,
+) -> Result<i64, ErrorCode> {
+    let id = library.read(|library| match &rules {
+        Some(rules) => library.create_smart_playlist(&name, rules),
+        None => library.create_playlist(&name),
+    })?;
+    let _ = app.emit(PLAYLISTS_EVENT, ());
+    Ok(id)
+}
+
+/// Renames a playlist.
+#[tauri::command]
+pub fn playlist_rename(
+    app: AppHandle,
+    library: State<'_, LibraryService>,
+    id: i64,
+    name: String,
+) -> Result<(), ErrorCode> {
+    library.read(|library| library.rename_playlist(id, &name))?;
+    let _ = app.emit(PLAYLISTS_EVENT, ());
+    Ok(())
+}
+
+/// Replaces the rules of a smart playlist.
+#[tauri::command]
+pub fn playlist_set_rules(
+    app: AppHandle,
+    library: State<'_, LibraryService>,
+    id: i64,
+    rules: Rules,
+) -> Result<(), ErrorCode> {
+    library.read(|library| library.set_playlist_rules(id, &rules))?;
+    let _ = app.emit(PLAYLISTS_EVENT, ());
+    Ok(())
+}
+
+/// Deletes a playlist. The tracks themselves stay in the library.
+#[tauri::command]
+pub fn playlist_delete(
+    app: AppHandle,
+    library: State<'_, LibraryService>,
+    id: i64,
+) -> Result<(), ErrorCode> {
+    library.read(|library| library.delete_playlist(id))?;
+    let _ = app.emit(PLAYLISTS_EVENT, ());
+    Ok(())
+}
+
+/// Copies a playlist under another name.
+#[tauri::command]
+pub fn playlist_duplicate(
+    app: AppHandle,
+    library: State<'_, LibraryService>,
+    id: i64,
+    name: String,
+) -> Result<i64, ErrorCode> {
+    let copy = library.write(|library| library.duplicate_playlist(id, &name))?;
+    let _ = app.emit(PLAYLISTS_EVENT, ());
+    Ok(copy)
+}
+
+/// Adds whatever a context stands for to the end of a manual playlist.
+#[tauri::command]
+pub fn playlist_add(
+    app: AppHandle,
+    library: State<'_, LibraryService>,
+    player: State<'_, Player>,
+    id: i64,
+    context: PlayContext,
+) -> Result<usize, ErrorCode> {
+    let tracks = tracks_of(&library, &player, context)?;
+    library.write(|library| library.add_to_playlist(id, &tracks))?;
+    let _ = app.emit(PLAYLISTS_EVENT, ());
+    Ok(tracks.len())
+}
+
+/// Removes the entry at `position` from a manual playlist.
+#[tauri::command]
+pub fn playlist_remove(
+    app: AppHandle,
+    library: State<'_, LibraryService>,
+    id: i64,
+    position: usize,
+) -> Result<(), ErrorCode> {
+    library.write(|library| library.remove_from_playlist(id, position))?;
+    let _ = app.emit(PLAYLISTS_EVENT, ());
+    Ok(())
+}
+
+/// Moves an entry of a manual playlist, as a drag does.
+#[tauri::command]
+pub fn playlist_move(
+    app: AppHandle,
+    library: State<'_, LibraryService>,
+    id: i64,
+    from: usize,
+    to: usize,
+) -> Result<(), ErrorCode> {
+    library.write(|library| library.move_in_playlist(id, from, to))?;
+    let _ = app.emit(PLAYLISTS_EVENT, ());
+    Ok(())
+}
+
+/// Saves the queue as it stands as a new manual playlist (SPEC §6.2).
+#[tauri::command]
+pub fn playlist_from_queue(
+    app: AppHandle,
+    library: State<'_, LibraryService>,
+    player: State<'_, Player>,
+    name: String,
+) -> Result<i64, ErrorCode> {
+    let tracks: Vec<i64> = player
+        .queue()
+        .0
+        .iter()
+        .map(|entry| entry.track.id)
+        .collect();
+    let id = library.write(|library| {
+        let id = library.create_playlist(&name)?;
+        library.add_to_playlist(id, &tracks)?;
+        Ok(id)
+    })?;
+    let _ = app.emit(PLAYLISTS_EVENT, ());
+    Ok(id)
+}
+
+/// The tracks a rule set matches right now, for the rule editor's preview.
+#[tauri::command]
+pub fn smart_preview(
+    library: State<'_, LibraryService>,
+    rules: Rules,
+    limit: usize,
+) -> Result<Vec<TrackDto>, ErrorCode> {
+    library.read(|library| {
+        Ok(library
+            .smart_tracks(&rules)?
+            .iter()
+            .take(limit.min(500))
+            .map(TrackDto::from)
+            .collect())
+    })
+}
+
+/// The track ids a context stands for, in order.
+fn tracks_of(
+    library: &State<'_, LibraryService>,
+    player: &State<'_, Player>,
+    context: PlayContext,
+) -> Result<Vec<i64>, ErrorCode> {
+    if matches!(context, PlayContext::Queue) {
+        return Ok(player
+            .queue()
+            .0
+            .iter()
+            .map(|entry| entry.track.id)
+            .collect());
+    }
+    let (rows, _) = rows_for(library, context)?;
+    Ok(rows.iter().map(|row| row.id).collect())
+}
+
+/// Writes a playlist to an M3U8 file the listener picks (SPEC §6.4).
+///
+/// Paths are written relative to the file where they can be, so a playlist
+/// saved beside the music travels with it.
+#[tauri::command]
+pub async fn playlist_export(
+    app: AppHandle,
+    id: i64,
+    title: String,
+    filter_name: String,
+) -> Result<Option<String>, ErrorCode> {
+    let (name, tracks) = app.state::<LibraryService>().read(|library| {
+        let name = library
+            .playlist(id)?
+            .map(|row| row.name)
+            .unwrap_or_else(|| "playlist".to_string());
+        Ok((name, library.playlist_tracks(id)?))
+    })?;
+    let chooser = app.clone();
+    let picked = tauri::async_runtime::spawn_blocking(move || {
+        chooser
+            .dialog()
+            .file()
+            .set_title(title)
+            .set_file_name(format!("{}.m3u8", tidy_file_name(&name)))
+            .add_filter(filter_name, &["m3u8", "m3u"])
+            .blocking_save_file()
+    })
+    .await
+    .map_err(|_| ErrorCode::Dialog)?;
+    let Some(path) = into_path(picked) else {
+        return Ok(None);
+    };
+    write_m3u8(&path, &tracks, PathStyle::Relative)?;
+    Ok(Some(path.display().to_string()))
+}
+
+/// Reads an M3U8 file into a new manual playlist (SPEC §6.4).
+///
+/// Entries the library does not know are reported back rather than dropped
+/// quietly, so the listener can see what did not come along.
+#[tauri::command]
+pub async fn playlist_import(
+    app: AppHandle,
+    title: String,
+    filter_name: String,
+) -> Result<Option<ImportDto>, ErrorCode> {
+    let chooser = app.clone();
+    let picked = tauri::async_runtime::spawn_blocking(move || {
+        chooser
+            .dialog()
+            .file()
+            .set_title(title)
+            .add_filter(filter_name, &["m3u8", "m3u"])
+            .blocking_pick_file()
+    })
+    .await
+    .map_err(|_| ErrorCode::Dialog)?;
+    let Some(path) = into_path(picked) else {
+        return Ok(None);
+    };
+    let name = path
+        .file_stem()
+        .map(|stem| stem.to_string_lossy().to_string())
+        .filter(|stem| !stem.trim().is_empty())
+        .unwrap_or_else(|| "M3U8".to_string());
+
+    let library = app.state::<LibraryService>();
+    let report = library.read(|library| read_m3u8(&path, library))?;
+    let playlist_id = if report.tracks.is_empty() {
+        None
+    } else {
+        let name = name.clone();
+        let tracks = report.tracks.clone();
+        Some(library.write(|library| {
+            let id = library.create_playlist(&name)?;
+            library.add_to_playlist(id, &tracks)?;
+            Ok(id)
+        })?)
+    };
+    let _ = app.emit(PLAYLISTS_EVENT, ());
+    Ok(Some(ImportDto {
+        playlist_id,
+        name,
+        found: report.tracks.len(),
+        missing: report.missing,
+    }))
+}
+
+/// Characters no file name may hold on Windows, replaced on both systems so
+/// a playlist file travels between them.
+const FORBIDDEN: &[char] = &['<', '>', ':', '"', '/', '\\', '|', '?', '*'];
+
+/// A playlist name made safe to suggest as a file name.
+fn tidy_file_name(name: &str) -> String {
+    let cleaned: String = name
+        .chars()
+        .map(|letter| {
+            if FORBIDDEN.contains(&letter) {
+                '_'
+            } else {
+                letter
+            }
+        })
+        .collect();
+    let cleaned = cleaned.trim().trim_matches('.').trim().to_string();
+    if cleaned.is_empty() {
+        "playlist".to_string()
+    } else {
+        cleaned
+    }
 }
 
 #[cfg(test)]

@@ -21,6 +21,8 @@ use crate::error::ErrorCode;
 pub const SCAN_EVENT: &str = "library://scan";
 /// The library contents changed; lists should reload.
 pub const CHANGED_EVENT: &str = "library://changed";
+/// The set of playlists changed; the sidebar should reload.
+pub const PLAYLISTS_EVENT: &str = "library://playlists";
 
 /// Where a scan stands.
 #[derive(Debug, Clone, Copy, Default, Serialize)]
@@ -97,6 +99,20 @@ impl LibraryService {
         query: impl FnOnce(&Library) -> onsa_library::Result<T>,
     ) -> Result<T, ErrorCode> {
         Ok(query(&lock(&self.reader))?)
+    }
+
+    /// Runs a change on the same connection the interface reads from.
+    ///
+    /// Playlist edits are the listener's own doing and must be visible the
+    /// moment the command returns, so they do not go through the library
+    /// thread. The database is in WAL mode with a busy timeout, so a scan
+    /// running at the same time keeps reading while this short transaction
+    /// commits.
+    pub fn write<T>(
+        &self,
+        change: impl FnOnce(&mut Library) -> onsa_library::Result<T>,
+    ) -> Result<T, ErrorCode> {
+        Ok(change(&mut lock(&self.reader))?)
     }
 
     /// Adds a folder, then scans it.

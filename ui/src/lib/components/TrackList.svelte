@@ -17,6 +17,7 @@
 	import { measure } from '$lib/layout.svelte';
 	import { library, sortBy } from '$lib/library.svelte';
 	import { addToQueue, player, playContext } from '$lib/player.svelte';
+	import { addToPlaylist, playlists } from '$lib/playlists.svelte';
 	import VirtualList from './VirtualList.svelte';
 
 	type Source =
@@ -84,6 +85,17 @@
 		if (!chosen) return;
 		addToQueue({ kind: 'tracks', ids: [chosen.id], index: 0 }, place).catch(() => {});
 	}
+
+	/** The same track, into a playlist the listener already has. */
+	function addOneTo(playlistId: number): void {
+		const chosen = menu;
+		menu = null;
+		if (!chosen) return;
+		addToPlaylist(playlistId, { kind: 'tracks', ids: [chosen.id], index: 0 }).catch(() => {});
+	}
+
+	// Only manual playlists take tracks: a smart one is its rules.
+	const manual = $derived(playlists.all.filter((playlist) => playlist.kind === 'manual'));
 
 	function fileName(path: string): string {
 		return path.split(/[\\/]/).pop() ?? path;
@@ -225,6 +237,16 @@
 		<li>
 			<button type="button" onclick={() => addOne('end')}>{t('queue.addToEnd')}</button>
 		</li>
+		{#if manual.length > 0}
+			<li class="heading label" role="presentation">{t('playlist.addTo')}</li>
+			{#each manual as playlist (playlist.id)}
+				<li>
+					<button type="button" class="ellipsis" onclick={() => addOneTo(playlist.id)}
+						>{playlist.name}</button
+					>
+				</li>
+			{/each}
+		{/if}
 	</menu>
 {/if}
 
@@ -252,6 +274,20 @@
 		background: var(--onsa-surface-raised);
 		box-shadow: 0 10px 24px rgb(0 0 0 / 0.45);
 		list-style: none;
+	}
+
+	.menu {
+		max-height: min(60vh, 420px);
+		max-width: 260px;
+		overflow-y: auto;
+		scrollbar-width: thin;
+	}
+
+	.menu .heading {
+		margin-top: 4px;
+		padding: 6px 10px 2px;
+		border-top: var(--onsa-hairline) solid var(--onsa-surface-line);
+		font-size: 10px;
 	}
 
 	.menu button {

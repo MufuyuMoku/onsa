@@ -17,7 +17,9 @@
 	} from '$lib/player.svelte';
 	import { closeOverlays } from '$lib/layout.svelte';
 	import { settings } from '$lib/settings.svelte';
+	import { saveQueueAsPlaylist } from '$lib/playlists.svelte';
 	import Icon from './Icon.svelte';
+	import NamePrompt from './NamePrompt.svelte';
 	import VirtualList from './VirtualList.svelte';
 
 	interface Props {
@@ -55,6 +57,19 @@
 
 	function fileName(path: string): string {
 		return path.split(/[\\/]/).pop() ?? path;
+	}
+
+	// Saving the queue is how a session of clicking about becomes a playlist
+	// worth keeping (SPEC section 6.2).
+	let saving = $state(false);
+
+	async function saveQueue(name: string): Promise<void> {
+		saving = false;
+		try {
+			await saveQueueAsPlaylist(name);
+		} catch {
+			// A playlist that cannot be written leaves the queue as it is.
+		}
 	}
 
 	function drop(to: number): void {
@@ -107,6 +122,15 @@
 			onclick={() => emptyQueue().catch(() => {})}
 		>
 			{t('queue.clear')}
+		</button>
+		<button
+			type="button"
+			class="chip"
+			title={t('playlist.saveQueue')}
+			disabled={items.length === 0}
+			onclick={() => (saving = true)}
+		>
+			<Icon name="playlist" />
 		</button>
 	</div>
 
@@ -175,6 +199,16 @@
 		{/if}
 	</div>
 </aside>
+
+{#if saving}
+	<NamePrompt
+		title={t('playlist.saveQueue')}
+		value={t('playlist.queueName', { date: new Date().toLocaleDateString() })}
+		confirm={t('playlist.create')}
+		onconfirm={saveQueue}
+		oncancel={() => (saving = false)}
+	/>
+{/if}
 
 <style>
 	.queue {

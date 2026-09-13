@@ -20,6 +20,8 @@
 	import MiniPlayer from '$lib/components/MiniPlayer.svelte';
 	import NowPlaying from '$lib/components/NowPlaying.svelte';
 	import Icon from '$lib/components/Icon.svelte';
+	import PlaylistsView from '$lib/components/PlaylistsView.svelte';
+	import PlaylistView from '$lib/components/PlaylistView.svelte';
 	import QueuePanel from '$lib/components/QueuePanel.svelte';
 	import SearchView from '$lib/components/SearchView.svelte';
 	import Sidebar from '$lib/components/Sidebar.svelte';
@@ -183,6 +185,10 @@
 					<BrowseView kind="folders" />
 				{:else if view.kind === 'folder'}
 					<BrowseView kind="folders" name={view.path} />
+				{:else if view.kind === 'playlists'}
+					<PlaylistsView />
+				{:else if view.kind === 'playlist'}
+					<PlaylistView id={view.id} />
 				{:else if view.kind === 'nowPlaying'}
 					<NowPlaying />
 				{:else}

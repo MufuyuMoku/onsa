@@ -4,7 +4,9 @@
 //! mirror them for the command boundary, in camelCase.
 
 use onsa_audio::DeviceInfo;
-use onsa_library::{AlbumRow, NameCount, SearchResults, TrackRow, TrackSort};
+use onsa_library::{
+    AlbumRow, NameCount, PlaylistKind, PlaylistRow, Rules, SearchResults, TrackRow, TrackSort,
+};
 use serde::{Deserialize, Serialize};
 
 use crate::settings::BandPrefs;
@@ -223,6 +225,15 @@ pub enum PlayContext {
         /// Track to start at.
         index: usize,
     },
+    /// The play queue as it stands, for saving it as a playlist.
+    Queue,
+    /// One playlist, manual or smart.
+    Playlist {
+        /// Playlist id.
+        playlist_id: i64,
+        /// Track to start at.
+        index: usize,
+    },
     /// A list of tracks, such as search results.
     Tracks {
         /// Track ids in order.
@@ -230,6 +241,54 @@ pub enum PlayContext {
         /// Track to start at.
         index: usize,
     },
+}
+
+/// A playlist as the interface lists it.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PlaylistDto {
+    /// Playlist id.
+    pub id: i64,
+    /// Its name.
+    pub name: String,
+    /// Manual or smart.
+    pub kind: PlaylistKind,
+    /// The rules, for a smart playlist.
+    pub rules: Option<Rules>,
+    /// How many tracks it holds right now.
+    pub track_count: usize,
+    /// When it was made, in milliseconds since the Unix epoch.
+    pub created_at: i64,
+    /// When it last changed.
+    pub updated_at: i64,
+}
+
+impl From<&PlaylistRow> for PlaylistDto {
+    fn from(row: &PlaylistRow) -> Self {
+        Self {
+            id: row.id,
+            name: row.name.clone(),
+            kind: row.kind,
+            rules: row.rules.clone(),
+            track_count: row.track_count,
+            created_at: row.created_at,
+            updated_at: row.updated_at,
+        }
+    }
+}
+
+/// What came of reading a playlist file (SPEC §6.4).
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ImportDto {
+    /// The playlist that was made, if any track was found.
+    pub playlist_id: Option<i64>,
+    /// Its name, taken from the file name.
+    pub name: String,
+    /// How many tracks the library knew.
+    pub found: usize,
+    /// Entries the library has no track for, as the file wrote them.
+    pub missing: Vec<String>,
 }
 
 /// Where new entries join the queue (SPEC §6.1).
