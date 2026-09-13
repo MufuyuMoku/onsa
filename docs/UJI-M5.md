@@ -20,6 +20,8 @@ Putar sebuah lagu, lalu buka **Sedang diputar** (ikon di transport, atau Ctrl+N)
 
 Coba ganti tema di **Pengaturan → Tampilan** sambil lagu berjalan, lalu kembali ke Sedang diputar.
 
+Saat lagu dijeda atau belum ada yang diputar, spektrumnya tidak membeku di gambar terakhir melainkan berganti tulisan **Diam**. Itu disengaja: kalau tidak ada sinyal, Onsa tidak berpura-pura ada. Bilang kalau menurutmu lebih enak kalau batangnya turun perlahan ke nol.
+
 ## 2. Warna nada
 
 Masih di Sedang diputar, dengarkan lagu yang pindah dari bagian tenang dan berat ke bagian terang dan ramai.
