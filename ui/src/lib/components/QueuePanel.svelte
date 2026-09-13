@@ -15,9 +15,17 @@
 		removeQueueEntry,
 		toggleShuffle
 	} from '$lib/player.svelte';
+	import { closeOverlays } from '$lib/layout.svelte';
 	import { settings } from '$lib/settings.svelte';
 	import Icon from './Icon.svelte';
 	import VirtualList from './VirtualList.svelte';
+
+	interface Props {
+		/** Whether the panel is covering the content rather than beside it. */
+		floating?: boolean;
+	}
+
+	const { floating = false }: Props = $props();
 
 	const ROW = 44;
 
@@ -58,11 +66,17 @@
 	}
 </script>
 
-<aside class="queue">
+<aside class="queue" class:floating>
 	<header class="head">
 		<h2 class="label">{t('queue.title')}</h2>
+		<span class="grow"></span>
 		{#if items.length > 0}
 			<span class="numeric muted">{t('queue.count', { n: items.length })}</span>
+		{/if}
+		{#if floating}
+			<button type="button" class="icon-btn" aria-label={t('search.clear')} onclick={closeOverlays}>
+				<Icon name="close" />
+			</button>
 		{/if}
 	</header>
 
@@ -173,9 +187,13 @@
 
 	.head {
 		display: flex;
-		align-items: baseline;
-		justify-content: space-between;
-		padding: 16px 14px 6px;
+		align-items: center;
+		gap: 8px;
+		padding: 16px 10px 6px 14px;
+	}
+
+	.grow {
+		flex: 1;
 	}
 
 	h2 {

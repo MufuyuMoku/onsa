@@ -7,6 +7,7 @@
 	import { nextTrack, previousTrack, seek, togglePlay } from '$lib/backend';
 	import { followTone } from '$lib/analysis.svelte';
 	import { app, navigate, setMiniPlayer } from '$lib/app.svelte';
+	import { closeOverlays, followWidth, layout, toggleMenu, toggleQueue } from '$lib/layout.svelte';
 	import { t } from '$lib/i18n/index.svelte';
 	import { library, setQuery } from '$lib/library.svelte';
 	import { player } from '$lib/player.svelte';
@@ -38,6 +39,8 @@
 
 	// The hue follows the sound while tone colour is on (SPEC section 9.5).
 	followTone();
+	// The panels follow the width of the window (SPEC section 9.2).
+	followWidth();
 
 	function editing(target: EventTarget | null): boolean {
 		return (
@@ -111,10 +114,25 @@
 {:else if app.mini}
 	<MiniPlayer />
 {:else}
-	<div class="shell">
-		<Sidebar />
+	<div
+		class="shell"
+		data-sidebar={layout.sidebar}
+		class:with-queue={layout.queueDocked}
+	>
+		{#if layout.sidebar !== 'hidden'}
+			<Sidebar mode={layout.sidebar} />
+		{/if}
 		<main class="content">
 			<header class="head">
+				{#if layout.sidebar === 'hidden'}
+					<button
+						type="button"
+						class="icon-btn"
+						aria-label={t('nav.library')}
+						aria-expanded={layout.menuFloating}
+						onclick={toggleMenu}><Icon name="menu" /></button
+					>
+				{/if}
 				<label class="search">
 					<Icon name="search" />
 					<input
@@ -134,6 +152,15 @@
 						>
 					{/if}
 				</label>
+				{#if !layout.queueDocked}
+					<button
+						type="button"
+						class="icon-btn"
+						aria-label={t('queue.title')}
+						aria-expanded={layout.queueFloating}
+						onclick={toggleQueue}><Icon name="queue" /></button
+					>
+				{/if}
 			</header>
 			<div class="body">
 				{#if library.query.trim()}
@@ -162,8 +189,22 @@
 					<SettingsView section={view.section} />
 				{/if}
 			</div>
+			{#if layout.queueFloating || layout.menuFloating}
+				<!-- Tapping what is left of the content puts the panel away.
+				     Only the content is covered: the transport stays within
+				     reach while the listener reads the queue. -->
+				<div class="scrim" role="presentation" onclick={closeOverlays}></div>
+			{/if}
+			{#if layout.queueFloating}
+				<QueuePanel floating />
+			{/if}
+			{#if layout.menuFloating}
+				<div class="drawer"><Sidebar mode="full" /></div>
+			{/if}
 		</main>
-		<QueuePanel />
+		{#if layout.queueDocked}
+			<QueuePanel />
+		{/if}
 		<div class="transport"><Transport /></div>
 		<div class="signal"><SignalPath /></div>
 	</div>
@@ -177,26 +218,83 @@
 	}
 
 	.shell {
+		position: relative;
 		display: grid;
-		grid-template-columns: 190px minmax(0, 1fr) 290px;
+		grid-template-columns: 190px minmax(0, 1fr);
 		grid-template-rows: minmax(0, 1fr) auto auto;
+		grid-template-areas:
+			'sidebar content'
+			'transport transport'
+			'signal signal';
+		height: 100%;
+		overflow: hidden;
+	}
+
+	.shell.with-queue {
+		grid-template-columns: 190px minmax(0, 1fr) 290px;
 		grid-template-areas:
 			'sidebar content queue'
 			'transport transport transport'
 			'signal signal signal';
-		height: 100%;
+	}
+
+	.shell[data-sidebar='icons'] {
+		grid-template-columns: 52px minmax(0, 1fr);
+	}
+
+	.shell[data-sidebar='icons'].with-queue {
+		grid-template-columns: 52px minmax(0, 1fr) 290px;
+	}
+
+	.shell[data-sidebar='hidden'] {
+		grid-template-columns: minmax(0, 1fr);
+		grid-template-areas:
+			'content'
+			'transport'
+			'signal';
 	}
 
 	.shell > :global(.sidebar) {
 		grid-area: sidebar;
 	}
 
+	/* Panels that cover the content rather than sit beside it. */
+	.scrim {
+		position: absolute;
+		inset: 0;
+		z-index: 8;
+		background: rgb(0 0 0 / 0.35);
+	}
+
+	.drawer {
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		left: 0;
+		z-index: 9;
+		width: min(190px, 70%);
+		display: grid;
+		box-shadow: 8px 0 24px rgb(0 0 0 / 0.45);
+	}
+
+	.content > :global(.queue.floating) {
+		position: absolute;
+		top: 0;
+		right: 0;
+		bottom: 0;
+		z-index: 9;
+		width: min(290px, 72%);
+		box-shadow: -8px 0 24px rgb(0 0 0 / 0.45);
+	}
+
 	.content {
+		position: relative;
 		grid-area: content;
 		display: grid;
 		grid-template-rows: auto minmax(0, 1fr);
 		min-width: 0;
 		min-height: 0;
+		overflow: hidden;
 		background: var(--onsa-surface-app);
 	}
 
@@ -213,13 +311,22 @@
 	}
 
 	.head {
-		padding: 12px 14px 8px;
-	}
-
-	.search {
 		display: flex;
 		align-items: center;
 		gap: 8px;
+		padding: 12px 14px 8px;
+	}
+
+	.head .icon-btn {
+		flex: none;
+	}
+
+	.search {
+		flex: 1;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		min-width: 0;
 		max-width: 460px;
 		padding: 6px 10px;
 		border: var(--onsa-hairline) solid var(--onsa-surface-line);
@@ -258,6 +365,9 @@
 	}
 
 	.body {
+		/* Pages ask this box how much room they have, not the window: the
+		   sidebar and the queue take their share first (SPEC section 9.2). */
+		container: content / inline-size;
 		min-height: 0;
 	}
 </style>

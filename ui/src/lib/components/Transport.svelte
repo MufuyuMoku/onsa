@@ -1,10 +1,18 @@
-<!-- Transport (SPEC section 9.2): cover, title, controls, position, volume, meter. -->
+<!--
+	Transport (SPEC section 9.2): cover, title, controls, position, volume,
+	meter.
+
+	The play controls, the position and the volume are always there. As the
+	window narrows the meter goes first, then the cover, and the buttons
+	beside them move into a button of their own (SPEC section 9.2).
+-->
 <script lang="ts">
 	import { tonePosition } from '$lib/analysis.svelte';
 	import { coverUrl, nextTrack, previousTrack, seek, togglePlay } from '$lib/backend';
 	import { app, navigate, setMiniPlayer } from '$lib/app.svelte';
 	import { clock, db } from '$lib/format';
 	import { t } from '$lib/i18n/index.svelte';
+	import { measure } from '$lib/layout.svelte';
 	import { player } from '$lib/player.svelte';
 	import { settings, updateDsp } from '$lib/settings.svelte';
 	import Icon from './Icon.svelte';
@@ -20,6 +28,20 @@
 	const duration = $derived(snapshot?.duration ?? 0);
 	const volume = $derived(settings.value?.dsp.volumeDb ?? 0);
 
+	/** Width of the transport itself. */
+	let width = $state(1200);
+	/** The meters have room beside everything else. */
+	const metered = $derived(width >= 1000);
+	/** The extra buttons stand on their own rather than in a menu. */
+	const roomy = $derived(width >= 1120);
+	/** The cover is worth its 76 pixels. */
+	const covered = $derived(width >= 760);
+
+	let extras = $state(false);
+	$effect(() => {
+		if (roomy) extras = false;
+	});
+
 	let dragging = $state(false);
 	let dragValue = $state(0);
 	const shown = $derived(dragging ? dragValue : player.position);
@@ -34,10 +56,46 @@
 	}
 </script>
 
-<footer class="transport">
-	<div class="art">
-		{#if track?.coverId != null}<img src={coverUrl(track.coverId, 128)} alt="" />{/if}
-	</div>
+{#snippet buttons()}
+	<button
+		type="button"
+		class="icon-btn"
+		aria-label={t('nowPlaying.open')}
+		aria-pressed={app.view.kind === 'nowPlaying'}
+		disabled={!track}
+		onclick={() => {
+			extras = false;
+			navigate({ kind: 'nowPlaying' });
+		}}
+	>
+		<Icon name="disc" />
+	</button>
+	<SleepTimer />
+	<button
+		type="button"
+		class="icon-btn"
+		aria-label={t('mini.open')}
+		onclick={() => {
+			extras = false;
+			setMiniPlayer(true);
+		}}
+	>
+		<Icon name="mini" />
+	</button>
+{/snippet}
+
+<footer
+	class="transport"
+	class:metered
+	class:roomy
+	class:covered
+	use:measure={(seen) => (width = seen)}
+>
+	{#if covered}
+		<div class="art">
+			{#if track?.coverId != null}<img src={coverUrl(track.coverId, 128)} alt="" />{/if}
+		</div>
+	{/if}
 
 	<div class="info well">
 		{#if track}
@@ -123,40 +181,82 @@
 		<span class="numeric value">{volume <= VOLUME_FLOOR ? db(-Infinity) : db(volume)}</span>
 	</div>
 
+
 	<div class="extras">
-		<button
-			type="button"
-			class="icon-btn"
-			aria-label={t('nowPlaying.open')}
-			aria-pressed={app.view.kind === 'nowPlaying'}
-			disabled={!track}
-			onclick={() => navigate({ kind: 'nowPlaying' })}
-		>
-			<Icon name="disc" />
-		</button>
-		<SleepTimer />
-		<button
-			type="button"
-			class="icon-btn"
-			aria-label={t('mini.open')}
-			onclick={() => setMiniPlayer(true)}
-		>
-			<Icon name="mini" />
-		</button>
+		{#if roomy}
+			{@render buttons()}
+		{:else}
+			<button
+				type="button"
+				class="icon-btn"
+				aria-label={t('transport.more')}
+				aria-expanded={extras}
+				title={t('transport.more')}
+				onclick={() => (extras = !extras)}
+			>
+				<Icon name="more" />
+			</button>
+		{/if}
 	</div>
 
-	<div class="meters well"><Meter /></div>
+	{#if metered}
+		<div class="meters well"><Meter /></div>
+	{/if}
 </footer>
+
+{#if extras && !roomy}
+	<!-- Closing the row is what the backdrop is for; it is not a control. -->
+	<div class="backdrop" role="presentation" onclick={() => (extras = false)}></div>
+	<div class="popover">{@render buttons()}</div>
+{/if}
 
 <style>
 	.transport {
 		display: grid;
-		grid-template-columns: 76px minmax(220px, 1.6fr) auto minmax(140px, 0.7fr) auto minmax(190px, 0.9fr);
+		/* Info, controls, volume and the extras button: what is always here. */
+		grid-template-columns: minmax(150px, 1.6fr) auto minmax(120px, 0.7fr) auto;
 		align-items: center;
-		gap: 14px;
+		gap: 12px;
 		padding: 12px 16px;
+		min-width: 0;
 		border-top: var(--onsa-hairline) solid var(--onsa-surface-line);
 		background: var(--onsa-surface-body);
+	}
+
+	.transport.covered {
+		grid-template-columns: 76px minmax(150px, 1.6fr) auto minmax(120px, 0.7fr) auto;
+	}
+
+	.transport.metered {
+		grid-template-columns: 76px minmax(190px, 1.6fr) auto minmax(130px, 0.7fr) auto minmax(
+				170px,
+				0.9fr
+			);
+	}
+
+	.transport > * {
+		min-width: 0;
+	}
+
+	.backdrop {
+		position: fixed;
+		inset: 0;
+		z-index: 10;
+	}
+
+	.popover {
+		position: fixed;
+		right: 12px;
+		bottom: 86px;
+		z-index: 11;
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		padding: 6px 8px;
+		border: var(--onsa-hairline) solid var(--onsa-surface-line);
+		border-radius: var(--onsa-radius-sm);
+		background: var(--onsa-surface-raised);
+		box-shadow: 0 10px 24px rgb(0 0 0 / 0.45);
 	}
 
 	:global(:root[data-onsa-panel-texture='brushed']) .transport {
@@ -166,6 +266,7 @@
 	}
 
 	.art {
+		flex: none;
 		width: 76px;
 		height: 76px;
 		border-radius: var(--onsa-radius-sm);

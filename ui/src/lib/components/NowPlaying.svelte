@@ -117,7 +117,24 @@
 		gap: 18px 28px;
 		height: 100%;
 		padding: 16px 24px 24px;
+		overflow-x: hidden;
 		overflow-y: auto;
+	}
+
+	/* Narrow enough that the cover and the words would fight: the cover
+	   steps above the words instead (SPEC section 9.2). */
+	@container content (max-width: 700px) {
+		.now {
+			grid-template-columns: minmax(0, 1fr);
+			gap: 14px;
+			padding: 14px 16px 20px;
+		}
+
+		.art {
+			width: min(240px, 60cqw);
+			height: min(240px, 60cqw);
+			justify-self: center;
+		}
 	}
 
 	.visualizer {
@@ -142,9 +159,11 @@
 		color: var(--onsa-role-adjustable);
 	}
 
+	/* Both sides are given: a grid row cannot work a height out of an
+	   aspect ratio, and the cover would sit on top of the words. */
 	.art {
-		width: min(340px, 34vw);
-		aspect-ratio: 1;
+		width: min(340px, 32cqw);
+		height: min(340px, 32cqw);
 		border-radius: var(--onsa-radius-md);
 		background: var(--onsa-surface-well);
 		box-shadow: 0 18px 40px rgb(0 0 0 / 0.45);
@@ -161,6 +180,7 @@
 	.text {
 		display: flex;
 		flex-direction: column;
+		min-width: 0;
 		gap: 6px;
 		min-width: 0;
 		align-self: center;

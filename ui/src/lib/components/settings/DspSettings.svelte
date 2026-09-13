@@ -136,69 +136,71 @@
 				{#if dsp.parametric.length === 0}
 					<p class="muted note">{t('eq.noBands')}</p>
 				{:else}
-					<div class="bands">
-						<span class="label">{t('eq.bandOn')}</span>
-						<span class="label">{t('eq.type')}</span>
-						<span class="label">{t('eq.freq')}</span>
-						<span class="label">{t('eq.gain')}</span>
-						<span class="label">{t('eq.q')}</span>
-						<span></span>
-						{#each dsp.parametric as band, index (index)}
-							<input
-								type="checkbox"
-								checked={band.enabled}
-								aria-label={t('eq.bandOn')}
-								onchange={(event) => setBand(index, { enabled: event.currentTarget.checked })}
-							/>
-							<select
-								class="field"
-								value={band.kind}
-								aria-label={t('eq.type')}
-								onchange={(event) => setBand(index, { kind: event.currentTarget.value as FilterType })}
-							>
-								{#each filters as [kind, label] (kind)}
-									<option value={kind}>{t(label)}</option>
-								{/each}
-							</select>
-							<input
-								class="field numeric"
-								type="number"
-								min="10"
-								max="22000"
-								step="1"
-								value={band.freq}
-								aria-label={t('eq.freq')}
-								onchange={(event) => setBand(index, { freq: number(event.currentTarget.value, band.freq) })}
-							/>
-							<input
-								class="field numeric"
-								type="number"
-								min="-24"
-								max="24"
-								step="0.1"
-								value={band.gainDb}
-								aria-label={t('eq.gain')}
-								onchange={(event) =>
-									setBand(index, { gainDb: number(event.currentTarget.value, band.gainDb) })}
-							/>
-							<input
-								class="field numeric"
-								type="number"
-								min="0.05"
-								max="20"
-								step="0.01"
-								value={band.q}
-								aria-label={t('eq.q')}
-								onchange={(event) => setBand(index, { q: number(event.currentTarget.value, band.q) })}
-							/>
-							<button
-								type="button"
-								class="btn"
-								aria-label={t('eq.remove')}
-								onclick={() => updateDsp({ parametric: dsp.parametric.filter((_, i) => i !== index) })}
-								>×</button
-							>
-						{/each}
+					<div class="bands-scroll">
+						<div class="bands">
+							<span class="label">{t('eq.bandOn')}</span>
+							<span class="label">{t('eq.type')}</span>
+							<span class="label">{t('eq.freq')}</span>
+							<span class="label">{t('eq.gain')}</span>
+							<span class="label">{t('eq.q')}</span>
+							<span></span>
+							{#each dsp.parametric as band, index (index)}
+								<input
+									type="checkbox"
+									checked={band.enabled}
+									aria-label={t('eq.bandOn')}
+									onchange={(event) => setBand(index, { enabled: event.currentTarget.checked })}
+								/>
+								<select
+									class="field"
+									value={band.kind}
+									aria-label={t('eq.type')}
+									onchange={(event) => setBand(index, { kind: event.currentTarget.value as FilterType })}
+								>
+									{#each filters as [kind, label] (kind)}
+										<option value={kind}>{t(label)}</option>
+									{/each}
+								</select>
+								<input
+									class="field numeric"
+									type="number"
+									min="10"
+									max="22000"
+									step="1"
+									value={band.freq}
+									aria-label={t('eq.freq')}
+									onchange={(event) => setBand(index, { freq: number(event.currentTarget.value, band.freq) })}
+								/>
+								<input
+									class="field numeric"
+									type="number"
+									min="-24"
+									max="24"
+									step="0.1"
+									value={band.gainDb}
+									aria-label={t('eq.gain')}
+									onchange={(event) =>
+										setBand(index, { gainDb: number(event.currentTarget.value, band.gainDb) })}
+								/>
+								<input
+									class="field numeric"
+									type="number"
+									min="0.05"
+									max="20"
+									step="0.01"
+									value={band.q}
+									aria-label={t('eq.q')}
+									onchange={(event) => setBand(index, { q: number(event.currentTarget.value, band.q) })}
+								/>
+								<button
+									type="button"
+									class="btn"
+									aria-label={t('eq.remove')}
+									onclick={() => updateDsp({ parametric: dsp.parametric.filter((_, i) => i !== index) })}
+									>×</button
+								>
+							{/each}
+						</div>
 					</div>
 				{/if}
 				<div class="actions">
@@ -291,6 +293,22 @@
 		display: grid;
 		grid-template-columns: repeat(10, minmax(0, 1fr));
 		gap: 4px;
+		min-width: 0;
+	}
+
+	@container content (max-width: 520px) {
+		.faders {
+			gap: 2px;
+		}
+
+		.fader input {
+			width: 18px;
+			height: 120px;
+		}
+
+		.fader .label {
+			font-size: 9.5px;
+		}
 	}
 
 	.fader {
@@ -315,11 +333,21 @@
 		color: var(--onsa-role-adjustable);
 	}
 
+	/* A row of numbers this wide cannot be folded without lying about what
+	   it says, so below its width it keeps a scroll of its own rather than
+	   pushing the whole page sideways. */
 	.bands {
 		display: grid;
-		grid-template-columns: auto minmax(110px, 1.2fr) repeat(3, minmax(70px, 1fr)) auto;
+		grid-template-columns: auto minmax(96px, 1.2fr) repeat(3, minmax(64px, 1fr)) auto;
 		align-items: center;
 		gap: 6px 8px;
+		min-width: 460px;
+	}
+
+	.bands-scroll {
+		min-width: 0;
+		overflow-x: auto;
+		scrollbar-width: thin;
 	}
 
 	.bands .label {

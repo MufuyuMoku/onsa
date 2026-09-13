@@ -1,72 +1,111 @@
-<!-- Navigation (SPEC section 9.2): only what this build can already do. -->
+<!--
+	Navigation (SPEC section 9.2): only what this build can already do.
+
+	It shows its words where there is room, shrinks to a strip of icons when
+	there is less, and steps aside into a drawer when there is less still
+	(SPEC section 9.2). The entries never change; only how much of each one
+	is drawn.
+-->
 <script lang="ts">
 	import { app, navigate, type SettingsSection, type View } from '$lib/app.svelte';
 	import { t } from '$lib/i18n/index.svelte';
+	import type { MessageKey } from '$lib/i18n/dictionary';
+	import { closeOverlays, layout } from '$lib/layout.svelte';
 	import { library, scanSummary, setQuery } from '$lib/library.svelte';
+	import Icon from './Icon.svelte';
 
-	const settingsPages: { section: SettingsSection; label: `settings.${SettingsSection}` }[] = [
-		{ section: 'output', label: 'settings.output' },
-		{ section: 'dsp', label: 'settings.dsp' },
-		{ section: 'library', label: 'settings.library' },
-		{ section: 'appearance', label: 'settings.appearance' },
-		{ section: 'about', label: 'settings.about' }
-	];
-
-	function go(view: View): void {
-		setQuery('');
-		navigate(view);
+	interface Props {
+		/** `icons` draws the strip; `full` draws the words as well. */
+		mode?: 'full' | 'icons';
 	}
 
+	const { mode = 'full' }: Props = $props();
+
+	type Entry = {
+		view: View;
+		label: MessageKey;
+		icon: 'note' | 'disc' | 'artist' | 'genre' | 'folder' | 'sliders' | 'eq' | 'shelf' | 'palette' | 'info';
+		/** Views that count as this entry being the one in use. */
+		kinds: View['kind'][];
+		section?: SettingsSection;
+	};
+
+	const libraryPages: Entry[] = [
+		{ view: { kind: 'tracks' }, label: 'nav.tracks', icon: 'note', kinds: ['tracks'] },
+		{ view: { kind: 'albums' }, label: 'nav.albums', icon: 'disc', kinds: ['albums', 'album'] },
+		{ view: { kind: 'artists' }, label: 'nav.artists', icon: 'artist', kinds: ['artists', 'artist'] },
+		{ view: { kind: 'genres' }, label: 'nav.genres', icon: 'genre', kinds: ['genres', 'genre'] },
+		{ view: { kind: 'folders' }, label: 'nav.folders', icon: 'folder', kinds: ['folders', 'folder'] }
+	];
+
+	const settingsPages: Entry[] = (
+		[
+			['output', 'settings.output', 'sliders'],
+			['dsp', 'settings.dsp', 'eq'],
+			['library', 'settings.library', 'shelf'],
+			['appearance', 'settings.appearance', 'palette'],
+			['about', 'settings.about', 'info']
+		] as const
+	).map(([section, label, icon]) => ({
+		view: { kind: 'settings', section } as View,
+		label,
+		icon,
+		kinds: ['settings'],
+		section
+	}));
+
 	const view = $derived(app.view);
+
+	function current(entry: Entry): boolean {
+		if (library.query) return false;
+		if (!entry.kinds.includes(view.kind)) return false;
+		if (entry.section) return view.kind === 'settings' && view.section === entry.section;
+		return true;
+	}
+
+	function go(entry: Entry): void {
+		setQuery('');
+		navigate(entry.view);
+		// In the drawer, choosing somewhere to go is also done with it.
+		closeOverlays();
+	}
 </script>
 
-<nav class="sidebar">
-	<div class="mark">Onsa</div>
+<nav class="sidebar" data-mode={mode} aria-label={t('nav.library')}>
+	{#if mode === 'full'}
+		<div class="mark">Onsa</div>
+	{/if}
 
-	<h2 class="label">{t('nav.library')}</h2>
-	<button
-		type="button"
-		class="item"
-		aria-current={view.kind === 'tracks' && !library.query}
-		onclick={() => go({ kind: 'tracks' })}>{t('nav.tracks')}</button
-	>
-	<button
-		type="button"
-		class="item"
-		aria-current={(view.kind === 'albums' || view.kind === 'album') && !library.query}
-		onclick={() => go({ kind: 'albums' })}>{t('nav.albums')}</button
-	>
-	<button
-		type="button"
-		class="item"
-		aria-current={(view.kind === 'artists' || view.kind === 'artist') && !library.query}
-		onclick={() => go({ kind: 'artists' })}>{t('nav.artists')}</button
-	>
-	<button
-		type="button"
-		class="item"
-		aria-current={(view.kind === 'genres' || view.kind === 'genre') && !library.query}
-		onclick={() => go({ kind: 'genres' })}>{t('nav.genres')}</button
-	>
-	<button
-		type="button"
-		class="item"
-		aria-current={(view.kind === 'folders' || view.kind === 'folder') && !library.query}
-		onclick={() => go({ kind: 'folders' })}>{t('nav.folders')}</button
-	>
+	{#snippet group(heading: MessageKey, entries: Entry[])}
+		{#if mode === 'full'}
+			<h2 class="label">{t(heading)}</h2>
+		{:else}
+			<div class="rule" role="presentation"></div>
+		{/if}
+		{#each entries as entry (entry.label)}
+			<button
+				type="button"
+				class="item"
+				aria-current={current(entry)}
+				title={t(entry.label)}
+				aria-label={t(entry.label)}
+				onclick={() => go(entry)}
+			>
+				<Icon name={entry.icon} />
+				{#if mode === 'full'}<span class="text ellipsis">{t(entry.label)}</span>{/if}
+			</button>
+		{/each}
+	{/snippet}
 
-	<h2 class="label">{t('nav.settings')}</h2>
-	{#each settingsPages as page (page.section)}
-		<button
-			type="button"
-			class="item"
-			aria-current={view.kind === 'settings' && view.section === page.section && !library.query}
-			onclick={() => go({ kind: 'settings', section: page.section })}>{t(page.label)}</button
-		>
-	{/each}
+	{@render group('nav.library', libraryPages)}
+	{@render group('nav.settings', settingsPages)}
 
 	{#if library.scan.running}
-		<p class="scan numeric">{scanSummary()}</p>
+		{#if mode === 'full'}
+			<p class="scan numeric ellipsis">{scanSummary()}</p>
+		{:else}
+			<p class="scan dot" title={scanSummary()} aria-label={scanSummary()}>●</p>
+		{/if}
 	{/if}
 </nav>
 
@@ -76,9 +115,17 @@
 		flex-direction: column;
 		gap: 2px;
 		padding: 16px 10px;
+		min-height: 0;
 		overflow-y: auto;
+		overflow-x: hidden;
 		border-right: var(--onsa-hairline) solid var(--onsa-surface-line);
 		background: var(--onsa-surface-body);
+		scrollbar-width: thin;
+	}
+
+	.sidebar[data-mode='icons'] {
+		align-items: center;
+		padding: 12px 6px;
 	}
 
 	.mark {
@@ -93,7 +140,18 @@
 		font-weight: 500;
 	}
 
+	.rule {
+		width: 20px;
+		height: var(--onsa-hairline);
+		margin: 10px 0;
+		background: var(--onsa-surface-line);
+	}
+
 	.item {
+		display: flex;
+		align-items: center;
+		gap: 9px;
+		min-width: 0;
 		padding: 6px 8px;
 		border: 0;
 		border-radius: var(--onsa-radius-sm);
@@ -103,6 +161,17 @@
 		font-size: 13px;
 		text-align: left;
 		cursor: pointer;
+	}
+
+	.item :global(svg) {
+		flex: none;
+		width: 17px;
+		height: 17px;
+		fill: currentColor;
+	}
+
+	.sidebar[data-mode='icons'] .item {
+		padding: 8px;
 	}
 
 	.item:hover {
@@ -120,5 +189,10 @@
 		padding-top: 12px;
 		font-size: 11px;
 		color: var(--onsa-role-caution);
+	}
+
+	.scan.dot {
+		margin: auto 0 0;
+		font-size: 10px;
 	}
 </style>

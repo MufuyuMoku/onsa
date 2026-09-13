@@ -2,17 +2,38 @@
 	The signal path strip (SPEC section 9.2): the chain the audio really goes
 	through. Click a stage to switch it on or off; right-click to open its
 	settings.
+
+	It is always one line. As the window narrows the stages drop their
+	readings, then their long names, and finally the ones furthest from the
+	listener's ear fold into a button that opens them in place — nothing is
+	lost, only put away (SPEC section 9.2).
 -->
 <script lang="ts">
 	import type { RgMode } from '$lib/backend';
 	import { navigate, type SettingsSection } from '$lib/app.svelte';
 	import { db, rate } from '$lib/format';
 	import { t } from '$lib/i18n/index.svelte';
+	import { measure } from '$lib/layout.svelte';
 	import { player } from '$lib/player.svelte';
 	import { settings, updateDsp } from '$lib/settings.svelte';
+	import Icon from './Icon.svelte';
 
 	const signal = $derived(player.snapshot?.signal ?? null);
 	const dsp = $derived(settings.value?.dsp ?? null);
+
+	/** Width of the strip itself. */
+	let width = $state(1200);
+	/** Readings beside each stage's name. */
+	const detailed = $derived(width >= 1060);
+	/** Names in full rather than their short forms. */
+	const spelled = $derived(width >= 900);
+	/** ReplayGain and the limiter move into the button below this. */
+	const folded = $derived(width < 780);
+
+	let open = $state(false);
+	$effect(() => {
+		if (!folded) open = false;
+	});
 
 	/** The mode ReplayGain returns to when switched back on. */
 	let lastMode = $state<Exclude<RgMode, 'off'>>('auto');
@@ -20,8 +41,9 @@
 		if (dsp && dsp.replaygainMode !== 'off') lastMode = dsp.replaygainMode;
 	});
 
-	function open(section: SettingsSection, event: MouseEvent): void {
+	function show(section: SettingsSection, event: MouseEvent): void {
 		event.preventDefault();
+		open = false;
 		navigate({ kind: 'settings', section });
 	}
 
@@ -51,33 +73,46 @@
 	});
 </script>
 
-<div class="path" role="group" aria-label={t('signal.label')} title={t('signal.hint')}>
-	<span class="stage static" class:on={source !== null}>{source ?? t('signal.idle')}</span>
+<div
+	class="path"
+	role="group"
+	aria-label={t('signal.label')}
+	title={t('signal.hint')}
+	use:measure={(seen) => (width = seen)}
+>
+	<span class="stage static source" class:on={source !== null}>{source ?? t('signal.idle')}</span>
 
 	{#if signal?.resample}
 		<span class="sep"></span>
 		<button
 			type="button"
 			class="stage on"
-			onclick={(event) => open('output', event)}
-			oncontextmenu={(event) => open('output', event)}
+			onclick={(event) => show('output', event)}
+			oncontextmenu={(event) => show('output', event)}
 		>
-			{t('signal.resample')}<em>{rate(signal.resample.to)}</em>
+			{spelled ? t('signal.resample') : t('signal.resampleShort')}{#if detailed}<em
+					>{rate(signal.resample.to)}</em
+				>{/if}
 		</button>
 	{/if}
 
-	<span class="sep"></span>
-	<button
-		type="button"
-		class="stage"
-		class:on={dsp?.replaygainMode !== 'off'}
-		aria-pressed={dsp?.replaygainMode !== 'off'}
-		disabled={!dsp}
-		onclick={() => updateDsp({ replaygainMode: dsp?.replaygainMode === 'off' ? lastMode : 'off' })}
-		oncontextmenu={(event) => open('output', event)}
-	>
-		{t('signal.replaygain')}{#if rgDetail}<em>{rgDetail}</em>{/if}
-	</button>
+	{#if !folded}
+		<span class="sep"></span>
+		<button
+			type="button"
+			class="stage"
+			class:on={dsp?.replaygainMode !== 'off'}
+			aria-pressed={dsp?.replaygainMode !== 'off'}
+			disabled={!dsp}
+			onclick={() =>
+				updateDsp({ replaygainMode: dsp?.replaygainMode === 'off' ? lastMode : 'off' })}
+			oncontextmenu={(event) => show('output', event)}
+		>
+			{spelled ? t('signal.replaygain') : t('signal.replaygainShort')}{#if detailed && rgDetail}<em
+					>{rgDetail}</em
+				>{/if}
+		</button>
+	{/if}
 
 	<span class="sep"></span>
 	<button
@@ -87,46 +122,92 @@
 		aria-pressed={dsp?.eqEnabled ?? false}
 		disabled={!dsp}
 		onclick={() => updateDsp({ eqEnabled: !dsp?.eqEnabled })}
-		oncontextmenu={(event) => open('dsp', event)}
+		oncontextmenu={(event) => show('dsp', event)}
 	>
-		{t('signal.eq')}<em>{eqDetail}</em>
+		{t('signal.eq')}{#if detailed && eqDetail}<em>{eqDetail}</em>{/if}
 	</button>
+
+	{#if !folded}
+		<span class="sep"></span>
+		<button
+			type="button"
+			class="stage"
+			class:on={dsp?.limiterEnabled}
+			aria-pressed={dsp?.limiterEnabled ?? false}
+			disabled={!dsp}
+			onclick={() => updateDsp({ limiterEnabled: !dsp?.limiterEnabled })}
+			oncontextmenu={(event) => show('dsp', event)}
+		>
+			{t('signal.limiter')}
+		</button>
+	{/if}
 
 	<span class="sep"></span>
 	<button
 		type="button"
-		class="stage"
-		class:on={dsp?.limiterEnabled}
-		aria-pressed={dsp?.limiterEnabled ?? false}
-		disabled={!dsp}
-		onclick={() => updateDsp({ limiterEnabled: !dsp?.limiterEnabled })}
-		oncontextmenu={(event) => open('dsp', event)}
-	>
-		{t('signal.limiter')}
-	</button>
-
-	<span class="sep"></span>
-	<button
-		type="button"
-		class="stage"
+		class="stage output"
 		class:on={signal?.output != null}
-		onclick={(event) => open('output', event)}
-		oncontextmenu={(event) => open('output', event)}
+		onclick={(event) => show('output', event)}
+		oncontextmenu={(event) => show('output', event)}
 	>
 		{#if signal?.output}
-			{signal.output.backend}<em>{signal.output.name} · {rate(signal.output.sampleRate)}</em>
+			{signal.output.backend}{#if detailed}<em
+					>{signal.output.name} · {rate(signal.output.sampleRate)}</em
+				>{/if}
 		{:else}
 			{t('output.none')}
 		{/if}
 	</button>
+
+	{#if folded}
+		<button
+			type="button"
+			class="stage fold"
+			aria-label={t('signal.more')}
+			aria-expanded={open}
+			title={t('signal.more')}
+			onclick={() => (open = !open)}
+		>
+			<Icon name="more" />
+		</button>
+	{/if}
 </div>
+
+{#if folded && open}
+	<!-- Closing the panel is what the backdrop is for; it is not a control. -->
+	<div class="backdrop" role="presentation" onclick={() => (open = false)}></div>
+	<div class="folded" role="group" aria-label={t('signal.label')}>
+		<button
+			type="button"
+			class="stage"
+			class:on={dsp?.replaygainMode !== 'off'}
+			aria-pressed={dsp?.replaygainMode !== 'off'}
+			disabled={!dsp}
+			onclick={() => updateDsp({ replaygainMode: dsp?.replaygainMode === 'off' ? lastMode : 'off' })}
+		>
+			{t('signal.replaygain')}{#if rgDetail}<em>{rgDetail}</em>{/if}
+		</button>
+		<button
+			type="button"
+			class="stage"
+			class:on={dsp?.limiterEnabled}
+			aria-pressed={dsp?.limiterEnabled ?? false}
+			disabled={!dsp}
+			onclick={() => updateDsp({ limiterEnabled: !dsp?.limiterEnabled })}
+		>
+			{t('signal.limiter')}
+		</button>
+	</div>
+{/if}
 
 <style>
 	.path {
 		display: flex;
-		flex-wrap: wrap;
+		flex-wrap: nowrap;
 		align-items: center;
-		gap: 6px 8px;
+		gap: 8px;
+		min-width: 0;
+		overflow: hidden;
 		padding: 8px 16px 10px;
 		font-family: var(--onsa-font-label);
 		font-size: 12px;
@@ -140,13 +221,69 @@
 	}
 
 	.sep {
+		flex: none;
 		width: 14px;
 		height: var(--onsa-hairline);
 		background: var(--onsa-role-label);
 		opacity: 0.5;
 	}
 
+	/* The two stages that carry a name of their own give up room first. */
+	.stage.source,
+	.stage.output {
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		display: block;
+		line-height: 1.6;
+	}
+
+	.stage.output {
+		flex: 0 1 auto;
+	}
+
+	.fold {
+		flex: none;
+		padding: 2px 6px;
+	}
+
+	.fold :global(svg) {
+		display: block;
+		width: 16px;
+		height: 16px;
+		fill: currentColor;
+	}
+
+	.backdrop {
+		position: fixed;
+		inset: 0;
+		z-index: 10;
+	}
+
+	.folded {
+		position: fixed;
+		right: 12px;
+		bottom: 44px;
+		z-index: 11;
+		display: grid;
+		gap: 6px;
+		padding: 8px;
+		border: var(--onsa-hairline) solid var(--onsa-surface-line);
+		border-radius: var(--onsa-radius-sm);
+		background: var(--onsa-surface-raised);
+		box-shadow: 0 10px 24px rgb(0 0 0 / 0.45);
+		font-family: var(--onsa-font-label);
+		font-size: 12px;
+		color: var(--onsa-role-label);
+	}
+
+	:global(:root[data-onsa-label-case='uppercase']) .folded {
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+	}
+
 	.stage {
+		flex: none;
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;

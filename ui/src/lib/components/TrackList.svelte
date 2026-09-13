@@ -14,6 +14,7 @@
 	} from '$lib/backend';
 	import { clock } from '$lib/format';
 	import { t } from '$lib/i18n/index.svelte';
+	import { measure } from '$lib/layout.svelte';
 	import { library, sortBy } from '$lib/library.svelte';
 	import { addToQueue, player, playContext } from '$lib/player.svelte';
 	import VirtualList from './VirtualList.svelte';
@@ -88,18 +89,57 @@
 		return path.split(/[\\/]/).pop() ?? path;
 	}
 
-	const columns: { key: SortKey; label: 'column.title' | 'column.artist' | 'column.album' | 'column.year' | 'column.duration' }[] =
+	type Column = {
+		key: SortKey;
+		label: 'column.title' | 'column.artist' | 'column.album' | 'column.year' | 'column.duration';
+		/** Width the list needs before this column is worth drawing. */
+		needs: number;
+	};
+
+	// Title and length always stay; the rest go in this order as the list
+	// narrows — the year first, then the album, then the artist. A column is
+	// dropped rather than squeezed: squeezed columns end up on top of each
+	// other (SPEC section 9.2).
+	const columns: Column[] = [
+		{ key: 'title', label: 'column.title', needs: 0 },
+		{ key: 'artist', label: 'column.artist', needs: 560 },
+		{ key: 'album', label: 'column.album', needs: 740 },
+		{ key: 'year', label: 'column.year', needs: 880 },
+		{ key: 'duration', label: 'column.duration', needs: 0 }
+	];
+
+	/** Width of the list itself, which is what the columns have to fit in. */
+	let width = $state(1000);
+
+	const shown = $derived(
+		columns.filter(
+			(column) =>
+				(showAlbum || column.key !== 'album') &&
+				(column.key !== 'album' || width >= column.needs) &&
+				width >= column.needs
+		)
+	);
+	const has = $derived({
+		artist: shown.some((column) => column.key === 'artist'),
+		album: shown.some((column) => column.key === 'album'),
+		year: shown.some((column) => column.key === 'year')
+	});
+	/** The grid the head and every row share, built from what is shown. */
+	const template = $derived(
 		[
-			{ key: 'title', label: 'column.title' },
-			{ key: 'artist', label: 'column.artist' },
-			{ key: 'album', label: 'column.album' },
-			{ key: 'year', label: 'column.year' },
-			{ key: 'duration', label: 'column.duration' }
-		];
-	const shown = $derived(columns.filter((column) => showAlbum || column.key !== 'album'));
+			'44px',
+			'minmax(0, 2.2fr)',
+			has.artist ? 'minmax(0, 1.4fr)' : '',
+			has.album ? 'minmax(0, 1.6fr)' : '',
+			has.year ? '48px' : '',
+			'56px'
+		]
+			.filter(Boolean)
+			.join(' ')
+	);
 </script>
 
-<div class="tracklist" class:no-album={!showAlbum}>
+<div class="tracklist" use:measure={(seen) => (width = seen)} style:--columns={template}>
 	<div class="head label" role="row">
 		<span class="num">{t('column.number')}</span>
 		{#each shown as column (column.key)}
@@ -149,9 +189,11 @@
 								{#if track.status === 'missing'}<em>{t('track.missing')}</em>{/if}
 								{#if track.status === 'failed'}<em>{t('track.failed')}</em>{/if}
 							</span>
-							<span class="ellipsis muted">{track.artist ?? t('track.unknownArtist')}</span>
-							{#if showAlbum}<span class="ellipsis muted">{track.album ?? ''}</span>{/if}
-							<span class="numeric muted">{track.year ?? ''}</span>
+							{#if has.artist}
+								<span class="ellipsis muted">{track.artist ?? t('track.unknownArtist')}</span>
+							{/if}
+							{#if has.album}<span class="ellipsis muted">{track.album ?? ''}</span>{/if}
+							{#if has.year}<span class="numeric muted">{track.year ?? ''}</span>{/if}
 							<span class="numeric muted right"
 								>{clock(track.durationMs === null ? null : track.durationMs / 1000)}</span
 							>
@@ -241,15 +283,19 @@
 	.head,
 	.row {
 		display: grid;
-		grid-template-columns: 48px minmax(0, 2.2fr) minmax(0, 1.4fr) minmax(0, 1.6fr) 56px 64px;
+		grid-template-columns: var(--columns);
 		align-items: center;
-		gap: 12px;
+		gap: 10px;
 		padding: 0 14px;
 	}
 
-	.no-album .head,
-	.no-album .row {
-		grid-template-columns: 48px minmax(0, 2.4fr) minmax(0, 1.6fr) 56px 64px;
+	/* Nothing in a row may grow past its column, headings included. */
+	.head > *,
+	.row > * {
+		min-width: 0;
+		overflow: hidden;
+		white-space: nowrap;
+		text-overflow: ellipsis;
 	}
 
 	.head {
@@ -268,6 +314,10 @@
 		text-transform: inherit;
 		text-align: left;
 		cursor: pointer;
+	}
+
+	.sort.right {
+		text-align: right;
 	}
 
 	.sort[aria-pressed='true'] {
