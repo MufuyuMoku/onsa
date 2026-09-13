@@ -319,3 +319,30 @@ Catatan keputusan yang diambil saat spesifikasi kurang jelas. Format: tanggal, k
 - **Transport menjaga tombol putar, posisi, dan volume** di lebar berapa pun. Meter hilang di bawah 1000, cover di bawah 760, dan tombol tambahan (Sedang diputar, sleep timer, mini player) pindah ke tombol "…" di bawah 1120.
 - **Halaman pengaturan memakai container query**, bukan media query: yang menentukan bukan lebar jendela melainkan lebar area konten yang tersisa setelah sidebar dan antrean. Label pindah ke atas kontrolnya di bawah 520, dan fader EQ menyempit. Tabel EQ parametrik adalah satu-satunya yang menyimpan scroll mendatarnya sendiri: deretan angka itu tidak bisa dilipat tanpa berbohong soal isinya, dan scroll-nya tertahan di dalam kotaknya.
 - **Sedang Diputar menumpuk** cover di atas keterangan di bawah 700. Cover diberi lebar **dan** tinggi: sebuah baris grid tidak bisa menghitung tinggi dari `aspect-ratio`, dan akibatnya cover sempat duduk di atas judul — ketahuan lewat pemeriksaan tumpang tindih, bukan lewat mata.
+
+## 2026-09-13 · M6: playlist biasa, playlist pintar, dan M3U8
+
+- **Aturan playlist pintar dikompilasi jadi SQL berparameter, selalu.** `Rules` (JSON) diterjemahkan ke satu statement dengan `?` untuk setiap nilai; tidak ada satu pun nilai dari pengguna yang pernah masuk ke teks SQL-nya. Nama kolom tidak pernah dibangun dari input: setiap `Field` memetakan ke satu ekspresi kolom yang sudah tertulis di kode. Ada tes yang menyimpan `'; DROP TABLE tracks; --` sebagai nilai aturan dan memastikan library-nya utuh setelahnya, dan tes lain yang memastikan `%` diperlakukan sebagai karakter biasa, bukan wildcard (`ESCAPE '\'`).
+- **Playlist pintar tidak pernah menyimpan daftar lagunya.** Yang tersimpan hanya aturannya; lagunya ditanyakan ulang setiap kali playlist dibuka, jadi ia otomatis ikut berubah saat library berubah (SPEC §6.3). Batas atasnya 10.000 baris supaya aturan tanpa limit tidak menarik seluruh library sekaligus ke UI.
+- **Operator terikat pada jenis kolomnya.** Kolom teks hanya menerima operator teks, kolom angka hanya operator angka, kolom tanggal hanya operator tanggal. Aturan yang tidak cocok ditolak saat dikompilasi, bukan diam-diam dianggap tidak cocok — dan editornya hanya menawarkan operator yang berlaku, jadi aturan yang ditolak backend tidak bisa dibangun dari UI.
+- **Aturan "tidak" ikut mencakup lagu yang kolomnya kosong.** "Genre tidak mengandung pop" harus juga memuat lagu tanpa genre; kalau tidak, aturan negatif akan diam-diam membuang lagu yang belum ditandai.
+- **Posisi playlist dinomori ulang seluruhnya saat sebuah baris dipindahkan.** `(playlist_id, position)` adalah primary key, jadi menggeser baris satu per satu akan menabrak tetangganya (SQLite tidak menjanjikan urutan baris saat UPDATE). Menulis ulang urutannya sederhana dan jelas benar; panjang playlist tidak sampai membuat itu terasa.
+- **Lagu yang sama boleh dua kali dalam satu playlist biasa** (SPEC §6.2), jadi identitas barisnya adalah posisinya, bukan track id-nya.
+- **Menghapus lagu dari library menghapusnya dari playlist**, lewat `ON DELETE CASCADE`. Tapi file yang hilang hanya ditandai `missing` dan **tetap ada di playlist**, sesuai SPEC §5.2 — ia baru pergi kalau pengguna sendiri membersihkannya.
+- **M3U8 ditulis dengan path relatif kalau bisa**, supaya playlist yang disimpan di sebelah musiknya ikut berpindah bersama musiknya. Selalu UTF-8 tanpa BOM, selalu garis miring depan, dan selalu diakhiri baris baru — itu yang dibaca pemutar lain di kedua sistem. Ekspor dengan path absolut tetap tersedia di lapisan library.
+- **Impor melaporkan apa yang tidak ditemukan, tidak membuangnya diam-diam** (SPEC §6.4). `#EXTINF` dibaca hanya untuk tempatnya: tag milik library lebih baik daripada tulisan di file playlist. Path relatif yang naik keluar foldernya (`../`) tetap diikuti, dan di Windows path dibandingkan tanpa memandang besar-kecil huruf.
+- **Perintah playlist menulis lewat koneksi pembaca**, bukan lewat thread library. Perubahan playlist adalah perbuatan pengguna sendiri dan harus terlihat begitu perintahnya kembali; databasenya WAL dengan busy timeout, jadi scan yang sedang berjalan tetap bisa membaca sementara transaksi pendek ini di-commit.
+- **Satu event untuk daftar playlist** (`library://playlists`). UI memuat ulang daftarnya saat event itu datang, dan juga saat library berubah — karena jumlah lagu playlist pintar ikut berubah tanpa ada yang menyentuh playlist-nya.
+- **Antrean bisa disimpan jadi playlist** lewat tombol di panel antrean (SPEC §6.2); namanya diusulkan berisi tanggal hari ini dan tinggal diganti.
+
+### Dua bug yang ditangkap tesnya sebelum ada yang memakainya
+
+- Kolom "folder" memanggil fungsi SQL `parent_of`, padahal yang didaftarkan ke koneksi bernama `onsa_parent`. Setiap aturan folder akan gagal.
+- Memindahkan baris playlist menabrak primary key-nya, seperti dijelaskan di atas.
+
+## 2026-09-13 · Jendela yang diminimalkan tidak menimpa sesi (perbaikan bug)
+
+- **Konteks**: ketahuan saat memverifikasi M6. Onsa terbuka sekecil-kecilnya di pojok layar, padahal ditinggalkan dalam jendela besar. Yang tersimpan di sesi: `{"width":0,"height":0,"x":-25600,"y":-25600}`.
+- **Akar masalahnya**: sesi disimpan saat jendela kehilangan fokus dan saat ditutup. Jendela yang **diminimalkan** kehilangan fokus juga — dan jendela yang diminimalkan melaporkan ukuran nol dan tempat jauh di luar layar. Itulah yang tersimpan.
+- **Keputusan**: `WindowMode` menolak geometri yang tidak layak jadi jendela penuh (`usable`) dan menyimpan jendela terakhir yang layak sebagai gantinya. Selain itu setiap ukuran yang dilewati jendela **selagi terlihat** dicatat, jadi meminimalkan tepat sebelum menutup tidak menghilangkan tempat terakhir yang sungguhan. Strip mini player otomatis ikut tertolak oleh aturan yang sama, karena lebih kecil daripada jendela penuh terkecil.
+- Kalau tidak ada satu pun yang layak diingat, sesi menyimpan ukuran bawaan tanpa posisi, sehingga sistem yang menempatkannya.

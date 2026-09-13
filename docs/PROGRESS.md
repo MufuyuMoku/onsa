@@ -467,3 +467,51 @@ Dilaporkan pemilik proyek: pada ukuran jendela paling kecil, judul kolom saling 
 **Cara verifikasi**: sebuah pemeriksa otomatis menjalankan aplikasi rilis di enam lebar jendela (1546, 1266, 1086, 946, 806, dan 686 piksel CSS — dua terakhir pada dan di bawah lantai minimum) dan tujuh halaman, lalu pada tiap kombinasi memeriksa empat hal di dalam halaman: tidak ada scroll mendatar, tidak ada elemen yang melewati kotaknya, tidak ada teks yang terpotong tanpa elipsis, dan **tidak ada dua elemen bersebelahan yang saling menindih**. Panel antrean, laci, dan kedua tombol "…" juga diperiksa dalam keadaan terbuka. Semuanya bersih, dan tangkapan layar tiap kombinasi disimpan.
 
 Pemeriksaan tumpang tindih itu langsung berguna: ia menemukan cover Sedang Diputar duduk di atas judul lagu pada lebar sempit, karena baris grid tidak bisa menghitung tinggi dari `aspect-ratio`.
+
+## M6. Playlist — selesai (2026-09-13)
+
+**Kriteria selesai**: tes playlist pintar dan M3U8 lulus, dan playlist pintar ikut berubah saat library berubah.
+
+| Kriteria | Hasil |
+|---|---|
+| Tes playlist pintar lulus | ✅ 7 tes integrasi di `crates/onsa-library/tests/playlists.rs` |
+| Tes M3U8 lulus | ✅ ekspor–impor pulang pergi, relatif dan absolut, plus entri yang tidak ditemukan |
+| Playlist pintar ikut berubah saat library berubah | ✅ lagu baru yang cocok masuk sendiri setelah scan, tanpa playlist-nya disentuh |
+| Tes (§12) | ✅ 148 tes |
+
+### Yang dibuat
+
+- **Skema versi 2**: tabel `playlists` dan `playlist_items`, lewat migrasi berversi, jadi library yang sudah ada ikut naik tanpa kehilangan apa pun. `playlist_items` memakai `(playlist_id, position)` sebagai primary key dan `ON DELETE CASCADE` ke `tracks`.
+- **Playlist biasa** (SPEC §6.2): buat, ganti nama, gandakan, hapus, tambah, hapus baris, pindahkan baris, dan ganti isinya sekaligus. Lagu yang sama boleh dua kali.
+- **Playlist pintar** (SPEC §6.3): aturan JSON (`Rules`) dikompilasi jadi **SQL berparameter**, dengan 13 kolom, 17 operator yang terikat jenis kolomnya, urutan (termasuk acak), dan batas. Isinya tidak pernah disimpan — selalu ditanyakan ulang, jadi ia mengikuti library.
+- **M3U8 keluar dan masuk** (SPEC §6.4): ekspor menulis `#EXTM3U` dengan `#EXTINF` per lagu dan path relatif terhadap file playlist bila bisa; impor mencocokkan kembali ke library dan **melaporkan entri yang tidak ditemukan** alih-alih membuangnya.
+- **Perintah dan antarmuka**: 15 perintah baru, halaman **Playlist** di sidebar, halaman satu playlist dengan tarik-lepas dan tombol naik/turun/hapus, **editor aturan** dengan pratinjau langsung, klik kanan sebuah lagu → **Tambah ke playlist**, dan tombol **simpan antrean sebagai playlist** di panel antrean.
+- **Satu event** `library://playlists` memberi tahu antarmuka saat daftarnya berubah; daftar juga dimuat ulang saat library berubah, karena jumlah lagu playlist pintar ikut berubah dengan sendirinya.
+
+### Cara verifikasi
+
+- **Tes integrasi** dengan fixture yang dibuat saat tes berjalan, di folder beraksara Jepang dan berspasi: urutan playlist biasa bertahan lewat pindah-hapus-gandakan; lagu yang dibuang dari library ikut hilang dari playlist sementara file yang hanya *missing* tetap tinggal; aturan dikompilasi ke SQL tanpa satu pun nilai pengguna di dalam teksnya; `'; DROP TABLE tracks; --` sebagai nilai aturan tidak menyentuh library; `%` diperlakukan sebagai karakter, bukan wildcard; lagu baru yang cocok masuk sendiri ke playlist pintar setelah scan; dan M3U8 pulang pergi dalam path relatif, absolut, dan relatif yang naik keluar foldernya.
+- **Pada build rilis** dengan library 620 lagu, dikendalikan lewat port debug WebView2 — 24 pemeriksaan, semuanya lulus: urutan playlist lewat perintah dan lewat tombol di antarmuka, lagu yang sama dua kali, memutar playlist dari baris yang diklik, menyimpan antrean, aturan pintar beserta batas dan pratinjaunya, suntikan SQL, editor aturan yang tidak menyimpan apa pun sampai disuruh, dan halaman playlist pada ukuran jendela terkecil.
+- **M3U8 lewat dialog file yang sungguhan** (dijawab dari luar aplikasi lewat Win32): ekspor menulis file tanpa BOM dengan garis miring depan dan sepasang baris per lagu; impor membacanya kembali menjadi playlist dengan lagu yang sama dalam urutan yang sama, tanpa satu pun entri hilang.
+- **Pemeriksa tata letak** dijalankan ulang dengan dua halaman playlist ikut di dalamnya: 6 lebar jendela × 10 halaman + 4 panel yang menimpa — 64 pemeriksaan, semuanya bersih.
+- **Pemeriksaan**: `cargo fmt --check`, clippy `-D warnings`, `cargo test --workspace` (148 tes), dan `svelte-check` bersih.
+
+### Temuan saat pengujian (sudah diperbaiki)
+
+- **Dua bug ditangkap tesnya sebelum ada yang memakainya**: kolom "folder" memanggil fungsi SQL `parent_of` padahal yang terdaftar bernama `onsa_parent` (setiap aturan folder akan gagal), dan memindahkan baris playlist menabrak primary key-nya karena SQLite tidak menjanjikan urutan baris saat UPDATE.
+- **Daftar lagu playlist pintar tidak tergambar**: halamannya memakai baris grid tetap, sementara baris pemberitahuannya hanya kadang ada, jadi daftarnya jatuh ke baris setinggi isinya sendiri dan mengerut jadi 30 piksel. Sekarang halamannya kolom flex. Ketahuan lewat tangkapan layar verifikasi, lalu ditutup dengan pemeriksaan tinggi daftar.
+- **Jendela yang diminimalkan menimpa sesi dengan geometri omong kosong** — lihat di bawah.
+
+### Perbaikan yang ikut masuk: sesi kehilangan ukuran jendela
+
+Ketahuan saat memverifikasi M6, bukan dilaporkan. Sesi disimpan saat jendela kehilangan fokus; jendela yang **diminimalkan** kehilangan fokus juga, dan melaporkan ukuran nol di tempat jauh di luar layar. Yang tersimpan: `{"width":0,"height":0,"x":-25600,"y":-25600}` — dan Onsa berikutnya terbuka sekecil mungkin.
+
+`WindowMode` sekarang menolak geometri yang tidak layak jadi jendela penuh dan menyimpan jendela terakhir yang layak; setiap ukuran yang dilewati jendela selagi terlihat dicatat, jadi meminimalkan tepat sebelum menutup tidak menghilangkan tempat terakhir yang sungguhan. Ditutup empat tes unit.
+
+### Tertunda / belum diverifikasi
+
+- **Linux**: halaman playlist dan dialog file belum dicoba lewat WSLg.
+- **Uji coba oleh pemilik proyek** (langkahnya di `docs/UJI-M6.md`).
+- Playlist belum bisa **ditarik-lepas dari daftar lagu**; menambahkan lewat klik kanan sudah ada, satu album atau satu artis sekaligus belum.
+- Daftar playlist belum muncul **di dalam sidebar**; sidebar baru punya satu pintu masuk ke halamannya.
+- **Folder pintar** (SPEC §6.5) dan ekspor playlist **saat keluar** belum dikerjakan.
