@@ -5,7 +5,7 @@
 //! comes back paused: opening Onsa never starts making noise on its own.
 
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize, WebviewWindow};
+use tauri::{AppHandle, Emitter, LogicalPosition, LogicalSize, Manager, WebviewWindow};
 
 use crate::library::LibraryService;
 use crate::settings;
@@ -23,10 +23,15 @@ pub const MAIN_WINDOW: &str = "main";
 /// The window changed between the full panel and the mini player.
 pub const MODE_EVENT: &str = "window://mode";
 
+/// Every size here is in logical pixels: the units `tauri.conf.json` uses,
+/// the units the interface lays out in, and the units the listener sees.
+/// Physical pixels would mean something different on every display scale.
+///
 /// Size of the mini player (SPEC §9.2): one line of instrument panel.
 pub const MINI_SIZE: (f64, f64) = (660.0, 146.0);
-/// Smallest useful full window, matching `tauri.conf.json`.
-pub const FULL_MIN_SIZE: (f64, f64) = (880.0, 560.0);
+/// Smallest full window the interface still lays out properly, matching
+/// `tauri.conf.json`. Below this the panels have nowhere left to go.
+pub const FULL_MIN_SIZE: (f64, f64) = (820.0, 600.0);
 
 /// The queue as it was left.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -244,12 +249,12 @@ pub fn restore_window(window: &WebviewWindow, state: &WindowState, mode: &Window
 /// maximised.
 fn apply_full(window: &WebviewWindow, full: Geometry) {
     if full.width >= FULL_MIN_SIZE.0 && full.height >= FULL_MIN_SIZE.1 {
-        let _ = window.set_size(PhysicalSize::new(full.width, full.height));
+        let _ = window.set_size(LogicalSize::new(full.width, full.height));
     }
     if let (Some(x), Some(y)) = (full.x, full.y) {
         // Only inside a screen: an unplugged monitor must not hide the window.
         if on_a_screen(window, x, y) {
-            let _ = window.set_position(PhysicalPosition::new(x, y));
+            let _ = window.set_position(LogicalPosition::new(x, y));
         }
     }
     // After the size, so the window has somewhere sensible to go back to.
@@ -264,14 +269,10 @@ fn on_a_screen(window: &WebviewWindow, x: f64, y: f64) -> bool {
         return false;
     };
     monitors.iter().any(|monitor| {
-        let position = monitor.position();
-        let size = monitor.size();
-        let right = f64::from(position.x) + f64::from(size.width);
-        let bottom = f64::from(position.y) + f64::from(size.height);
-        x >= f64::from(position.x) - 32.0
-            && x < right
-            && y >= f64::from(position.y) - 32.0
-            && y < bottom
+        let scale = monitor.scale_factor();
+        let at = monitor.position().to_logical::<f64>(scale);
+        let size = monitor.size().to_logical::<f64>(scale);
+        x >= at.x - 32.0 && x < at.x + size.width && y >= at.y - 32.0 && y < at.y + size.height
     })
 }
 
@@ -280,25 +281,25 @@ pub fn apply_shape(window: &WebviewWindow, shape: Shape) -> tauri::Result<()> {
     match shape {
         Shape::Mini => {
             window.unmaximize()?;
-            window.set_min_size(Some(PhysicalSize::new(MINI_SIZE.0, MINI_SIZE.1)))?;
-            window.set_size(PhysicalSize::new(MINI_SIZE.0, MINI_SIZE.1))?;
+            window.set_min_size(Some(LogicalSize::new(MINI_SIZE.0, MINI_SIZE.1)))?;
+            window.set_size(LogicalSize::new(MINI_SIZE.0, MINI_SIZE.1))?;
             window.set_always_on_top(true)?;
         }
         Shape::Full(full) => {
             window.set_always_on_top(false)?;
-            window.set_min_size(Some(PhysicalSize::new(FULL_MIN_SIZE.0, FULL_MIN_SIZE.1)))?;
+            window.set_min_size(Some(LogicalSize::new(FULL_MIN_SIZE.0, FULL_MIN_SIZE.1)))?;
             // The size is set even for a window that is about to be
             // maximised: it is what the system gives back when the listener
             // presses restore, and leaving the mini player's strip there
             // would hand them a sliver of a window.
             window.unmaximize()?;
-            window.set_size(PhysicalSize::new(
+            window.set_size(LogicalSize::new(
                 full.width.max(FULL_MIN_SIZE.0),
                 full.height.max(FULL_MIN_SIZE.1),
             ))?;
             if let (Some(x), Some(y)) = (full.x, full.y) {
                 if on_a_screen(window, x, y) {
-                    window.set_position(PhysicalPosition::new(x, y))?;
+                    window.set_position(LogicalPosition::new(x, y))?;
                 }
             }
             if full.maximized {
@@ -309,20 +310,27 @@ pub fn apply_shape(window: &WebviewWindow, shape: Shape) -> tauri::Result<()> {
     Ok(())
 }
 
-/// Reads where the window is and how big it is.
+/// Reads where the window is and how big it is, in logical pixels.
 ///
 /// The size is the inner one on purpose: on Windows `set_size` lands on the
 /// inner size while `outer_size` reports the frame around it, so reading one
 /// and writing the other makes the window grow by the width of its own
 /// border every time it comes back from the mini player.
 pub fn geometry(window: &WebviewWindow) -> Geometry {
-    let size = window.inner_size().unwrap_or(PhysicalSize::new(1180, 760));
-    let position = window.outer_position().ok();
+    let scale = window.scale_factor().unwrap_or(1.0);
+    let size = window
+        .inner_size()
+        .map(|size| size.to_logical::<f64>(scale))
+        .unwrap_or(LogicalSize::new(1180.0, 760.0));
+    let position = window
+        .outer_position()
+        .map(|at| at.to_logical::<f64>(scale))
+        .ok();
     Geometry {
-        width: f64::from(size.width),
-        height: f64::from(size.height),
-        x: position.map(|at| f64::from(at.x)),
-        y: position.map(|at| f64::from(at.y)),
+        width: size.width,
+        height: size.height,
+        x: position.map(|at| at.x),
+        y: position.map(|at| at.y),
         maximized: window.is_maximized().unwrap_or(false),
     }
 }
