@@ -87,6 +87,8 @@ pub fn run() -> Result<()> {
             commands::player_clear,
             commands::player_shuffle,
             commands::settings_get,
+            commands::settings_set_display,
+            commands::player_watch,
             commands::settings_set_output,
             commands::settings_set_playback,
             commands::settings_set_dsp,
@@ -191,8 +193,9 @@ fn setup(app: &mut tauri::App) -> Result<()> {
 }
 
 /// Follows the window: its size and place are written down when it loses
-/// focus or closes, files dropped on it are taken, and closing can leave
-/// Onsa in the tray (SPEC §13).
+/// focus or closes, files dropped on it are taken, closing can leave Onsa in
+/// the tray (SPEC §13), and a window nobody can see stops the meters and the
+/// visualizer from being analysed at all (SPEC §4.4).
 fn remember_window(app: AppHandle, window: WebviewWindow) {
     let target = window.clone();
     window.on_window_event(move |event| match event {
@@ -209,6 +212,7 @@ fn remember_window(app: AppHandle, window: WebviewWindow) {
             if close_to_tray(&app) && tray::exists(&app) {
                 api.prevent_close();
                 let _ = target.hide();
+                window_visible(&app, false);
             }
         }
         WindowEvent::Focused(false) => {
@@ -219,8 +223,22 @@ fn remember_window(app: AppHandle, window: WebviewWindow) {
                 &session::window_state(&target, mini),
             );
         }
+        // Minimising and restoring arrive as a resize; there is no event of
+        // their own. Hiding to the tray is reported by the code that hides.
+        WindowEvent::Resized(_) => {
+            let seen = target.is_minimized().map(|small| !small).unwrap_or(true)
+                && target.is_visible().unwrap_or(true);
+            window_visible(&app, seen);
+        }
         _ => {}
     });
+}
+
+/// Tells the player whether the window is on screen.
+pub(crate) fn window_visible(app: &AppHandle, visible: bool) {
+    if let Some(player) = app.try_state::<Player>() {
+        player.set_window_visible(visible);
+    }
 }
 
 /// Whether closing the window should only hide it.

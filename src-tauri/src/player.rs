@@ -10,13 +10,14 @@ use std::sync::mpsc::Receiver;
 use std::sync::{Arc, Mutex, MutexGuard, Weak};
 use std::time::{Duration, Instant};
 
+use onsa_audio::analysis::{DEFAULT_BANDS, MAX_FPS};
 use onsa_audio::dsp::gain_to_db;
 use onsa_audio::{
     queue_is_one_album, AnalysisFrame, AnalysisSettings, Engine, Event, PlayState, QueueId,
     TrackInfo,
 };
 use onsa_library::TrackRow;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter};
 
 use crate::dto::{QueueEntryDto, QueuePlace, TrackDto};
@@ -34,7 +35,8 @@ pub const METER_EVENT: &str = "player://meter";
 /// The queue changed; the interface reads it again.
 pub const QUEUE_EVENT: &str = "player://queue";
 
-/// Meter frames per second. The transport meters need no more.
+/// Meter frames per second. The transport meters need no more; a spectrum
+/// on screen asks for the full rate, and power saving for fewer (SPEC §4.4).
 const METER_FPS: u32 = 30;
 /// How often the playhead is written down while a track plays (SPEC §13).
 const REMEMBER_EVERY: Duration = Duration::from_secs(10);
@@ -79,6 +81,22 @@ struct State {
     output_prefs: OutputPrefs,
     playback: PlaybackPrefs,
     dsp: DspPrefs,
+    watching: Watching,
+    /// Whether the window is on screen at all.
+    window_visible: bool,
+    /// What the engine was last told to analyse.
+    analysing: AnalysisSettings,
+}
+
+/// What the interface has on screen that needs the analysis tap. Nothing on
+/// screen means no tap at all, and no work anywhere (SPEC §4.4, §13.1).
+#[derive(Debug, Clone, Copy, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Watching {
+    /// A spectrum visualizer is showing.
+    pub spectrum: bool,
+    /// Peak meters are showing.
+    pub meters: bool,
 }
 
 fn lock<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
@@ -219,12 +237,20 @@ struct Position {
     seconds: f64,
 }
 
-#[derive(Debug, Clone, Copy, Serialize)]
+/// One analysis frame as the interface receives it: the meters, and the
+/// spectrum when something is showing one (SPEC §4.4).
+#[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct Meter {
     peak_db: [f32; 2],
     clip: bool,
     limiting: bool,
+    /// Spectrum per band, 0 to 255; empty when no spectrum is wanted.
+    bands: Vec<u8>,
+    /// Held peak per band, on the same scale.
+    peaks: Vec<u8>,
+    /// Spectral centroid in Hz, for tone colour (SPEC §9.5).
+    centroid_hz: f32,
 }
 
 impl Meter {
@@ -235,6 +261,9 @@ impl Meter {
             peak_db: [left, right],
             clip: frame.clip,
             limiting: frame.limiting,
+            bands: frame.bands.clone(),
+            peaks: frame.peaks.clone(),
+            centroid_hz: frame.centroid_hz,
         }
     }
 }
@@ -266,6 +295,12 @@ impl Player {
                 output_prefs: output,
                 playback,
                 dsp,
+                watching: Watching::default(),
+                window_visible: true,
+                analysing: AnalysisSettings {
+                    enabled: false,
+                    ..AnalysisSettings::default()
+                },
             }),
         });
         shared.open_engine();
@@ -547,11 +582,34 @@ impl Player {
         ignore_no_output(result)
     }
 
-    /// Changes crossfade, resampler and buffer.
+    /// Changes crossfade, resampler and buffer. Power saving also changes
+    /// how much analysis runs, so that is applied again here.
     pub fn set_playback(&self, playback: PlaybackPrefs) -> Result<(), ErrorCode> {
         let settings = playback.engine();
         lock(&self.shared.state).playback = playback;
-        ignore_no_output(self.shared.command(|engine| engine.set_settings(settings)))
+        let result = self.shared.command(|engine| engine.set_settings(settings));
+        self.shared.apply_analysis();
+        ignore_no_output(result)
+    }
+
+    /// Says what the interface has on screen. Analysis costs nothing while
+    /// nothing shows it (SPEC §4.4).
+    pub fn watch(&self, watching: Watching) {
+        lock(&self.shared.state).watching = watching;
+        self.shared.apply_analysis();
+    }
+
+    /// Says whether the window is on screen. A minimised or hidden window
+    /// shows nothing, so analysis stops altogether (SPEC §13.1).
+    pub fn set_window_visible(&self, visible: bool) {
+        {
+            let mut state = lock(&self.shared.state);
+            if state.window_visible == visible {
+                return;
+            }
+            state.window_visible = visible;
+        }
+        self.shared.apply_analysis();
     }
 
     /// Changes device or rate.
@@ -567,6 +625,24 @@ impl Player {
         };
         self.shared.emit_state();
         result
+    }
+}
+
+/// What the analysis thread should be doing: nothing at all unless
+/// something on screen needs it, and less of it while saving power
+/// (SPEC §4.4, §13.1).
+fn analysis_for(watching: Watching, window_visible: bool, power_save: bool) -> AnalysisSettings {
+    let spectrum = window_visible && watching.spectrum;
+    let meters = window_visible && watching.meters;
+    AnalysisSettings {
+        enabled: spectrum || meters,
+        fps: match (power_save, spectrum) {
+            (true, _) => crate::settings::SAVING_FPS,
+            (false, true) => MAX_FPS,
+            (false, false) => METER_FPS,
+        },
+        bands: DEFAULT_BANDS,
+        spectrum,
     }
 }
 
@@ -600,14 +676,15 @@ impl Shared {
             Ok(mut engine) => {
                 let events = engine.take_events();
                 let _ = engine.set_dsp(dsp);
-                let _ = engine.set_analysis(AnalysisSettings {
-                    enabled: true,
-                    fps: METER_FPS,
-                    ..AnalysisSettings::default()
-                });
+                let analysis = lock(&self.state).analysis();
+                let _ = engine.set_analysis(analysis);
                 spawn_listener(Arc::downgrade(self), events);
                 *lock(&self.engine) = Some(engine);
-                lock(&self.state).output_error = false;
+                {
+                    let mut state = lock(&self.state);
+                    state.analysing = analysis;
+                    state.output_error = false;
+                }
                 true
             }
             Err(error) => {
@@ -616,6 +693,26 @@ impl Shared {
                 false
             }
         }
+    }
+
+    /// Tells the engine how much analysis to do, when that has changed.
+    fn apply_analysis(&self) {
+        let settings = {
+            let mut state = lock(&self.state);
+            let settings = state.analysis();
+            if settings == state.analysing {
+                return;
+            }
+            state.analysing = settings;
+            settings
+        };
+        tracing::debug!(
+            enabled = settings.enabled,
+            spectrum = settings.spectrum,
+            fps = settings.fps,
+            "analysis"
+        );
+        let _ = self.command(|engine| engine.set_analysis(settings));
     }
 
     fn command(
@@ -782,6 +879,10 @@ fn spawn_listener(shared: Weak<Shared>, events: Receiver<Event>) {
 }
 
 impl State {
+    fn analysis(&self) -> AnalysisSettings {
+        analysis_for(self.watching, self.window_visible, self.playback.power_save)
+    }
+
     fn snapshot(&self) -> Snapshot {
         let row = self.queue.current_row();
         let output_rate = self.output.as_ref().map(|output| output.sample_rate);
@@ -851,5 +952,49 @@ impl State {
             output_error: self.output_error,
             failed_track: self.failed_track.clone(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn analysis_only_runs_for_what_is_on_screen() {
+        let nothing = Watching::default();
+        let both = Watching {
+            spectrum: true,
+            meters: true,
+        };
+
+        // Nothing showing: no tap, no thread, no frames.
+        assert!(!analysis_for(nothing, true, false).enabled);
+
+        // Meters alone: frames, but no FFT behind them.
+        let meters = analysis_for(
+            Watching {
+                meters: true,
+                ..nothing
+            },
+            true,
+            false,
+        );
+        assert!(meters.enabled);
+        assert!(!meters.spectrum);
+        assert_eq!(meters.fps, METER_FPS);
+
+        // A visualizer asks for the full rate and the spectrum.
+        let seen = analysis_for(both, true, false);
+        assert!(seen.spectrum);
+        assert_eq!(seen.fps, MAX_FPS);
+
+        // A window nobody can see stops all of it, whatever is "showing".
+        assert!(!analysis_for(both, false, false).enabled);
+
+        // Saving power keeps it, at fewer frames a second.
+        assert_eq!(
+            analysis_for(both, true, true).fps,
+            crate::settings::SAVING_FPS
+        );
     }
 }

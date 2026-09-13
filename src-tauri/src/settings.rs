@@ -7,10 +7,12 @@
 //! Every value is clamped to a sane range on its way to the engine.
 
 use onsa_audio::dsp::eq::MAX_BANDS;
+use std::time::Duration;
+
 use onsa_audio::{
     Band, BufferSize, CrossfadeCurve, DeviceChoice, DspSettings, EqMode, FilterKind, OutputRate,
     OutputSettings, PlaybackSettings, RepeatMode, ReplayGainMode, ReplayGainSettings,
-    ResamplerQuality,
+    ResamplerQuality, DEFAULT_POSITION_INTERVAL,
 };
 use onsa_library::Library;
 use serde::de::DeserializeOwned;
@@ -30,6 +32,8 @@ pub const LOCALE_KEY: &str = "locale";
 pub const LOG_DEBUG_KEY: &str = "logDebug";
 /// Whether closing the window leaves Onsa in the tray.
 pub const CLOSE_TO_TRAY_KEY: &str = "closeToTray";
+/// What the interface shows beyond the theme.
+pub const DISPLAY_KEY: &str = "display";
 
 /// Reads one setting, or its default.
 pub fn load<T: DeserializeOwned + Default>(library: &Library, key: &str) -> T {
@@ -235,6 +239,9 @@ pub struct PlaybackPrefs {
     pub buffer: BufferChoice,
     /// What happens when a track ends.
     pub repeat: RepeatKind,
+    /// Power saving (SPEC §3.4): the largest buffer, the cheapest
+    /// resampler, fewer analysis frames and fewer position events.
+    pub power_save: bool,
 }
 
 impl Default for PlaybackPrefs {
@@ -248,12 +255,20 @@ impl Default for PlaybackPrefs {
             quality: Quality::Balanced,
             buffer: BufferChoice::Normal,
             repeat: RepeatKind::Off,
+            power_save: false,
         }
     }
 }
 
+/// Position events while saving power (SPEC §3.4: "fewer position events").
+const SAVING_POSITION_INTERVAL: Duration = Duration::from_millis(500);
+/// Analysis frames a second while saving power (SPEC §4.4).
+pub const SAVING_FPS: u32 = 20;
+
 impl PlaybackPrefs {
-    /// The engine's form.
+    /// The engine's form. Power saving overrides the buffer, the resampler
+    /// and the rate of position events; the values the listener chose are
+    /// left as they are, and come back when they switch it off.
     pub fn engine(&self) -> PlaybackSettings {
         PlaybackSettings {
             crossfade_seconds: finite(self.crossfade_seconds, 0.0).clamp(0.0, 12.0),
@@ -263,18 +278,38 @@ impl PlaybackPrefs {
             },
             skip_crossfade_seconds: finite(self.skip_crossfade_seconds, 0.3).clamp(0.0, 2.0),
             album_gapless: self.album_gapless,
-            quality: match self.quality {
-                Quality::Fast => ResamplerQuality::Fast,
-                Quality::Balanced => ResamplerQuality::Balanced,
-                Quality::Best => ResamplerQuality::Best,
+            quality: match (self.power_save, self.quality) {
+                (true, _) | (_, Quality::Fast) => ResamplerQuality::Fast,
+                (_, Quality::Balanced) => ResamplerQuality::Balanced,
+                (_, Quality::Best) => ResamplerQuality::Best,
             },
-            buffer: match self.buffer {
-                BufferChoice::Low => BufferSize::Low,
-                BufferChoice::Normal => BufferSize::Normal,
-                BufferChoice::Large => BufferSize::Large,
+            buffer: match (self.power_save, self.buffer) {
+                (true, _) | (_, BufferChoice::Large) => BufferSize::Large,
+                (_, BufferChoice::Low) => BufferSize::Low,
+                (_, BufferChoice::Normal) => BufferSize::Normal,
             },
             repeat: self.repeat.into(),
+            position_interval: if self.power_save {
+                SAVING_POSITION_INTERVAL
+            } else {
+                DEFAULT_POSITION_INTERVAL
+            },
         }
+    }
+}
+
+/// What the interface shows beyond the theme itself.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct DisplayPrefs {
+    /// Whether the hue follows the character of the sound (SPEC §9.5).
+    /// Power saving switches it off whatever this says.
+    pub tone_color: bool,
+}
+
+impl Default for DisplayPrefs {
+    fn default() -> Self {
+        Self { tone_color: true }
     }
 }
 
@@ -432,6 +467,32 @@ fn finite<T: Into<f64> + Copy>(value: T, fallback: T) -> T {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn power_saving_overrides_the_buffer_the_resampler_and_the_position_events() {
+        let chosen = PlaybackPrefs {
+            quality: Quality::Best,
+            buffer: BufferChoice::Low,
+            ..PlaybackPrefs::default()
+        };
+        let normal = chosen.engine();
+        assert_eq!(normal.quality, ResamplerQuality::Best);
+        assert_eq!(normal.buffer, BufferSize::Low);
+        assert_eq!(normal.position_interval, DEFAULT_POSITION_INTERVAL);
+
+        let saving = PlaybackPrefs {
+            power_save: true,
+            ..chosen.clone()
+        }
+        .engine();
+        assert_eq!(saving.quality, ResamplerQuality::Fast);
+        assert_eq!(saving.buffer, BufferSize::Large);
+        assert_eq!(saving.position_interval, SAVING_POSITION_INTERVAL);
+
+        // What the listener chose is kept, and comes back when they stop
+        // saving power.
+        assert_eq!(chosen.engine(), normal);
+    }
 
     #[test]
     fn a_damaged_or_partial_setting_falls_back_field_by_field() {

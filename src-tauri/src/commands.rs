@@ -20,9 +20,9 @@ use crate::dto::{
 pub use crate::error::ErrorCode;
 use crate::library::{LibraryService, ScanStatus};
 use crate::logging::Logging;
-use crate::player::{Player, Snapshot};
+use crate::player::{Player, Snapshot, Watching};
 use crate::session::{self, WindowMode};
-use crate::settings::{self, BandPrefs, DspPrefs, OutputPrefs, PlaybackPrefs};
+use crate::settings::{self, BandPrefs, DisplayPrefs, DspPrefs, OutputPrefs, PlaybackPrefs};
 use crate::sleep::{self, SleepTimer};
 use crate::theme::{self, Theme};
 use crate::tray::{self, TrayLabels};
@@ -173,6 +173,22 @@ pub fn set_theme(
 #[tauri::command]
 pub fn set_locale(library: State<'_, LibraryService>, locale: String) -> Result<(), ErrorCode> {
     library.read(|library| settings::save(library, settings::LOCALE_KEY, &locale))
+}
+
+/// Changes and remembers what the interface shows beyond the theme.
+#[tauri::command]
+pub fn settings_set_display(
+    library: State<'_, LibraryService>,
+    display: DisplayPrefs,
+) -> Result<(), ErrorCode> {
+    library.read(|library| settings::save(library, settings::DISPLAY_KEY, &display))
+}
+
+/// Says which of the things that need the analysis tap are on screen. The
+/// tap, the FFT and the frames all stop when none of them are (SPEC §4.4).
+#[tauri::command]
+pub fn player_watch(player: State<'_, Player>, watching: Watching) {
+    player.watch(watching);
 }
 
 fn into_path(picked: Option<FilePath>) -> Option<PathBuf> {
@@ -541,17 +557,29 @@ pub struct SettingsDto {
     pub playback: PlaybackPrefs,
     /// DSP chain.
     pub dsp: DspPrefs,
+    /// What the interface shows beyond the theme.
+    pub display: DisplayPrefs,
 }
 
 /// Reads the settings.
 #[tauri::command]
-pub fn settings_get(player: State<'_, Player>) -> SettingsDto {
+pub fn settings_get(
+    library: State<'_, LibraryService>,
+    player: State<'_, Player>,
+) -> Result<SettingsDto, ErrorCode> {
     let (output, playback, dsp) = player.prefs();
-    SettingsDto {
+    let display = library.read(|library| {
+        Ok(settings::load::<DisplayPrefs>(
+            library,
+            settings::DISPLAY_KEY,
+        ))
+    })?;
+    Ok(SettingsDto {
         output,
         playback,
         dsp,
-    }
+        display,
+    })
 }
 
 /// Changes and remembers the output.
