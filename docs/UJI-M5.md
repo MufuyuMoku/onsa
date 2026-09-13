@@ -30,6 +30,22 @@ Masih di Sedang diputar, dengarkan lagu yang pindah dari bagian tenang dan berat
 
 Matikan lewat **Pengaturan → Tampilan → Warna nada**. Warnanya harus kembali ke warna tema apa adanya, dan spektrumnya tetap bergerak seperti biasa.
 
+## 2b. Kekuatan warna nada dan mini player (perbaikan terbaru)
+
+Dua hal yang kamu laporkan sudah diperbaiki; ini cara memeriksanya.
+
+**Kekuatan warna nada.** Di **Pengaturan → Tampilan → Warna nada** sekarang ada empat pilihan: mati, halus, sedang, kuat. Bawaannya **sedang**, dan pergeserannya jauh lebih terlihat daripada versi sebelumnya karena warnanya benar-benar bergeser ke warna lain milik tema, bukan sekadar diputar ronanya:
+
+| Tema | Suara berat | Suara terang |
+|---|---|---|
+| Kaca asap | amber | biru fosfor |
+| Kokpit kaca | amber hati-hati | cyan |
+| Deck malam | merah jarum VU | baja dingin |
+
+Di Deck malam, bar posisi ikut bergeser bersama spektrum. Meter sengaja **tidak** ikut: hijau, kuning, dan merahnya berarti "mendekati batas", dan itu tidak boleh berubah arti. Kalau "sedang" masih terasa kurang, coba "kuat"; kalau kejauhan, "halus".
+
+**Mini player.** Maksimalkan jendela, masuk mini player, lalu kembali. Jendelanya harus kembali **maximized persis seperti semula**. Coba juga dari jendela biasa yang kamu atur sendiri ukurannya, dan lewat Ctrl+M, dan setelah Onsa ditutup lalu dibuka lagi dalam mode mini. Setelah kembali dari mini player, tombol restore di judul jendela juga harus memberi jendela yang wajar, bukan strip.
+
 ## 3. Hemat daya
 
 Di **Pengaturan → Output & Kualitas**, nyalakan **Mode hemat daya** sambil lagu berjalan.

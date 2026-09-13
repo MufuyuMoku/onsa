@@ -281,3 +281,27 @@ Catatan keputusan yang diambil saat spesifikasi kurang jelas. Format: tanggal, k
 - **Tiga varian spektrum** mengikuti tema dan acuan visual `palet-preview.html`: `segment` (blok bertumpuk dengan segmen mati yang tetap samar, Kaca asap), `bar` (batang polos di atas sumur samar, Kokpit kaca), dan `soft` (kolom hangat yang memudar dari bawah dengan penanda puncak merah, Deck malam).
 - **Spektrum memakai warna lit tema, bukan gradien level meter.** Hijau–kuning–merah punya arti di peak meter (mendekati batas) dan tidak punya arti di spektrum; acuan visualnya pun memakai satu warna per tema. Penanda peak-hold-lah yang berbeda per tema: lit untuk Kaca asap, warna label untuk Kokpit kaca, warna clip untuk Deck malam.
 - **Visualizer hanya ada di Sedang Diputar.** Menaruhnya juga di transport akan membuatnya berjalan terus-menerus di setiap layar, yang persis berlawanan dengan tujuan tap yang bisa dimatikan.
+
+## 2026-09-13 · Mode jendela punya satu sumber kebenaran (perbaikan bug)
+
+- **Konteks**: dilaporkan pemilik proyek. Dari jendela yang dimaksimalkan, masuk mini player lalu kembali menghasilkan jendela normal, bukan maximized seperti semula.
+- **Akar masalahnya**: keluar dari mini player selalu memasang ukuran tetap 1180×760. Tidak ada apa pun yang mengingat jendela sebelum mini player mengambil alih — tidak ukurannya, tidak posisinya, apalagi keadaan maximized-nya. Selain itu, mode jendela hidup di tiga tempat sekaligus: sebuah `AtomicBool` di backend, `mini` di store UI, dan jendela sungguhan itu sendiri.
+- **Keputusan**: `WindowMode` menyimpan mode **dan** jendela yang dipinjam mini player. Ia satu-satunya yang tahu Onsa sedang di mode mana. Semua jalan masuk — tombol, Ctrl+M, dan pemulihan sesi — lewat `session::set_mini`, yang menghitung bentuk tujuannya, menerapkannya, mencatat modenya, menyimpan sesi, lalu **memancarkan event `window://mode`**. UI tidak lagi menyimpulkan modenya sendiri: ia memakai jawaban perintah dan event itu.
+- **Masuk mini dari jendela maximized meng-unmaximize dulu**, baru membaca geometrinya. Jendela yang dimaksimalkan seukuran layar dan tidak mengatakan apa-apa tentang tempatnya saat tidak dimaksimalkan; yang dicatat adalah yang sebenarnya akan dikembalikan nanti.
+- **Keluar dari mini selalu memasang ukuran dulu, baru maximize kalau perlu.** Ukuran itulah yang dipakai Windows saat pengguna menekan tombol restore; kalau dibiarkan, yang tersisa di sana adalah strip mini player selebar 660 piksel.
+- **Sesi menyimpan jendela penuh, bukan strip**, dan menyimpan jendela maximized pada ukuran sebelum dimaksimalkan. Membuka Onsa lagi lalu menekan restore memberi jendela yang dulu dipakai, bukan jendela seukuran layar.
+- **Ukuran dibaca dari `inner_size`, bukan `outer_size`.** Di Windows, `set_size` mendarat pada ukuran dalam sementara `outer_size` melaporkan bingkai di sekelilingnya. Membaca yang satu lalu menulis yang lain membuat jendela **tumbuh 18×47 piksel setiap kali kembali dari mini player** — terukur persis begitu, tiga putaran berturut-turut, sebelum diperbaiki.
+
+## 2026-09-13 · Warna nada: dua warna per tema dan kekuatan yang bisa diatur
+
+- **Konteks**: pemilik proyek hampir tidak menyadari warna nada, terutama di Deck malam.
+- **Akar masalahnya**: `hue-rotate` bekerja baik pada warna pekat seperti fosfor teal, tapi hampir tidak terlihat pada krem hangat yang saturasinya rendah — memutar rona krem tetap menghasilkan krem. Rentang 70° yang sama dipakai ketiga tema, padahal artinya berbeda-beda.
+- **Keputusan: geseran warna, bukan putaran rona.** Setiap tema menyebut dua warnanya sendiri di `toneColor`: `warm` (tujuan suara berat) dan `cool` (tujuan suara terang). Warna elemen digeser dari warna aslinya ke salah satu ujung itu. Cara ini bekerja untuk palet mana pun, dan hasilnya tidak pernah mendarat di warna yang tidak dipilih temanya. `range` dalam derajat dihapus dari skema tema.
+  - **Kaca asap**: teal fosfor, hangat ke amber (filter kedua tema ini), dingin ke biru fosfor `#4FA8FF`.
+  - **Kokpit kaca**: hijau display, hangat ke amber "hati-hati" miliknya, dingin ke cyan "bisa diatur" miliknya.
+  - **Deck malam**: krem lampu hangat, hangat ke merah jarum VU `#C8401F`, dingin ke baja dingin `#7FA6C8`.
+- **Pencampuran dilakukan lewat cahaya** (kuadrat nilai kanal), bukan lewat angka mentahnya, supaya campuran setengah jalan benar-benar terlihat setengah jalan.
+- **Kekuatan diatur pengguna**: mati / halus / sedang / kuat, dengan **sedang sebagai bawaan** — bukan lagi sekadar hidup-mati. Halus setengah jalan, sedang sepenuh rentang tema, kuat 1,6 kali (tetap berhenti di warna ujung tema). Pada tiga tema bawaan, "sedang" menggeser warna sejauh 37 sampai 79 dari 255 pada dua pertiga rentang — jelas terlihat tanpa jadi lampu disko.
+- **Rentang centroid dipersempit** dari ±2,5 oktaf ke ±2,2 oktaf di sekitar 1,2 kHz, sehingga musik biasa memakai lebih banyak bagian rentangnya.
+- **Elemen yang ikut bergeser ditentukan per tema.** Meter **tidak pernah** ikut: hijau, kuning, dan merahnya berarti "mendekati batas", dan menggesernya akan merusak arti itu. Deck malam menggeser bar posisinya juga, karena spektrumnya lebih kecil dan lebih hangat daripada dua tema layar lainnya; dua tema itu cukup dengan spektrum.
+- **Setelan lama yang tersimpan** (`toneColor: true`) tidak bisa dibaca sebagai kekuatan, jadi kelompok setelan tampilan jatuh ke bawaannya, yaitu "sedang" — persis yang diinginkan.

@@ -408,3 +408,43 @@ Dijalankan pada build rilis portable di Windows 11 dengan library 620 lagu, dike
 - **Uji dengar dan uji pandang oleh pemilik proyek** (langkahnya di `docs/UJI-M5.md`).
 - **Penyempurnaan mode hemat daya** ada di M11, termasuk mengikuti keadaan baterai sistem.
 - Warna nada baru menyentuh elemen yang disebut tema; ketiga tema bawaan menyebut spektrum saja.
+
+---
+
+## Perbaikan setelah uji coba M5 (2026-09-13)
+
+### Keadaan jendela hilang saat bolak-balik mini player
+
+Dilaporkan pemilik proyek: dari jendela yang dimaksimalkan, masuk mini player lalu kembali menghasilkan jendela normal, bukan maximized.
+
+**Akar masalahnya**: keluar dari mini player selalu memasang ukuran tetap 1180×760, dan tidak ada apa pun yang mengingat jendela sebelumnya. Mode jendela juga hidup di tiga tempat sekaligus (backend, store UI, dan jendela sungguhan).
+
+**Perbaikannya**: `WindowMode` sekarang menyimpan mode **dan** jendela yang dipinjam mini player, dan menjadi satu-satunya sumber kebenaran. Semua jalan masuk lewat `session::set_mini`, yang menerapkan bentuknya, mencatat modenya, menyimpan sesi, lalu memancarkan event `window://mode` yang diikuti UI. Rinciannya di `docs/DECISIONS.md`.
+
+**Dua bug lain ikut ketahuan saat memverifikasinya**:
+
+1. Setelah kembali maximized, ukuran "restore" yang diingat Windows adalah strip mini player selebar 660 piksel — menekan tombol restore memberi sliver jendela. Sekarang ukuran penuh selalu dipasang lebih dulu, baru dimaksimalkan.
+2. `outer_size()` dan `set_size()` tidak simetris di Windows: yang satu melaporkan bingkai luar, yang satu mendarat di ukuran dalam. Jendelanya **tumbuh 18×47 piksel setiap kali kembali dari mini player**, terukur persis begitu tiga putaran berturut-turut. Sekarang keduanya memakai ukuran dalam.
+
+**Tes**: enam tes unit untuk aturan modenya (mini mengembalikan jendela yang dipinjamnya, maximized kembali maximized, sesi menyimpan jendela penuh bukan strip, jendela maximized disimpan pada ukuran sebelum dimaksimalkan, dan jendela yang tidak masuk akal jatuh ke ukuran wajar).
+
+**Verifikasi langsung** pada build rilis, diukur dari luar aplikasi lewat Win32 (`GetWindowRect`, `IsZoomed`):
+
+- maximized → mini → kembali: maximized lagi, 1550×974 sama persis;
+- tombol restore setelah itu memberi jendela penuh, bukan strip;
+- jendela biasa → mini → kembali: ukuran dan posisi sama persis, dan tetap sama setelah tiga putaran;
+- Ctrl+M: sama seperti tombolnya, maximized tetap kembali;
+- ditutup dan dibuka lagi saat maximized: kembali maximized;
+- ditutup dan dibuka lagi saat mini: kembali mini, dan keluar dari mini memberi jendela maximized yang ditinggalkan;
+- instance kedua (jalur yang sama dengan tray): memunculkan jendela tanpa mengubah modenya;
+- meminta mode yang sedang dipakai: tidak mengubah apa pun.
+
+### Warna nada terlalu tipis
+
+Dilaporkan pemilik proyek, terutama di Deck malam.
+
+**Akar masalahnya**: `hue-rotate` hampir tidak terlihat pada krem hangat, dan rentang 70° yang sama dipakai ketiga tema.
+
+**Perbaikannya**: warna nada sekarang **menggeser warna di antara dua warna yang disebut temanya sendiri** (`warm` dan `cool`), bukan memutar rona, dan kekuatannya bisa dipilih di Pengaturan → Tampilan: mati, halus, sedang (bawaan), atau kuat. Deck malam menggeser krem lampunya ke merah jarum untuk suara berat dan ke baja dingin untuk suara terang, serta menggeser bar posisinya juga; dua tema lainnya cukup dengan spektrum. Meter tidak pernah ikut bergeser, karena warnanya berarti "mendekati batas".
+
+**Verifikasi**: matematika pergeserannya diperiksa terhadap ketiga tema bawaan (setiap tingkat kekuatan menggeser lebih jauh, suara berat dan terang ke arah berlawanan, dan ujungnya tidak pernah melewati warna tema), lalu pada aplikasi sungguhan: "mati" meninggalkan warna tema apa adanya, "sedang" menggeser 57 sampai 143 dari 255 pada musik nyata, bar posisi hanya bergeser di Deck malam, dan mode hemat daya menghentikan pergeseran sepenuhnya.
