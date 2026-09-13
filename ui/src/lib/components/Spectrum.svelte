@@ -1,7 +1,8 @@
 <!--
 	The spectrum visualizer (SPEC sections 4.4 and 9.5), drawn in the theme's
-	own variant: lit segments behind glass, plain bars, or a soft curve. Its
-	hue follows the character of the sound while tone colour is on.
+	own variant: lit segments behind glass, plain bars, or soft warm columns,
+	following `docs/design/palet-preview.html`. Its hue follows the character
+	of the sound while tone colour is on.
 
 	While this is on screen the backend is told a spectrum is wanted; when it
 	leaves, the analysis tap, the FFT and the frames all stop.
@@ -19,27 +20,17 @@
 
 	const { height = 180 }: Props = $props();
 
-	/** Lit segments per column in the segment variant. */
-	const SEGMENTS = 18;
+	/** Lit segments per column, behind glass. */
+	const SEGMENTS = 20;
 
 	const variant = $derived(activeTheme()?.variants.spectrum ?? 'bar');
-	const bands = $derived(player.meter.bands);
-	const peaks = $derived(player.meter.peaks);
 	const filter = $derived(toneFilter('spectrum'));
 
-	// The frames stop while nothing plays; the columns then rest at the floor.
-	const levels = $derived(bands.map((value) => value / 255));
-	const held = $derived(peaks.map((value) => value / 255));
-
-	/** The soft variant draws one filled curve instead of columns. */
-	const curve = $derived.by(() => {
-		if (levels.length < 2) return '';
-		const step = 100 / (levels.length - 1);
-		const points = levels.map(
-			(level, index) => `${(index * step).toFixed(2)} ${(100 - level * 100).toFixed(2)}`
-		);
-		return `M 0 100 L ${points.join(' L ')} L 100 100 Z`;
-	});
+	// The frames stop while nothing plays, and the bands come back empty
+	// while no spectrum is wanted; the panel then says so instead of
+	// freezing on the last picture it saw.
+	const levels = $derived(player.meter.bands.map((value) => value / 255));
+	const held = $derived(player.meter.peaks.map((value) => value / 255));
 
 	$effect(() => watch('spectrum'));
 </script>
@@ -48,18 +39,15 @@
 	class="spectrum"
 	data-variant={variant}
 	style:--height="{height}px"
+	style:--segments={SEGMENTS}
 	style:filter
 	role="img"
 	aria-label={t('spectrum.label')}
 >
 	{#if levels.length === 0}
 		<p class="rest label">{t('spectrum.rest')}</p>
-	{:else if variant === 'soft'}
-		<svg viewBox="0 0 100 100" preserveAspectRatio="none">
-			<path class="fill" d={curve} />
-		</svg>
 	{:else}
-		<div class="columns" style:--bands={levels.length} style:--segments={SEGMENTS}>
+		<div class="columns" style:--bands={levels.length}>
 			{#each levels as level, index (index)}
 				<div class="column">
 					<i class="bar" style:--level="{(level * 100).toFixed(1)}%"></i>
@@ -78,6 +66,7 @@
 		border-radius: var(--onsa-radius-sm);
 		background: var(--onsa-surface-well);
 		overflow: hidden;
+		/* Tone colour drifts rather than jumps (SPEC section 9.5). */
 		transition: filter 400ms linear;
 	}
 
@@ -95,9 +84,9 @@
 		display: grid;
 		grid-template-columns: repeat(var(--bands), minmax(0, 1fr));
 		align-items: end;
-		gap: 1px;
+		gap: 2px;
 		height: 100%;
-		padding: 4px;
+		padding: 6px;
 	}
 
 	.column {
@@ -108,12 +97,7 @@
 	.bar {
 		position: absolute;
 		inset: 0;
-		background: linear-gradient(
-			0deg,
-			var(--onsa-role-active) 0 70%,
-			var(--onsa-role-caution) 70% 92%,
-			var(--onsa-role-clip) 92%
-		);
+		background: var(--onsa-lit-on);
 		clip-path: inset(calc(100% - var(--level, 0%)) 0 0 0);
 		transition: clip-path 70ms linear;
 	}
@@ -125,48 +109,53 @@
 		height: 2px;
 		bottom: var(--peak, 0%);
 		background: var(--onsa-lit-on);
-		opacity: 0.85;
-		transition: bottom 90ms linear;
+		transition: bottom 110ms linear;
 	}
 
-	/* Behind glass, a column is a stack of segments and the dead ones stay
+	/* Behind glass a column is a stack of segments, and the dead ones stay
 	   faintly visible (SPEC section 9.4). */
 	.spectrum[data-variant='segment'] .column {
-		background: repeating-linear-gradient(
-			0deg,
-			var(--onsa-lit-ghost) 0 calc(100% / var(--segments) - 2px),
-			transparent calc(100% / var(--segments) - 2px) calc(100% / var(--segments))
-		);
+		background: var(--onsa-lit-ghost);
 	}
 
-	.spectrum[data-variant='segment'] .columns {
-		gap: 2px;
-	}
-
+	.spectrum[data-variant='segment'] .column,
 	.spectrum[data-variant='segment'] .bar {
 		mask: repeating-linear-gradient(
-			0deg,
+			to top,
 			#000 0 calc(100% / var(--segments) - 2px),
 			transparent calc(100% / var(--segments) - 2px) calc(100% / var(--segments))
 		);
 	}
 
-	.spectrum svg {
-		width: 100%;
-		height: 100%;
+	/* A flight display: plain lit bars over a faint well. */
+	.spectrum[data-variant='bar'] .column {
+		background: linear-gradient(to top, var(--onsa-lit-ghost), transparent);
 	}
 
-	.fill {
-		fill: var(--onsa-role-active);
-		fill-opacity: 0.55;
-		stroke: var(--onsa-lit-on);
-		stroke-width: 0.6;
-		vector-effect: non-scaling-stroke;
-		transition: d 70ms linear;
+	.spectrum[data-variant='bar'] .bar {
+		opacity: 0.85;
 	}
 
-	:global(:root[data-onsa-glow='true']) .bar,
-	:global(:root[data-onsa-glow='true']) .fill {
+	.spectrum[data-variant='bar'] .peak {
+		background: var(--onsa-role-label);
+	}
+
+	/* Warm metal: the column fades in from below and the peak is a red mark. */
+	.spectrum[data-variant='soft'] .bar {
+		background: linear-gradient(
+			to top,
+			color-mix(in srgb, var(--onsa-lit-on) 55%, transparent),
+			var(--onsa-lit-on)
+		);
+		border-radius: 2px 2px 0 0;
+		opacity: 0.9;
+	}
+
+	.spectrum[data-variant='soft'] .peak {
+		background: var(--onsa-role-clip);
+	}
+
+	:global(:root[data-onsa-glow='true']) .bar {
 		filter: drop-shadow(0 0 4px var(--onsa-lit-glow));
 	}
 
