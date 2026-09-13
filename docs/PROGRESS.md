@@ -362,3 +362,49 @@ Dilaporkan pemilik proyek dan bisa diulang: klik dua kali satu lagu, lalu hapus 
 ### Ukuran folder target dan cache CI
 
 Job Ubuntu sempat gagal di langkah penyimpanan cache dengan `No space left on device`, padahal semua langkah nyata lulus. Runner kini dibersihkan dari toolchain yang tidak dipakai sebelum build (lebih dari 20 GB), dan debug info dimatikan untuk profil `dev` dan `test` di `Cargo.toml` workspace supaya `target/` dan cache-nya jauh lebih kecil.
+
+---
+
+## M5. Visualizer, meter, warna nada — selesai (2026-09-13)
+
+**Kriteria selesai**: saat visualizer disembunyikan atau aplikasi di-minimize, tap analisis berhenti (terverifikasi lewat log atau tes), dan warna nada bisa dinyalakan dan dimatikan.
+
+| Kriteria | Hasil |
+|---|---|
+| Tap berhenti saat tidak ada yang menampilkannya | ✅ terlihat di log aplikasi dan ditutup dua tes |
+| Warna nada bisa dinyalakan dan dimatikan | ✅ lewat Pengaturan → Tampilan, terverifikasi pada build rilis |
+| Tes (§12) | ✅ 132 tes |
+
+### Yang dibuat
+
+- **Visualizer spektrum** di layar Sedang Diputar, dengan **tiga varian tema**: `segment` (blok bertumpuk, segmen mati tetap samar — Kaca asap), `bar` (batang bergradasi — Kokpit kaca), dan `soft` (satu kurva terisi — Deck malam). Semuanya menggambar 64 band beserta garis peak-hold, memakai peran warna, dan ikut menyala saat tema memakai glow.
+- **Warna nada** (SPEC §9.5): spectral centroid dari thread analisis dihaluskan dengan rata-rata bergerak sekitar satu detik, lalu dipetakan ke `hue-rotate` dalam rentang yang ditentukan tema. Suara terang bergeser ke rona dingin, suara berat ke rona hangat. Bisa dimatikan di Pengaturan → Tampilan, dan ikut mati saat mode hemat daya menyala.
+- **Analisis mengikuti apa yang terlihat**: setiap meter dan visualizer mendaftarkan dirinya selama ada di layar. Tanpa satu pun yang terdaftar, atau saat jendela di-minimize atau disembunyikan ke tray, tap di callback output mati dan thread analisis tidur. Kalau hanya meter yang tampil, FFT di balik spektrum tidak dijalankan sama sekali.
+- **Mode hemat daya** (SPEC §3.4): buffer Besar, resampler Cepat, frame analisis 20 per detik, event posisi tiap 500 ms, dan warna nada mati. Pilihan buffer dan resampler milik pengguna tetap tersimpan dan berlaku lagi saat mode ini dimatikan.
+- **Laju frame mengikuti kebutuhan**: 60 per detik saat visualizer tampil, 30 saat hanya meter, 20 saat hemat daya.
+
+### Cara verifikasi
+
+Dijalankan pada build rilis portable di Windows 11 dengan library 620 lagu, dikendalikan lewat port debug WebView2:
+
+- **Visualizer**: kurva dan batangnya benar-benar berubah mengikuti musik, dan tiap tema menggambar variannya sendiri (Kaca asap 64 kolom segmen, Kokpit kaca 64 batang, Deck malam kurva).
+- **Warna nada**: `hue-rotate(15,4°)` saat menyala, `none` setelah dimatikan lewat Pengaturan → Tampilan, dan kembali setelah dinyalakan lagi.
+- **Tap berhenti** (kriteria selesai), dari log aplikasi:
+  - masuk Sedang Diputar → `analysis enabled=true spectrum=true fps=60`
+  - kembali ke library → `analysis enabled=true spectrum=false fps=30`
+  - jendela di-minimize → `analysis enabled=false`
+  - jendela dikembalikan → `analysis enabled=true`
+- **Laju event diukur langsung**: dalam 2 detik, mode biasa menghasilkan 60 frame analisis dan 15 event posisi; mode hemat daya 40 frame dan 4 event posisi — persis 20 fps dan 500 ms.
+- **Tes**: `Analyzer` tanpa spektrum hanya menghitung level tanpa FFT; mesin tetap mengirim frame setelah serangkaian perubahan setelan analisis; aturan "analisis hanya untuk yang terlihat" diuji langsung; dan pemetaan mode hemat daya diuji termasuk kembalinya pilihan pengguna.
+- **Pemeriksaan**: `cargo fmt --check`, clippy `-D warnings`, `cargo test --workspace` (132 tes), dan `svelte-check` (204 file) bersih.
+
+### Temuan saat pengujian (sudah diperbaiki)
+
+- Efek yang menghaluskan centroid membaca dan menulis state yang sama, sehingga Svelte masuk ke loop pembaruan (`effect_update_depth_exceeded`) dan **seluruh UI berhenti diperbarui** — meter ikut membeku, padahal backend tetap mengirim 60 frame per detik. Rata-rata bergeraknya sekarang disimpan di luar graf reaktif. Ini hanya ketahuan lewat uji coba pada aplikasi sungguhan, bukan lewat tes.
+
+### Tertunda / belum diverifikasi
+
+- **Linux**: visualizer dan warna nada belum dicoba lewat WSLg.
+- **Uji dengar dan uji pandang oleh pemilik proyek** (langkahnya di `docs/UJI-M5.md`).
+- **Penyempurnaan mode hemat daya** ada di M11, termasuk mengikuti keadaan baterai sistem.
+- Warna nada baru menyentuh elemen yang disebut tema; ketiga tema bawaan menyebut spektrum saja.

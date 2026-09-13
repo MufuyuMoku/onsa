@@ -2,7 +2,7 @@
 
 Onsa (音叉, tuning fork) is a desktop music player for Windows and Linux, built with Tauri 2, Rust and SvelteKit. It looks like an instrument panel: calm, tidy, and honest about what is happening to the audio signal.
 
-The project is in early development. The audio engine, the DSP chain, the library and the interface are in place: choosing a folder, scanning, browsing, playing, setting the EQ and changing themes all work without the command line (see `docs/UJI-M4.md`). The full specification lives in [`docs/SPEC.md`](docs/SPEC.md), progress in [`docs/PROGRESS.md`](docs/PROGRESS.md), and decisions taken along the way in [`docs/DECISIONS.md`](docs/DECISIONS.md).
+The project is in early development. The audio engine, the DSP chain, the library and the interface are in place: choosing a folder, scanning, browsing, playing, setting the EQ, watching the spectrum and changing themes all work without the command line (see `docs/UJI-M4.md` and `docs/UJI-M5.md`). The full specification lives in [`docs/SPEC.md`](docs/SPEC.md), progress in [`docs/PROGRESS.md`](docs/PROGRESS.md), and decisions taken along the way in [`docs/DECISIONS.md`](docs/DECISIONS.md).
 
 ## Layout
 
