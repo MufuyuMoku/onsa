@@ -448,3 +448,22 @@ Dilaporkan pemilik proyek, terutama di Deck malam.
 **Perbaikannya**: warna nada sekarang **menggeser warna di antara dua warna yang disebut temanya sendiri** (`warm` dan `cool`), bukan memutar rona, dan kekuatannya bisa dipilih di Pengaturan → Tampilan: mati, halus, sedang (bawaan), atau kuat. Deck malam menggeser krem lampunya ke merah jarum untuk suara berat dan ke baja dingin untuk suara terang, serta menggeser bar posisinya juga; dua tema lainnya cukup dengan spektrum. Meter tidak pernah ikut bergeser, karena warnanya berarti "mendekati batas".
 
 **Verifikasi**: matematika pergeserannya diperiksa terhadap ketiga tema bawaan (setiap tingkat kekuatan menggeser lebih jauh, suara berat dan terang ke arah berlawanan, dan ujungnya tidak pernah melewati warna tema), lalu pada aplikasi sungguhan: "mati" meninggalkan warna tema apa adanya, "sedang" menggeser 57 sampai 143 dari 255 pada musik nyata, bar posisi hanya bergeser di Deck malam, dan mode hemat daya menghentikan pergeseran sepenuhnya.
+
+### Tata letak berantakan saat jendela dikecilkan (2026-09-13)
+
+Dilaporkan pemilik proyek: pada ukuran jendela paling kecil, judul kolom saling menindih, panel antrean memaksa lebarnya, strip jalur sinyal pecah dua baris, dan tombol kanan transport terdorong keluar layar.
+
+**Akar masalahnya dua**: tidak ada tahap penyesuaian sama sekali (semua panel memaksa lebarnya, kolom menyempit sampai nol tapi tetap digambar), dan **ukuran minimum jendela dipasang dalam piksel fisik** padahal `tauri.conf.json` menyebutnya logis — di layar 125% minimum 880×560 itu sebenarnya 704×448. Rinciannya di `docs/DECISIONS.md`.
+
+**Yang dikerjakan**:
+
+- Semua ukuran jendela kini dalam piksel logis, dan minimumnya 820×600. Mini player ikut terkoreksi: selama ini 660×146 sebenarnya tampil 528×117 di layar 125%.
+- Tahapan lebar ada di satu tempat (`ui/src/lib/layout.svelte.ts`): antrean punya kolom sendiri di ≥1160, sidebar berkata-kata di ≥1040, jadi ikon di 880–1039, dan jadi laci di bawah itu. Antrean dan laci yang menimpa hanya menutupi area konten, sehingga transport tetap terjangkau.
+- Kolom daftar lagu dibuang menurut prioritas — tahun, lalu album, lalu artis — dengan judul dan durasi selalu bertahan, dan setiap sel dipotong elipsis.
+- Strip jalur sinyal selalu satu baris: melepas angkanya, lalu memendekkan namanya, lalu melipat ReplayGain dan Limiter ke tombol "…".
+- Transport selalu menyisakan tombol putar, posisi, dan volume; meter, cover, dan tombol tambahan mundur satu per satu.
+- Halaman pengaturan, DSP & EQ, dan Sedang Diputar memakai container query terhadap lebar area konten.
+
+**Cara verifikasi**: sebuah pemeriksa otomatis menjalankan aplikasi rilis di enam lebar jendela (1546, 1266, 1086, 946, 806, dan 686 piksel CSS — dua terakhir pada dan di bawah lantai minimum) dan tujuh halaman, lalu pada tiap kombinasi memeriksa empat hal di dalam halaman: tidak ada scroll mendatar, tidak ada elemen yang melewati kotaknya, tidak ada teks yang terpotong tanpa elipsis, dan **tidak ada dua elemen bersebelahan yang saling menindih**. Panel antrean, laci, dan kedua tombol "…" juga diperiksa dalam keadaan terbuka. Semuanya bersih, dan tangkapan layar tiap kombinasi disimpan.
+
+Pemeriksaan tumpang tindih itu langsung berguna: ia menemukan cover Sedang Diputar duduk di atas judul lagu pada lebar sempit, karena baris grid tidak bisa menghitung tinggi dari `aspect-ratio`.

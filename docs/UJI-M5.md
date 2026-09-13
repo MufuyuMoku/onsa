@@ -46,6 +46,27 @@ Di Deck malam, bar posisi ikut bergeser bersama spektrum. Meter sengaja **tidak*
 
 **Mini player.** Maksimalkan jendela, masuk mini player, lalu kembali. Jendelanya harus kembali **maximized persis seperti semula**. Coba juga dari jendela biasa yang kamu atur sendiri ukurannya, dan lewat Ctrl+M, dan setelah Onsa ditutup lalu dibuka lagi dalam mode mini. Setelah kembali dari mini player, tombol restore di judul jendela juga harus memberi jendela yang wajar, bukan strip.
 
+## 2c. Ukuran jendela
+
+Onsa sekarang menyesuaikan diri saat jendelanya dikecilkan, dan tidak bisa lagi dikecilkan sampai rusak: **batas bawahnya 820×600**.
+
+Coba tarik sisi jendela pelan-pelan dari lebar sampai sempit dan perhatikan urutannya:
+
+| Lebar jendela | Yang berubah |
+|---|---|
+| di bawah 1160 | panel antrean menyingkir; buka lewat tombol daftar di kanan kotak pencarian, dan ia menimpa daftar lagu |
+| di bawah 1120 | tombol Sedang diputar, sleep timer, dan mini player masuk ke tombol **…** di transport |
+| di bawah 1040 | sidebar menyempit jadi ikon saja |
+| di bawah 1000 | meter L/R menyingkir |
+| di bawah 880 | sidebar jadi laci; buka lewat tombol garis tiga di kiri atas |
+| di bawah 780 | ReplayGain dan Limiter di strip bawah masuk ke tombol **…** di ujung kanan strip |
+
+Kolom daftar lagu juga menyusut berurutan: tahun lebih dulu, lalu album, lalu artis. **Judul dan durasi tidak pernah hilang.**
+
+**Yang perlu kamu pastikan:** di lebar mana pun, tidak ada teks yang menindih atau terpotong tanpa titik-titik, tidak ada scrollbar mendatar yang aneh, dan tombol putar, bar posisi, serta volume selalu terlihat. Kalau ada yang masih berantakan, sebutkan ukuran jendelanya kira-kira berapa dan di halaman apa.
+
+Ukuran yang sudah kuperiksa otomatis pada tiap halaman (lebar area gambar dalam piksel CSS): **1546, 1266, 1086, 946, 806, dan 686** — dua yang terakhir tepat di dan di bawah batas bawah.
+
 ## 3. Hemat daya
 
 Di **Pengaturan → Output & Kualitas**, nyalakan **Mode hemat daya** sambil lagu berjalan.
