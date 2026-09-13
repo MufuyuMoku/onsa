@@ -15,8 +15,8 @@ Putar sebuah lagu, lalu buka **Sedang diputar** (ikon di transport, atau Ctrl+N)
 | Tema | Bentuk spektrum |
 |---|---|
 | Kaca asap | blok-blok bertumpuk; blok yang mati tetap terlihat samar di belakangnya |
-| Kokpit kaca | batang penuh yang naik turun |
-| Deck malam | satu kurva terisi yang meliuk |
+| Kokpit kaca | batang hijau polos yang naik turun, penanda puncak putih |
+| Deck malam | kolom hangat yang memudar dari bawah, dengan penanda puncak merah |
 
 Coba ganti tema di **Pengaturan → Tampilan** sambil lagu berjalan, lalu kembali ke Sedang diputar.
 
