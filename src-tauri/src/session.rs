@@ -48,9 +48,9 @@ pub struct QueueState {
 /// Where a window is and how big it is.
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
 pub struct Geometry {
-    /// Width in physical pixels.
+    /// Width in logical pixels.
     pub width: f64,
-    /// Height in physical pixels.
+    /// Height in logical pixels.
     pub height: f64,
     /// Left edge, when the window has ever been placed.
     pub x: Option<f64>,
@@ -131,6 +131,18 @@ impl WindowMode {
         })
     }
 
+    /// Takes note of a window worth going back to.
+    ///
+    /// A minimised window reports no size at all and a place far off every
+    /// screen, and the mini player's strip is not a full window either;
+    /// neither is worth keeping, and `usable` turns both away.
+    pub fn seen(&self, now: Geometry) {
+        let mut mode = self.lock();
+        if !mode.mini && !now.maximized && usable(&now) {
+            mode.plain = Some(now);
+        }
+    }
+
     /// Records the mode the window is now in. Going into the mini player
     /// remembers the window it replaces.
     pub fn record(&self, mini: bool, now: Geometry) {
@@ -153,6 +165,23 @@ impl WindowMode {
     /// the screen.
     pub fn for_session(&self, now: Geometry) -> Geometry {
         let mut mode = self.lock();
+        // A minimised window says it is nowhere and no size at all. Storing
+        // that would open Onsa at its smallest, in a corner, next time; the
+        // last window worth going back to is stored instead.
+        if !usable(&now) {
+            let kept = if mode.mini {
+                mode.full
+            } else {
+                mode.plain.or(mode.full)
+            };
+            return kept.filter(usable).unwrap_or(Geometry {
+                width: DEFAULT_FULL.0,
+                height: DEFAULT_FULL.1,
+                x: None,
+                y: None,
+                maximized: false,
+            });
+        }
         if !now.maximized && !mode.mini {
             mode.plain = Some(now);
         }
@@ -171,9 +200,9 @@ impl WindowMode {
 #[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct WindowState {
-    /// Width in physical pixels.
+    /// Width in logical pixels.
     pub width: f64,
-    /// Height in physical pixels.
+    /// Height in logical pixels.
     pub height: f64,
     /// Left edge, when it was ever moved.
     pub x: Option<f64>,
@@ -470,5 +499,53 @@ mod tests {
         assert_eq!(back.width, DEFAULT_FULL.0);
         assert_eq!(back.height, DEFAULT_FULL.1);
         assert_eq!(back.x, mini_now().x, "it stays where the listener put it");
+    }
+
+    /// What a minimised window reports on Windows: no size, and a corner
+    /// far off every screen.
+    fn minimised() -> Geometry {
+        Geometry {
+            width: 0.0,
+            height: 0.0,
+            x: Some(-25600.0),
+            y: Some(-25600.0),
+            maximized: false,
+        }
+    }
+
+    #[test]
+    fn a_minimised_window_is_not_what_gets_stored() {
+        let mode = WindowMode::default();
+        mode.seen(full());
+        assert_eq!(
+            mode.for_session(minimised()),
+            full(),
+            "closing from the taskbar keeps the window the listener had"
+        );
+    }
+
+    #[test]
+    fn a_minimised_window_with_nothing_remembered_falls_back() {
+        let mode = WindowMode::default();
+        let stored = mode.for_session(minimised());
+        assert_eq!(stored.width, DEFAULT_FULL.0);
+        assert_eq!(stored.height, DEFAULT_FULL.1);
+        assert_eq!(stored.x, None, "a place off every screen is not kept");
+    }
+
+    #[test]
+    fn the_mini_player_strip_is_never_taken_for_a_full_window() {
+        let mode = WindowMode::default();
+        mode.seen(full());
+        mode.seen(mini_now());
+        assert_eq!(mode.for_session(minimised()), full());
+    }
+
+    #[test]
+    fn a_minimised_mini_player_still_stores_the_window_behind_it() {
+        let mode = WindowMode::default();
+        mode.record(true, full());
+        let stored = mode.for_session(minimised());
+        assert_eq!(stored, full());
     }
 }

@@ -222,9 +222,16 @@ fn remember_window(app: AppHandle, window: WebviewWindow) {
         // Minimising and restoring arrive as a resize; there is no event of
         // their own. Hiding to the tray is reported by the code that hides.
         WindowEvent::Resized(_) => {
-            let seen = target.is_minimized().map(|small| !small).unwrap_or(true)
+            let shown = target.is_minimized().map(|small| !small).unwrap_or(true)
                 && target.is_visible().unwrap_or(true);
-            window_visible(&app, seen);
+            window_visible(&app, shown);
+            // Every size the window passes through while it is on screen is
+            // a size worth coming back to, so minimising it right before it
+            // closes does not lose where the listener had it.
+            if shown {
+                let mode = app.state::<WindowMode>();
+                mode.seen(session::geometry(&target));
+            }
         }
         _ => {}
     });
