@@ -176,7 +176,8 @@ pub fn parse_theme(id_hint: &str, source: &str) -> Result<LoadedTheme> {
     let tone_color = ToneColor {
         enabled: cx.boolean(tone_node, "enabled", "toneColor.enabled", true),
         targets: cx.tone_targets(tone_node, "targets", "toneColor.targets"),
-        range: cx.number(tone_node, "range", "toneColor.range", 70.0, 0.0, 180.0),
+        warm: cx.color(tone_node, "warm", "toneColor.warm", &lit.secondary),
+        cool: cx.color(tone_node, "cool", "toneColor.cool", &lit.on),
     };
 
     let theme = Theme {

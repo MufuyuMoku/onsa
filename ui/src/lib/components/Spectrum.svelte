@@ -8,7 +8,7 @@
 	leaves, the analysis tap, the FFT and the frames all stop.
 -->
 <script lang="ts">
-	import { toneFilter, watch } from '$lib/analysis.svelte';
+	import { toneColor, watch } from '$lib/analysis.svelte';
 	import { t } from '$lib/i18n/index.svelte';
 	import { player } from '$lib/player.svelte';
 	import { activeTheme } from '$lib/theme/index.svelte';
@@ -23,8 +23,11 @@
 	/** Lit segments per column, behind glass. */
 	const SEGMENTS = 20;
 
-	const variant = $derived(activeTheme()?.variants.spectrum ?? 'bar');
-	const filter = $derived(toneFilter('spectrum'));
+	const theme = $derived(activeTheme());
+	const variant = $derived(theme?.variants.spectrum ?? 'bar');
+	// Tone colour leans the lit colour towards the theme's warm or cool end
+	// (SPEC section 9.5); everything else in here is drawn from it.
+	const lit = $derived(toneColor('spectrum', theme?.color.lit.on ?? '#ffffff'));
 
 	// The frames stop while nothing plays, and the bands come back empty
 	// while no spectrum is wanted; the panel then says so instead of
@@ -40,7 +43,7 @@
 	data-variant={variant}
 	style:--height="{height}px"
 	style:--segments={SEGMENTS}
-	style:filter
+	style:--onsa-tone-lit={lit}
 	role="img"
 	aria-label={t('spectrum.label')}
 >
@@ -66,8 +69,6 @@
 		border-radius: var(--onsa-radius-sm);
 		background: var(--onsa-surface-well);
 		overflow: hidden;
-		/* Tone colour drifts rather than jumps (SPEC section 9.5). */
-		transition: filter 400ms linear;
 	}
 
 	.rest {
@@ -97,7 +98,7 @@
 	.bar {
 		position: absolute;
 		inset: 0;
-		background: var(--onsa-lit-on);
+		background: var(--onsa-tone-lit, var(--onsa-lit-on));
 		clip-path: inset(calc(100% - var(--level, 0%)) 0 0 0);
 		transition: clip-path 70ms linear;
 	}
@@ -108,7 +109,7 @@
 		right: 0;
 		height: 2px;
 		bottom: var(--peak, 0%);
-		background: var(--onsa-lit-on);
+		background: var(--onsa-tone-lit, var(--onsa-lit-on));
 		transition: bottom 110ms linear;
 	}
 
@@ -144,8 +145,8 @@
 	.spectrum[data-variant='soft'] .bar {
 		background: linear-gradient(
 			to top,
-			color-mix(in srgb, var(--onsa-lit-on) 55%, transparent),
-			var(--onsa-lit-on)
+			color-mix(in srgb, var(--onsa-tone-lit, var(--onsa-lit-on)) 55%, transparent),
+			var(--onsa-tone-lit, var(--onsa-lit-on))
 		);
 		border-radius: 2px 2px 0 0;
 		opacity: 0.9;
@@ -159,9 +160,4 @@
 		filter: drop-shadow(0 0 4px var(--onsa-lit-glow));
 	}
 
-	@media (prefers-reduced-motion: reduce) {
-		.spectrum {
-			transition: none;
-		}
-	}
 </style>

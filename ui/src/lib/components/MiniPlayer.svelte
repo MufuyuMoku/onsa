@@ -3,6 +3,7 @@
 	single rack unit. The window itself is resized by the backend.
 -->
 <script lang="ts">
+	import { tonePosition } from '$lib/analysis.svelte';
 	import { coverUrl, nextTrack, previousTrack, seek, togglePlay } from '$lib/backend';
 	import { setMiniPlayer } from '$lib/app.svelte';
 	import { clock } from '$lib/format';
@@ -35,6 +36,7 @@
 			<span class="numeric time">{clock(player.position)}</span>
 			<input
 				class="seek"
+				style:accent-color={tonePosition()}
 				type="range"
 				min="0"
 				max={duration || 1}

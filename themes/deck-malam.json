@@ -72,8 +72,10 @@
   "toneColor": {
     "enabled": true,
     "targets": [
-      "spectrum"
+      "spectrum",
+      "progress"
     ],
-    "range": 50
+    "warm": "#C8401F",
+    "cool": "#7FA6C8"
   }
 }

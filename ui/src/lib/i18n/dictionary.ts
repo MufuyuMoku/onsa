@@ -244,9 +244,12 @@ const id = {
 
 	'theme.label': 'Tema',
 	'toneColor.label': 'Warna nada',
-	'toneColor.on': 'Rona mengikuti karakter suara',
+	'toneColor.off': 'Mati',
+	'toneColor.subtle': 'Halus',
+	'toneColor.medium': 'Sedang',
+	'toneColor.strong': 'Kuat',
 	'toneColor.hint':
-		'Suara terang bergeser ke rona dingin, suara berat ke rona hangat. Setiap tema menentukan bagian mana yang ikut bergeser.',
+		'Warna bergeser mengikuti karakter suara: suara terang ke arah warna dingin tema, suara berat ke arah warna hangatnya. Setiap tema menentukan warna kedua ujungnya dan bagian mana yang ikut bergeser.',
 
 	'theme.userFolder': 'Tema buatan sendiri',
 	'theme.openFolder': 'Buka folder tema',
@@ -502,9 +505,12 @@ const en: Record<MessageKey, string> = {
 
 	'theme.label': 'Theme',
 	'toneColor.label': 'Tone colour',
-	'toneColor.on': 'Hue follows the character of the sound',
+	'toneColor.off': 'Off',
+	'toneColor.subtle': 'Subtle',
+	'toneColor.medium': 'Medium',
+	'toneColor.strong': 'Strong',
 	'toneColor.hint':
-		'Bright sound shifts towards the cool end, heavy sound towards the warm end. Each theme decides which parts follow it.',
+		'The colour follows the character of the sound: bright sound leans towards the theme’s cool colour, heavy sound towards its warm one. Each theme names both ends and which parts follow them.',
 
 	'theme.userFolder': 'Your own themes',
 	'theme.openFolder': 'Open the theme folder',

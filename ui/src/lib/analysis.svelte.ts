@@ -13,6 +13,7 @@ import { player } from '$lib/player.svelte';
 import { settings } from '$lib/settings.svelte';
 import { activeTheme } from '$lib/theme/index.svelte';
 import type { ToneTarget } from '$lib/theme/types';
+import { leaned, toneAmount, type ToneStrength } from '$lib/tone';
 
 /** How many of each kind are on screen. */
 const showing: Record<keyof Watching, number> = { spectrum: 0, meters: 0 };
@@ -49,18 +50,14 @@ function schedule(): void {
 	});
 }
 
-/** Centre of the shift: sounds around here keep the theme's own hue. */
-const MID_HZ = 1200;
-/** The span the centroid is read over, in octaves either side of the middle. */
-const OCTAVES = 2.5;
 /** Weight of each new frame in the running average (about a second at 60 fps). */
 const SMOOTHING = 0.02;
 
 /** The running average, kept out of the reactive graph: an effect that read
  * what it writes would keep waking itself. */
 let average = 0;
-/** What the components read. */
-let smoothed = $state(0);
+/** What the components read: -1 for heavy sound, +1 for bright. */
+let amount = $state(0);
 
 /**
  * Follows the spectral centroid with a slow average, so the colour drifts
@@ -71,29 +68,39 @@ export function followTone(): void {
 		const centroid = player.meter.centroidHz;
 		if (centroid <= 0) return;
 		average = average === 0 ? centroid : average + (centroid - average) * SMOOTHING;
-		smoothed = average;
+		amount = toneAmount(average);
 	});
 }
 
-/** Whether the listener and the theme both want tone colour. */
-export function toneColorOn(): boolean {
+/**
+ * How far the colour may lean: what the listener asked for, unless the theme
+ * has no tone colour of its own or power saving has stopped it.
+ */
+function strength(): ToneStrength {
 	const theme = activeTheme();
 	const prefs = settings.value;
-	if (!theme?.toneColor.enabled) return false;
-	if (prefs && (!prefs.display.toneColor || prefs.playback.powerSave)) return false;
-	return true;
+	if (!theme?.toneColor.enabled) return 'off';
+	if (prefs?.playback.powerSave) return 'off';
+	return prefs?.display.toneColor ?? 'medium';
 }
 
 /**
- * The filter for one tinted element: brighter sound turns the hue up towards
- * the cool end, heavier sound down towards the warm end.
+ * What `base` becomes for one tinted element: heavy sound leans it towards
+ * the theme's warm colour, bright sound towards its cool one. Elements the
+ * theme does not name keep their own colour (SPEC section 9.5).
  */
-export function toneFilter(target: ToneTarget): string {
+export function toneColor(target: ToneTarget, base: string): string {
 	const theme = activeTheme();
-	if (!theme || !toneColorOn()) return 'none';
-	if (!theme.toneColor.targets.includes(target)) return 'none';
-	if (smoothed <= 0) return 'none';
-	const octaves = Math.log2(smoothed / MID_HZ);
-	const shift = Math.max(-1, Math.min(1, octaves / OCTAVES)) * (theme.toneColor.range / 2);
-	return `hue-rotate(${shift.toFixed(1)}deg)`;
+	if (!theme || !theme.toneColor.targets.includes(target)) return base;
+	return leaned(base, theme.toneColor.warm, theme.toneColor.cool, amount, strength());
+}
+
+/**
+ * The playhead colour as the tone leans it, for the themes that ask for it.
+ * Empty while no theme is loaded, which leaves the stylesheet's own colour.
+ */
+export function tonePosition(): string {
+	const theme = activeTheme();
+	if (!theme) return '';
+	return toneColor('progress', theme.color.role.position);
 }

@@ -3,6 +3,7 @@
 	signal told honestly. The lyrics join it in M8.
 -->
 <script lang="ts">
+	import { tonePosition } from '$lib/analysis.svelte';
 	import { coverUrl, seek } from '$lib/backend';
 	import { navigate } from '$lib/app.svelte';
 	import { clock, db, rate } from '$lib/format';
@@ -56,6 +57,7 @@
 				<span class="numeric position">{clock(player.position)}</span>
 				<input
 					class="seek"
+					style:accent-color={tonePosition()}
 					type="range"
 					min="0"
 					max={duration || 1}

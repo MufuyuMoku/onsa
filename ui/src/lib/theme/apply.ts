@@ -12,7 +12,7 @@ import type { Theme } from './types';
  * Exported on its own so it can be read without a document.
  */
 export function themeVariables(theme: Theme): Record<string, string> {
-	const { color, shape, fonts, effects, toneColor } = theme;
+	const { color, shape, fonts, effects } = theme;
 	return {
 		'--onsa-surface-app': color.surface.app,
 		'--onsa-surface-body': color.surface.body,
@@ -50,8 +50,7 @@ export function themeVariables(theme: Theme): Record<string, string> {
 		'--onsa-font-label': fontStack(fonts.label, fonts.cjkFallback),
 		'--onsa-font-numeric': fontStack(fonts.numeric, fonts.cjkFallback, 'ui-monospace, monospace'),
 
-		'--onsa-grain': `${effects.grain}`,
-		'--onsa-tone-range': `${toneColor.range}deg`
+		'--onsa-grain': `${effects.grain}`
 	};
 }
 

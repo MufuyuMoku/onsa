@@ -1,6 +1,6 @@
 <!-- Appearance: theme and language. -->
 <script lang="ts">
-	import { failureKey, themeOpenFolder } from '$lib/backend';
+	import { failureKey, themeOpenFolder, type ToneStrength } from '$lib/backend';
 	import { chooseLocale } from '$lib/app.svelte';
 	import { currentLocale, LOCALES, t, type Locale } from '$lib/i18n/index.svelte';
 	import type { MessageKey } from '$lib/i18n/dictionary';
@@ -8,6 +8,14 @@
 	import { activeTheme, availableThemes, selectTheme } from '$lib/theme/index.svelte';
 
 	const languageKeys: Record<Locale, MessageKey> = { id: 'language.id', en: 'language.en' };
+
+	/** How far the colour may follow the sound (SPEC section 9.5). */
+	const STRENGTHS: [ToneStrength, MessageKey][] = [
+		['off', 'toneColor.off'],
+		['subtle', 'toneColor.subtle'],
+		['medium', 'toneColor.medium'],
+		['strong', 'toneColor.strong']
+	];
 
 	let failure = $state<MessageKey | null>(null);
 </script>
@@ -29,15 +37,17 @@
 	</section>
 	<section>
 		<h2 class="label">{t('toneColor.label')}</h2>
-		<label class="check">
-			<input
-				type="checkbox"
-				checked={settings.value?.display.toneColor ?? true}
-				disabled={!settings.value || !(activeTheme()?.toneColor.enabled ?? false)}
-				onchange={(event) => updateDisplay({ toneColor: event.currentTarget.checked })}
-			/>
-			{t('toneColor.on')}
-		</label>
+		<div class="chips">
+			{#each STRENGTHS as [strength, label] (strength)}
+				<button
+					type="button"
+					class="chip"
+					aria-pressed={(settings.value?.display.toneColor ?? 'medium') === strength}
+					disabled={!settings.value || !(activeTheme()?.toneColor.enabled ?? false)}
+					onclick={() => updateDisplay({ toneColor: strength })}>{t(label)}</button
+				>
+			{/each}
+		</div>
 		<p class="note muted">{t('toneColor.hint')}</p>
 	</section>
 	<section>

@@ -189,14 +189,21 @@ pub struct Effects {
 }
 
 /// Tone colour behaviour (SPEC §9.5).
+///
+/// The shift is a move between two colours the theme names rather than a
+/// hue rotation: a rotation is easy to see on a saturated phosphor and
+/// almost invisible on warm cream, and each theme knows best which way its
+/// own colours should lean.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct ToneColor {
     /// Whether the theme uses tone colour at all.
     pub enabled: bool,
     /// Which elements follow the tone.
     pub targets: Vec<ToneTarget>,
-    /// Width of the hue range in degrees.
-    pub range: f32,
+    /// Where heavy sound leans.
+    pub warm: String,
+    /// Where bright sound leans.
+    pub cool: String,
 }
 
 /// Declares one of the small closed vocabularies of the theme file: an enum

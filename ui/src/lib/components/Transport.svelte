@@ -1,5 +1,6 @@
 <!-- Transport (SPEC section 9.2): cover, title, controls, position, volume, meter. -->
 <script lang="ts">
+	import { tonePosition } from '$lib/analysis.svelte';
 	import { coverUrl, nextTrack, previousTrack, seek, togglePlay } from '$lib/backend';
 	import { app, navigate, setMiniPlayer } from '$lib/app.svelte';
 	import { clock, db } from '$lib/format';
@@ -60,6 +61,7 @@
 			</span>
 			<input
 				class="seek"
+				style:accent-color={tonePosition()}
 				type="range"
 				min="0"
 				max={duration || 1}

@@ -298,19 +298,28 @@ impl PlaybackPrefs {
     }
 }
 
-/// What the interface shows beyond the theme itself.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", default)]
-pub struct DisplayPrefs {
-    /// Whether the hue follows the character of the sound (SPEC §9.5).
-    /// Power saving switches it off whatever this says.
-    pub tone_color: bool,
+/// How far the colour follows the sound (SPEC §9.5).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum ToneStrength {
+    /// The theme's own colours, unmoved.
+    Off,
+    /// Only noticeable once you look for it.
+    Subtle,
+    /// The default: plain to see, still calm.
+    #[default]
+    Medium,
+    /// As far as the theme's two colours go.
+    Strong,
 }
 
-impl Default for DisplayPrefs {
-    fn default() -> Self {
-        Self { tone_color: true }
-    }
+/// What the interface shows beyond the theme itself.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct DisplayPrefs {
+    /// How far the colour follows the character of the sound. Power saving
+    /// stops it whatever this says.
+    pub tone_color: ToneStrength,
 }
 
 /// One parametric band.

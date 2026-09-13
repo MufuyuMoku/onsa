@@ -68,6 +68,7 @@
     "targets": [
       "spectrum"
     ],
-    "range": 70
+    "warm": "#FFB020",
+    "cool": "#35D0F2"
   }
 }

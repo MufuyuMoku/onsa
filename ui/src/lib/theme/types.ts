@@ -83,6 +83,9 @@ export interface Theme {
 	toneColor: {
 		enabled: boolean;
 		targets: ToneTarget[];
-		range: number;
+		/** Where heavy sound leans. */
+		warm: string;
+		/** Where bright sound leans. */
+		cool: string;
 	};
 }
