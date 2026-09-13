@@ -267,6 +267,7 @@ impl PlaybackArgs {
                 BufferArg::Large => BufferSize::Large,
             },
             repeat: self.repeat.into(),
+            ..PlaybackSettings::default()
         })
     }
 }

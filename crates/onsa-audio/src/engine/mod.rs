@@ -10,6 +10,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::Arc;
 use std::thread::JoinHandle;
+use std::time::Duration;
 
 use rtrb::RingBuffer;
 
@@ -81,6 +82,9 @@ impl QueueItem {
     }
 }
 
+/// Interval of position events (SPEC §2: at most 10 Hz).
+pub const DEFAULT_POSITION_INTERVAL: Duration = Duration::from_millis(100);
+
 /// How far ahead of the device the engine decodes (SPEC §3.4).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum BufferSize {
@@ -134,6 +138,9 @@ pub struct PlaybackSettings {
     pub buffer: BufferSize,
     /// What happens when a track ends.
     pub repeat: RepeatMode,
+    /// How often the playhead is reported. The power saving mode asks for
+    /// fewer of them (SPEC §3.4); the default is ten a second (SPEC §2).
+    pub position_interval: Duration,
 }
 
 impl Default for PlaybackSettings {
@@ -146,6 +153,7 @@ impl Default for PlaybackSettings {
             quality: ResamplerQuality::Balanced,
             buffer: BufferSize::Normal,
             repeat: RepeatMode::Off,
+            position_interval: DEFAULT_POSITION_INTERVAL,
         }
     }
 }

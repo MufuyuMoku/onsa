@@ -34,8 +34,6 @@ use crate::source::{FileSource, TrackInfo};
 const BLOCK_FRAMES: usize = 1024;
 /// Longest wait for the output stage to finish a flush.
 const FLUSH_TIMEOUT: Duration = Duration::from_secs(1);
-/// Interval of position events (SPEC §2: at most 10 Hz).
-const POSITION_INTERVAL: Duration = Duration::from_millis(100);
 /// How often the system default device is checked while playing.
 const DEFAULT_DEVICE_CHECK: Duration = Duration::from_secs(2);
 /// Delay between attempts to reopen a lost output.
@@ -1332,7 +1330,8 @@ impl Worker {
                     });
                 }
             }
-            if self.state == PlayState::Playing && self.last_position.elapsed() >= POSITION_INTERVAL
+            if self.state == PlayState::Playing
+                && self.last_position.elapsed() >= self.settings.position_interval
             {
                 self.last_position = Instant::now();
                 self.emit(Event::Position {

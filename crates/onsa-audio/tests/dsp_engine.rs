@@ -333,6 +333,23 @@ fn analysis_runs_only_while_it_is_on_and_audio_plays() {
     wait_for_state(&engine, &mut sink, PlayState::Playing);
     assert!(!frames_during(&engine, &mut sink, Duration::from_millis(500)).is_empty());
 
+    // Meters alone: frames keep coming, without the spectrum behind them.
+    engine
+        .set_analysis(AnalysisSettings {
+            spectrum: false,
+            ..on
+        })
+        .expect("analysis");
+    frames_during(&engine, &mut sink, Duration::from_millis(150));
+    let frames = frames_during(&engine, &mut sink, Duration::from_millis(400));
+    let frame = frames.last().expect("no frames with the meters alone");
+    assert!(frame.bands.is_empty(), "the spectrum was computed anyway");
+    assert!(
+        (frame.peak_db[0] + 6.02).abs() < 0.5,
+        "peak {}",
+        frame.peak_db[0]
+    );
+
     // Switched off while playing: nothing more.
     engine
         .set_analysis(AnalysisSettings::default())
@@ -342,4 +359,50 @@ fn analysis_runs_only_while_it_is_on_and_audio_plays() {
         frames_during(&engine, &mut sink, Duration::from_millis(400)).is_empty(),
         "analysis kept running after it was switched off"
     );
+}
+
+#[test]
+fn analysis_survives_a_run_of_changes() {
+    // The interface changes what it wants several times in a row as views
+    // come and go: meters, then a visualizer, then power saving. Every
+    // change restarts the analysis thread, and the frames have to keep
+    // coming after the last one.
+    let fixtures = Fixtures::new("analysis changes");
+    let track = fixtures.wav("sine.wav", &sine(RATE as usize * 20, 1000.0, 0.5));
+    let (engine, mut sink) = start(DspSettings::default(), vec![QueueItem::new(&track)]);
+
+    let wanted = [
+        AnalysisSettings {
+            enabled: true,
+            fps: 30,
+            spectrum: false,
+            ..AnalysisSettings::default()
+        },
+        AnalysisSettings {
+            enabled: true,
+            fps: 60,
+            spectrum: true,
+            ..AnalysisSettings::default()
+        },
+        AnalysisSettings {
+            enabled: true,
+            fps: 20,
+            spectrum: true,
+            ..AnalysisSettings::default()
+        },
+        AnalysisSettings {
+            enabled: true,
+            fps: 60,
+            spectrum: true,
+            ..AnalysisSettings::default()
+        },
+    ];
+    for settings in wanted {
+        engine.set_analysis(settings).expect("analysis");
+        frames_during(&engine, &mut sink, Duration::from_millis(120));
+    }
+
+    let frames = frames_during(&engine, &mut sink, Duration::from_millis(500));
+    let frame = frames.last().expect("the frames stopped after the changes");
+    assert!(!frame.bands.is_empty(), "the spectrum stopped");
 }

@@ -38,6 +38,10 @@ pub struct AnalysisSettings {
     pub fps: u32,
     /// Number of spectrum bands.
     pub bands: usize,
+    /// Whether the spectrum is wanted. With no visualizer on screen the
+    /// meters alone are wanted, and the FFT behind the spectrum and the
+    /// spectral centroid is work nobody would see (SPEC §4.4).
+    pub spectrum: bool,
 }
 
 impl Default for AnalysisSettings {
@@ -46,6 +50,7 @@ impl Default for AnalysisSettings {
             enabled: false,
             fps: MAX_FPS,
             bands: DEFAULT_BANDS,
+            spectrum: true,
         }
     }
 }
@@ -157,8 +162,12 @@ impl Analyzer {
     }
 
     /// Produces a frame from what came in since the last one. `elapsed` is
-    /// the time since the last frame, for the peak-hold fall.
-    pub fn frame(&mut self, limiting: bool, elapsed: f32) -> AnalysisFrame {
+    /// the time since the last frame, for the peak-hold fall. Without
+    /// `spectrum` the FFT is skipped: the frame carries the meters alone.
+    pub fn frame(&mut self, limiting: bool, elapsed: f32, spectrum: bool) -> AnalysisFrame {
+        if !spectrum {
+            return self.meters(limiting);
+        }
         for (n, slot) in self.input.iter_mut().enumerate() {
             let sample = self.history[(self.history_pos + n) % self.size];
             *slot = sample * self.window[n];
@@ -204,6 +213,22 @@ impl Analyzer {
             peaks.push(to_byte(self.hold_db[index]));
         }
 
+        self.finish(bands, peaks, centroid_hz, limiting)
+    }
+
+    /// A frame with the meters only, for when nothing shows a spectrum.
+    fn meters(&mut self, limiting: bool) -> AnalysisFrame {
+        self.finish(Vec::new(), Vec::new(), 0.0, limiting)
+    }
+
+    /// Completes a frame with the meter levels, and starts the next one.
+    fn finish(
+        &mut self,
+        bands: Vec<u8>,
+        peaks: Vec<u8>,
+        centroid_hz: f32,
+        limiting: bool,
+    ) -> AnalysisFrame {
         let counted = self.counted.max(1) as f64;
         let frame = AnalysisFrame {
             bands,
@@ -292,7 +317,7 @@ impl AnalysisThread {
                     }
                     let elapsed = last.elapsed().as_secs_f32();
                     last = Instant::now();
-                    emit(analyzer.frame(limiting(), elapsed));
+                    emit(analyzer.frame(limiting(), elapsed, settings.spectrum));
                 }
             })
             .ok();
@@ -346,7 +371,7 @@ mod tests {
     fn measures_a_sine() {
         let mut analyzer = Analyzer::new(48_000, 2, DEFAULT_BANDS, DEFAULT_FFT_SIZE);
         analyzer.push(&sine(4800, 1000.0, 0.5));
-        let frame = analyzer.frame(false, 1.0 / 60.0);
+        let frame = analyzer.frame(false, 1.0 / 60.0, true);
         assert!(
             (frame.peak_db[0] + 6.02).abs() < 0.05,
             "peak {}",
@@ -387,26 +412,43 @@ mod tests {
     fn silence_reads_as_silence() {
         let mut analyzer = Analyzer::new(48_000, 2, DEFAULT_BANDS, DEFAULT_FFT_SIZE);
         analyzer.push(&vec![0.0; 2 * 4800]);
-        let frame = analyzer.frame(false, 0.1);
+        let frame = analyzer.frame(false, 0.1, true);
         assert!(frame.bands.iter().all(|value| *value == 0));
         assert_eq!(frame.centroid_hz, 0.0);
         assert!(frame.peak_db.iter().all(|db| *db <= -119.0));
     }
 
     #[test]
+    fn meters_alone_skip_the_spectrum() {
+        // With no visualizer on screen the levels still have to be right,
+        // but the FFT behind the spectrum is not run at all (SPEC §4.4).
+        let mut analyzer = Analyzer::new(48_000, 2, DEFAULT_BANDS, DEFAULT_FFT_SIZE);
+        analyzer.push(&sine(4800, 1000.0, 0.5));
+        let frame = analyzer.frame(false, 1.0 / 60.0, false);
+        assert!(frame.bands.is_empty(), "no spectrum was asked for");
+        assert!(frame.peaks.is_empty());
+        assert_eq!(frame.centroid_hz, 0.0);
+        assert!(
+            (frame.peak_db[0] + 6.02).abs() < 0.05,
+            "peak {}",
+            frame.peak_db[0]
+        );
+    }
+
+    #[test]
     fn peaks_hold_then_fall() {
         let mut analyzer = Analyzer::new(48_000, 2, DEFAULT_BANDS, DEFAULT_FFT_SIZE);
         analyzer.push(&sine(4800, 1000.0, 0.5));
-        let loud = analyzer.frame(false, 0.1);
+        let loud = analyzer.frame(false, 0.1, true);
         let top = *loud.peaks.iter().max().unwrap();
         analyzer.push(&vec![0.0; 2 * 4800]);
-        let held = analyzer.frame(false, 0.1);
+        let held = analyzer.frame(false, 0.1, true);
         assert_eq!(*held.peaks.iter().max().unwrap(), top, "peak should hold");
         for _ in 0..20 {
             analyzer.push(&vec![0.0; 2 * 480]);
-            analyzer.frame(false, 0.1);
+            analyzer.frame(false, 0.1, true);
         }
-        let fallen = analyzer.frame(false, 0.1);
+        let fallen = analyzer.frame(false, 0.1, true);
         assert!(
             *fallen.peaks.iter().max().unwrap() < top,
             "peak should fall"
@@ -417,7 +459,10 @@ mod tests {
     fn full_scale_counts_as_clipping() {
         let mut analyzer = Analyzer::new(48_000, 2, DEFAULT_BANDS, DEFAULT_FFT_SIZE);
         analyzer.push(&[1.0, 0.0]);
-        assert!(analyzer.frame(true, 0.1).clip);
-        assert!(!analyzer.frame(false, 0.1).clip, "clip resets each frame");
+        assert!(analyzer.frame(true, 0.1, true).clip);
+        assert!(
+            !analyzer.frame(false, 0.1, true).clip,
+            "clip resets each frame"
+        );
     }
 }
