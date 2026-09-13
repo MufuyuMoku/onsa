@@ -12,18 +12,24 @@
 pub mod cover;
 mod db;
 mod error;
+pub mod m3u;
 pub mod overrides;
+pub mod playlist;
 pub mod scan;
 pub mod schema;
 pub mod search;
+pub mod smart;
 pub mod stats;
 pub mod tags;
 pub mod watch;
 
 pub use db::Library;
 pub use error::{Error, Result};
+pub use m3u::{ImportReport, PathStyle};
 pub use overrides::Field;
+pub use playlist::{PlaylistKind, PlaylistRow};
 pub use scan::{ChangeReport, ScanProgress, ScanReport, SUPPORTED_EXTENSIONS};
 pub use search::{AlbumRow, NameCount, SearchResults, TrackRow, TrackSort};
+pub use smart::{Match, Rule, Rules, Sort, SortField};
 pub use stats::{Play, TrackStats};
 pub use watch::{Change, FolderWatcher};

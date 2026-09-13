@@ -4,12 +4,12 @@
 //! applied migration is never edited. The number of applied migrations is
 //! kept in SQLite's `user_version`.
 //!
-//! Version 1 holds what the library itself needs (M3). Playlists, lyrics,
-//! the scrobble queue and downloads arrive as later migrations with the
-//! milestones that use them.
+//! Version 1 holds what the library itself needs (M3), version 2 the
+//! playlists (M6). Lyrics, the scrobble queue and downloads arrive as later
+//! migrations with the milestones that use them.
 
 /// The migrations, in order. Index 0 is version 1.
-pub const MIGRATIONS: &[&str] = &[V1];
+pub const MIGRATIONS: &[&str] = &[V1, V2];
 
 const V1: &str = r#"
 CREATE TABLE folders (
@@ -142,4 +142,27 @@ END;
 CREATE TRIGGER tracks_fts_delete AFTER DELETE ON tracks BEGIN
     DELETE FROM tracks_fts WHERE rowid = old.id;
 END;
+"#;
+
+const V2: &str = r#"
+-- Playlists, manual and smart (SPEC §6.2, §6.3).
+CREATE TABLE playlists (
+    id          INTEGER PRIMARY KEY,
+    name        TEXT NOT NULL,
+    kind        TEXT NOT NULL CHECK (kind IN ('manual', 'smart')),
+    rules       TEXT,                         -- JSON, smart playlists only
+    created_at  INTEGER NOT NULL,
+    updated_at  INTEGER NOT NULL
+);
+
+-- A manual playlist has an order of its own and may hold the same track
+-- more than once, so the position is part of the key rather than the track
+-- (SPEC §6.2).
+CREATE TABLE playlist_items (
+    playlist_id INTEGER NOT NULL REFERENCES playlists(id) ON DELETE CASCADE,
+    position    INTEGER NOT NULL,
+    track_id    INTEGER NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
+    PRIMARY KEY (playlist_id, position)
+);
+CREATE INDEX playlist_items_track ON playlist_items(track_id);
 "#;

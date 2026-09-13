@@ -132,6 +132,16 @@ pub(crate) const TRACK_COLUMNS: &str =
     "id, path, title, artist, album, album_artist, track_number, \
      disc_number, year, genre, duration_ms, album_id, cover_id, status,      codec, sample_rate, bit_depth, channels";
 
+/// The columns [`track_row`] reads, in its order, from a table under
+/// another name.
+pub(crate) fn track_columns(prefix: &str) -> String {
+    TRACK_COLUMNS
+        .split(',')
+        .map(|column| format!("{prefix}{}", column.trim()))
+        .collect::<Vec<_>>()
+        .join(", ")
+}
+
 pub(crate) fn track_row(row: &Row<'_>) -> rusqlite::Result<TrackRow> {
     Ok(TrackRow {
         id: row.get(0)?,

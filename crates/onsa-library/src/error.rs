@@ -35,6 +35,12 @@ pub enum Error {
     /// The folder watcher could not start or follow a folder.
     #[error("folder watcher error: {0}")]
     Watch(String),
+    /// The caller asked for something the library cannot make sense of.
+    #[error("{0}")]
+    Invalid(String),
+    /// A playlist's rules could not be read or written as JSON.
+    #[error("playlist rules cannot be read: {0}")]
+    Rules(#[from] serde_json::Error),
 }
 
 impl Error {
