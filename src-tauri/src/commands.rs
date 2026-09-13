@@ -763,23 +763,14 @@ pub fn set_close_to_tray(
     library.read(|library| settings::save(library, settings::CLOSE_TO_TRAY_KEY, &enabled))
 }
 
-/// Switches the mini player on or off (SPEC §9.2).
+/// Switches the mini player on or off (SPEC §9.2). The answer is the mode
+/// the window ended up in, which is what the interface shows.
 #[tauri::command]
-pub fn window_set_mini(app: AppHandle, mini: bool) -> Result<(), ErrorCode> {
-    let Some(window) = app.get_webview_window(session::MAIN_WINDOW) else {
-        return Ok(());
-    };
-    session::apply_mini(&window, mini).map_err(|error| {
+pub fn window_set_mini(app: AppHandle, mini: bool) -> Result<bool, ErrorCode> {
+    session::set_mini(&app, mini).map_err(|error| {
         tracing::warn!("the window mode cannot change: {error}");
         ErrorCode::Io
-    })?;
-    app.state::<WindowMode>().set_mini(mini);
-    session::save(
-        &app,
-        session::WINDOW_KEY,
-        &session::window_state(&window, mini),
-    );
-    Ok(())
+    })
 }
 
 /// Opens the log folder in the file manager.

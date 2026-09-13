@@ -129,6 +129,7 @@ export type FilterType = 'peaking' | 'lowShelf' | 'highShelf' | 'lowPass' | 'hig
 export type Quality = 'fast' | 'balanced' | 'best';
 export type BufferChoice = 'low' | 'normal' | 'large';
 export type Curve = 'equalPower' | 'linear';
+export type ToneStrength = 'off' | 'subtle' | 'medium' | 'strong';
 
 export interface SignalPath {
 	source: { codec: string | null; sampleRate: number; bitDepth: number | null; channels: number } | null;
@@ -239,8 +240,8 @@ export interface DspPrefs {
 }
 
 export interface DisplayPrefs {
-	/** Whether the hue follows the character of the sound. */
-	toneColor: boolean;
+	/** How far the colour follows the character of the sound. */
+	toneColor: ToneStrength;
 }
 
 export interface Settings {
@@ -380,7 +381,7 @@ export const sleepCancel = () => call<void>('sleep_cancel');
 export const sleepStatus = () => call<SleepStatus>('sleep_status');
 export const traySetup = (labels: TrayLabels) => call<void>('tray_setup', { labels });
 export const setCloseToTray = (enabled: boolean) => call<void>('set_close_to_tray', { enabled });
-export const setMini = (mini: boolean) => call<void>('window_set_mini', { mini });
+export const setMini = (mini: boolean) => call<boolean>('window_set_mini', { mini });
 export const themeOpenFolder = () => call<void>('theme_open_folder');
 export const setVolume = (db: number) => call<void>('player_set_volume', { db });
 
@@ -416,7 +417,8 @@ export const EVENTS = {
 	playerQueue: 'player://queue',
 	sleep: 'player://sleep',
 	scan: 'library://scan',
-	libraryChanged: 'library://changed'
+	libraryChanged: 'library://changed',
+	windowMode: 'window://mode'
 } as const;
 
 /** URL of a cover thumbnail, served by the backend's `onsa` protocol. */

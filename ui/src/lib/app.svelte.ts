@@ -6,7 +6,9 @@
 import {
 	appInfo,
 	appState,
+	EVENTS,
 	failureKey,
+	on,
 	setLocaleSetting,
 	setMini,
 	traySetup,
@@ -88,6 +90,8 @@ export async function start(root: HTMLElement): Promise<void> {
 		await loadThemes(stored.themeId ?? info.defaultThemeId, root);
 		firstRun = !stored.hasFolders;
 		mini = stored.mini;
+		// The window decides its own mode; the interface follows it.
+		await on<boolean>(EVENTS.windowMode, (next) => (mini = next));
 		await Promise.all([initPlayer(), initLibrary(), loadSettings()]);
 		await refreshTray();
 		failure = null;
@@ -120,11 +124,14 @@ export async function refreshTray(): Promise<void> {
 	}
 }
 
-/** Switches between the full window and the mini player. */
+/**
+ * Asks for the full window or the mini player. The window mode lives in the
+ * backend; this only asks, and the answer (or the event, when the change
+ * came from elsewhere) is what the interface shows (SPEC section 9.2).
+ */
 export async function setMiniPlayer(next: boolean): Promise<void> {
 	try {
-		await setMini(next);
-		mini = next;
+		mini = await setMini(next);
 	} catch (error) {
 		failure = failureKey(error);
 	}

@@ -168,17 +168,15 @@ fn setup(app: &mut tauri::App) -> Result<()> {
     }
 
     let window_state: session::WindowState = session::load(&library, session::WINDOW_KEY);
-    let mode = WindowMode::default();
-    mode.set_mini(window_state.mini);
 
     app.manage(logging);
     app.manage(library);
     app.manage(player);
-    app.manage(mode);
+    app.manage(WindowMode::default());
     app.manage(sleep::SleepTimer::default());
 
     if let Some(window) = app.get_webview_window(session::MAIN_WINDOW) {
-        session::restore_window(&window, &window_state);
+        session::restore_window(&window, &window_state, &app.state::<WindowMode>());
         remember_window(app.handle().clone(), window);
     }
     // The system's media keys and media display (SPEC §13).
@@ -203,11 +201,10 @@ fn remember_window(app: AppHandle, window: WebviewWindow) {
             open::accept(&app, paths.clone());
         }
         WindowEvent::CloseRequested { api, .. } => {
-            let mini = target.app_handle().state::<WindowMode>().mini();
             session::save(
                 &app,
                 session::WINDOW_KEY,
-                &session::window_state(&target, mini),
+                &session::window_state(&target, &target.app_handle().state::<WindowMode>()),
             );
             if close_to_tray(&app) && tray::exists(&app) {
                 api.prevent_close();
@@ -216,11 +213,10 @@ fn remember_window(app: AppHandle, window: WebviewWindow) {
             }
         }
         WindowEvent::Focused(false) => {
-            let mini = target.app_handle().state::<WindowMode>().mini();
             session::save(
                 &app,
                 session::WINDOW_KEY,
-                &session::window_state(&target, mini),
+                &session::window_state(&target, &target.app_handle().state::<WindowMode>()),
             );
         }
         // Minimising and restoring arrive as a resize; there is no event of
