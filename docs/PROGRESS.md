@@ -377,7 +377,7 @@ Job Ubuntu sempat gagal di langkah penyimpanan cache dengan `No space left on de
 
 ### Yang dibuat
 
-- **Visualizer spektrum** di layar Sedang Diputar, dengan **tiga varian tema**: `segment` (blok bertumpuk, segmen mati tetap samar — Kaca asap), `bar` (batang bergradasi — Kokpit kaca), dan `soft` (satu kurva terisi — Deck malam). Semuanya menggambar 64 band beserta garis peak-hold, memakai peran warna, dan ikut menyala saat tema memakai glow.
+- **Visualizer spektrum** di layar Sedang Diputar, dengan **tiga varian tema** sesuai `palet-preview.html`: `segment` (blok bertumpuk, segmen mati tetap samar — Kaca asap), `bar` (batang polos di atas sumur samar — Kokpit kaca), dan `soft` (kolom hangat yang memudar dari bawah — Deck malam). Semuanya menggambar 64 band beserta garis peak-hold dalam warna lit temanya, dan ikut menyala saat tema memakai glow.
 - **Warna nada** (SPEC §9.5): spectral centroid dari thread analisis dihaluskan dengan rata-rata bergerak sekitar satu detik, lalu dipetakan ke `hue-rotate` dalam rentang yang ditentukan tema. Suara terang bergeser ke rona dingin, suara berat ke rona hangat. Bisa dimatikan di Pengaturan → Tampilan, dan ikut mati saat mode hemat daya menyala.
 - **Analisis mengikuti apa yang terlihat**: setiap meter dan visualizer mendaftarkan dirinya selama ada di layar. Tanpa satu pun yang terdaftar, atau saat jendela di-minimize atau disembunyikan ke tray, tap di callback output mati dan thread analisis tidur. Kalau hanya meter yang tampil, FFT di balik spektrum tidak dijalankan sama sekali.
 - **Mode hemat daya** (SPEC §3.4): buffer Besar, resampler Cepat, frame analisis 20 per detik, event posisi tiap 500 ms, dan warna nada mati. Pilihan buffer dan resampler milik pengguna tetap tersimpan dan berlaku lagi saat mode ini dimatikan.
@@ -387,7 +387,7 @@ Job Ubuntu sempat gagal di langkah penyimpanan cache dengan `No space left on de
 
 Dijalankan pada build rilis portable di Windows 11 dengan library 620 lagu, dikendalikan lewat port debug WebView2:
 
-- **Visualizer**: kurva dan batangnya benar-benar berubah mengikuti musik, dan tiap tema menggambar variannya sendiri (Kaca asap 64 kolom segmen, Kokpit kaca 64 batang, Deck malam kurva).
+- **Visualizer**: kolomnya benar-benar berubah mengikuti musik, tiap tema menggambar variannya sendiri, dan warna yang dihitung browser cocok dengan acuan visual: Kaca asap teal bermasker segmen di atas sumur samar, Kokpit kaca hijau 85% dengan penanda puncak putih, Deck malam gradien hangat dengan penanda puncak merah.
 - **Warna nada**: `hue-rotate(15,4°)` saat menyala, `none` setelah dimatikan lewat Pengaturan → Tampilan, dan kembali setelah dinyalakan lagi.
 - **Tap berhenti** (kriteria selesai), dari log aplikasi:
   - masuk Sedang Diputar → `analysis enabled=true spectrum=true fps=60`
