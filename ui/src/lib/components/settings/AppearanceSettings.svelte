@@ -4,6 +4,7 @@
 	import { chooseLocale } from '$lib/app.svelte';
 	import { currentLocale, LOCALES, t, type Locale } from '$lib/i18n/index.svelte';
 	import type { MessageKey } from '$lib/i18n/dictionary';
+	import { settings, updateDisplay } from '$lib/settings.svelte';
 	import { activeTheme, availableThemes, selectTheme } from '$lib/theme/index.svelte';
 
 	const languageKeys: Record<Locale, MessageKey> = { id: 'language.id', en: 'language.en' };
@@ -25,6 +26,19 @@
 				>
 			{/each}
 		</div>
+	</section>
+	<section>
+		<h2 class="label">{t('toneColor.label')}</h2>
+		<label class="check">
+			<input
+				type="checkbox"
+				checked={settings.value?.display.toneColor ?? true}
+				disabled={!settings.value || !(activeTheme()?.toneColor.enabled ?? false)}
+				onchange={(event) => updateDisplay({ toneColor: event.currentTarget.checked })}
+			/>
+			{t('toneColor.on')}
+		</label>
+		<p class="note muted">{t('toneColor.hint')}</p>
 	</section>
 	<section>
 		<h2 class="label">{t('theme.userFolder')}</h2>

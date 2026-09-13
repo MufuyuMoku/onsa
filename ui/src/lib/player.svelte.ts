@@ -30,7 +30,14 @@ import {
 import { settings, updatePlayback } from '$lib/settings.svelte';
 
 /** Meters at rest. */
-const FLOOR: Meter = { peakDb: [-120, -120], clip: false, limiting: false };
+const FLOOR: Meter = {
+	peakDb: [-120, -120],
+	clip: false,
+	limiting: false,
+	bands: [],
+	peaks: [],
+	centroidHz: 0
+};
 /** How long CLIP and LIM stay lit after the event, so a short one is seen. */
 const HOLD_MS = 1200;
 

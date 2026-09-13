@@ -162,10 +162,23 @@ export interface Position {
 	seconds: number;
 }
 
+/** One analysis frame: the meters, and the spectrum when one is showing. */
 export interface Meter {
 	peakDb: [number, number];
 	clip: boolean;
 	limiting: boolean;
+	/** Level per band, 0 to 255; empty while no visualizer is on screen. */
+	bands: number[];
+	/** Held peak per band, on the same scale. */
+	peaks: number[];
+	/** Spectral centroid in Hz, which tone colour follows. */
+	centroidHz: number;
+}
+
+/** What the interface is showing that needs the analysis tap. */
+export interface Watching {
+	spectrum: boolean;
+	meters: boolean;
 }
 
 /** One queue entry: the track, and what tells this entry apart from another
@@ -195,6 +208,9 @@ export interface PlaybackPrefs {
 	quality: Quality;
 	buffer: BufferChoice;
 	repeat: RepeatKind;
+	/** The largest buffer, the cheapest resampler, and less of everything
+	 * that only feeds the eye. */
+	powerSave: boolean;
 }
 
 export interface Band {
@@ -222,10 +238,16 @@ export interface DspPrefs {
 	dither: boolean;
 }
 
+export interface DisplayPrefs {
+	/** Whether the hue follows the character of the sound. */
+	toneColor: boolean;
+}
+
 export interface Settings {
 	output: OutputPrefs;
 	playback: PlaybackPrefs;
 	dsp: DspPrefs;
+	display: DisplayPrefs;
 }
 
 export interface Device {
@@ -369,6 +391,9 @@ export const setOutput = (output: OutputPrefs) => call<void>('settings_set_outpu
 export const setPlayback = (playback: PlaybackPrefs) =>
 	call<void>('settings_set_playback', { playback });
 export const setDsp = (dsp: DspPrefs) => call<void>('settings_set_dsp', { dsp });
+export const setDisplay = (display: DisplayPrefs) =>
+	call<void>('settings_set_display', { display });
+export const watchAnalysis = (watching: Watching) => call<void>('player_watch', { watching });
 export const outputDevices = () => call<Device[]>('output_devices');
 export const eqCurve = (dsp: DspPrefs) => call<EqCurve>('eq_curve', { dsp });
 export const autoEqImport = (title: string, filterName: string) =>

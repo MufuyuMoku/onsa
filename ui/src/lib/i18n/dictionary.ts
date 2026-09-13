@@ -73,6 +73,9 @@ const id = {
 	'meter.clip': 'CLIP',
 	'meter.limit': 'LIM',
 
+	'spectrum.label': 'Spektrum',
+	'spectrum.rest': 'Diam',
+
 	'signal.label': 'Jalur sinyal',
 	'signal.idle': 'Belum ada sinyal',
 	'signal.hint': 'Klik: nyalakan atau matikan. Klik kanan: pengaturan.',
@@ -156,6 +159,9 @@ const id = {
 	'output.buffer': 'Buffer',
 	'output.bufferNote': 'Buffer baru berlaku saat output dibuka ulang.',
 	'output.dither': 'Dither TPDF untuk output 16-bit',
+	'output.powerSave': 'Mode hemat daya',
+	'output.powerSaveHint':
+		'Buffer besar, resampler cepat, meter dan visualizer lebih jarang digambar, dan warna nada dimatikan. Pengaturan buffer dan resampler di atas kembali berlaku saat mode ini dimatikan.',
 	'output.matchSource': 'Samakan dengan sumber',
 	'output.matchSourceHint':
 		'Perangkat dibuka ulang mengikuti sample rate tiap lagu, kalau perangkatnya mendukung.',
@@ -237,6 +243,11 @@ const id = {
 		'Mencatat lebih rinci. Nyalakan, ulangi masalahnya, lalu kirim file log terbaru dari folder log.',
 
 	'theme.label': 'Tema',
+	'toneColor.label': 'Warna nada',
+	'toneColor.on': 'Rona mengikuti karakter suara',
+	'toneColor.hint':
+		'Suara terang bergeser ke rona dingin, suara berat ke rona hangat. Setiap tema menentukan bagian mana yang ikut bergeser.',
+
 	'theme.userFolder': 'Tema buatan sendiri',
 	'theme.openFolder': 'Buka folder tema',
 	'theme.userHint':
@@ -319,6 +330,9 @@ const en: Record<MessageKey, string> = {
 	'meter.vu': 'VU',
 	'meter.clip': 'CLIP',
 	'meter.limit': 'LIM',
+
+	'spectrum.label': 'Spectrum',
+	'spectrum.rest': 'At rest',
 
 	'signal.label': 'Signal path',
 	'signal.idle': 'No signal',
@@ -403,6 +417,9 @@ const en: Record<MessageKey, string> = {
 	'output.buffer': 'Buffer',
 	'output.bufferNote': 'A new buffer size applies when the output reopens.',
 	'output.dither': 'TPDF dither for 16-bit output',
+	'output.powerSave': 'Power saving',
+	'output.powerSaveHint':
+		'The largest buffer, the cheapest resampler, meters and visualizer drawn less often, and no tone colour. The buffer and resampler above apply again once this is off.',
 	'output.matchSource': 'Match the source',
 	'output.matchSourceHint':
 		'The device reopens at each track\'s own sample rate, when it supports it.',
@@ -484,6 +501,11 @@ const en: Record<MessageKey, string> = {
 		'Records more detail. Switch it on, repeat the problem, then send the newest file from the log folder.',
 
 	'theme.label': 'Theme',
+	'toneColor.label': 'Tone colour',
+	'toneColor.on': 'Hue follows the character of the sound',
+	'toneColor.hint':
+		'Bright sound shifts towards the cool end, heavy sound towards the warm end. Each theme decides which parts follow it.',
+
 	'theme.userFolder': 'Your own themes',
 	'theme.openFolder': 'Open the theme folder',
 	'theme.userHint':

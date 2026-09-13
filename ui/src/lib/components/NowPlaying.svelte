@@ -1,6 +1,6 @@
 <!--
-	Now Playing (SPEC section 9.2): the cover large, and the signal told
-	honestly. The visualizer and the lyrics join it in M5 and M8.
+	Now Playing (SPEC section 9.2): the cover large, the spectrum, and the
+	signal told honestly. The lyrics join it in M8.
 -->
 <script lang="ts">
 	import { coverUrl, seek } from '$lib/backend';
@@ -9,6 +9,7 @@
 	import { t } from '$lib/i18n/index.svelte';
 	import { player } from '$lib/player.svelte';
 	import Icon from './Icon.svelte';
+	import Spectrum from './Spectrum.svelte';
 
 	const snapshot = $derived(player.snapshot);
 	const track = $derived(snapshot?.track ?? null);
@@ -97,6 +98,9 @@
 				{/if}
 			</dl>
 		</div>
+		<div class="visualizer">
+			<Spectrum height={170} />
+		</div>
 	{:else}
 		<p class="muted nothing">{t('transport.nothing')}</p>
 	{/if}
@@ -106,12 +110,17 @@
 	.now {
 		display: grid;
 		grid-template-columns: auto minmax(0, 1fr);
-		grid-template-rows: auto 1fr;
+		grid-template-rows: auto auto 1fr;
 		align-content: start;
 		gap: 18px 28px;
 		height: 100%;
 		padding: 16px 24px 24px;
 		overflow-y: auto;
+	}
+
+	.visualizer {
+		grid-column: 1 / -1;
+		min-width: 0;
 	}
 
 	.back {

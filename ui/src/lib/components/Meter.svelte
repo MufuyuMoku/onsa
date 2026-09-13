@@ -3,6 +3,7 @@
 	meter variant: bars, segments, or VU needles.
 -->
 <script lang="ts">
+	import { watch } from '$lib/analysis.svelte';
 	import { t } from '$lib/i18n/index.svelte';
 	import { player } from '$lib/player.svelte';
 	import { activeTheme } from '$lib/theme/index.svelte';
@@ -17,6 +18,10 @@
 		player.meter.peakDb.map((peak) => Math.min(1, Math.max(0, (peak + RANGE_DB) / RANGE_DB)))
 	);
 	const channels = $derived([t('meter.left'), t('meter.right')]);
+
+	// While a meter is on screen the levels are wanted; when the last one
+	// leaves, the analysis tap stops (SPEC section 4.4).
+	$effect(() => watch('meters'));
 
 	const ticks = Array.from({ length: 11 }, (_, k) => {
 		const angle = ((-SWING + k * ((2 * SWING) / 10)) * Math.PI) / 180;

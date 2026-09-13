@@ -9,11 +9,13 @@
 import {
 	failureKey,
 	outputDevices,
+	setDisplay,
 	setDsp,
 	setOutput,
 	setPlayback,
 	settingsGet,
 	type Device,
+	type DisplayPrefs,
 	type DspPrefs,
 	type OutputPrefs,
 	type PlaybackPrefs,
@@ -100,6 +102,18 @@ export async function updateOutput(patch: Partial<OutputPrefs>): Promise<void> {
 	current.output = { ...current.output, ...patch };
 	try {
 		await setOutput($state.snapshot(current.output));
+		failure = null;
+	} catch (error) {
+		failure = failureKey(error);
+	}
+}
+
+/** Changes what the interface shows beyond the theme. */
+export async function updateDisplay(patch: Partial<DisplayPrefs>): Promise<void> {
+	if (!current) return;
+	current.display = { ...current.display, ...patch };
+	try {
+		await setDisplay($state.snapshot(current.display));
 		failure = null;
 	} catch (error) {
 		failure = failureKey(error);

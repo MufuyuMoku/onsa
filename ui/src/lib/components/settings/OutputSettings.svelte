@@ -135,6 +135,15 @@
 				/>
 				{t('output.dither')}
 			</label>
+			<label class="check">
+				<input
+					type="checkbox"
+					checked={value.playback.powerSave}
+					onchange={(event) => updatePlayback({ powerSave: event.currentTarget.checked })}
+				/>
+				{t('output.powerSave')}
+			</label>
+			<p class="muted note">{t('output.powerSaveHint')}</p>
 		</section>
 
 		<section>

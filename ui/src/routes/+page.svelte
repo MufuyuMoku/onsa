@@ -5,6 +5,7 @@
 -->
 <script lang="ts">
 	import { nextTrack, previousTrack, seek, togglePlay } from '$lib/backend';
+	import { followTone } from '$lib/analysis.svelte';
 	import { app, navigate, setMiniPlayer } from '$lib/app.svelte';
 	import { t } from '$lib/i18n/index.svelte';
 	import { library, setQuery } from '$lib/library.svelte';
@@ -34,6 +35,9 @@
 	const fault = $derived(app.failure ?? themeFailure());
 	const view = $derived(app.view);
 	let searchField: HTMLInputElement | undefined = $state();
+
+	// The hue follows the sound while tone colour is on (SPEC section 9.5).
+	followTone();
 
 	function editing(target: EventTarget | null): boolean {
 		return (
