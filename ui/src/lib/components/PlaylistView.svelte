@@ -15,7 +15,7 @@
 		type Track
 	} from '$lib/backend';
 	import { navigate } from '$lib/app.svelte';
-	import { clock } from '$lib/format';
+	import { clock, fileName } from '$lib/format';
 	import { t } from '$lib/i18n/index.svelte';
 	import type { MessageKey } from '$lib/i18n/dictionary';
 	import { library } from '$lib/library.svelte';
@@ -68,10 +68,6 @@
 	/** Which panel is open, if any. */
 	let asking = $state<'rename' | 'duplicate' | 'rules' | 'delete' | null>(null);
 	let menuOpen = $state(false);
-
-	function fileName(path: string): string {
-		return path.split(/[\\/]/).pop() ?? path;
-	}
 
 	function guard(work: Promise<unknown>): void {
 		work.catch((error) => {

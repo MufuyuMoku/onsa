@@ -20,7 +20,7 @@
 		type ColumnKey
 	} from '$lib/columns';
 	import { prefsFor, resetColumns, setShown, setWidth, type ListView } from '$lib/columns.svelte';
-	import { clock } from '$lib/format';
+	import { clock, fileName } from '$lib/format';
 	import { t } from '$lib/i18n/index.svelte';
 	import { measure } from '$lib/layout.svelte';
 	import { library, sortBy } from '$lib/library.svelte';
@@ -119,10 +119,6 @@
 
 	// Only manual playlists take tracks: a smart one is its rules.
 	const manual = $derived(playlists.all.filter((playlist) => playlist.kind === 'manual'));
-
-	function fileName(path: string): string {
-		return path.split(/[\\/]/).pop() ?? path;
-	}
 
 	// Title and length always stay; the rest go in this order as the list
 	// narrows — the year first, then the album, then the artist. A column is

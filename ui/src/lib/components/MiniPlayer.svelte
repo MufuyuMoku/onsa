@@ -6,7 +6,7 @@
 	import { tonePosition } from '$lib/analysis.svelte';
 	import { coverUrl, nextTrack, previousTrack, seek, togglePlay } from '$lib/backend';
 	import { setMiniPlayer } from '$lib/app.svelte';
-	import { clock } from '$lib/format';
+	import { clock, fileName } from '$lib/format';
 	import { t } from '$lib/i18n/index.svelte';
 	import { player } from '$lib/player.svelte';
 	import Icon from './Icon.svelte';
@@ -16,10 +16,6 @@
 	const track = $derived(snapshot?.track ?? null);
 	const playing = $derived(snapshot?.state === 'playing');
 	const duration = $derived(snapshot?.duration ?? 0);
-
-	function fileName(path: string): string {
-		return path.split(/[\\/]/).pop() ?? path;
-	}
 </script>
 
 <div class="mini">

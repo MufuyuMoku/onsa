@@ -5,7 +5,7 @@
 -->
 <script lang="ts">
 	import { jump, type QueueEntry } from '$lib/backend';
-	import { clock } from '$lib/format';
+	import { clock, fileName } from '$lib/format';
 	import { t } from '$lib/i18n/index.svelte';
 	import {
 		cycleRepeat,
@@ -53,10 +53,6 @@
 	$effect(() => {
 		if (at !== null) list?.reveal(at);
 	});
-
-	function fileName(path: string): string {
-		return path.split(/[\\/]/).pop() ?? path;
-	}
 
 	// Saving the queue is how a session of clicking about becomes a playlist
 	// worth keeping (SPEC section 6.2).

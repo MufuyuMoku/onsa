@@ -10,7 +10,7 @@
 	import { tonePosition } from '$lib/analysis.svelte';
 	import { coverUrl, nextTrack, previousTrack, seek, togglePlay } from '$lib/backend';
 	import { app, navigate, setMiniPlayer } from '$lib/app.svelte';
-	import { clock, db } from '$lib/format';
+	import { clock, db, fileName } from '$lib/format';
 	import { t } from '$lib/i18n/index.svelte';
 	import { measure } from '$lib/layout.svelte';
 	import { player } from '$lib/player.svelte';
@@ -49,10 +49,6 @@
 
 	function setVolume(value: number): void {
 		updateDsp({ volumeDb: value <= VOLUME_FLOOR ? -90 : value });
-	}
-
-	function fileName(path: string): string {
-		return path.split(/[\\/]/).pop() ?? path;
 	}
 </script>
 

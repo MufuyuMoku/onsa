@@ -6,7 +6,7 @@
 	import { tonePosition } from '$lib/analysis.svelte';
 	import { coverUrl, seek } from '$lib/backend';
 	import { navigate } from '$lib/app.svelte';
-	import { clock, db, rate } from '$lib/format';
+	import { clock, db, fileName, rate } from '$lib/format';
 	import { t } from '$lib/i18n/index.svelte';
 	import { player } from '$lib/player.svelte';
 	import Icon from './Icon.svelte';
@@ -16,10 +16,6 @@
 	const track = $derived(snapshot?.track ?? null);
 	const signal = $derived(snapshot?.signal ?? null);
 	const duration = $derived(snapshot?.duration ?? 0);
-
-	function fileName(path: string): string {
-		return path.split(/[\\/]/).pop() ?? path;
-	}
 
 	const format = $derived.by(() => {
 		const source = signal?.source;

@@ -47,3 +47,14 @@ export function millis(value: number): string {
 export function secondsLabel(value: number): string {
 	return `${Number.isInteger(value) ? value : value.toFixed(1)} s`;
 }
+
+/**
+ * The last part of a path, whichever way its separators lean.
+ *
+ * It lives here rather than in each component that wants it: seven copies
+ * of this line is how one of them ended up splitting on forward slashes
+ * alone, which leaves a whole Windows path where a file name belongs.
+ */
+export function fileName(path: string): string {
+	return path.split(/[\\/]/).pop() ?? path;
+}
