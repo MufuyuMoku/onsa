@@ -79,6 +79,26 @@ Tarik sebuah baris dari daftar lagu ke salah satu playlist itu: sebuah lencana m
 
 Untuk sekaligus banyak: buka sebuah **album**, **artis**, **genre**, atau **folder**, lalu pakai tombol **Tambah ke playlist** di sebelah tombol putar. Dari situ kamu juga bisa membuat playlist baru dan langsung mengisinya.
 
+## 5c. Kolom aturan baru dan pratinjau berisi lagu
+
+Editor aturan playlist pintar sekarang punya lima kolom tambahan: **Sample rate**, **Kedalaman bit**, **Bitrate**, **Cover**, dan **Tag artis**. Dua yang terakhir cuma ya-atau-tidak — pilih *ada* atau *tidak ada*, tanpa nilai apa pun.
+
+Ini yang kamu minta untuk mengumpulkan file unduhan yang tagnya kosong. Di library-mu sekarang, aturan **Tag artis · tidak ada** mengumpulkan **455 lagu**, dan **Cover · tidak ada** mengumpulkan 473.
+
+**Pratinjaunya sekarang menampilkan delapan lagu pertama**, bukan hanya jumlahnya, jadi kamu bisa melihat aturannya benar-benar mengenai lagu yang kamu maksud sebelum menyimpannya.
+
+Satu perubahan perilaku: **angka yang tidak ada sekarang dihitung "bukan angka itu"**. Dulu *Tahun ≠ 2000* melewatkan lagu yang tahunnya kosong; sekarang lagu itu ikut masuk, sama seperti *tidak mengandung* pada kolom teks yang memang sudah begitu.
+
+## 5d. Pengaturan → Metadata
+
+Bagian baru di Pengaturan, tempat menyiapkan pengambilan metadata dari internet nanti:
+
+- **Ambil metadata dari internet** — bawaannya **mati**. Selama mati, Onsa tidak menghubungi layanan apa pun, termasuk tombol Coba kunci di bawahnya.
+- **Kunci AcoustID** — kolom untuk menempel kuncimu sendiri. Onsa tidak pernah menampilkannya lagi setelah disimpan; yang ditampilkan hanya dari mana kuncinya diambil.
+- **Coba kunci** — bertanya langsung ke AcoustID apakah kunci itu dikenali. Tidak membaca file audio sama sekali.
+
+Kalau kamu sudah memasang `ONSA_ACOUSTID_API_KEY`, halaman ini akan berkata *"Memakai kunci dari variabel lingkungan ONSA_ACOUSTID_API_KEY"*. Nyalakan sakelar internetnya, tekan **Coba kunci**, dan seharusnya muncul *"AcoustID menerima kunci ini."*
+
 ## 6. Perbaikan yang ikut masuk
 
 Saat memverifikasi M6 ketahuan satu bug lama: **jendela yang diminimalkan menyimpan ukuran dan tempat yang omong kosong**. Kalau Onsa diminimalkan lalu ditutup (atau sekadar kehilangan fokus saat kecil), sesi menyimpan ukuran 0×0 di posisi jauh di luar layar, dan Onsa berikutnya terbuka sekecil mungkin di pojok — bukan seperti yang kamu tinggalkan.

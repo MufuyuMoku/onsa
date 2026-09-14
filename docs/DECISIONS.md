@@ -400,3 +400,18 @@ Catatan keputusan yang diambil saat spesifikasi kurang jelas. Format: tanggal, k
 - **Modul ini tumbuh bersama pemakainya.** Yang ada sekarang hanya yang benar-benar dipanggil; batas unduhan dan pembungkus permintaan yang lebih lengkap menyusul bersama pemakai pertamanya di M7 dan M10, supaya tidak ada kode mati yang menunggu.
 - **Uji kunci AcoustID tanpa membaca audio**: lookup lewat `trackid` tidak membutuhkan fingerprint, jadi satu-satunya hal yang benar-benar ditanyakan permintaan itu adalah kuncinya. AcoustID tidak mendokumentasikan kode error-nya, jadi jawabannya dibaca apa adanya: `status: ok` berarti kunci lolos, error yang menyebut "api key" berarti tidak, dan error tentang hal lain tetap berarti kuncinya lolos — ia sudah sampai ke tahap mengeluhkan sisa permintaannya.
 - **Tombol "Coba kunci" menghormati sakelar internet.** Selama "Ambil metadata dari internet" mati, tombol itu tidak menghubungi apa pun dan berkata begitu. "Bisa dimatikan total" berarti total.
+
+## 2026-09-14 · Kolom aturan tentang file itu sendiri, dan pratinjau yang menampilkan lagunya
+
+- **Diminta pemilik proyek** untuk mengumpulkan file unduhan yang tagnya kosong, sebagai bahan perapian di M7.
+- **Lima kolom baru**: sample rate, kedalaman bit, bitrate (ketiganya angka), serta "cover" dan "tag artis" sebagai pertanyaan ya-atau-tidak.
+- **Jenis kolom baru, `Flag`**, dengan dua operator sendiri (`yes` dan `no`) dan **tanpa nilai**: pertanyaannya sudah utuh di perbandingannya. Editor tidak menampilkan kolom nilai untuk kolom semacam ini, dan aturannya tidak mengikat satu parameter pun.
+- **"Tag artis" berarti tag yang berisi sesuatu**: `TRIM(artist)` yang kosong dihitung tidak ada, karena tag berisi spasi persis sama tidak bergunanya dengan tag yang hilang.
+- **Angka yang tidak ada sekarang dihitung "bukan angka itu".** Sebelumnya `tahun != 2000` melewatkan lagu yang tahunnya kosong, karena perbandingan dengan NULL di SQL menghasilkan NULL. Sekarang `Ne` ditulis `(kolom IS NULL OR kolom <> ?)`, sejalan dengan aturan teks "tidak mengandung" yang sudah lebih dulu begitu. Ini mengubah perilaku `!=` pada kolom tahun juga, dan ke arah yang benar.
+- **Pratinjau menampilkan delapan lagu pertama**, bukan hanya jumlahnya, supaya aturannya bisa dilihat mengenai lagu yang dimaksud — bukan sekadar dihitung.
+
+## 2026-09-14 · Satu tempat untuk mengambil nama file dari sebuah path
+
+- Tujuh komponen masing-masing punya salinan `fileName()` yang sama. Salah satunya ditulis `/[\/]/` alih-alih `/[\/]/`, sehingga path Windows tidak pernah terpotong dan pratinjau aturan menampilkan `C:\Users\...\lagu.mp3` utuh sebagai judul.
+- Sekarang fungsinya satu, di `ui/src/lib/format.ts`, **dengan tesnya sendiri** untuk path Windows, path Linux, path campuran, dan string yang memang sudah berupa nama file.
+- Tesnya bukan hiasan: kesalahan yang sama terjadi **dua kali** dalam satu sesi, keduanya karena satu backslash hilang saat berkas ditulis, dan keduanya terlihat benar sampai sebuah path Windows melewatinya.

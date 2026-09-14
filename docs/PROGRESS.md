@@ -557,3 +557,14 @@ Diminta bersama perbaikan tarik-lepas, karena mekanismenya sama.
 - Halaman album, artis, genre, dan folder punya tombol **Tambah ke playlist** yang memasukkan seluruhnya sekaligus, termasuk ke playlist baru yang dibuat saat itu juga.
 
 **Cara verifikasi**, dengan mouse sungguhan pada build rilis: membawa sebuah baris ke playlist di sidebar menambahkannya; melepasnya di tempat yang bukan sasaran tidak menambah apa pun; dan tombol di halaman album memasukkan ketiga lagunya sekaligus. Pemeriksa tata letak dijalankan ulang dengan sidebar yang sudah berisi playlist — 64 pemeriksaan, bersih.
+
+### Awal M7: kunci layanan luar, klien HTTP, dan kolom aturan baru
+
+- **Klien HTTP untuk seluruh proyek** masuk SPEC §1 sebagai keputusan terkunci: `reqwest` dengan TLS bawaannya (rustls), klien blocking. Satu tempat memegang aturannya — User-Agent, timeout koneksi dan total, batas ukuran jawaban, batas redirect, dan kegagalan yang dikembalikan sebagai nilai. URL tidak pernah masuk log, karena di situlah kunci API menumpang.
+- **Kunci AcoustID** datang dari Pengaturan, variabel lingkungan `ONSA_ACOUSTID_API_KEY`, atau lingkungan saat build — yang pertama ada menang. Kunci tidak pernah kembali ke antarmuka; yang bisa ditanyakan hanya *apakah* ada dan *dari mana*. Halaman Pengaturan → Metadata punya sakelar internet yang **mati secara bawaan**, kolom kunci, dan tombol **Coba kunci** yang benar-benar bertanya ke AcoustID (lewat lookup `trackid`, jadi tidak perlu membaca audio sama sekali).
+- **Lima kolom aturan baru** untuk mengumpulkan file yang perlu dirapikan: sample rate, kedalaman bit, bitrate, punya cover, punya tag artis. Pada library 624 lagu milik pemilik proyek: 455 lagu tanpa tag artis, 473 tanpa cover, 436 di atas 44,1 kHz, 114 di bawah 192 kbit/s.
+- **Pratinjau aturan menampilkan delapan lagu pertama**, bukan hanya jumlahnya.
+
+**Cara verifikasi**: 159 tes Rust dan 20 tes antarmuka; rantai kunci diperiksa pada aplikasi sungguhan (setelan menang atas lingkungan, mengosongkannya jatuh kembali, dan nilainya tidak muncul di jawaban perintah mana pun maupun di log); tombol Coba kunci menjawab `offline` saat sakelarnya mati dan `refused` untuk kunci palsu — jawaban sungguhan dari AcoustID, jadi jalur TLS-nya ikut terbukti; perintah itu berjalan di `spawn_blocking`, dan perintah lain tetap dijawab dalam 1 ms selagi ia menunggu. Pemeriksa tata letak dijalankan ulang (64 pemeriksaan) beserta pemeriksa khusus untuk editor aturan di tiga ukuran jendela.
+
+**Temuan saat pengujian (sudah diperbaiki)**: `fileName()` disalin di tujuh komponen, dan satu salinannya kehilangan sebuah backslash sehingga path Windows tampil utuh sebagai judul lagu di pratinjau aturan. Sekarang fungsinya satu di `ui/src/lib/format.ts` dengan tesnya sendiri — kesalahan yang sama sempat terjadi dua kali dalam satu sesi.
