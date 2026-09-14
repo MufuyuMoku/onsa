@@ -16,6 +16,7 @@ mod media;
 mod net;
 mod open;
 mod player;
+mod proposal;
 mod queue;
 mod session;
 mod settings;

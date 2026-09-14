@@ -568,3 +568,23 @@ Diminta bersama perbaikan tarik-lepas, karena mekanismenya sama.
 **Cara verifikasi**: 159 tes Rust dan 20 tes antarmuka; rantai kunci diperiksa pada aplikasi sungguhan (setelan menang atas lingkungan, mengosongkannya jatuh kembali, dan nilainya tidak muncul di jawaban perintah mana pun maupun di log); tombol Coba kunci menjawab `offline` saat sakelarnya mati dan `refused` untuk kunci palsu — jawaban sungguhan dari AcoustID, jadi jalur TLS-nya ikut terbukti; perintah itu berjalan di `spawn_blocking`, dan perintah lain tetap dijawab dalam 1 ms selagi ia menunggu. Pemeriksa tata letak dijalankan ulang (64 pemeriksaan) beserta pemeriksa khusus untuk editor aturan di tiga ukuran jendela.
 
 **Temuan saat pengujian (sudah diperbaiki)**: `fileName()` disalin di tujuh komponen, dan satu salinannya kehilangan sebuah backslash sehingga path Windows tampil utuh sebagai judul lagu di pratinjau aturan. Sekarang fungsinya satu di `ui/src/lib/format.ts` dengan tesnya sendiri — kesalahan yang sama sempat terjadi dua kali dalam satu sesi.
+
+### Pengaman metadata, sebelum apa pun ditulis (2026-09-14)
+
+Diminta pemilik proyek sebagai syarat sebelum metadata otomatis dijalankan ke library sungguhan. Semuanya ada di lapisan library dan mesin, dengan tesnya, **sebelum** kode pencocokan ditulis.
+
+| Yang diminta | Keadaannya |
+|---|---|
+| Batalkan ada dan teruji sebelum penulisan massal pertama, termasuk nama file yang sudah diubah dan dipindahkan | ✅ jurnal per batch, pembatalan mundur, mencakup override, tag di dalam file, dan pemindahan file |
+| Mode uji coba di folder terbatas | ✅ `Scope` dengan folder; diperiksa dua kali untuk pemindahan |
+| Tingkat keyakinan ditampilkan, yang rendah tidak tercentang otomatis | ✅ ambang 0,85; di bawah itu tidak satu pun field tercentang |
+| Batas jumlah lagu per sekali jalan | ✅ bawaan 50, langit-langit keras 500 |
+| Batas laju MusicBrainz dan AcoustID, tanpa membuat aplikasi tersendat | ✅ 1/detik dan 3/detik, ditunggu di thread pekerja |
+
+**Yang dibuat**: skema versi 3 (`edit_batches`, `edit_steps`); `edits.rs` (cakupan folder, batas, penerapan berjurnal, pembatalan); `write.rs` (penulisan tag yang aman lewat salinan sementara, pembacaan ulang sebelum mengganti, pemindahan file); `rename.rs` (pola, dry-run, daftar bentrok, penerapan berjurnal); `proposal.rs` (model usulan dengan keyakinan); batas laju di `net.rs`.
+
+**Cara verifikasi**: 186 tes Rust, di antaranya 12 tes integrasi khusus pengaman ini — run yang dibatasi folder tidak menyentuh folder lain, cakupan tidak bisa diakali lewat `..` atau nama folder yang mirip, batas per run ditaati, run bisa dibatalkan utuh (termasuk mengembalikan nilai override yang sebelumnya ada, bukan sekadar menghapusnya), penulisan ke file bisa dibatalkan dan file tetap bisa diputar sesudahnya, penulisan yang gagal tidak menyentuh file asli dan tidak meninggalkan sampah, rename punya dry-run yang mendaftar bentrokan, dan pemindahan bisa dikembalikan berikut path di library.
+
+**Temuan**: lofty kehilangan tag ID3v2 di dalam WAV pada penulisan kedua berturut-turut. Pendekatan salin-lalu-ganti menghindarinya, dan pembacaan ulang sebelum penggantian menangkapnya seandainya kasus serupa muncul di format lain.
+
+**Tertunda**: belum ada apa pun yang bisa diklik. Pengaman ini fondasi; pencocokan MusicBrainz/AcoustID, daftar usulan, dan tombol batalkan di antarmuka menyusul.

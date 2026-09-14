@@ -5,11 +5,12 @@
 //! kept in SQLite's `user_version`.
 //!
 //! Version 1 holds what the library itself needs (M3), version 2 the
-//! playlists (M6). Lyrics, the scrobble queue and downloads arrive as later
-//! migrations with the milestones that use them.
+//! playlists (M6), version 3 the record of what Onsa has changed so that it
+//! can be taken back again (M7). Lyrics, the scrobble queue and downloads
+//! arrive as later migrations with the milestones that use them.
 
 /// The migrations, in order. Index 0 is version 1.
-pub const MIGRATIONS: &[&str] = &[V1, V2];
+pub const MIGRATIONS: &[&str] = &[V1, V2, V3];
 
 const V1: &str = r#"
 CREATE TABLE folders (
@@ -165,4 +166,35 @@ CREATE TABLE playlist_items (
     PRIMARY KEY (playlist_id, position)
 );
 CREATE INDEX playlist_items_track ON playlist_items(track_id);
+"#;
+
+const V3: &str = r#"
+-- What Onsa changed, so that it can be changed back (SPEC §8).
+--
+-- A batch is one run of one operation. Undoing works on the batch, not on
+-- single steps: a half-undone run is worse than either end of it.
+CREATE TABLE edit_batches (
+    id          INTEGER PRIMARY KEY,
+    note        TEXT NOT NULL,            -- what the run was
+    scope       TEXT,                     -- the folder it was held to
+    created_at  INTEGER NOT NULL,
+    undone_at   INTEGER                   -- when it was taken back, if ever
+);
+
+-- One step of a batch: a field that changed, or a file that moved.
+--
+-- `track_id` is deliberately not a foreign key. The record of what happened
+-- outlives the track row: a file can leave the library and still need its
+-- name put back.
+CREATE TABLE edit_steps (
+    id          INTEGER PRIMARY KEY,
+    batch_id    INTEGER NOT NULL REFERENCES edit_batches(id) ON DELETE CASCADE,
+    position    INTEGER NOT NULL,         -- the order it was done in
+    track_id    INTEGER NOT NULL,
+    kind        TEXT NOT NULL CHECK (kind IN ('override', 'tag', 'move')),
+    field       TEXT,                     -- for 'override' and 'tag'
+    before      TEXT,                     -- what was there; NULL means nothing
+    after       TEXT                      -- what was put there
+);
+CREATE INDEX edit_steps_batch ON edit_steps(batch_id, position);
 "#;

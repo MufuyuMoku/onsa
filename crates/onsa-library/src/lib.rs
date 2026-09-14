@@ -11,10 +11,12 @@
 
 pub mod cover;
 mod db;
+pub mod edits;
 mod error;
 pub mod m3u;
 pub mod overrides;
 pub mod playlist;
+pub mod rename;
 pub mod scan;
 pub mod schema;
 pub mod search;
@@ -22,12 +24,15 @@ pub mod smart;
 pub mod stats;
 pub mod tags;
 pub mod watch;
+pub mod write;
 
 pub use db::Library;
+pub use edits::{Batch, BatchReport, Scope, UndoReport};
 pub use error::{Error, Result};
 pub use m3u::{ImportReport, PathStyle};
 pub use overrides::Field;
 pub use playlist::{PlaylistKind, PlaylistRow};
+pub use rename::{Move, RenamePlan};
 pub use scan::{ChangeReport, ScanProgress, ScanReport, SUPPORTED_EXTENSIONS};
 pub use search::{AlbumRow, NameCount, SearchResults, TrackRow, TrackSort};
 pub use smart::{Match, Rule, Rules, Sort, SortField};

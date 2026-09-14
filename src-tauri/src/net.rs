@@ -113,6 +113,51 @@ fn tidy(error: &reqwest::Error) -> String {
     without
 }
 
+/// How often Onsa may ask one service, and when it last did.
+///
+/// MusicBrainz asks for no more than one request a second (SPEC §8) and
+/// AcoustID for no more than three; both are house rules worth keeping, not
+/// limits to be crept up to. The wait happens on the thread that is asking,
+/// which is always a worker thread, so a queue of lookups slows itself down
+/// rather than anything the listener is looking at.
+pub struct RateLimit {
+    every: Duration,
+    last: std::sync::Mutex<Option<std::time::Instant>>,
+}
+
+impl RateLimit {
+    /// A limit of one request every `every`.
+    pub const fn new(every: Duration) -> Self {
+        Self {
+            every,
+            last: std::sync::Mutex::new(None),
+        }
+    }
+
+    /// Waits until the next request is allowed, then marks it as made.
+    pub fn wait(&self) {
+        let mut last = self
+            .last
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let now = std::time::Instant::now();
+        if let Some(previous) = *last {
+            let since = now.duration_since(previous);
+            if since < self.every {
+                std::thread::sleep(self.every - since);
+            }
+        }
+        *last = Some(std::time::Instant::now());
+    }
+}
+
+/// MusicBrainz: one request a second, as its own rules ask (SPEC §8).
+// Waiting for the lookups it holds back, which land next.
+#[allow(dead_code)]
+pub static MUSICBRAINZ: RateLimit = RateLimit::new(Duration::from_millis(1000));
+/// AcoustID: three requests a second, as its documentation asks.
+pub static ACOUSTID: RateLimit = RateLimit::new(Duration::from_millis(334));
+
 /// Where AcoustID answers.
 const ACOUSTID_LOOKUP: &str = "https://api.acoustid.org/v2/lookup";
 /// A well-formed track id that stands for nothing in particular. AcoustID
@@ -132,6 +177,7 @@ pub fn acoustid_accepts(key: &str) -> crate::commands::KeyTest {
     let Some(client) = client() else {
         return KeyTest::Unreachable;
     };
+    ACOUSTID.wait();
     let sent = client
         .get(ACOUSTID_LOOKUP)
         .query(&[
@@ -196,6 +242,32 @@ mod tests {
         for error in [NetError::Unreachable, NetError::TooLarge] {
             assert!(!error.to_string().is_empty());
         }
+    }
+
+    #[test]
+    fn a_rate_limit_holds_requests_apart() {
+        let limit = RateLimit::new(Duration::from_millis(120));
+        let started = std::time::Instant::now();
+        for _ in 0..3 {
+            limit.wait();
+        }
+        // The first goes at once; the other two wait their turn.
+        let taken = started.elapsed();
+        assert!(
+            taken >= Duration::from_millis(240),
+            "three requests took only {taken:?}"
+        );
+        assert!(taken < Duration::from_millis(900), "and not much longer");
+    }
+
+    #[test]
+    fn the_services_are_held_to_what_they_ask_for() {
+        // MusicBrainz asks for one a second; AcoustID for three.
+        assert_eq!(MUSICBRAINZ.every, Duration::from_millis(1000));
+        assert!(
+            ACOUSTID.every >= Duration::from_millis(334),
+            "three a second"
+        );
     }
 
     #[test]

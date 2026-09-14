@@ -35,7 +35,7 @@ pub enum Field {
 
 impl Field {
     /// The name stored in the `overrides` table; a fixed string per field.
-    fn name(self) -> &'static str {
+    pub(crate) fn name(self) -> &'static str {
         match self {
             Self::Title => "title",
             Self::Artist => "artist",
