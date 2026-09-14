@@ -42,6 +42,9 @@
 			{#if summary.filesMoved > 0}
 				<li><span class="numeric">{summary.filesMoved}</span> {t('tidy.countMoved')}</li>
 			{/if}
+			{#if summary.covers > 0}
+				<li><span class="numeric">{summary.covers}</span> {t('tidy.countCovers')}</li>
+			{/if}
 		</ul>
 
 		{#if summary.skipped.length > 0}

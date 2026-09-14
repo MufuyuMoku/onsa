@@ -144,6 +144,7 @@ pub fn run() -> Result<()> {
             tidy::edit_undo,
             online::program_status,
             online::program_choose,
+            online::program_pick,
             online::match_state,
             online::match_start,
             online::match_stop,

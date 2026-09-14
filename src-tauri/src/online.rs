@@ -17,6 +17,7 @@ use std::sync::Arc;
 use onsa_downloader::{Program, Programs, Where};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager, State};
+use tauri_plugin_dialog::DialogExt;
 
 use crate::error::ErrorCode;
 use crate::keys;
@@ -172,6 +173,19 @@ pub fn program_choose(
     library.read(|library| settings::save(library, settings::PROGRAMS_KEY, &prefs))?;
     tracing::info!(program, "where to find an outside program was set");
     Ok(())
+}
+
+/// Asks for the file a program lives in.
+#[tauri::command]
+pub async fn program_pick(app: AppHandle, title: String) -> Result<Option<String>, ErrorCode> {
+    let picked = tauri::async_runtime::spawn_blocking(move || {
+        app.dialog().file().set_title(title).blocking_pick_file()
+    })
+    .await
+    .map_err(|_| ErrorCode::Dialog)?;
+    Ok(picked
+        .and_then(|file| file.into_path().ok())
+        .map(|path| path.display().to_string()))
 }
 
 /// How a matching run stands, and everything it has found.

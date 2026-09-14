@@ -10,6 +10,18 @@
 	import { fileName, relativeTo } from '$lib/format';
 	import { t } from '$lib/i18n/index.svelte';
 	import {
+		applyCovers,
+		chosenChanges,
+		chosenCovers,
+		loadMatching,
+		matching,
+		previewCovers,
+		startMatching,
+		stopMatching,
+		tickAll,
+		unfollowMatching
+	} from '$lib/matching.svelte';
+	import {
 		applyEdits,
 		applyRename,
 		history,
@@ -22,11 +34,12 @@
 		writeToFiles
 	} from '$lib/tidy.svelte';
 	import Icon from './Icon.svelte';
+	import MatchList from './MatchList.svelte';
 	import ScopeBar from './ScopeBar.svelte';
 	import TidySummaryPanel from './TidySummary.svelte';
 
-	/** Which of the three jobs is open. */
-	type Job = 'edit' | 'write' | 'rename';
+	/** Which of the four jobs is open. */
+	type Job = 'edit' | 'write' | 'rename' | 'match';
 	let job = $state<Job>('edit');
 
 	/** The fields a bulk edit can set. */
@@ -47,6 +60,11 @@
 	});
 
 	$effect(() => {
+		void loadMatching();
+		return () => unfollowMatching();
+	});
+
+	$effect(() => {
 		// The history follows whatever the last run did to it.
 		void report;
 		history(20).then((list) => {
@@ -55,16 +73,25 @@
 	});
 
 	// Changing what is being asked for makes the old summary stale, and a
-	// stale summary above an apply button is the one thing to avoid.
+	// stale summary above an apply button is the one thing to avoid. Ticking
+	// a suggestion counts as changing what is being asked for.
 	$effect(() => {
 		void job;
 		void field;
 		void value;
 		void pattern;
 		void root;
+		void asked;
 		summary = null;
 		plan = null;
 	});
+
+	/** What the ticked suggestions add up to, as one thing to watch. */
+	const asked = $derived(
+		job === 'match'
+			? `${chosenChanges().length}:${chosenCovers().length}:${matching.found.length}`
+			: ''
+	);
 
 	const ids = $derived(scope.tracks.map((track) => track.id));
 
@@ -83,6 +110,13 @@
 			summary = await previewEdits(changes());
 		} else if (job === 'write') {
 			summary = await previewWrites(ids);
+		} else if (job === 'match') {
+			// Both halves of what was ticked are counted before anything is
+			// applied: the fields go through the ordinary preview, and the
+			// covers through their own.
+			const fields = await previewEdits(chosenChanges());
+			const pictures = await previewCovers();
+			summary = both(fields, pictures);
 		} else {
 			const made = await planRename(root.trim() || scope.value?.folder || '', pattern, ids);
 			plan = made;
@@ -90,7 +124,36 @@
 		}
 	}
 
+	/** Two summaries read as one, because one button applies both. */
+	function both(fields: TidySummary | null, covers: TidySummary | null): TidySummary | null {
+		if (!fields) return covers;
+		if (!covers) return fields;
+		return {
+			tracks: Math.max(fields.tracks, covers.tracks),
+			fields: fields.fields,
+			filesWritten: fields.filesWritten + covers.filesWritten,
+			filesMoved: fields.filesMoved + covers.filesMoved,
+			covers: covers.covers,
+			skipped: [...fields.skipped, ...covers.skipped],
+			any: fields.any || covers.any
+		};
+	}
+
 	async function apply(): Promise<void> {
+		if (job === 'match') {
+			// The same door as everything else on this page: the fields go
+			// through the ordinary apply, and each half is its own run in
+			// the history, so either can be taken back on its own.
+			const fields = chosenChanges();
+			const first = fields.length > 0 ? await applyEdits(t('tidy.noteMatch'), fields) : null;
+			const second = await applyCovers(t('tidy.noteCover'));
+			report = first ?? second;
+			if (first && second) {
+				report = { ...first, changed: first.changed + second.changed };
+			}
+			summary = null;
+			return;
+		}
 		if (job === 'edit') {
 			report = await applyEdits(t('tidy.noteEdit', { field: t(`field.${field}` as never) }), changes());
 		} else if (job === 'write') {
@@ -124,7 +187,7 @@
 	<ScopeBar />
 
 	<div class="jobs">
-		{#each [['edit', 'tidy.jobEdit'], ['write', 'tidy.jobWrite'], ['rename', 'tidy.jobRename']] as [key, label] (key)}
+		{#each [['edit', 'tidy.jobEdit'], ['write', 'tidy.jobWrite'], ['rename', 'tidy.jobRename'], ['match', 'tidy.jobMatch']] as [key, label] (key)}
 			<button
 				type="button"
 				class="chip"
@@ -153,6 +216,63 @@
 			</div>
 		{:else if job === 'write'}
 			<p class="muted what">{t('tidy.writeWhat')}</p>
+		{:else if job === 'match'}
+			<p class="muted what">{t('tidy.matchWhat')}</p>
+
+			<!-- What is missing is said before there is a button to press. -->
+			{#if !matching.state.online}
+				<p class="fault-text note">{t('match.internetOff')}</p>
+			{:else}
+				{#if !matching.state.key}
+					<p class="fault-text note">{t('match.keyMissing')}</p>
+				{/if}
+				{#if !matching.state.fingerprinter}
+					<p class="fault-text note">{t('match.fpcalcMissing')}</p>
+				{/if}
+			{/if}
+
+			<div class="row">
+				{#if matching.running}
+					<button type="button" class="btn" onclick={stopMatching}>{t('match.stop')}</button>
+					<span class="numeric muted"
+						>{t('match.progress', {
+							done: matching.state.done,
+							total: matching.state.total
+						})}</span
+					>
+				{:else}
+					<button
+						type="button"
+						class="btn"
+						disabled={!matching.state.online || scope.tracks.length === 0}
+						onclick={() => startMatching(ids)}
+					>
+						{t('match.start')}
+					</button>
+					{#if matching.state.total > 0}
+						<span class="numeric muted"
+							>{t('match.looked', { n: matching.state.done })}</span
+						>
+					{/if}
+				{/if}
+				{#if matching.found.length > 0}
+					<button type="button" class="btn" onclick={() => tickAll(true)}
+						>{t('match.tickSure')}</button
+					>
+					<button type="button" class="btn" onclick={() => tickAll(false)}
+						>{t('match.tickNone')}</button
+					>
+				{/if}
+			</div>
+
+			{#if matching.state.trouble === 'stopped'}
+				<p class="muted note">{t('match.stopped')}</p>
+			{/if}
+			{#if matching.failure}
+				<p class="fault-text note">{t(matching.failure)}</p>
+			{/if}
+
+			<MatchList root={scope.value?.folder ?? ''} />
 		{:else}
 			<p class="muted what">{t('tidy.renameWhat')}</p>
 			<div class="row">
@@ -174,7 +294,12 @@
 			</div>
 		{/if}
 
-		<button type="button" class="btn" disabled={scope.busy} onclick={look}>
+		<button
+			type="button"
+			class="btn"
+			disabled={scope.busy || (job === 'match' && matching.found.length === 0)}
+			onclick={look}
+		>
 			{t('tidy.look')}
 		</button>
 
@@ -335,6 +460,11 @@
 
 	.arrow {
 		color: var(--onsa-text-secondary);
+	}
+
+	.note {
+		margin: 0;
+		font-size: 12px;
 	}
 
 	.rest,

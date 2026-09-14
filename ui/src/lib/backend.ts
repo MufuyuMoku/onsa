@@ -417,7 +417,8 @@ const ERROR_KEYS: Record<string, MessageKey> = {
 	no_output: 'error.no_output',
 	dialog: 'error.dialog',
 	io: 'error.io',
-	auto_eq_empty: 'error.auto_eq_empty'
+	auto_eq_empty: 'error.auto_eq_empty',
+	offline: 'error.offline'
 };
 
 async function call<T>(command: string, args?: Record<string, unknown>): Promise<T> {
@@ -538,6 +539,7 @@ export interface TidySummary {
 	fields: number;
 	filesWritten: number;
 	filesMoved: number;
+	covers: number;
 	skipped: Skip[];
 	any: boolean;
 }
@@ -603,6 +605,88 @@ export const tidyRenameApply = (
 ) => call<TidyReport>('tidy_rename_apply', { note, root, pattern, tracks });
 export const editHistory = (limit: number) => call<EditBatch[]>('edit_history', { limit });
 export const editUndo = (batch: number) => call<UndoReport>('edit_undo', { batch });
+
+// Looking a track up on the internet (SPEC section 8, section 14) -----------
+
+/** An outside program Onsa runs, and whether it is there (SPEC section 7.1). */
+export interface ProgramStatus {
+	key: string;
+	present: boolean;
+	from: 'managed' | 'chosen' | 'system' | null;
+	path: string | null;
+	version: string | null;
+}
+
+/** Where a suggestion came from. */
+export type MatchSource = 'acoustId' | 'musicBrainz' | 'fileName';
+
+/** One field a service would change. */
+export interface FieldProposal {
+	field: string;
+	current: string | null;
+	suggested: string | null;
+	chosen: boolean;
+}
+
+/** A picture offered with a suggestion, waiting to be looked at. */
+export interface CoverOffer {
+	key: string;
+	width: number;
+	height: number;
+	chosen: boolean;
+}
+
+/** One answer about one track. */
+export interface Proposal {
+	trackId: number;
+	path: string;
+	source: MatchSource;
+	confidence: number;
+	trusted: boolean;
+	fields: FieldProposal[];
+	cover: CoverOffer | null;
+	releaseGroup: string | null;
+}
+
+/** Everything found about one track, and what came of it. */
+export interface TrackMatch {
+	trackId: number;
+	path: string;
+	candidates: Proposal[];
+	picked: number | null;
+	disagree: boolean;
+	failure: string | null;
+}
+
+/** How a matching run stands, and everything it has found. */
+export interface MatchState {
+	running: boolean;
+	done: number;
+	total: number;
+	trouble: string | null;
+	found: TrackMatch[];
+	online: boolean;
+	key: boolean;
+	fingerprinter: boolean;
+}
+
+/** One cover the listener said yes to. */
+export interface CoverPick {
+	trackId: number;
+	key: string;
+}
+
+export const programStatus = () => call<ProgramStatus[]>('program_status');
+export const programChoose = (program: string, path: string | null) =>
+	call<void>('program_choose', { program, path });
+export const programPick = (title: string) => call<string | null>('program_pick', { title });
+export const matchState = () => call<MatchState>('match_state');
+export const matchStart = (tracks: number[]) => call<MatchState>('match_start', { tracks });
+export const matchStop = () => call<MatchState>('match_stop');
+export const tidyPreviewCovers = (tracks: number[]) =>
+	call<TidySummary>('tidy_preview_covers', { tracks });
+export const tidyApplyCovers = (note: string, picks: CoverPick[]) =>
+	call<TidyReport>('tidy_apply_covers', { note, picks });
 
 // Playlists ----------------------------------------------------------------
 
@@ -674,13 +758,26 @@ export const EVENTS = {
 	scan: 'library://scan',
 	libraryChanged: 'library://changed',
 	playlists: 'library://playlists',
-	windowMode: 'window://mode'
+	windowMode: 'window://mode',
+	matching: 'match://progress'
 } as const;
 
 /** URL of a cover thumbnail, served by the backend's `onsa` protocol. */
 export function coverUrl(id: number, size: 128 | 512): string {
+	return protocolUrl(`cover/${id}/${size}`);
+}
+
+/**
+ * URL of a cover a service has offered and nobody has agreed to yet.
+ *
+ * It is served from the same cache as any other cover, one folder further
+ * in, so a picture can be looked at before it is applied.
+ */
+export function proposedCoverUrl(key: string, size: 128 | 512): string {
+	return protocolUrl(`proposed/${key}/${size}`);
+}
+
+function protocolUrl(path: string): string {
 	const windows = typeof navigator !== 'undefined' && /Windows/i.test(navigator.userAgent);
-	return windows
-		? `http://onsa.localhost/cover/${id}/${size}`
-		: `onsa://localhost/cover/${id}/${size}`;
+	return windows ? `http://onsa.localhost/${path}` : `onsa://localhost/${path}`;
 }

@@ -11,14 +11,20 @@
 		acoustidTest,
 		failureKey,
 		metadataGet,
+		programChoose,
+		programPick,
+		programStatus,
 		setMetadata,
 		type KeyTest,
-		type MetadataPrefs
+		type MetadataPrefs,
+		type ProgramStatus
 	} from '$lib/backend';
 	import { t } from '$lib/i18n/index.svelte';
 	import type { MessageKey } from '$lib/i18n/dictionary';
 
 	let prefs = $state<MetadataPrefs | null>(null);
+	let programs = $state<ProgramStatus[]>([]);
+	let looking = $state(false);
 	let typed = $state('');
 	let failure = $state<MessageKey | null>(null);
 	let note = $state<MessageKey | null>(null);
@@ -28,6 +34,56 @@
 			.then((next) => (prefs = next))
 			.catch((error) => (failure = failureKey(error)));
 	});
+
+	$effect(() => {
+		void lookAgain();
+	});
+
+	/**
+	 * Which programs are there. It means running each of them to ask its
+	 * version, so it is done when the page opens and when asked, not on
+	 * every keystroke.
+	 */
+	async function lookAgain(): Promise<void> {
+		looking = true;
+		try {
+			programs = await programStatus();
+			failure = null;
+		} catch (error) {
+			failure = failureKey(error);
+		} finally {
+			looking = false;
+		}
+	}
+
+	/** The one M7 needs; the rest belong to the downloader in M10. */
+	const fingerprinter = $derived(programs.find((one) => one.key === 'fpcalc') ?? null);
+
+	const WHERE: Record<string, MessageKey> = {
+		managed: 'programs.fromManaged',
+		chosen: 'programs.fromChosen',
+		system: 'programs.fromSystem'
+	};
+
+	async function chooseFpcalc(): Promise<void> {
+		try {
+			const picked = await programPick(t('programs.chooseTitle'));
+			if (!picked) return;
+			await programChoose('fpcalc', picked);
+			await lookAgain();
+		} catch (error) {
+			failure = failureKey(error);
+		}
+	}
+
+	async function forgetFpcalc(): Promise<void> {
+		try {
+			await programChoose('fpcalc', null);
+			await lookAgain();
+		} catch (error) {
+			failure = failureKey(error);
+		}
+	}
 
 	const source = $derived<MessageKey>(
 		prefs?.acoustid.source === 'settings'
@@ -146,6 +202,44 @@
 			</p>
 		{/if}
 		{#if note}<p class="note muted">{t(note)}</p>{/if}
+	</section>
+
+	<section>
+		<h2 class="label">{t('programs.title')}</h2>
+		<p class="note muted">{t('programs.hint')}</p>
+
+		<p class="note">
+			<span class="name">fpcalc</span>
+			{#if fingerprinter?.present}
+				<span class="ok">{t('programs.installed')}</span>
+				{#if fingerprinter.from}
+					<span class="muted">· {t(WHERE[fingerprinter.from] ?? 'programs.fromSystem')}</span>
+				{/if}
+				{#if fingerprinter.version}
+					<span class="muted numeric">· {fingerprinter.version}</span>
+				{/if}
+			{:else}
+				<span class="fault-text">{t('programs.missing')}</span>
+			{/if}
+		</p>
+		{#if fingerprinter?.path}
+			<p class="note muted numeric where">{fingerprinter.path}</p>
+		{:else}
+			<p class="note muted">{t('programs.fpcalcWhere')}</p>
+		{/if}
+
+		<div class="actions">
+			<button type="button" class="btn" onclick={chooseFpcalc}>{t('programs.choose')}</button>
+			<button
+				type="button"
+				class="btn"
+				disabled={fingerprinter?.from !== 'chosen'}
+				onclick={forgetFpcalc}>{t('programs.forget')}</button
+			>
+			<button type="button" class="btn" disabled={looking} onclick={lookAgain}
+				>{t('programs.refresh')}</button
+			>
+		</div>
 		{#if failure}<p class="note fault-text">{t(failure)}</p>{/if}
 	</section>
 </div>
@@ -176,5 +270,18 @@
 		flex-wrap: wrap;
 		gap: 8px;
 		margin-top: 10px;
+	}
+
+	.name {
+		color: var(--onsa-text-primary);
+	}
+
+	.ok {
+		color: var(--onsa-role-active);
+	}
+
+	/* A path is long and the end of it is what tells it apart. */
+	.where {
+		overflow-wrap: anywhere;
 	}
 </style>
