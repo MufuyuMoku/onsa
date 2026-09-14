@@ -22,6 +22,7 @@
 	import { library } from '$lib/library.svelte';
 	import { playContext } from '$lib/player.svelte';
 	import Icon from './Icon.svelte';
+	import type { ListView } from '$lib/columns.svelte';
 	import TrackList from './TrackList.svelte';
 	import VirtualList from './VirtualList.svelte';
 
@@ -34,6 +35,11 @@
 	}
 
 	let { kind, name }: Props = $props();
+
+	/** Each of the three browsers arranges its own track columns. */
+	const listView = $derived<ListView>(
+		kind === 'artists' ? 'artist' : kind === 'genres' ? 'genre' : 'folder'
+	);
 
 	const ROW = 40;
 
@@ -153,7 +159,7 @@
 			</button>
 		</header>
 		<div class="list">
-			<TrackList source={{ kind: 'tracks', tracks }} showAlbum={kind !== 'folders'} />
+			<TrackList source={{ kind: 'tracks', tracks }} view={listView} showAlbum={kind !== 'folders'} />
 		</div>
 	</div>
 {/if}

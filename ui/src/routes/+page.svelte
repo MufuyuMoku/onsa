@@ -168,7 +168,7 @@
 				{#if library.query.trim()}
 					<SearchView />
 				{:else if view.kind === 'tracks'}
-					<TrackList source={{ kind: 'library' }} />
+					<TrackList source={{ kind: 'library' }} view="tracks" />
 				{:else if view.kind === 'albums'}
 					<AlbumList />
 				{:else if view.kind === 'album'}

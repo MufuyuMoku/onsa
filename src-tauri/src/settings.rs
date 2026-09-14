@@ -6,8 +6,10 @@
 //! warning in the log, so a damaged setting never stops the application.
 //! Every value is clamped to a sane range on its way to the engine.
 
-use onsa_audio::dsp::eq::MAX_BANDS;
+use std::collections::BTreeMap;
 use std::time::Duration;
+
+use onsa_audio::dsp::eq::MAX_BANDS;
 
 use onsa_audio::{
     Band, BufferSize, CrossfadeCurve, DeviceChoice, DspSettings, EqMode, FilterKind, OutputRate,
@@ -313,13 +315,31 @@ pub enum ToneStrength {
     Strong,
 }
 
+/// How one track list is laid out: how wide its columns are and which of
+/// them the listener kept (SPEC §9.2).
+///
+/// Widths are in CSS pixels. A column the listener never touched is simply
+/// absent, so a later change to a default reaches everyone who never had an
+/// opinion about it.
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct ColumnPrefs {
+    /// Width per column key, for the ones the listener dragged.
+    pub widths: BTreeMap<String, f64>,
+    /// Columns the listener took off this list.
+    pub hidden: Vec<String>,
+}
+
 /// What the interface shows beyond the theme itself.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct DisplayPrefs {
     /// How far the colour follows the character of the sound. Power saving
     /// stops it whatever this says.
     pub tone_color: ToneStrength,
+    /// Column widths and choices, one entry per list the listener has
+    /// arranged. Lists they never touched are not in here at all.
+    pub columns: BTreeMap<String, ColumnPrefs>,
 }
 
 /// One parametric band.
@@ -510,6 +530,37 @@ mod tests {
         assert!(dsp.limiter_enabled, "missing fields keep their defaults");
         let playback: PlaybackPrefs = serde_json::from_str("{}").unwrap();
         assert_eq!(playback, PlaybackPrefs::default());
+    }
+
+    #[test]
+    fn column_widths_survive_the_trip_through_json() {
+        let stored = r#"{
+            "toneColor": "strong",
+            "columns": {
+                "tracks": { "widths": { "title": 320.5, "artist": 180.0 }, "hidden": ["year"] }
+            }
+        }"#;
+        let display: DisplayPrefs = serde_json::from_str(stored).unwrap();
+        assert_eq!(display.tone_color, ToneStrength::Strong);
+        let tracks = display.columns.get("tracks").expect("the list was stored");
+        assert_eq!(tracks.widths.get("title"), Some(&320.5));
+        assert_eq!(tracks.hidden, vec!["year".to_string()]);
+        assert!(
+            !display.columns.contains_key("album"),
+            "untouched lists stay out"
+        );
+
+        let again: DisplayPrefs =
+            serde_json::from_str(&serde_json::to_string(&display).unwrap()).unwrap();
+        assert_eq!(again, display, "what is written reads back the same");
+    }
+
+    #[test]
+    fn a_display_setting_from_before_columns_still_reads() {
+        // What an older Onsa wrote: the tone colour and nothing else.
+        let display: DisplayPrefs = serde_json::from_str(r#"{"toneColor":"subtle"}"#).unwrap();
+        assert_eq!(display.tone_color, ToneStrength::Subtle);
+        assert!(display.columns.is_empty(), "every list keeps its defaults");
     }
 
     #[test]

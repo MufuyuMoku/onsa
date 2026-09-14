@@ -80,7 +80,7 @@
 			<section class="tracks">
 				<h2 class="label">{t('search.tracks')}</h2>
 				<div class="list">
-					<TrackList source={{ kind: 'tracks', tracks: results.tracks }} />
+					<TrackList source={{ kind: 'tracks', tracks: results.tracks }} view="search" />
 				</div>
 			</section>
 		{/if}

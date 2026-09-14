@@ -333,9 +333,17 @@ export interface DspPrefs {
 	dither: boolean;
 }
 
+/** How one track list is laid out: its column widths and what is shown. */
+export interface ColumnPrefs {
+	widths: Record<string, number>;
+	hidden: string[];
+}
+
 export interface DisplayPrefs {
 	/** How far the colour follows the character of the sound. */
 	toneColor: ToneStrength;
+	/** Column widths and choices, one entry per list already arranged. */
+	columns: Record<string, ColumnPrefs>;
 }
 
 export interface Settings {

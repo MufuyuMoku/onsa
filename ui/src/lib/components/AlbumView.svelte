@@ -49,7 +49,7 @@
 		</div>
 	</header>
 	<div class="list">
-		<TrackList source={{ kind: 'album', albumId: id, tracks }} showAlbum={false} showNumber />
+		<TrackList source={{ kind: 'album', albumId: id, tracks }} view="album" showAlbum={false} showNumber />
 	</div>
 </div>
 
