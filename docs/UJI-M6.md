@@ -57,19 +57,35 @@ File-nya bisa dibuka dengan Notepad: baris `#EXTM3U`, lalu sepasang baris `#EXTI
 
 Layak dicoba: ekspor sebuah playlist, pindahkan file .m3u8-nya ke folder lain, lalu impor dari sana.
 
-## 5. Perbaikan yang ikut masuk
+## 5. Tarik-lepas dan lebar kolom (perbaikan terbaru)
+
+**Tarik-lepas** sekarang benar-benar bekerja, di panel antrean maupun di playlist biasa. Tekan sebuah baris, tarik, dan sebuah garis menunjukkan tempat jatuhnya sebelum kamu melepas. Menarik ke tepi daftar menggulirnya sendiri. Kalau tanganmu sedang di papan ketik: fokuskan sebuah baris lalu **Alt+panah atas/bawah**.
+
+Penyebabnya ternyata bukan kode Onsa: target file-drop milik Tauri memegang mekanisme drag milik Windows, sehingga HTML5 drag-and-drop memang tidak tersedia selama "jatuhkan file ke jendela" masih dipakai. Sekarang keduanya memakai satu mekanisme sendiri berbasis pointer.
+
+**Lebar kolom.** Di kepala daftar lagu, arahkan ke garis antara dua kolom: kursornya berubah, dan kamu bisa menariknya. Lebarnya disimpan **per tampilan** — Lagu, Album, Artis, Genre, Folder, playlist, dan hasil pencarian masing-masing punya susunannya sendiri — dan kembali saat Onsa dibuka lagi. Panah kiri/kanan menggeser pembatas yang sedang difokus.
+
+Tombol **⋯** di ujung kanan kepala tabel memilih kolom mana yang tampil, dan menyediakan **Kembalikan ke bawaan**.
+
+Aturannya saat jendela disempitkan tidak berubah: lebar pilihanmu dihormati **selama muat**, dan kalau tidak muat, kolom dibuang menurut prioritas — tahun dulu, lalu album, lalu artis; judul dan durasi selalu bertahan. Yang berubah: kolom sekarang hanya dibuang kalau benar-benar tidak muat, bukan pada ambang lebar tetap, jadi di jendela sempit biasanya lebih banyak kolom yang bertahan daripada sebelumnya.
+
+Layak dicoba: lebarkan kolom artis sampai sangat lebar, lalu kecilkan jendelanya sampai minimum, dan lihat kolom mana yang mundur.
+
+## 6. Perbaikan yang ikut masuk
 
 Saat memverifikasi M6 ketahuan satu bug lama: **jendela yang diminimalkan menyimpan ukuran dan tempat yang omong kosong**. Kalau Onsa diminimalkan lalu ditutup (atau sekadar kehilangan fokus saat kecil), sesi menyimpan ukuran 0×0 di posisi jauh di luar layar, dan Onsa berikutnya terbuka sekecil mungkin di pojok — bukan seperti yang kamu tinggalkan.
 
 Cara memeriksanya: atur jendelanya ke ukuran yang kamu suka, minimalkan, lalu tutup lewat klik kanan di taskbar. Buka lagi: ukurannya harus persis yang tadi.
 
-## 6. Yang paling perlu kuketahui
+## 7. Yang paling perlu kuketahui
 
 - Apakah editor aturan terasa masuk akal tanpa penjelasan? Kolom mana yang kamu cari tapi tidak ada?
 - Apakah pratinjaunya cukup membantu, atau kamu ingin melihat daftar lagunya sekalian, bukan hanya jumlahnya?
 - Apakah klik kanan → Tambah ke playlist sudah cukup, atau kamu ingin menambahkan satu album/artis sekaligus?
-- Apakah playlist perlu muncul di sidebar sebagai daftar, bukan cuma satu tombol?
+- Apakah playlist perlu muncul di sidebar sebagai daftar, bukan cuma satu tombol? (sudah masuk daftar kerja)
+- Apakah lebar bawaan tiap kolom sudah masuk akal, atau ada yang terlalu sempit sejak awal?
+- Apakah garis pembatas kolomnya cukup mudah ditemukan dan ditangkap?
 
-## 7. Kalau ada yang aneh
+## 8. Kalau ada yang aneh
 
 Sama seperti sebelumnya: **Pengaturan → Tentang → Buka folder log**, lalu kirimkan log-nya beserta apa yang kamu lakukan sebelum itu.

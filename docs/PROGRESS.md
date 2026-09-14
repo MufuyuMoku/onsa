@@ -477,7 +477,7 @@ Pemeriksaan tumpang tindih itu langsung berguna: ia menemukan cover Sedang Diput
 | Tes playlist pintar lulus | ✅ 7 tes integrasi di `crates/onsa-library/tests/playlists.rs` |
 | Tes M3U8 lulus | ✅ ekspor–impor pulang pergi, relatif dan absolut, plus entri yang tidak ditemukan |
 | Playlist pintar ikut berubah saat library berubah | ✅ lagu baru yang cocok masuk sendiri setelah scan, tanpa playlist-nya disentuh |
-| Tes (§12) | ✅ 148 tes |
+| Tes (§12) | ✅ 150 tes Rust dan 15 tes antarmuka |
 
 ### Yang dibuat
 
@@ -515,3 +515,36 @@ Ketahuan saat memverifikasi M6, bukan dilaporkan. Sesi disimpan saat jendela keh
 - Playlist belum bisa **ditarik-lepas dari daftar lagu**; menambahkan lewat klik kanan sudah ada, satu album atau satu artis sekaligus belum.
 - Daftar playlist belum muncul **di dalam sidebar**; sidebar baru punya satu pintu masuk ke halamannya.
 - **Folder pintar** (SPEC §6.5) dan ekspor playlist **saat keluar** belum dikerjakan.
+
+## Perbaikan setelah uji coba M6 (2026-09-14)
+
+### Tarik-lepas untuk mengurutkan tidak berfungsi
+
+Dilaporkan pemilik proyek: mengurutkan playlist dengan tarik-lepas tidak jalan, hanya tombol panah.
+
+**Akar masalahnya ada di Tauri.** Target file-drop miliknya memegang drag loop Windows, dan dokumentasinya sendiri menyebut bahwa mematikannya adalah syarat agar HTML5 drag-and-drop bekerja di Windows. Onsa membutuhkan file-drop untuk SPEC §13, jadi HTML5 drag-and-drop memang tidak tersedia — dan panel antrean punya masalah yang sama karena memakai API yang sama.
+
+**Perbaikannya**: satu mekanisme berbasis pointer event (`ui/src/lib/reorder.ts`) dipakai antrean dan playlist, lengkap dengan garis penanda tempat jatuh, gulir otomatis di tepi daftar, dan **Alt+panah** sebagai jalan lewat keyboard. Rinciannya di `docs/DECISIONS.md`.
+
+**Cara verifikasi** — dengan **mouse sungguhan**, digerakkan lewat Win32 di luar aplikasi, bukan lewat kejadian buatan di dalam halaman (itu justru melewati jalur OS yang rusak dan akan selalu "berhasil"):
+
+- menjatuhkan baris pertama di paruh atas baris keempat menaruhnya tepat di atas baris itu; di paruh bawah, satu tempat lebih jauh;
+- menariknya kembali ke depan mengembalikan urutan semula;
+- klik-dua-kali tetap memutar baris yang ditekan dan tidak mengubah urutan;
+- antrean ikut terurut dengan cara yang sama;
+- Alt+panah memindahkan baris yang difokus.
+
+Ditambah lima tes unit untuk hitungannya (`ui/src/lib/reorder.test.ts`).
+
+### Lebar kolom yang bisa diatur
+
+- Pembatas kolom bisa ditarik; lebarnya disimpan **per tampilan** (Lagu, Album, Artis, Genre, Folder, playlist, pencarian) dan pulih setelah aplikasi dibuka lagi.
+- Menu di ujung kanan kepala tabel memilih kolom mana yang tampil, dengan satu jalan kembali ke bawaan.
+- Panah kiri/kanan menggeser pembatas yang difokus, jadi ini pun tidak butuh tetikus.
+- Lebar pilihan pengguna dihormati **selama muat**; kalau tidak, kolom dibuang menurut prioritas lama — tahun, lalu album, lalu artis — dan judul serta durasi selalu bertahan.
+
+**Cara verifikasi**: delapan tes unit untuk hitungannya, dua tes Rust untuk penyimpanannya (termasuk setelan yang ditulis versi sebelum kolom ada), lalu pada aplikasi rilis dengan mouse sungguhan — 14 pemeriksaan: menarik pembatas melebarkan kolom (170 → 280 piksel), lebarnya tersimpan untuk daftar itu saja, daftar lain tetap memakai bawaannya, menu menyembunyikan kolom dan mengingatnya, pada jendela terkecil tidak ada kolom yang menindih atau menyempit di bawah batasnya, kolom yang dilebarkan melampaui ruang mendorong keluar yang berprioritas lebih rendah, dan jalan kembali ke bawaan mengembalikan semuanya. Susunan kolom juga diperiksa **setelah aplikasi benar-benar ditutup dan dibuka lagi**.
+
+**Pemeriksa tata letak dijalankan ulang**: 6 lebar jendela × 10 halaman + 4 panel yang menimpa — 64 pemeriksaan, bersih. Ia menemukan satu bug nyata dalam proses: padding baris dan celah antar-sel tidak ikut dihitung, sehingga kepala tabel menjorok keluar tepat 88 piksel.
+
+**Tes antarmuka sekarang ikut CI** (`npm test` di `ui/`, dengan `node --test`).
