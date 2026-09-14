@@ -71,6 +71,14 @@ Aturannya saat jendela disempitkan tidak berubah: lebar pilihanmu dihormati **se
 
 Layak dicoba: lebarkan kolom artis sampai sangat lebar, lalu kecilkan jendelanya sampai minimum, dan lihat kolom mana yang mundur.
 
+## 5b. Menyeret lagu ke playlist
+
+Sidebar sekarang menampilkan enam playlist yang terakhir kamu ubah, di bawah kelompok Library, dengan **Lihat semua** kalau jumlahnya lebih banyak.
+
+Tarik sebuah baris dari daftar lagu ke salah satu playlist itu: sebuah lencana mengikuti kursormu, playlist yang dilewati menyala, dan melepasnya menambahkan lagu itu. Melepas di tempat lain tidak melakukan apa-apa.
+
+Untuk sekaligus banyak: buka sebuah **album**, **artis**, **genre**, atau **folder**, lalu pakai tombol **Tambah ke playlist** di sebelah tombol putar. Dari situ kamu juga bisa membuat playlist baru dan langsung mengisinya.
+
 ## 6. Perbaikan yang ikut masuk
 
 Saat memverifikasi M6 ketahuan satu bug lama: **jendela yang diminimalkan menyimpan ukuran dan tempat yang omong kosong**. Kalau Onsa diminimalkan lalu ditutup (atau sekadar kehilangan fokus saat kecil), sesi menyimpan ukuran 0×0 di posisi jauh di luar layar, dan Onsa berikutnya terbuka sekecil mungkin di pojok — bukan seperti yang kamu tinggalkan.

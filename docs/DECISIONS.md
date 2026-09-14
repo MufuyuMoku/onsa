@@ -366,3 +366,11 @@ Catatan keputusan yang diambil saat spesifikasi kurang jelas. Format: tanggal, k
 - **Penarik pembatas sengaja menjorok** 7 piksel ke celah di sebelahnya: di situlah garis antara dua kolom berada. Sel kepala karena itu tidak boleh memotong isinya (`overflow: visible`), dan pemeriksa tata letak diberi pengecualian untuk elemen ini, seperti tabel EQ parametrik.
 - **Menu kolom menempati kolom sendiri di ujung kanan** (22 piksel), bukan mengambang di atas grid, supaya kepala dan baris memakai kisi yang sama persis.
 - **Tes antarmuka masuk ke pemeriksaan.** Bagian yang murni hitungan — di mana sebuah baris mendarat, kolom mana yang muat — diuji dengan `node --test` (`npm test` di `ui/`), dan ikut dijalankan CI. `@types/node` masuk sebagai dependensi pengembangan supaya berkas tesnya ikut diperiksa tipenya.
+
+## 2026-09-14 · Membawa lagu ke playlist, dan playlist di sidebar
+
+- **Membawa dan menjatuhkan memakai dasar yang sama dengan mengurutkan**: pointer event, bukan HTML5 drag-and-drop, karena alasannya sama persis (target file-drop Tauri). Keduanya juga sepakat soal rasanya: sebuah penekanan baru jadi tarikan setelah menempuh jarak tertentu, jadi klik dan klik-dua-kali tetap sampai ke barisnya.
+- **Sasaran jatuh mendaftar lewat atribut** (`data-drop-target`), dan yang membawa mencari lewat `elementsFromPoint`. Dengan begitu sasaran tidak perlu tahu apa pun tentang asal muatannya, dan sebaliknya.
+- **Yang dibawa adalah satu baris yang ditekan**, bukan seluruh daftar tempatnya berasal. Untuk memasukkan seluruh album atau seluruh artis sekaligus ada tombol tersendiri di kepala halamannya, yang mengirim `PlayContext`-nya apa adanya — backend yang menentukan lagu mana saja, jadi tidak ada daftar yang perlu disusun di UI lebih dulu.
+- **Sidebar menampilkan enam playlist terakhir berubah**, lalu "Lihat semua". Enam cukup untuk jadi sasaran jatuh tanpa mendorong pengaturan keluar layar; sisanya satu klik jauhnya. Di mode ikon daftar itu tidak muncul: strip selebar ikon tidak punya tempat untuk nama.
+- **Lencana yang mengikuti kursor tidak menerima pointer event** (`pointer-events: none`), supaya ia tidak menutupi sasaran yang ada persis di bawahnya.

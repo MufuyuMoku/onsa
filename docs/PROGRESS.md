@@ -548,3 +548,12 @@ Ditambah lima tes unit untuk hitungannya (`ui/src/lib/reorder.test.ts`).
 **Pemeriksa tata letak dijalankan ulang**: 6 lebar jendela × 10 halaman + 4 panel yang menimpa — 64 pemeriksaan, bersih. Ia menemukan satu bug nyata dalam proses: padding baris dan celah antar-sel tidak ikut dihitung, sehingga kepala tabel menjorok keluar tepat 88 piksel.
 
 **Tes antarmuka sekarang ikut CI** (`npm test` di `ui/`, dengan `node --test`).
+
+### Membawa lagu ke playlist, dan satu album sekaligus
+
+Diminta bersama perbaikan tarik-lepas, karena mekanismenya sama.
+
+- Sebuah baris daftar lagu bisa **ditarik ke playlist di sidebar**; sidebar sekarang menampilkan enam playlist yang terakhir berubah, lalu "Lihat semua". Sebuah lencana mengikuti kursor, dan playlist yang dilewati menyala.
+- Halaman album, artis, genre, dan folder punya tombol **Tambah ke playlist** yang memasukkan seluruhnya sekaligus, termasuk ke playlist baru yang dibuat saat itu juga.
+
+**Cara verifikasi**, dengan mouse sungguhan pada build rilis: membawa sebuah baris ke playlist di sidebar menambahkannya; melepasnya di tempat yang bukan sasaran tidak menambah apa pun; dan tombol di halaman album memasukkan ketiga lagunya sekaligus. Pemeriksa tata letak dijalankan ulang dengan sidebar yang sudah berisi playlist — 64 pemeriksaan, bersih.
