@@ -13,6 +13,7 @@ mod keys;
 mod library;
 mod logging;
 mod media;
+mod net;
 mod open;
 mod player;
 mod queue;
@@ -122,6 +123,7 @@ pub fn run() -> Result<()> {
             commands::smart_preview,
             commands::metadata_get,
             commands::settings_set_metadata,
+            commands::acoustid_test,
         ])
         .run(tauri::generate_context!())
         .context("the application window could not be started")

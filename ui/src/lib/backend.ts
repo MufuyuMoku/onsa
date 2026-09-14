@@ -536,7 +536,11 @@ export const setOutput = (output: OutputPrefs) => call<void>('settings_set_outpu
 export const setPlayback = (playback: PlaybackPrefs) =>
 	call<void>('settings_set_playback', { playback });
 export const setDsp = (dsp: DspPrefs) => call<void>('settings_set_dsp', { dsp });
+/** What came of asking AcoustID whether it knows the key Onsa would use. */
+export type KeyTest = 'works' | 'refused' | 'missing' | 'offline' | 'unreachable';
+
 export const metadataGet = () => call<MetadataPrefs>('metadata_get');
+export const acoustidTest = () => call<KeyTest>('acoustid_test');
 /** Leave `acoustidKey` out to keep the stored key; empty clears it. */
 export const setMetadata = (online: boolean, acoustidKey?: string) =>
 	call<MetadataPrefs>('settings_set_metadata', { online, acoustidKey });

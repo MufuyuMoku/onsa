@@ -23,6 +23,7 @@ pub use crate::error::ErrorCode;
 use crate::keys::{self, KeyStatus};
 use crate::library::{LibraryService, ScanStatus, PLAYLISTS_EVENT};
 use crate::logging::Logging;
+use crate::net;
 use crate::player::{Player, Snapshot, Watching};
 use crate::session::{self, WindowMode};
 use crate::settings::{
@@ -1183,6 +1184,51 @@ pub fn settings_set_metadata(
         "metadata settings stored"
     );
     Ok(metadata_dto(&prefs))
+}
+
+/// What came of asking AcoustID whether it knows this key.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum KeyTest {
+    /// AcoustID accepted the key.
+    Works,
+    /// AcoustID has no such key.
+    Refused,
+    /// There is no key to try.
+    Missing,
+    /// Looking things up on the internet is switched off.
+    Offline,
+    /// AcoustID could not be reached.
+    Unreachable,
+}
+
+/// Asks AcoustID whether it knows the key Onsa would use (SPEC §14).
+///
+/// The question is a lookup by track id rather than by fingerprint, so no
+/// audio has to be read: a well-formed request with a key AcoustID knows
+/// comes back `ok` with nothing in it, and one with a key it does not know
+/// comes back as an error naming the key. The key is sent to AcoustID and
+/// nowhere else, and never appears in the answer or the log.
+#[tauri::command]
+pub async fn acoustid_test(app: AppHandle) -> Result<KeyTest, ErrorCode> {
+    let prefs = app.state::<LibraryService>().read(|library| {
+        Ok(settings::load::<MetadataPrefs>(
+            library,
+            settings::METADATA_KEY,
+        ))
+    })?;
+    if !prefs.online {
+        return Ok(KeyTest::Offline);
+    }
+    let Some(key) = keys::acoustid(prefs.acoustid_key.as_deref()) else {
+        return Ok(KeyTest::Missing);
+    };
+    // The client blocks, so it must not run on the async runtime's thread.
+    let outcome = tauri::async_runtime::spawn_blocking(move || net::acoustid_accepts(&key.value))
+        .await
+        .unwrap_or(KeyTest::Unreachable);
+    tracing::info!(?outcome, "the AcoustID key was tried");
+    Ok(outcome)
 }
 
 #[cfg(test)]

@@ -7,7 +7,14 @@
 	there is one and where it came from, never what it is.
 -->
 <script lang="ts">
-	import { failureKey, metadataGet, setMetadata, type MetadataPrefs } from '$lib/backend';
+	import {
+		acoustidTest,
+		failureKey,
+		metadataGet,
+		setMetadata,
+		type KeyTest,
+		type MetadataPrefs
+	} from '$lib/backend';
 	import { t } from '$lib/i18n/index.svelte';
 	import type { MessageKey } from '$lib/i18n/dictionary';
 
@@ -32,11 +39,37 @@
 					: 'metadata.keyMissing'
 	);
 
+	/** What the last try said, while it is still worth showing. */
+	let tried = $state<KeyTest | null>(null);
+	let trying = $state(false);
+
+	const TRIED: Record<KeyTest, MessageKey> = {
+		works: 'metadata.keyWorks',
+		refused: 'metadata.keyRefused',
+		missing: 'metadata.keyMissing',
+		offline: 'metadata.keyOffline',
+		unreachable: 'metadata.keyUnreachable'
+	};
+
+	async function tryKey(): Promise<void> {
+		trying = true;
+		tried = null;
+		try {
+			tried = await acoustidTest();
+			failure = null;
+		} catch (error) {
+			failure = failureKey(error);
+		} finally {
+			trying = false;
+		}
+	}
+
 	async function save(online: boolean, key?: string): Promise<void> {
 		try {
 			prefs = await setMetadata(online, key);
 			failure = null;
 			if (key !== undefined) note = key.trim() ? 'metadata.keySaved' : 'metadata.keyCleared';
+			tried = null;
 		} catch (error) {
 			failure = failureKey(error);
 			note = null;
@@ -97,8 +130,21 @@
 			>
 				{t('metadata.keyClear')}
 			</button>
+			<button
+				type="button"
+				class="btn"
+				disabled={trying || !prefs?.acoustid.present}
+				onclick={tryKey}
+			>
+				{trying ? t('metadata.keyTrying') : t('metadata.keyTry')}
+			</button>
 		</div>
 		<p class="note" class:muted={prefs?.acoustid.present}>{t(source)}</p>
+		{#if tried}
+			<p class="note" class:fault-text={tried !== 'works'} class:muted={tried === 'works'}>
+				{t(TRIED[tried])}
+			</p>
+		{/if}
 		{#if note}<p class="note muted">{t(note)}</p>{/if}
 		{#if failure}<p class="note fault-text">{t(failure)}</p>{/if}
 	</section>

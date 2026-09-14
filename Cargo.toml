@@ -32,6 +32,12 @@ image = { version = "0.25", default-features = false, features = ["jpeg", "png",
 lofty = "0.25"
 notify = "8.2"
 notify-debouncer-full = "0.7"
+# The one HTTP client for the whole project (SPEC §1). Tauri already
+# compiles reqwest, but with its TLS turned off; reqwest's own defaults are
+# rustls, which keeps Windows and Linux on the same code and needs no system
+# OpenSSL. Blocking, because every network call in Onsa happens on a worker
+# thread already.
+reqwest = { version = "0.13", features = ["blocking", "json", "gzip", "query"] }
 rusqlite = { version = "0.40", features = ["bundled", "functions"] }
 sha2 = "0.10"
 rubato = "5"

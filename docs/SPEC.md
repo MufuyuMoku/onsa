@@ -21,6 +21,7 @@ Keputusan berikut sudah final. Jangan diubah tanpa persetujuan pemilik proyek.
 | Database | SQLite via `rusqlite` (fitur `bundled`), migrasi berversi |
 | Audio | `symphonia` (decode), `rubato` (resample), `cpal` (output), `rtrb` (ring buffer lock-free), `realfft` (analisis) |
 | Tag | `lofty` (baca dan tulis) |
+| HTTP | `reqwest` dengan TLS bawaannya (rustls), klien blocking. Satu klien untuk seluruh proyek: M7 sampai M10 memakai yang sama. Wajib: User-Agent `Onsa/<versi> (<kontak>)`, timeout koneksi dan timeout total, batas ukuran jawaban dan unduhan, serta kegagalan jaringan yang dikembalikan sebagai nilai — tidak boleh membuat aplikasi macet atau berhenti. |
 | Tema bawaan | Kaca asap, Kokpit kaca, Deck malam (lihat §9). Semua gelap. |
 | Bahasa UI | Indonesia dan Inggris, default mengikuti locale OS |
 
