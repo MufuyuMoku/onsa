@@ -63,6 +63,8 @@ pub struct SummaryDto {
     pub files_written: usize,
     /// Files it would move or rename.
     pub files_moved: usize,
+    /// Tracks it would put a new cover on.
+    pub covers: usize,
     /// What it would leave alone, and why.
     pub skipped: Vec<SkipDto>,
     /// Whether pressing apply would do anything at all.
@@ -86,6 +88,7 @@ impl From<Summary> for SummaryDto {
             fields: summary.fields,
             files_written: summary.files_written,
             files_moved: summary.files_moved,
+            covers: summary.covers,
             any: summary.would_do_anything(),
             skipped: summary
                 .skipped

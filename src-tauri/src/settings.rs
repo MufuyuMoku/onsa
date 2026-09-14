@@ -40,6 +40,8 @@ pub const DISPLAY_KEY: &str = "display";
 pub const METADATA_KEY: &str = "metadata";
 /// Key of the tidy-up scope.
 pub const TIDY_KEY: &str = "tidy";
+/// Key of where the outside programs are.
+pub const PROGRAMS_KEY: &str = "programs";
 
 /// Reads one setting, or its default.
 pub fn load<T: DeserializeOwned + Default>(library: &Library, key: &str) -> T {
@@ -347,6 +349,29 @@ pub struct MetadataPrefs {
     /// The listener's own AcoustID application key, when they have one.
     /// Never sent back to the interface, never logged.
     pub acoustid_key: Option<String>,
+}
+
+/// Where the outside programs are (SPEC §7.1).
+///
+/// One group for all of them, because it is one manager: M7 needs `fpcalc`
+/// and M10 needs the other three, and they are found the same way.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct ProgramPrefs {
+    /// Whether a copy already on the system may be used. On Linux these are
+    /// usually installed already, so this starts on.
+    pub use_system: bool,
+    /// A path the listener chose, per program name.
+    pub paths: BTreeMap<String, String>,
+}
+
+impl Default for ProgramPrefs {
+    fn default() -> Self {
+        Self {
+            use_system: true,
+            paths: BTreeMap::new(),
+        }
+    }
 }
 
 /// The folder a tidy-up run is held to, and how many tracks it may take

@@ -24,6 +24,8 @@ pub enum ErrorCode {
     Io,
     /// An EQ preset file held no usable filter.
     AutoEqEmpty,
+    /// Looking things up on the internet is switched off (SPEC §14).
+    Offline,
 }
 
 impl From<onsa_library::Error> for ErrorCode {

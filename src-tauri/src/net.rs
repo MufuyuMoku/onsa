@@ -158,8 +158,154 @@ pub static MUSICBRAINZ: RateLimit = RateLimit::new(Duration::from_millis(1000));
 /// AcoustID: three requests a second, as its documentation asks.
 pub static ACOUSTID: RateLimit = RateLimit::new(Duration::from_millis(334));
 
-/// Where AcoustID answers.
-const ACOUSTID_LOOKUP: &str = "https://api.acoustid.org/v2/lookup";
+/// A service Onsa asks about metadata (SPEC §8).
+///
+/// Each one carries its own address and its own rate limit, so a caller
+/// cannot ask one of them faster than it agreed to by going through a
+/// different door.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Service {
+    /// AcoustID, which recognises a fingerprint.
+    AcoustId,
+    /// MusicBrainz, which knows what a recording belongs to.
+    MusicBrainz,
+    /// The Cover Art Archive, which has the picture.
+    CoverArt,
+}
+
+impl Service {
+    /// Where it really lives.
+    const fn home(self) -> &'static str {
+        match self {
+            Self::AcoustId => "https://api.acoustid.org/v2",
+            Self::MusicBrainz => "https://musicbrainz.org/ws/2",
+            Self::CoverArt => "https://coverartarchive.org",
+        }
+    }
+
+    /// The variable that can move it, for testing only. See [`Service::base`].
+    const fn moved_by(self) -> &'static str {
+        match self {
+            Self::AcoustId => "ONSA_ACOUSTID_URL",
+            Self::MusicBrainz => "ONSA_MUSICBRAINZ_URL",
+            Self::CoverArt => "ONSA_COVERART_URL",
+        }
+    }
+
+    /// How often it may be asked.
+    pub fn limit(self) -> &'static RateLimit {
+        match self {
+            Self::AcoustId => &ACOUSTID,
+            // The Cover Art Archive is fronted by MusicBrainz and counted
+            // against the same allowance.
+            Self::MusicBrainz | Self::CoverArt => &MUSICBRAINZ,
+        }
+    }
+
+    /// The address to ask, which is the real one unless a test has stood a
+    /// service up on this machine.
+    ///
+    /// This is the seam the whole flow is tested through: a fake AcoustID on
+    /// loopback answers the release build exactly as the real one would, so
+    /// the matching, the confidence, the cover and the undo can all be tried
+    /// end to end without a key, without the network, and without touching
+    /// anybody's music.
+    ///
+    /// **It can only ever point at this machine.** An address that is not
+    /// loopback is ignored and said so in the log, so a variable set by
+    /// something other than a test cannot send a key, a fingerprint or
+    /// anything else somewhere new.
+    pub fn base(self) -> String {
+        let Some(value) = std::env::var(self.moved_by()).ok() else {
+            return self.home().to_string();
+        };
+        let value = value.trim().trim_end_matches('/').to_string();
+        if value.is_empty() {
+            return self.home().to_string();
+        }
+        if loopback(&value) {
+            tracing::warn!(
+                service = ?self,
+                "answering from this machine instead of the real service"
+            );
+            return value;
+        }
+        tracing::warn!(
+            service = ?self,
+            variable = self.moved_by(),
+            "ignored: a service can only be moved to this machine"
+        );
+        self.home().to_string()
+    }
+}
+
+/// Whether an address is this machine and nowhere else.
+fn loopback(url: &str) -> bool {
+    let Ok(parsed) = reqwest::Url::parse(url) else {
+        return false;
+    };
+    if parsed.scheme() != "http" && parsed.scheme() != "https" {
+        return false;
+    }
+    matches!(
+        parsed.host_str(),
+        Some("127.0.0.1") | Some("localhost") | Some("[::1]") | Some("::1")
+    )
+}
+
+/// Asks a service for JSON, keeping to its rate limit.
+///
+/// Everything about it comes back as a value: a service that is down, slow,
+/// too talkative or speaking nonsense all end as [`NetError`], and the
+/// caller carries on with whatever it already has.
+pub fn ask_json(
+    service: Service,
+    path: &str,
+    query: &[(&str, &str)],
+) -> Result<serde_json::Value, NetError> {
+    let client = client().ok_or(NetError::Unreachable)?;
+    service.limit().wait();
+    let url = format!("{}{path}", service.base());
+    let sent = client
+        .get(&url)
+        .header(reqwest::header::ACCEPT, "application/json")
+        .query(query)
+        .send();
+    let response = match sent {
+        Ok(response) => response,
+        Err(error) => {
+            tracing::debug!(service = ?service, "could not be asked: {}", tidy(&error));
+            return Err(NetError::Unreachable);
+        }
+    };
+    let status = response.status();
+    let body = read_capped(response, MAX_ANSWER)?;
+    if !status.is_success() {
+        tracing::debug!(service = ?service, status = status.as_u16(), "answered with a refusal");
+        // A refusal still carries JSON often enough to be worth reading; the
+        // caller decides what an answer without results means.
+    }
+    serde_json::from_slice(&body).map_err(|error| {
+        tracing::debug!(service = ?service, "answered something that is not JSON: {error}");
+        NetError::Unreachable
+    })
+}
+
+/// Asks for a file, refusing anything past `limit`.
+pub fn ask_bytes(service: Service, path: &str, limit: u64) -> Result<Vec<u8>, NetError> {
+    let client = client().ok_or(NetError::Unreachable)?;
+    service.limit().wait();
+    let url = format!("{}{path}", service.base());
+    let response = client.get(&url).send().map_err(|error| {
+        tracing::debug!(service = ?service, "could not be asked: {}", tidy(&error));
+        NetError::Unreachable
+    })?;
+    if !response.status().is_success() {
+        return Err(NetError::Unreachable);
+    }
+    read_capped(response, limit)
+}
+
 /// A well-formed track id that stands for nothing in particular. AcoustID
 /// answers a key it knows with an empty result, which is all this asks.
 const NOWHERE_TRACK: &str = "00000000-0000-4000-8000-000000000000";
@@ -177,9 +323,9 @@ pub fn acoustid_accepts(key: &str) -> crate::commands::KeyTest {
     let Some(client) = client() else {
         return KeyTest::Unreachable;
     };
-    ACOUSTID.wait();
+    Service::AcoustId.limit().wait();
     let sent = client
-        .get(ACOUSTID_LOOKUP)
+        .get(format!("{}/lookup", Service::AcoustId.base()))
         .query(&[
             ("client", key),
             ("trackid", NOWHERE_TRACK),
@@ -268,6 +414,49 @@ mod tests {
             ACOUSTID.every >= Duration::from_millis(334),
             "three a second"
         );
+    }
+
+    #[test]
+    fn a_service_can_only_be_moved_to_this_machine() {
+        for here in [
+            "http://127.0.0.1:9330",
+            "http://localhost:9330/v2",
+            "https://127.0.0.1:9330",
+        ] {
+            assert!(loopback(here), "{here}");
+        }
+        for elsewhere in [
+            "https://api.acoustid.example.com",
+            "http://127.0.0.1.example.com",
+            "http://evil.test/127.0.0.1",
+            "file:///etc/passwd",
+            "not a url",
+            "",
+        ] {
+            assert!(!loopback(elsewhere), "{elsewhere}");
+        }
+    }
+
+    #[test]
+    fn a_service_that_was_not_moved_is_where_it_always_was() {
+        // The variables are not set in a plain test run, which is the case
+        // that matters: the real addresses are the default.
+        for service in [Service::AcoustId, Service::MusicBrainz, Service::CoverArt] {
+            if std::env::var(service.moved_by()).is_ok() {
+                continue;
+            }
+            assert_eq!(service.base(), service.home());
+            assert!(service.base().starts_with("https://"));
+        }
+    }
+
+    #[test]
+    fn the_cover_archive_is_counted_against_musicbrainz() {
+        // It is the same house, and it asks for the same one a second.
+        assert!(std::ptr::eq(
+            Service::CoverArt.limit(),
+            Service::MusicBrainz.limit()
+        ));
     }
 
     #[test]

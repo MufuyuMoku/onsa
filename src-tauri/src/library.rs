@@ -244,16 +244,27 @@ impl Worker {
 /// Serves `onsa://localhost/cover/<id>/<size>` (on Windows
 /// `http://onsa.localhost/cover/<id>/<size>`): cover thumbnails straight from
 /// the cache, never as base64 in an event (SPEC §2).
+///
+/// It also serves `onsa://localhost/proposed/<hash>/<size>`, which is a
+/// cover a service has offered and nobody has agreed to yet. It is read the
+/// same way and from the same cache, one folder further in, so a picture can
+/// be looked at before it is applied without ever being applied to look at.
 pub fn cover_protocol<R: Runtime>(
     context: UriSchemeContext<'_, R>,
     request: tauri::http::Request<Vec<u8>>,
 ) -> Response<Vec<u8>> {
     let mut parts = request.uri().path().trim_matches('/').split('/');
-    let (Some("cover"), Some(id), size, None) =
+    let (Some(kind), Some(id), size, None) =
         (parts.next(), parts.next(), parts.next(), parts.next())
     else {
         return status(StatusCode::NOT_FOUND);
     };
+    if kind == "proposed" {
+        return proposed_cover(&context, id, size);
+    }
+    if kind != "cover" {
+        return status(StatusCode::NOT_FOUND);
+    }
     let Ok(id) = id.parse::<i64>() else {
         return status(StatusCode::NOT_FOUND);
     };
@@ -278,6 +289,41 @@ pub fn cover_protocol<R: Runtime>(
             tracing::warn!(file = %file.display(), "cover cannot be read: {error}");
             status(StatusCode::NOT_FOUND)
         }
+    }
+}
+
+/// A cover a service has offered, from the folder this run keeps them in.
+///
+/// The name has to be one Onsa itself wrote — the hash of the picture — or
+/// nothing is read: the name becomes part of a path, and a path from the
+/// interface is not a path to follow.
+fn proposed_cover<R: Runtime>(
+    context: &UriSchemeContext<'_, R>,
+    key: &str,
+    size: Option<&str>,
+) -> Response<Vec<u8>> {
+    if !crate::matching::is_a_hash(key) {
+        return status(StatusCode::NOT_FOUND);
+    }
+    let size = size
+        .and_then(|size| size.parse::<u32>().ok())
+        .filter(|size| onsa_library::cover::THUMB_SIZES.contains(size))
+        .unwrap_or(512);
+    let Some(service) = context.app_handle().try_state::<LibraryService>() else {
+        return status(StatusCode::SERVICE_UNAVAILABLE);
+    };
+    let Ok(covers) = service.read(|library| Ok(library.covers_dir().to_path_buf())) else {
+        return status(StatusCode::SERVICE_UNAVAILABLE);
+    };
+    let file = covers.join("proposed").join(format!("{key}_{size}.jpg"));
+    match std::fs::read(&file) {
+        Ok(bytes) => Response::builder()
+            .header(header::CONTENT_TYPE, "image/jpeg")
+            // The name is the picture, so it is always the same picture.
+            .header(header::CACHE_CONTROL, "max-age=31536000, immutable")
+            .body(bytes)
+            .unwrap_or_else(|_| status(StatusCode::INTERNAL_SERVER_ERROR)),
+        Err(_) => status(StatusCode::NOT_FOUND),
     }
 }
 

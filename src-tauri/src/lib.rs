@@ -6,14 +6,18 @@
 
 #![warn(missing_docs)]
 
+mod acoustid;
 mod commands;
 mod dto;
 mod error;
 mod keys;
 mod library;
 mod logging;
+mod matching;
 mod media;
+mod musicbrainz;
 mod net;
+mod online;
 mod open;
 mod player;
 mod proposal;
@@ -138,9 +142,27 @@ pub fn run() -> Result<()> {
             tidy::tidy_rename_apply,
             tidy::edit_history,
             tidy::edit_undo,
+            online::program_status,
+            online::program_choose,
+            online::match_state,
+            online::match_start,
+            online::match_stop,
+            online::tidy_preview_covers,
+            online::tidy_apply_covers,
         ])
         .run(tauri::generate_context!())
         .context("the application window could not be started")
+}
+
+/// Where Onsa keeps its own things, for the parts that need more than the
+/// library: the outside programs live under the data folder, and the
+/// suggested covers under the cache one.
+#[derive(Debug, Clone)]
+pub struct Folders {
+    /// The database, the settings, and `bin/` (SPEC §7.1).
+    pub data: std::path::PathBuf,
+    /// The covers, and anything else that can be thrown away.
+    pub cache: std::path::PathBuf,
 }
 
 /// A whole set of folders somewhere else, when `ONSA_DATA_DIR` names one.
@@ -225,6 +247,11 @@ fn setup(app: &mut tauri::App) -> Result<()> {
 
     let window_state: session::WindowState = session::load(&library, session::WINDOW_KEY);
 
+    app.manage(Folders {
+        data: data_dir.clone(),
+        cache: cache_dir.clone(),
+    });
+    app.manage(std::sync::Arc::new(matching::Matching::default()));
     app.manage(logging);
     app.manage(library);
     app.manage(player);
