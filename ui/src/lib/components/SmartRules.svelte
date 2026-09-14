@@ -17,6 +17,7 @@
 		type SortField,
 		type Track
 	} from '$lib/backend';
+	import { fileName } from '$lib/format';
 	import { t } from '$lib/i18n/index.svelte';
 	import type { MessageKey } from '$lib/i18n/dictionary';
 	import Icon from './Icon.svelte';
@@ -38,6 +39,8 @@
 	const PREVIEW_LIMIT = 500;
 	/** How long the editor waits before asking for a preview again. */
 	const PREVIEW_DELAY_MS = 250;
+	/** How many of the matches the editor actually lists. */
+	const PREVIEW_ROWS = 8;
 
 	const FIELDS: { field: RuleField; kind: RuleKind }[] = [
 		{ field: 'title', kind: 'text' },
@@ -51,8 +54,13 @@
 		{ field: 'rating', kind: 'number' },
 		{ field: 'play_count', kind: 'number' },
 		{ field: 'duration', kind: 'number' },
+		{ field: 'sample_rate', kind: 'number' },
+		{ field: 'bit_depth', kind: 'number' },
+		{ field: 'bitrate', kind: 'number' },
 		{ field: 'last_played', kind: 'date' },
-		{ field: 'added_at', kind: 'date' }
+		{ field: 'added_at', kind: 'date' },
+		{ field: 'has_cover', kind: 'flag' },
+		{ field: 'has_artist', kind: 'flag' }
 	];
 
 	const OPS: Record<RuleKind, { op: RuleOp; label: MessageKey }[]> = {
@@ -78,6 +86,10 @@
 			{ op: 'not_in_last', label: 'op.not_in_last' },
 			{ op: 'before', label: 'op.before' },
 			{ op: 'after', label: 'op.after' }
+		],
+		flag: [
+			{ op: 'yes', label: 'op.yes' },
+			{ op: 'no', label: 'op.no' }
 		]
 	};
 
@@ -103,6 +115,8 @@
 		if (op === 'between') return [0, 0];
 		if (op === 'in_last' || op === 'not_in_last') return { days: 30 };
 		if (op === 'before' || op === 'after') return todayStamp();
+		// A yes-or-no rule is the whole question; there is nothing to fill in.
+		if (op === 'yes' || op === 'no') return null;
 		if (OPS.number.some((entry) => entry.op === op)) return 0;
 		return '';
 	}
@@ -136,6 +150,7 @@
 	/** A rule's value as the backend wants it: numbers as numbers. */
 	function cleaned(rule: Rule): Rule['value'] {
 		const kind = kindOf(rule.field);
+		if (kind === 'flag') return null;
 		if (rule.op === 'between') {
 			const pair = Array.isArray(rule.value) ? rule.value : [0, 0];
 			return [Number(pair[0]) || 0, Number(pair[1]) || 0];
@@ -293,6 +308,9 @@
 							value={String(rule.value ?? '')}
 							oninput={(event) => setValue(index, event.currentTarget.value)}
 						/>
+					{:else if kindOf(rule.field) === 'flag'}
+						<!-- Nothing to fill in: the comparison is the question. -->
+						<span class="muted nothing">{t('rules.nothingToFill')}</span>
 					{:else if kindOf(rule.field) === 'number'}
 						<input
 							class="field numeric"
@@ -350,17 +368,40 @@
 		</label>
 	</div>
 
-	<p class="count numeric" class:fault-text={failed}>
-		{#if failed}
-			{t('rules.invalid')}
-		{:else if preview === null}
-			&nbsp;
-		{:else if preview.length >= PREVIEW_LIMIT}
-			{t('rules.previewMore', { n: PREVIEW_LIMIT })}
-		{:else}
-			{t('rules.preview', { n: preview.length })}
+	<div class="preview">
+		<p class="count numeric" class:fault-text={failed}>
+			{#if failed}
+				{t('rules.invalid')}
+			{:else if preview === null}
+				&nbsp;
+			{:else if preview.length >= PREVIEW_LIMIT}
+				{t('rules.previewMore', { n: PREVIEW_LIMIT })}
+			{:else}
+				{t('rules.preview', { n: preview.length })}
+			{/if}
+		</p>
+		<!-- The first few of them, so the rules can be seen to hit what they
+		     were meant to hit rather than only counted. -->
+		{#if !failed && preview !== null}
+			{#if preview.length === 0}
+				<p class="muted none">{t('rules.previewNone')}</p>
+			{:else}
+				<ol class="rows">
+					{#each preview.slice(0, PREVIEW_ROWS) as track (track.id)}
+						<li class="row">
+							<span class="ellipsis title">{track.title ?? fileName(track.path)}</span>
+							<span class="ellipsis muted">{track.artist ?? t('track.unknownArtist')}</span>
+						</li>
+					{/each}
+				</ol>
+				{#if preview.length > PREVIEW_ROWS}
+					<p class="muted rest numeric">
+						{t('rules.previewRest', { n: preview.length - PREVIEW_ROWS })}
+					</p>
+				{/if}
+			{/if}
 		{/if}
-	</p>
+	</div>
 
 	{#snippet footer()}
 		<button type="button" class="btn" onclick={oncancel}>{t('playlist.cancel')}</button>
@@ -461,9 +502,51 @@
 		height: 14px;
 	}
 
+	.preview {
+		margin-top: 12px;
+		padding-top: 10px;
+		border-top: var(--onsa-hairline) solid var(--onsa-surface-line);
+	}
+
 	.count {
-		margin: 12px 0 0;
+		margin: 0;
 		font-size: 12px;
 		color: var(--onsa-text-secondary);
+	}
+
+	.none,
+	.rest {
+		margin: 6px 0 0;
+		font-size: 12px;
+	}
+
+	.rows {
+		display: grid;
+		gap: 1px;
+		margin: 8px 0 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.row {
+		display: grid;
+		grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+		gap: 10px;
+		padding: 3px 8px;
+		border-radius: var(--onsa-radius-sm);
+		background: var(--onsa-surface-well);
+		font-size: 12.5px;
+	}
+
+	.row .muted {
+		font-size: 11.5px;
+	}
+
+	/* At the narrowest the artist goes under the title rather than beside. */
+	@container content (max-width: 620px) {
+		.row {
+			grid-template-columns: minmax(0, 1fr);
+			gap: 0;
+		}
 	}
 </style>

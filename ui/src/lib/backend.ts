@@ -125,10 +125,15 @@ export type RuleField =
 	| 'added_at'
 	| 'codec'
 	| 'duration'
-	| 'folder';
+	| 'folder'
+	| 'sample_rate'
+	| 'bit_depth'
+	| 'bitrate'
+	| 'has_cover'
+	| 'has_artist';
 
 /** The kinds of value a field holds, which decide the operators it takes. */
-export type RuleKind = 'text' | 'number' | 'date';
+export type RuleKind = 'text' | 'number' | 'date' | 'flag';
 
 /** How a rule compares. */
 export type RuleOp =
@@ -148,10 +153,12 @@ export type RuleOp =
 	| 'in_last'
 	| 'not_in_last'
 	| 'before'
-	| 'after';
+	| 'after'
+	| 'yes'
+	| 'no';
 
 /** What a rule compares with: text, a number, `[a, b]` or `{ days }`. */
-export type RuleValue = string | number | [number, number] | { days: number };
+export type RuleValue = string | number | [number, number] | { days: number } | null;
 
 export interface Rule {
 	field: RuleField;

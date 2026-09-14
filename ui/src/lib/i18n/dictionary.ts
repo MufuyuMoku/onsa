@@ -328,6 +328,9 @@ const id = {
 	'rules.field': 'Kolom',
 	'rules.op': 'Perbandingan',
 	'rules.value': 'Nilai',
+	'rules.nothingToFill': '—',
+	'rules.previewNone': 'Belum ada lagu yang cocok.',
+	'rules.previewRest': '…dan {n} lagi',
 
 	'field.title': 'Judul',
 	'field.artist': 'Artis',
@@ -342,6 +345,11 @@ const id = {
 	'field.codec': 'Codec',
 	'field.duration': 'Durasi (detik)',
 	'field.folder': 'Folder',
+	'field.sample_rate': 'Sample rate (Hz)',
+	'field.bit_depth': 'Kedalaman bit',
+	'field.bitrate': 'Bitrate (kbit/s)',
+	'field.has_cover': 'Cover',
+	'field.has_artist': 'Tag artis',
 
 	'op.contains': 'mengandung',
 	'op.not_contains': 'tidak mengandung',
@@ -360,6 +368,8 @@ const id = {
 	'op.not_in_last': 'tidak dalam kurun',
 	'op.before': 'sebelum',
 	'op.after': 'sesudah',
+	'op.yes': 'ada',
+	'op.no': 'tidak ada',
 
 	'sortField.title': 'Judul',
 	'sortField.artist': 'Artis',
@@ -727,6 +737,9 @@ const en: Record<MessageKey, string> = {
 	'rules.field': 'Field',
 	'rules.op': 'Comparison',
 	'rules.value': 'Value',
+	'rules.nothingToFill': '—',
+	'rules.previewNone': 'Nothing matches yet.',
+	'rules.previewRest': '…and {n} more',
 
 	'field.title': 'Title',
 	'field.artist': 'Artist',
@@ -741,6 +754,11 @@ const en: Record<MessageKey, string> = {
 	'field.codec': 'Codec',
 	'field.duration': 'Length (seconds)',
 	'field.folder': 'Folder',
+	'field.sample_rate': 'Sample rate (Hz)',
+	'field.bit_depth': 'Bit depth',
+	'field.bitrate': 'Bitrate (kbit/s)',
+	'field.has_cover': 'Cover art',
+	'field.has_artist': 'Artist tag',
 
 	'op.contains': 'contains',
 	'op.not_contains': 'does not contain',
@@ -759,6 +777,8 @@ const en: Record<MessageKey, string> = {
 	'op.not_in_last': 'not in the last',
 	'op.before': 'before',
 	'op.after': 'after',
+	'op.yes': 'is there',
+	'op.no': 'is missing',
 
 	'sortField.title': 'Title',
 	'sortField.artist': 'Artist',
