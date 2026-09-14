@@ -16,6 +16,7 @@
 		toggleShuffle
 	} from '$lib/player.svelte';
 	import { closeOverlays } from '$lib/layout.svelte';
+	import { reorderable, reorderKey } from '$lib/reorder';
 	import { settings } from '$lib/settings.svelte';
 	import { saveQueueAsPlaylist } from '$lib/playlists.svelte';
 	import Icon from './Icon.svelte';
@@ -48,8 +49,6 @@
 	});
 
 	let list: VirtualList<QueueEntry> | undefined = $state();
-	let dragging = $state<number | null>(null);
-	let over = $state<number | null>(null);
 
 	$effect(() => {
 		if (at !== null) list?.reveal(at);
@@ -72,12 +71,11 @@
 		}
 	}
 
-	function drop(to: number): void {
-		const entry = dragging;
-		dragging = null;
-		over = null;
-		if (entry === null) return;
-		moveQueueEntry(entry, to).catch(() => {});
+	/** A row landed somewhere else; the engine is told which entry moved. */
+	function reorder(from: number, to: number): void {
+		const entry = items[from];
+		if (!entry) return;
+		moveQueueEntry(entry.entryId, to).catch(() => {});
 	}
 </script>
 
@@ -138,6 +136,12 @@
 		{#if items.length === 0}
 			<p class="muted empty">{t('queue.empty')}</p>
 		{:else}
+			<!-- Pointer events, not HTML5 drag and drop: Tauri's file-drop
+			     target owns the native drag loop on Windows. -->
+			<div
+				class="reorder"
+				use:reorderable={{ count: () => items.length, move: reorder, row: '.item' }}
+			>
 			<VirtualList
 				bind:this={list}
 				count={items.length}
@@ -152,28 +156,15 @@
 						<div
 							class="item"
 							class:current={entry.entryId === current}
-							class:over={over === index}
+							data-index={index}
 							role="button"
 							tabindex="0"
-							draggable="true"
 							title={t('queue.dragHint')}
 							ondblclick={() => jump(entry.entryId).catch(() => {})}
 							onkeydown={(event) => {
+								if (reorderKey(event, index, items.length, reorder)) return;
 								if (event.key === 'Enter') jump(entry.entryId).catch(() => {});
 								if (event.key === 'Delete') removeQueueEntry(entry.entryId).catch(() => {});
-							}}
-							ondragstart={() => (dragging = entry.entryId)}
-							ondragend={() => {
-								dragging = null;
-								over = null;
-							}}
-							ondragover={(event) => {
-								event.preventDefault();
-								over = index;
-							}}
-							ondrop={(event) => {
-								event.preventDefault();
-								drop(index);
 							}}
 						>
 							<span class="numeric index">{index + 1}</span>
@@ -196,6 +187,7 @@
 					{/if}
 				{/snippet}
 			</VirtualList>
+			</div>
 		{/if}
 	</div>
 </aside>
@@ -249,6 +241,7 @@
 
 	.body {
 		min-height: 0;
+		display: grid;
 	}
 
 	.empty {
@@ -273,8 +266,26 @@
 		background: var(--onsa-surface-raised);
 	}
 
-	.item.over {
-		box-shadow: inset 0 2px 0 var(--onsa-role-adjustable);
+	/* Where the row would land, drawn in the gap it is over. */
+	.item:global([data-drop='before']) {
+		box-shadow: inset 0 2px 0 var(--onsa-role-active);
+	}
+
+	.item:global([data-drop='after']) {
+		box-shadow: inset 0 -2px 0 var(--onsa-role-active);
+	}
+
+	.item:global([data-grabbed]) {
+		opacity: 0.5;
+	}
+
+	.reorder {
+		min-height: 0;
+		height: 100%;
+	}
+
+	.reorder:global([data-reordering]) {
+		cursor: grabbing;
 	}
 
 	.item.current .title,

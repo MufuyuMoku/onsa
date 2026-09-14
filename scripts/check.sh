@@ -17,6 +17,9 @@ fi
 step "svelte-check (ui)"
 (cd ui && npm run check)
 
+step "interface tests (ui)"
+(cd ui && npm test)
+
 # The Tauri context embeds the built interface, so the Rust checks need it.
 step "build interface (ui)"
 (cd ui && npm run build)

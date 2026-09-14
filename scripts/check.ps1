@@ -29,6 +29,8 @@ if (-not (Test-Path (Join-Path $ui 'node_modules'))) {
 
 Invoke-Step 'svelte-check (ui)' $ui 'npm' @('run', 'check')
 
+Invoke-Step 'interface tests (ui)' $ui 'npm' @('test')
+
 # The Tauri context embeds the built interface, so the Rust checks need it.
 Invoke-Step 'build interface (ui)' $ui 'npm' @('run', 'build')
 

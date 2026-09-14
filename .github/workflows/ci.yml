@@ -84,6 +84,12 @@ jobs:
         working-directory: ui
         run: npm run check
 
+      # The parts of the interface that are plain arithmetic — where a row
+      # lands when it is dragged, which columns fit — are tested on their own.
+      - name: interface tests
+        working-directory: ui
+        run: npm test
+
       # The Tauri context embeds the built interface, so the Rust checks need it.
       - name: Build interface
         working-directory: ui

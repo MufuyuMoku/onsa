@@ -19,6 +19,7 @@
 	import { t } from '$lib/i18n/index.svelte';
 	import type { MessageKey } from '$lib/i18n/dictionary';
 	import { library } from '$lib/library.svelte';
+	import { reorderable, reorderKey } from '$lib/reorder';
 	import { addToQueue, playContext } from '$lib/player.svelte';
 	import {
 		deletePlaylist,
@@ -122,22 +123,15 @@
 		}
 	}
 
-	// Dragging a row to another row is how a manual playlist is reordered.
-	let dragging = $state<number | null>(null);
-	let over = $state<number | null>(null);
-
-	function drop(to: number): void {
-		const from = dragging;
-		dragging = null;
-		over = null;
-		if (from === null || from === to) return;
+	// Rows are dragged with pointer events, the same way the queue's are.
+	function reorder(from: number, to: number): void {
 		guard(moveInPlaylist(id, from, to));
 	}
 
 	function shift(from: number, by: number): void {
 		const to = from + by;
 		if (to < 0 || to >= tracks.length) return;
-		guard(moveInPlaylist(id, from, to));
+		reorder(from, to);
 	}
 </script>
 
@@ -254,31 +248,28 @@
 			{#if tracks.length === 0}
 				<p class="muted empty">{smart ? t('playlist.emptySmart') : t('playlist.empty')}</p>
 			{:else if smart}
-				<TrackList source={{ kind: 'tracks', tracks }} />
+				<TrackList source={{ kind: 'tracks', tracks }} view="playlist" />
 			{:else}
-				<ol class="rows">
+				<ol
+					class="rows"
+					use:reorderable={{ count: () => tracks.length, move: reorder }}
+				>
 					{#each tracks as track, index (`${track.id}-${index}`)}
-						<li
-							class="row"
-							class:over={over === index}
-							class:dim={track.status !== 'ok'}
-							draggable="true"
-							title={t('queue.dragHint')}
-							ondblclick={() => playFrom(index)}
-							ondragstart={() => (dragging = index)}
-							ondragend={() => {
-								dragging = null;
-								over = null;
-							}}
-							ondragover={(event) => {
-								event.preventDefault();
-								over = index;
-							}}
-							ondrop={(event) => {
-								event.preventDefault();
-								drop(index);
-							}}
-						>
+						<li>
+							<div
+								class="row"
+								class:dim={track.status !== 'ok'}
+								data-index={index}
+								role="button"
+								tabindex="0"
+								title={t('playlist.dragHint')}
+								ondblclick={() => playFrom(index)}
+								onkeydown={(event) => {
+									if (reorderKey(event, index, tracks.length, reorder)) return;
+									if (event.key === 'Enter') playFrom(index);
+									if (event.key === 'Delete') guard(removeFromPlaylist(id, index));
+								}}
+							>
 							<span class="numeric num">{index + 1}</span>
 							<span class="text">
 								<span class="ellipsis title">{track.title ?? fileName(track.path)}</span>
@@ -308,7 +299,8 @@
 									title={t('playlist.removeTrack')}
 									onclick={() => guard(removeFromPlaylist(id, index))}><Icon name="close" /></button
 								>
-							</span>
+								</span>
+							</div>
 						</li>
 					{/each}
 				</ol>
@@ -476,15 +468,32 @@
 		padding: 5px 8px;
 		border-radius: var(--onsa-radius-sm);
 		border-top: var(--onsa-hairline) solid transparent;
+		border-bottom: var(--onsa-hairline) solid transparent;
 		cursor: default;
+		user-select: none;
 	}
 
 	.row:hover {
 		background: var(--onsa-surface-raised);
 	}
 
-	.row.over {
+	/* Where the row would land, drawn in the gap it is over. */
+	.row:global([data-drop='before']) {
 		border-top-color: var(--onsa-role-active);
+	}
+
+	.row:global([data-drop='after']) {
+		border-bottom-color: var(--onsa-role-active);
+	}
+
+	.row:global([data-grabbed]) {
+		opacity: 0.5;
+	}
+
+	/* While a row is being carried, nothing else takes the pointer. */
+	.rows:global([data-reordering]) {
+		user-select: none;
+		cursor: grabbing;
 	}
 
 	.row.dim {
