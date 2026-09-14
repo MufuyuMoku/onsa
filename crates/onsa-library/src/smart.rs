@@ -55,6 +55,16 @@ pub enum Field {
     Duration,
     /// The folder the file sits in.
     Folder,
+    /// Sample rate of the file, in Hz.
+    SampleRate,
+    /// Bits per sample, for the formats that have them.
+    BitDepth,
+    /// Bitrate of the file, in kbit/s.
+    Bitrate,
+    /// Whether the track has cover art.
+    HasCover,
+    /// Whether the track has an artist tag worth the name.
+    HasArtist,
 }
 
 /// The kinds of value a field holds, which decide the operators it takes.
@@ -66,6 +76,8 @@ pub enum Kind {
     Number,
     /// Points in time.
     Date,
+    /// Yes or no: the track either has the thing or it does not.
+    Flag,
 }
 
 impl Field {
@@ -79,8 +91,15 @@ impl Field {
             | Self::Genre
             | Self::Codec
             | Self::Folder => Kind::Text,
-            Self::Year | Self::Rating | Self::PlayCount | Self::Duration => Kind::Number,
+            Self::Year
+            | Self::Rating
+            | Self::PlayCount
+            | Self::Duration
+            | Self::SampleRate
+            | Self::BitDepth
+            | Self::Bitrate => Kind::Number,
             Self::LastPlayed | Self::AddedAt => Kind::Date,
+            Self::HasCover | Self::HasArtist => Kind::Flag,
         }
     }
 
@@ -102,6 +121,15 @@ impl Field {
             // Seconds, so the rules speak the listener's units.
             Self::Duration => "(v.duration_ms / 1000.0)",
             Self::Folder => "onsa_parent(v.path)",
+            Self::SampleRate => "v.sample_rate",
+            Self::BitDepth => "v.bit_depth",
+            Self::Bitrate => "v.bitrate",
+            // A cover the library found, whether it came from the file or
+            // from a picture beside it.
+            Self::HasCover => "(v.cover_id IS NOT NULL)",
+            // A tag of nothing but spaces is no tag at all, which is what
+            // a folder full of downloads tends to have.
+            Self::HasArtist => "(COALESCE(TRIM(v.artist), '') <> '')",
         }
     }
 }
@@ -150,6 +178,10 @@ pub enum Op {
     Before,
     /// After a moment in time.
     After,
+    /// The track has it.
+    Yes,
+    /// The track does not have it.
+    No,
 }
 
 impl Op {
@@ -166,6 +198,7 @@ impl Op {
                 Kind::Number
             }
             Self::InLast | Self::NotInLast | Self::Before | Self::After => Kind::Date,
+            Self::Yes | Self::No => Kind::Flag,
         }
     }
 }
@@ -373,9 +406,13 @@ fn compile_rule(rule: &Rule, now_ms: i64, params: &mut Vec<Value>) -> Result<Str
         }
         Op::Eq | Op::Ne | Op::Lt | Op::Le | Op::Gt | Op::Ge => {
             params.push(Value::Real(as_number(&rule.value, rule.field)?));
+            // A track with no number at all is not equal to any of them, so
+            // "is not 16" has to take it, the way "does not contain" does.
+            if rule.op == Op::Ne {
+                return Ok(format!("({column} IS NULL OR {column} <> ?)"));
+            }
             let comparison = match rule.op {
                 Op::Eq => "=",
-                Op::Ne => "<>",
                 Op::Lt => "<",
                 Op::Le => "<=",
                 Op::Gt => ">",
@@ -409,6 +446,9 @@ fn compile_rule(rule: &Rule, now_ms: i64, params: &mut Vec<Value>) -> Result<Str
                 format!("{column} > ?")
             })
         }
+        // A yes-or-no field is already a test; there is nothing to bind.
+        Op::Yes => Ok(column.to_string()),
+        Op::No => Ok(format!("NOT {column}")),
     }
 }
 

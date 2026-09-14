@@ -420,6 +420,113 @@ fn smart_playlists_follow_the_rules_they_are_given() {
 }
 
 #[test]
+fn rules_can_ask_about_the_file_itself_and_what_is_missing() {
+    let dir = temp_dir("smart file");
+    let (library, music) = library_with_songs(&dir);
+
+    // A download with no tags at all, which is what these rules are for.
+    let bare = music.join("pop").join("05 tanpa tag.wav");
+    song(&bare, "", "", "", "", "");
+    let mut library = library;
+    library.scan(|_| {}).unwrap();
+
+    let by_rate = Rules {
+        rules: vec![Rule {
+            field: Field::SampleRate,
+            op: Op::Eq,
+            value: serde_json::json!(44_100),
+        }],
+        ..Rules::default()
+    };
+    assert_eq!(
+        library.smart_tracks(&by_rate).unwrap().len(),
+        6,
+        "every fixture is 44.1 kHz"
+    );
+
+    let deep = Rules {
+        rules: vec![Rule {
+            field: Field::BitDepth,
+            op: Op::Ge,
+            value: serde_json::json!(24),
+        }],
+        ..Rules::default()
+    };
+    assert!(
+        library.smart_tracks(&deep).unwrap().is_empty(),
+        "none is 24 bit"
+    );
+
+    // A number a track does not have counts as "not that number".
+    let not_24 = Rules {
+        rules: vec![Rule {
+            field: Field::BitDepth,
+            op: Op::Ne,
+            value: serde_json::json!(24),
+        }],
+        ..Rules::default()
+    };
+    assert_eq!(library.smart_tracks(&not_24).unwrap().len(), 6);
+
+    // Yes or no, with nothing to compare against.
+    let no_cover = Rules {
+        rules: vec![Rule {
+            field: Field::HasCover,
+            op: Op::No,
+            value: serde_json::Value::Null,
+        }],
+        ..Rules::default()
+    };
+    assert_eq!(
+        library.smart_tracks(&no_cover).unwrap().len(),
+        6,
+        "the fixtures carry no pictures"
+    );
+    let with_cover = Rules {
+        rules: vec![Rule {
+            field: Field::HasCover,
+            op: Op::Yes,
+            value: serde_json::Value::Null,
+        }],
+        ..Rules::default()
+    };
+    assert!(library.smart_tracks(&with_cover).unwrap().is_empty());
+
+    // The one that matters for tidying up: what has no artist.
+    let nameless = Rules {
+        rules: vec![Rule {
+            field: Field::HasArtist,
+            op: Op::No,
+            value: serde_json::Value::Null,
+        }],
+        ..Rules::default()
+    };
+    let found = library.smart_tracks(&nameless).unwrap();
+    assert_eq!(found.len(), 1, "only the untagged download");
+    assert!(found[0].path.contains("tanpa tag"), "{}", found[0].path);
+
+    // A yes-or-no field takes no value, so it binds nothing.
+    let compiled = no_cover.compile(0).unwrap();
+    assert_eq!(
+        compiled.sql.matches('?').count(),
+        compiled.params.len(),
+        "{}",
+        compiled.sql
+    );
+
+    // And it still refuses an operator that does not belong to it.
+    let wrong = Rules {
+        rules: vec![Rule {
+            field: Field::HasCover,
+            op: Op::Contains,
+            value: serde_json::json!("yes"),
+        }],
+        ..Rules::default()
+    };
+    assert!(wrong.compile(0).is_err());
+}
+
+#[test]
 fn a_smart_playlist_changes_with_the_library() {
     let dir = temp_dir("smart follows");
     let (mut library, music) = library_with_songs(&dir);
