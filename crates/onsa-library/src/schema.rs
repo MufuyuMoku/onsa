@@ -6,11 +6,12 @@
 //!
 //! Version 1 holds what the library itself needs (M3), version 2 the
 //! playlists (M6), version 3 the record of what Onsa has changed so that it
-//! can be taken back again (M7). Lyrics, the scrobble queue and downloads
-//! arrive as later migrations with the milestones that use them.
+//! can be taken back again (M7), and version 4 lets that record hold a
+//! cover as well. Lyrics, the scrobble queue and downloads arrive as later
+//! migrations with the milestones that use them.
 
 /// The migrations, in order. Index 0 is version 1.
-pub const MIGRATIONS: &[&str] = &[V1, V2, V3];
+pub const MIGRATIONS: &[&str] = &[V1, V2, V3, V4];
 
 const V1: &str = r#"
 CREATE TABLE folders (
@@ -196,5 +197,26 @@ CREATE TABLE edit_steps (
     before      TEXT,                     -- what was there; NULL means nothing
     after       TEXT                      -- what was put there
 );
+CREATE INDEX edit_steps_batch ON edit_steps(batch_id, position);
+"#;
+
+const V4: &str = r#"
+-- A run can now put a cover on a track (SPEC §8), which is a fourth kind of
+-- step. SQLite cannot widen a CHECK constraint in place, so the table is
+-- rebuilt around its rows; nothing anybody undid or has yet to undo is lost.
+CREATE TABLE edit_steps_v4 (
+    id          INTEGER PRIMARY KEY,
+    batch_id    INTEGER NOT NULL REFERENCES edit_batches(id) ON DELETE CASCADE,
+    position    INTEGER NOT NULL,
+    track_id    INTEGER NOT NULL,
+    kind        TEXT NOT NULL CHECK (kind IN ('override', 'tag', 'move', 'cover')),
+    field       TEXT,                     -- for 'override' and 'tag'
+    before      TEXT,                     -- what was there; NULL means nothing
+    after       TEXT                      -- what was put there
+);
+INSERT INTO edit_steps_v4 (id, batch_id, position, track_id, kind, field, before, after)
+SELECT id, batch_id, position, track_id, kind, field, before, after FROM edit_steps;
+DROP TABLE edit_steps;
+ALTER TABLE edit_steps_v4 RENAME TO edit_steps;
 CREATE INDEX edit_steps_batch ON edit_steps(batch_id, position);
 "#;

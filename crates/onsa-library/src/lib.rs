@@ -9,6 +9,7 @@
 
 #![warn(missing_docs)]
 
+pub mod clean;
 pub mod cover;
 mod db;
 pub mod edits;

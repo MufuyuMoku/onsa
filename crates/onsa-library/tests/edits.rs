@@ -625,3 +625,106 @@ fn the_rename_plan_reads_as_a_summary_too() {
     assert!(summary.skipped.contains(&(Skipped::NameTaken, 2)));
     assert!(summary.would_do_anything());
 }
+
+// -------------------------------------------------------------- the cover
+
+/// A small PNG of one colour, standing in for a cover somebody fetched.
+fn picture(red: u8) -> Vec<u8> {
+    let image = image::RgbImage::from_fn(300, 300, |x, y| {
+        image::Rgb([red, (x % 256) as u8, (y % 256) as u8])
+    });
+    let mut bytes = Vec::new();
+    image
+        .write_to(
+            &mut std::io::Cursor::new(&mut bytes),
+            image::ImageFormat::Png,
+        )
+        .unwrap();
+    bytes
+}
+
+fn cover_of(library: &Library, id: i64) -> Option<i64> {
+    library.track(id).unwrap().unwrap().cover_id
+}
+
+#[test]
+fn a_cover_is_put_on_and_taken_back_off() {
+    let dir = temp_dir("cover");
+    let (mut library, trial, real) = library_with_two_folders(&dir);
+    let inside = id_at(&library, &trial.join("01 Satu.wav"));
+    let outside = id_at(&library, &real.join("01 Jangan Sentuh.wav"));
+    assert_eq!(
+        cover_of(&library, inside),
+        None,
+        "it had none to begin with"
+    );
+
+    let summary = library
+        .preview_covers(&Scope::folder(&trial), &[inside, outside])
+        .unwrap();
+    assert_eq!(summary.covers, 1);
+    assert!(summary.skipped.contains(&(Skipped::OutsideFolder, 1)));
+    assert!(summary.would_do_anything());
+
+    let report = library
+        .apply_covers(
+            "sampul",
+            &Scope::folder(&trial),
+            &[(inside, picture(200)), (outside, picture(10))],
+        )
+        .unwrap();
+    assert_eq!(report.changed, 1);
+    assert_eq!(report.out_of_scope, 1, "the other folder was refused");
+    let given = cover_of(&library, inside).expect("a cover now");
+    assert_eq!(cover_of(&library, outside), None, "and not there");
+
+    // The picture really is in the cache, at both sizes.
+    assert!(library.cover_file(given, 128).unwrap().unwrap().is_file());
+    assert!(library.cover_file(given, 512).unwrap().unwrap().is_file());
+
+    let batch = report.batch.expect("a run to take back");
+    let undone = library.undo_batch(batch).unwrap();
+    assert_eq!(undone.restored, 1);
+    assert!(undone.failed.is_empty());
+    assert_eq!(cover_of(&library, inside), None, "exactly as it was before");
+}
+
+#[test]
+fn the_same_picture_twice_is_stored_once() {
+    let dir = temp_dir("cover twice");
+    let (mut library, trial, _) = library_with_two_folders(&dir);
+    let one = id_at(&library, &trial.join("01 Satu.wav"));
+    let two = id_at(&library, &trial.join("02 Dua.wav"));
+
+    library
+        .apply_covers(
+            "sampul album",
+            &Scope::folder(&trial),
+            &[(one, picture(120)), (two, picture(120))],
+        )
+        .unwrap();
+    assert_eq!(
+        cover_of(&library, one),
+        cover_of(&library, two),
+        "one album, one picture, one row"
+    );
+}
+
+#[test]
+fn a_picture_that_is_not_a_picture_changes_nothing() {
+    let dir = temp_dir("cover broken");
+    let (mut library, trial, _) = library_with_two_folders(&dir);
+    let one = id_at(&library, &trial.join("01 Satu.wav"));
+
+    let report = library
+        .apply_covers(
+            "sampul rusak",
+            &Scope::folder(&trial),
+            &[(one, b"this is not a picture".to_vec())],
+        )
+        .unwrap();
+    assert_eq!(report.changed, 0);
+    assert_eq!(report.failed.len(), 1);
+    assert_eq!(report.batch, None, "nothing to take back");
+    assert_eq!(cover_of(&library, one), None);
+}

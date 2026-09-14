@@ -413,6 +413,133 @@ impl Library {
         Ok(report)
     }
 
+    /// Puts a new cover on tracks, as one run that can be taken back.
+    ///
+    /// The picture comes from outside — the caller fetched it; this crate
+    /// never speaks to the network (SPEC §2) — and is stored the way every
+    /// other cover is: thumbnails in the cache, one row per picture, and the
+    /// track pointed at it. Nothing is written into the file, so taking it
+    /// back is a matter of pointing the track at what it had before.
+    ///
+    /// A picture that cannot be decoded is counted as failed and changes
+    /// nothing, which is what a broken download looks like from here.
+    pub fn apply_covers(
+        &mut self,
+        note: &str,
+        scope: &Scope,
+        picks: &[(i64, Vec<u8>)],
+    ) -> Result<BatchReport> {
+        let note = note.trim();
+        if note.is_empty() {
+            return Err(Error::Invalid("a run needs a name".into()));
+        }
+        let mut report = BatchReport::default();
+        let limit = scope.limit.clamp(1, MAX_BATCH);
+
+        let mut allowed: Vec<(i64, &Vec<u8>)> = Vec::new();
+        for (track_id, bytes) in picks {
+            let Some(path) = self.track_path(*track_id)? else {
+                report.out_of_scope += 1;
+                continue;
+            };
+            if !scope.allows(Path::new(&path)) {
+                report.out_of_scope += 1;
+                continue;
+            }
+            if allowed.len() >= limit {
+                report.over_limit += 1;
+                continue;
+            }
+            allowed.push((*track_id, bytes));
+        }
+        if allowed.is_empty() {
+            return Ok(report);
+        }
+
+        let covers_dir = self.covers_dir.clone();
+        let stamp = now_ms();
+        let tx = self.conn.transaction()?;
+        tx.execute(
+            "INSERT INTO edit_batches (note, scope, created_at) VALUES (?1, ?2, ?3)",
+            params![
+                note,
+                scope.folder.as_ref().map(|p| p.display().to_string()),
+                stamp
+            ],
+        )?;
+        let batch = tx.last_insert_rowid();
+        let mut position = 0i64;
+        for (track_id, bytes) in allowed {
+            let before: Option<i64> = tx
+                .query_row(
+                    "SELECT cover_id FROM tracks WHERE id = ?1",
+                    [track_id],
+                    |row| row.get(0),
+                )
+                .optional()?
+                .flatten();
+            let Some(after) = store_cover(&tx, &covers_dir, bytes)? else {
+                report
+                    .failed
+                    .push(format!("track {track_id}: the picture could not be read"));
+                continue;
+            };
+            if before == Some(after) {
+                report.unchanged += 1;
+                continue;
+            }
+            tx.execute(
+                "UPDATE tracks SET cover_id = ?2 WHERE id = ?1",
+                params![track_id, after],
+            )?;
+            tx.execute(
+                "INSERT INTO edit_steps (batch_id, position, track_id, kind, field, before, after)
+                 VALUES (?1, ?2, ?3, 'cover', NULL, ?4, ?5)",
+                params![
+                    batch,
+                    position,
+                    track_id,
+                    before.map(|id| id.to_string()),
+                    after.to_string()
+                ],
+            )?;
+            position += 1;
+            report.changed += 1;
+        }
+
+        if report.changed == 0 {
+            tx.execute("DELETE FROM edit_batches WHERE id = ?1", [batch])?;
+            tx.commit()?;
+            return Ok(report);
+        }
+        tx.commit()?;
+        report.batch = Some(batch);
+        Ok(report)
+    }
+
+    /// What [`Library::apply_covers`] would do, without storing anything.
+    pub fn preview_covers(&self, scope: &Scope, tracks: &[i64]) -> Result<Summary> {
+        let mut summary = Summary::default();
+        let limit = scope.limit.clamp(1, MAX_BATCH);
+        for track_id in tracks {
+            let Some(path) = self.track_path(*track_id)? else {
+                summary.count_skip(Skipped::OutsideFolder);
+                continue;
+            };
+            if !scope.allows(Path::new(&path)) {
+                summary.count_skip(Skipped::OutsideFolder);
+                continue;
+            }
+            if summary.covers >= limit {
+                summary.count_skip(Skipped::OverLimit);
+                continue;
+            }
+            summary.covers += 1;
+        }
+        summary.tracks = summary.covers;
+        Ok(summary)
+    }
+
     /// The tracks a run would be allowed to look at, in path order.
     ///
     /// The folder is matched in SQL first so a large library does not come
@@ -521,6 +648,7 @@ impl Library {
                 "override" => self.undo_override(track_id, field.as_deref(), before.as_deref()),
                 "tag" => self.undo_tag(track_id, field.as_deref(), before.as_deref()),
                 "move" => self.undo_move(track_id, before.as_deref(), after.as_deref()),
+                "cover" => self.undo_cover(track_id, before.as_deref()),
                 other => Err(Error::Invalid(format!("a step of kind {other}"))),
             };
             match outcome {
@@ -570,6 +698,26 @@ impl Library {
             Path::new(&path),
             &[(field.to_string(), before.map(str::to_string))],
         )
+    }
+
+    /// Points a track back at the cover it had.
+    ///
+    /// The picture it was given is left in the cache and in `covers`: other
+    /// tracks may be pointing at it, and a picture costs a few kilobytes
+    /// while getting it back would cost another download.
+    fn undo_cover(&self, track_id: i64, before: Option<&str>) -> Result<()> {
+        let before: Option<i64> = match before {
+            Some(text) => Some(
+                text.parse()
+                    .map_err(|_| Error::Invalid("a cover step with no cover".into()))?,
+            ),
+            None => None,
+        };
+        self.conn.execute(
+            "UPDATE tracks SET cover_id = ?2 WHERE id = ?1",
+            params![track_id, before],
+        )?;
+        Ok(())
     }
 
     /// Puts a file back where it was, and tells the library about it.
@@ -637,6 +785,8 @@ pub struct Summary {
     pub files_written: usize,
     /// Files it would move or rename.
     pub files_moved: usize,
+    /// Tracks it would put a new cover on.
+    pub covers: usize,
     /// What it would leave alone, and why.
     pub skipped: Vec<(Skipped, usize)>,
 }
@@ -651,7 +801,7 @@ impl Summary {
 
     /// Whether pressing apply would do anything at all.
     pub fn would_do_anything(&self) -> bool {
-        self.fields > 0 || self.files_written > 0 || self.files_moved > 0
+        self.fields > 0 || self.files_written > 0 || self.files_moved > 0 || self.covers > 0
     }
 }
 
@@ -727,6 +877,44 @@ impl Library {
         summary.tracks = summary.files_written;
         Ok(summary)
     }
+}
+
+/// Stores a picture as a cover and gives back its id.
+///
+/// A picture Onsa already has is not stored twice: covers are kept by the
+/// hash of their bytes, so the same album art on forty tracks is one row and
+/// one pair of thumbnails. A picture that cannot be decoded gives `None`.
+fn store_cover(
+    conn: &rusqlite::Connection,
+    covers_dir: &Path,
+    bytes: &[u8],
+) -> Result<Option<i64>> {
+    let hash = crate::cover::sha256_hex(bytes);
+    let known: Option<i64> = conn
+        .query_row("SELECT id FROM covers WHERE hash = ?1", [&hash], |row| {
+            row.get(0)
+        })
+        .optional()?;
+    if known.is_some() {
+        return Ok(known);
+    }
+    let Some(thumbnails) =
+        crate::cover::make_thumbnails(bytes, covers_dir, Path::new("a suggested cover"))
+    else {
+        return Ok(None);
+    };
+    conn.execute(
+        "INSERT INTO covers (hash, width, height, thumb_128, thumb_512)
+         VALUES (?1, ?2, ?3, ?4, ?5)",
+        params![
+            thumbnails.hash,
+            thumbnails.width,
+            thumbnails.height,
+            thumbnails.thumb_128,
+            thumbnails.thumb_512
+        ],
+    )?;
+    Ok(Some(conn.last_insert_rowid()))
 }
 
 /// Brings one track's search entry back in line with what it now shows.
