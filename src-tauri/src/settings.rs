@@ -38,6 +38,8 @@ pub const CLOSE_TO_TRAY_KEY: &str = "closeToTray";
 pub const DISPLAY_KEY: &str = "display";
 /// Key of the metadata settings.
 pub const METADATA_KEY: &str = "metadata";
+/// Key of the tidy-up scope.
+pub const TIDY_KEY: &str = "tidy";
 
 /// Reads one setting, or its default.
 pub fn load<T: DeserializeOwned + Default>(library: &Library, key: &str) -> T {
@@ -345,6 +347,30 @@ pub struct MetadataPrefs {
     /// The listener's own AcoustID application key, when they have one.
     /// Never sent back to the interface, never logged.
     pub acoustid_key: Option<String>,
+}
+
+/// The folder a tidy-up run is held to, and how many tracks it may take
+/// (SPEC §8).
+///
+/// It is stored rather than asked for each time so the interface can keep it
+/// in front of the listener: which folder is being worked on is the one
+/// thing that must never be in doubt.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct TidyPrefs {
+    /// The folder. Nothing outside it can be touched.
+    pub folder: Option<String>,
+    /// Most tracks one run may change.
+    pub limit: usize,
+}
+
+impl Default for TidyPrefs {
+    fn default() -> Self {
+        Self {
+            folder: None,
+            limit: onsa_library::edits::DEFAULT_BATCH,
+        }
+    }
 }
 
 /// What the interface shows beyond the theme itself.

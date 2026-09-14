@@ -10,7 +10,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { clock, fileName } from './format.ts';
+import { clock, fileName, relativeTo } from './format.ts';
 
 test('a Windows path gives up its file name', () => {
 	assert.equal(fileName('C:\\Users\\sorar\\Music\\Lilith\\BANG BANG.mp3'), 'BANG BANG.mp3');
@@ -36,4 +36,17 @@ test('a clock reads as minutes and seconds, and says nothing when it cannot', ()
 	assert.equal(clock(61), '1:01');
 	assert.equal(clock(3661), '1:01:01');
 	assert.equal(clock(null), '--:--');
+});
+
+test('a path inside a folder is shown from that folder', () => {
+	assert.equal(relativeTo(String.raw`C:\Music\pop\a.flac`, String.raw`C:\Music`), String.raw`pop\a.flac`);
+	assert.equal(relativeTo('/music/pop/a.flac', '/music'), 'pop/a.flac');
+	// A root written with a trailing separator is still the same root.
+	assert.equal(relativeTo(String.raw`C:\Music\a.flac`, 'C:\\Music\\'), 'a.flac');
+});
+
+test('a path outside the folder is left whole', () => {
+	assert.equal(relativeTo('/other/a.flac', '/music'), '/other/a.flac');
+	assert.equal(relativeTo('/music', '/music'), '/music', 'the folder itself');
+	assert.equal(relativeTo('/music/a.flac', ''), '/music/a.flac', 'with no root at all');
 });

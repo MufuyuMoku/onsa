@@ -12,7 +12,7 @@ use std::path::{Path, PathBuf};
 use rusqlite::params;
 
 use crate::db::Library;
-use crate::edits::{now_ms, BatchReport, Scope, MAX_BATCH};
+use crate::edits::{now_ms, BatchReport, Scope, Skipped, Summary, MAX_BATCH};
 use crate::error::{Error, Result};
 use crate::search::TrackRow;
 use crate::write;
@@ -63,6 +63,29 @@ impl RenamePlan {
     /// How many cannot be moved, and why they are listed anyway.
     pub fn clashes(&self) -> usize {
         self.moves.iter().filter(|one| one.clash.is_some()).count()
+    }
+
+    /// The plan as the summary the listener reads before applying it.
+    pub fn summary(&self) -> Summary {
+        let mut summary = Summary {
+            files_moved: self.moving(),
+            tracks: self.moving(),
+            ..Summary::default()
+        };
+        for _ in 0..self.out_of_scope {
+            summary.count_skip(Skipped::OutsideFolder);
+        }
+        for _ in 0..self.over_limit {
+            summary.count_skip(Skipped::OverLimit);
+        }
+        for one in &self.moves {
+            if one.clash.is_some() {
+                summary.count_skip(Skipped::NameTaken);
+            } else if one.from == one.to {
+                summary.count_skip(Skipped::NoChange);
+            }
+        }
+        summary
     }
 }
 

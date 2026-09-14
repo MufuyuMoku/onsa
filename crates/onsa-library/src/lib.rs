@@ -27,7 +27,7 @@ pub mod watch;
 pub mod write;
 
 pub use db::Library;
-pub use edits::{Batch, BatchReport, Scope, UndoReport};
+pub use edits::{Batch, BatchReport, Scope, Skipped, Summary, UndoReport};
 pub use error::{Error, Result};
 pub use m3u::{ImportReport, PathStyle};
 pub use overrides::Field;

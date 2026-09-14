@@ -11,7 +11,7 @@ use std::path::{Path, PathBuf};
 use lofty::config::WriteOptions;
 use lofty::prelude::{Accessor, TagExt};
 use lofty::tag::{Tag, TagType};
-use onsa_library::edits::{Change, Scope, DEFAULT_BATCH, MAX_BATCH};
+use onsa_library::edits::{Change, Scope, Skipped, DEFAULT_BATCH, MAX_BATCH};
 use onsa_library::overrides::Field;
 use onsa_library::{write, Library};
 
@@ -514,4 +514,114 @@ fn two_tracks_that_would_take_the_same_name_are_listed_not_moved() {
     assert_eq!(report.unchanged, 2, "the two that clash were left alone");
     assert!(trial.join("02 Dua.wav").exists());
     assert!(trial.join("03 Tiga.wav").exists());
+}
+
+// ----------------------------------------------------- the summary first
+
+#[test]
+fn the_summary_says_what_would_happen_before_anything_does() {
+    let dir = temp_dir("summary");
+    let (mut library, trial, real) = library_with_two_folders(&dir);
+    let one = id_at(&library, &trial.join("01 Satu.wav"));
+    let two = id_at(&library, &trial.join("02 Dua.wav"));
+    let three = id_at(&library, &trial.join("03 Tiga.wav"));
+    let outside = id_at(&library, &real.join("01 Jangan Sentuh.wav"));
+
+    library
+        .set_override(two, Field::Genre, Some("Jazz"))
+        .unwrap();
+
+    let changes = vec![
+        // A real change.
+        Change {
+            track_id: one,
+            field: Field::Genre,
+            value: Some("Jazz".into()),
+        },
+        // Already says that.
+        Change {
+            track_id: two,
+            field: Field::Genre,
+            value: Some("Jazz".into()),
+        },
+        // Past the cap of two tracks.
+        Change {
+            track_id: three,
+            field: Field::Genre,
+            value: Some("Jazz".into()),
+        },
+        // Another folder entirely.
+        Change {
+            track_id: outside,
+            field: Field::Genre,
+            value: Some("Jazz".into()),
+        },
+    ];
+    let scope = Scope::folder(&trial).take(2);
+    let summary = library.preview_edits(&scope, &changes).unwrap();
+
+    assert_eq!(summary.fields, 1, "one field would really change");
+    assert_eq!(summary.tracks, 2, "two tracks fit inside the cap");
+    assert!(summary.would_do_anything());
+    assert!(summary.skipped.contains(&(Skipped::NoChange, 1)));
+    assert!(summary.skipped.contains(&(Skipped::OverLimit, 1)));
+    assert!(summary.skipped.contains(&(Skipped::OutsideFolder, 1)));
+
+    // And the preview really did not do any of it.
+    assert_eq!(library.track(one).unwrap().unwrap().genre, None);
+    assert!(library.batches(10).unwrap().is_empty());
+
+    // What it said is what applying then does.
+    let report = library.apply_edits("uji", &scope, &changes).unwrap();
+    assert_eq!(report.changed, summary.fields);
+    assert_eq!(report.out_of_scope, 1);
+    assert_eq!(report.over_limit, 1);
+    assert_eq!(report.unchanged, 1);
+}
+
+#[test]
+fn the_summary_for_writing_counts_files_not_fields_alone() {
+    let dir = temp_dir("summary write");
+    let (mut library, trial, _) = library_with_two_folders(&dir);
+    let one = id_at(&library, &trial.join("01 Satu.wav"));
+    let two = id_at(&library, &trial.join("02 Dua.wav"));
+
+    library
+        .set_override(one, Field::Artist, Some("Baru"))
+        .unwrap();
+    library
+        .set_override(one, Field::Album, Some("Baru"))
+        .unwrap();
+
+    let summary = library
+        .preview_writes(&Scope::folder(&trial), &[one, two])
+        .unwrap();
+    assert_eq!(
+        summary.files_written, 1,
+        "only one file has anything waiting"
+    );
+    assert_eq!(summary.fields, 2, "two fields in it");
+    assert!(summary.skipped.contains(&(Skipped::NoChange, 1)));
+}
+
+#[test]
+fn the_rename_plan_reads_as_a_summary_too() {
+    let dir = temp_dir("summary rename");
+    let (library, trial, _) = library_with_two_folders(&dir);
+    let ids: Vec<i64> = ["01 Satu.wav", "02 Dua.wav", "03 Tiga.wav"]
+        .iter()
+        .map(|name| id_at(&library, &trial.join(name)))
+        .collect();
+    let plan = library
+        .rename_plan(
+            &dir.join("tertata"),
+            "{album}",
+            &Scope::folder(&trial),
+            &ids,
+        )
+        .unwrap();
+    let summary = plan.summary();
+    assert_eq!(summary.files_moved, 1);
+    assert!(summary.skipped.contains(&(Skipped::NameTaken, 2)));
+    assert!(summary.would_do_anything());
 }

@@ -26,7 +26,7 @@
 	type Entry = {
 		view: View;
 		label: MessageKey;
-		icon: 'note' | 'disc' | 'artist' | 'genre' | 'folder' | 'playlist' | 'sliders' | 'eq' | 'shelf' | 'palette' | 'info';
+		icon: 'note' | 'disc' | 'artist' | 'genre' | 'folder' | 'playlist' | 'pencil' | 'sliders' | 'eq' | 'shelf' | 'palette' | 'info';
 		/** Views that count as this entry being the one in use. */
 		kinds: View['kind'][];
 		section?: SettingsSection;
@@ -43,7 +43,8 @@
 			label: 'nav.playlists',
 			icon: 'playlist',
 			kinds: ['playlists', 'playlist']
-		}
+		},
+		{ view: { kind: 'tidy' }, label: 'nav.tidy', icon: 'pencil', kinds: ['tidy'] }
 	];
 
 	const settingsPages: Entry[] = (

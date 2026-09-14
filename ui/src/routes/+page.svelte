@@ -22,6 +22,7 @@
 	import NowPlaying from '$lib/components/NowPlaying.svelte';
 	import Icon from '$lib/components/Icon.svelte';
 	import PlaylistsView from '$lib/components/PlaylistsView.svelte';
+	import TidyView from '$lib/components/TidyView.svelte';
 	import PlaylistView from '$lib/components/PlaylistView.svelte';
 	import QueuePanel from '$lib/components/QueuePanel.svelte';
 	import SearchView from '$lib/components/SearchView.svelte';
@@ -186,6 +187,8 @@
 					<BrowseView kind="folders" />
 				{:else if view.kind === 'folder'}
 					<BrowseView kind="folders" name={view.path} />
+				{:else if view.kind === 'tidy'}
+					<TidyView />
 				{:else if view.kind === 'playlists'}
 					<PlaylistsView />
 				{:else if view.kind === 'playlist'}

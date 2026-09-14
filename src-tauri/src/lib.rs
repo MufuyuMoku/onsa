@@ -22,6 +22,7 @@ mod session;
 mod settings;
 mod sleep;
 pub mod theme;
+mod tidy;
 mod tray;
 
 use anyhow::{Context, Result};
@@ -125,18 +126,52 @@ pub fn run() -> Result<()> {
             commands::metadata_get,
             commands::settings_set_metadata,
             commands::acoustid_test,
+            tidy::tidy_scope,
+            tidy::tidy_set_scope,
+            tidy::tidy_pick_folder,
+            tidy::tidy_tracks,
+            tidy::tidy_preview_edits,
+            tidy::tidy_apply_edits,
+            tidy::tidy_preview_writes,
+            tidy::tidy_write,
+            tidy::tidy_rename_plan,
+            tidy::tidy_rename_apply,
+            tidy::edit_history,
+            tidy::edit_undo,
         ])
         .run(tauri::generate_context!())
         .context("the application window could not be started")
+}
+
+/// A whole set of folders somewhere else, when `ONSA_DATA_DIR` names one.
+///
+/// Onsa keeps the listener's library where the system says applications
+/// keep things. This is the way past that, and it exists for two reasons:
+/// trying something out against a library that can be thrown away without
+/// going anywhere near the real one, and a portable build later (SPEC §15,
+/// M12). One variable moves the database, the covers and the log together,
+/// because a library without its covers is not the same library.
+fn folders_from_env() -> Option<(std::path::PathBuf, std::path::PathBuf, std::path::PathBuf)> {
+    let root = std::env::var_os("ONSA_DATA_DIR")?;
+    let root = std::path::PathBuf::from(root);
+    if root.as_os_str().is_empty() {
+        return None;
+    }
+    Some((root.join("data"), root.join("cache"), root.join("logs")))
 }
 
 /// Everything that needs the application's folders: logging, the library
 /// with the stored settings, then the player.
 fn setup(app: &mut tauri::App) -> Result<()> {
     let paths = app.path();
-    let log_dir = paths.app_log_dir().context("no log folder")?;
-    let data_dir = paths.app_data_dir().context("no data folder")?;
-    let cache_dir = paths.app_cache_dir().context("no cache folder")?;
+    let (data_dir, cache_dir, log_dir) = match folders_from_env() {
+        Some(folders) => folders,
+        None => (
+            paths.app_data_dir().context("no data folder")?,
+            paths.app_cache_dir().context("no cache folder")?,
+            paths.app_log_dir().context("no log folder")?,
+        ),
+    };
 
     let logging = Logging::init(&log_dir);
     tracing::info!(

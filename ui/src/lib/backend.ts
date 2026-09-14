@@ -508,6 +508,102 @@ export const setMini = (mini: boolean) => call<boolean>('window_set_mini', { min
 export const themeOpenFolder = () => call<void>('theme_open_folder');
 export const setVolume = (db: number) => call<void>('player_set_volume', { db });
 
+// Tidying metadata (SPEC section 8) ----------------------------------------
+
+/** The folder a run is held to, and how many tracks it may take. */
+export interface TidyScope {
+	folder: string | null;
+	limit: number;
+	defaultLimit: number;
+	maxLimit: number;
+	tracks: number;
+}
+
+/** One field a run would set. */
+export interface TidyChange {
+	trackId: number;
+	field: string;
+	value: string | null;
+}
+
+/** Why some tracks would be left alone. */
+export interface Skip {
+	reason: 'outsideFolder' | 'overLimit' | 'noChange' | 'nameTaken';
+	count: number;
+}
+
+/** What a run would do, before there is a button to press. */
+export interface TidySummary {
+	tracks: number;
+	fields: number;
+	filesWritten: number;
+	filesMoved: number;
+	skipped: Skip[];
+	any: boolean;
+}
+
+/** What a run actually did. */
+export interface TidyReport {
+	batch: number | null;
+	changed: number;
+	unchanged: number;
+	outOfScope: number;
+	overLimit: number;
+	failed: string[];
+}
+
+export interface PlannedMove {
+	trackId: number;
+	from: string;
+	to: string;
+	clash: string | null;
+}
+
+export interface RenamePlan {
+	moves: PlannedMove[];
+	summary: TidySummary;
+}
+
+/** A run as the history lists it. */
+export interface EditBatch {
+	id: number;
+	note: string;
+	scope: string | null;
+	createdAt: number;
+	undoneAt: number | null;
+	steps: number;
+}
+
+export interface UndoReport {
+	restored: number;
+	failed: string[];
+}
+
+export const tidyScope = () => call<TidyScope>('tidy_scope');
+export const tidySetScope = (folder: string | null, limit: number) =>
+	call<TidyScope>('tidy_set_scope', { folder, limit });
+export const tidyPickFolder = (title: string) =>
+	call<string | null>('tidy_pick_folder', { title });
+export const tidyTracks = () => call<Track[]>('tidy_tracks');
+export const tidyPreviewEdits = (changes: TidyChange[]) =>
+	call<TidySummary>('tidy_preview_edits', { changes });
+export const tidyApplyEdits = (note: string, changes: TidyChange[]) =>
+	call<TidyReport>('tidy_apply_edits', { note, changes });
+export const tidyPreviewWrites = (tracks: number[]) =>
+	call<TidySummary>('tidy_preview_writes', { tracks });
+export const tidyWrite = (note: string, tracks: number[]) =>
+	call<TidyReport>('tidy_write', { note, tracks });
+export const tidyRenamePlan = (root: string, pattern: string, tracks: number[]) =>
+	call<RenamePlan>('tidy_rename_plan', { root, pattern, tracks });
+export const tidyRenameApply = (
+	note: string,
+	root: string,
+	pattern: string,
+	tracks: number[]
+) => call<TidyReport>('tidy_rename_apply', { note, root, pattern, tracks });
+export const editHistory = (limit: number) => call<EditBatch[]>('edit_history', { limit });
+export const editUndo = (batch: number) => call<UndoReport>('edit_undo', { batch });
+
 // Playlists ----------------------------------------------------------------
 
 export const playlists = () => call<Playlist[]>('playlist_list');

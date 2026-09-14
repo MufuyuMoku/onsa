@@ -42,6 +42,7 @@ export type View =
 	| { kind: 'genre'; name: string }
 	| { kind: 'folders' }
 	| { kind: 'folder'; path: string }
+	| { kind: 'tidy' }
 	| { kind: 'playlists' }
 	| { kind: 'playlist'; id: number }
 	| { kind: 'nowPlaying' }

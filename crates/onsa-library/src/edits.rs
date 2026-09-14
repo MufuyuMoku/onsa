@@ -19,6 +19,7 @@ use rusqlite::{params, OptionalExtension};
 use crate::db::Library;
 use crate::error::{Error, Result};
 use crate::overrides::Field;
+use crate::search::{track_columns, track_row, TrackRow};
 use crate::write;
 
 /// The most tracks one run may touch, whatever it was asked for.
@@ -412,6 +413,33 @@ impl Library {
         Ok(report)
     }
 
+    /// The tracks a run would be allowed to look at, in path order.
+    ///
+    /// The folder is matched in SQL first so a large library does not come
+    /// back whole, and then every row is put through the same test the run
+    /// itself uses: SQL `LIKE` knows nothing about `..`.
+    pub fn tracks_in_scope(&self, scope: &Scope, limit: usize) -> Result<Vec<TrackRow>> {
+        let prefix = scope.folder.as_ref().map(|folder| {
+            let text = folder.to_string_lossy().to_string();
+            format!("{}%", text.trim_end_matches(['/', '\\']))
+        });
+        let sql = format!(
+            "SELECT {} FROM track_view v
+             WHERE (?1 IS NULL OR v.path LIKE ?1)
+             ORDER BY v.path LIMIT ?2",
+            track_columns("v.")
+        );
+        let mut statement = self.conn.prepare(&sql)?;
+        let rows: Vec<TrackRow> = statement
+            .query_map(params![prefix, (limit.max(1) * 4) as i64], track_row)?
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+        Ok(rows
+            .into_iter()
+            .filter(|row| scope.allows(Path::new(&row.path)))
+            .take(limit)
+            .collect())
+    }
+
     /// The runs Onsa has made, newest first.
     pub fn batches(&self, limit: usize) -> Result<Vec<Batch>> {
         let mut statement = self.conn.prepare(
@@ -566,6 +594,138 @@ impl Library {
                 row.get(0)
             })
             .optional()?)
+    }
+}
+
+/// Why a track was left out of a run.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Skipped {
+    /// It sits outside the folder the run is held to.
+    OutsideFolder,
+    /// The run was already as long as it may be.
+    OverLimit,
+    /// What was asked for is what it already says.
+    NoChange,
+    /// Another track would take the same name.
+    NameTaken,
+}
+
+impl Skipped {
+    /// A fixed word per reason, for the interface to translate.
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::OutsideFolder => "outsideFolder",
+            Self::OverLimit => "overLimit",
+            Self::NoChange => "noChange",
+            Self::NameTaken => "nameTaken",
+        }
+    }
+}
+
+/// What a run would do, worked out without doing any of it (SPEC §8).
+///
+/// This is what the listener reads before there is a button to press. It
+/// counts what would happen and, just as importantly, what would not and
+/// why.
+#[derive(Debug, Clone, PartialEq, Default)]
+pub struct Summary {
+    /// Tracks the run would touch.
+    pub tracks: usize,
+    /// Field values it would change.
+    pub fields: usize,
+    /// Files whose tags it would rewrite.
+    pub files_written: usize,
+    /// Files it would move or rename.
+    pub files_moved: usize,
+    /// What it would leave alone, and why.
+    pub skipped: Vec<(Skipped, usize)>,
+}
+
+impl Summary {
+    pub(crate) fn count_skip(&mut self, reason: Skipped) {
+        match self.skipped.iter_mut().find(|(kind, _)| *kind == reason) {
+            Some((_, count)) => *count += 1,
+            None => self.skipped.push((reason, 1)),
+        }
+    }
+
+    /// Whether pressing apply would do anything at all.
+    pub fn would_do_anything(&self) -> bool {
+        self.fields > 0 || self.files_written > 0 || self.files_moved > 0
+    }
+}
+
+impl Library {
+    /// What [`Library::apply_edits`] would do, without doing it.
+    pub fn preview_edits(&self, scope: &Scope, changes: &[Change]) -> Result<Summary> {
+        let mut summary = Summary::default();
+        let limit = scope.limit.clamp(1, MAX_BATCH);
+        let mut taken: Vec<i64> = Vec::new();
+        for change in changes {
+            let Some(path) = self.track_path(change.track_id)? else {
+                summary.count_skip(Skipped::OutsideFolder);
+                continue;
+            };
+            if !scope.allows(Path::new(&path)) {
+                summary.count_skip(Skipped::OutsideFolder);
+                continue;
+            }
+            if !taken.contains(&change.track_id) {
+                if taken.len() >= limit {
+                    summary.count_skip(Skipped::OverLimit);
+                    continue;
+                }
+                taken.push(change.track_id);
+            }
+            let before: Option<String> = self
+                .conn
+                .query_row(
+                    "SELECT value FROM overrides WHERE track_id = ?1 AND field = ?2",
+                    params![change.track_id, change.field.name()],
+                    |row| row.get(0),
+                )
+                .optional()?;
+            if before.as_deref() == change.value.as_deref() {
+                summary.count_skip(Skipped::NoChange);
+                continue;
+            }
+            summary.fields += 1;
+        }
+        summary.tracks = taken.len();
+        Ok(summary)
+    }
+
+    /// What [`Library::write_to_files`] would do, without touching a file.
+    pub fn preview_writes(&self, scope: &Scope, tracks: &[i64]) -> Result<Summary> {
+        let mut summary = Summary::default();
+        let limit = scope.limit.clamp(1, MAX_BATCH);
+        for track_id in tracks {
+            let Some(path) = self.track_path(*track_id)? else {
+                summary.count_skip(Skipped::OutsideFolder);
+                continue;
+            };
+            if !scope.allows(Path::new(&path)) {
+                summary.count_skip(Skipped::OutsideFolder);
+                continue;
+            }
+            if summary.files_written >= limit {
+                summary.count_skip(Skipped::OverLimit);
+                continue;
+            }
+            let waiting: i64 = self.conn.query_row(
+                "SELECT COUNT(*) FROM overrides WHERE track_id = ?1 AND unwritten = 1",
+                [track_id],
+                |row| row.get(0),
+            )?;
+            if waiting == 0 {
+                summary.count_skip(Skipped::NoChange);
+                continue;
+            }
+            summary.files_written += 1;
+            summary.fields += waiting as usize;
+        }
+        summary.tracks = summary.files_written;
+        Ok(summary)
     }
 }
 

@@ -58,3 +58,17 @@ export function secondsLabel(value: number): string {
 export function fileName(path: string): string {
 	return path.split(/[\\/]/).pop() ?? path;
 }
+
+/**
+ * A path as seen from `root`, when it is inside it.
+ *
+ * A list of destinations all beginning with the same long folder is a list
+ * nobody can read: what tells one row from another is the end, which is
+ * exactly what a trimmed line hides. Anything not inside `root` comes back
+ * whole, because a half-truth about where a file is going is worse than a
+ * long line.
+ */
+export function relativeTo(path: string, root: string): string {
+	if (!root || path.length <= root.length || !path.startsWith(root)) return path;
+	return path.slice(root.length).replace(/^[\\/]+/, '');
+}

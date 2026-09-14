@@ -588,3 +588,34 @@ Diminta pemilik proyek sebagai syarat sebelum metadata otomatis dijalankan ke li
 **Temuan**: lofty kehilangan tag ID3v2 di dalam WAV pada penulisan kedua berturut-turut. Pendekatan salin-lalu-ganti menghindarinya, dan pembacaan ulang sebelum penggantian menangkapnya seandainya kasus serupa muncul di format lain.
 
 **Tertunda**: belum ada apa pun yang bisa diklik. Pengaman ini fondasi; pencocokan MusicBrainz/AcoustID, daftar usulan, dan tombol batalkan di antarmuka menyusul.
+
+### Halaman Rapikan, diuji sendiri di folder buatan (2026-09-14)
+
+Sesuai permintaan pemilik proyek: berkas ujinya dibuat sendiri, seluruh alurnya diuji sendiri sampai tuntas, dan cakupan foldernya dibuktikan mengunci — sebelum ia mencobanya.
+
+**Antarmukanya** (`Rapikan` di sidebar, tanpa jaringan sama sekali): edit massal satu field, tulis ke file, dan ganti nama berpola. Ketiganya berjalan dengan pola yang sama — sebutkan yang diinginkan, baca ringkasannya, lalu tekan tombol yang ada **di bawah** ringkasan itu. Riwayat di bagian bawah bisa membatalkan tiap run.
+
+- **Spanduk cakupan** selalu ada di atas pekerjaan. Dibatasi folder: warna aktif, nama folder besar, path lengkap di bawahnya. Tanpa batas: warna peringatan, tulisan "SELURUH LIBRARY", dan satu kalimat yang menyebutkan akibatnya.
+- **Ringkasan** menyebut berapa lagu terkena, berapa nilai field berubah, berapa file ditulis ulang, berapa dipindah — dan berapa yang dilewati beserta alasannya (di luar folder, melewati batas, sudah sama, namanya bentrok).
+
+**Berkas ujinya** dibuat dengan ffmpeg dari nada uji, bukan dari musik siapa pun, di folder sementara sistem — tidak di repo, tidak di folder musik: FLAC bercover dengan judul dan folder beraksara Jepang, MP3 bertag sebagian, M4A tanpa tag sama sekali, WAV bernama sangat panjang berspasi, OGG dengan tag berisi karakter yang tidak boleh ada di path (`AC/DC`, `B:Side`, `What? *Really*: yes`), dua MP3 yang akan mendarat di nama yang sama setelah rename, satu FLAC yang sengaja rusak, dan dua berkas di folder lain yang tidak boleh tersentuh.
+
+**Pengujiannya** dijalankan terhadap **library sekali pakai** lewat `ONSA_DATA_DIR`, jadi library sungguhan pemilik proyek tidak pernah dibuka. Diperiksa sesudahnya: dua kali jalan terakhir memakai folder data sementara, dan tidak satu berkas pun di folder musik yang tersentuh.
+
+36 pemeriksaan pada aplikasi rilis, semuanya lulus:
+
+- berkas yang bukan berkas suara ditandai `failed` saat scan, dan saat penulisan ia **ditolak dengan alasan** sementara tujuh lainnya tetap ditulis;
+- hanya lagu di dalam folder cakupan yang ditawarkan;
+- **perintah yang diarahkan langsung ke berkas di luar folder ditolak** — nol perubahan, dihitung sebagai di luar cakupan, tidak ada run yang tercatat, dan lagu di luar itu tetap seperti semula;
+- ringkasan dihitung sebelum apa pun terjadi, dan tidak mengubah apa pun;
+- yang diterapkan sama persis dengan yang dikatakan ringkasan;
+- tag di dalam berkas benar-benar berubah di disk (diperiksa dengan ffprobe, bukan dengan Onsa sendiri), dan berkas di luar folder tidak;
+- pembatalan mengembalikan tag persis seperti semula, dan berkasnya masih bisa diputar;
+- **membatalkan run yang sama dua kali ditolak**;
+- rename ditampilkan lebih dulu: dua berkas yang akan bentrok ditandai dan tidak dijalankan, tag berisi `AC/DC` tidak berubah jadi dua folder, judul dan folder beraksara Jepang tersusun benar;
+- pembatalan rename mengembalikan nama lama dan menghapus yang baru, berikut path di library;
+- **setelah aplikasi ditutup dan dibuka lagi**: cakupan foldernya masih sama, run yang belum dibatalkan masih ada, bisa dibatalkan, dan berkasnya kembali persis seperti semula.
+
+Pemeriksa tata letak dijalankan ulang dengan halaman ini ikut di dalamnya — 6 lebar × 11 halaman + 4 panel, bersih.
+
+**Temuan**: regex pemisah path yang disalin di banyak komponen kehilangan sebuah backslash **empat kali dalam satu sesi**. Sekarang `fileName()` dan `relativeTo()` ada satu-satunya di `ui/src/lib/format.ts` dengan tesnya, dan tidak ada komponen yang menulis regex path lagi.

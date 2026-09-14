@@ -435,3 +435,20 @@ Diminta pemilik proyek: pengaman dulu, baru jaringan. Semua di bawah ini ada dan
 - **Pemisah path di dalam nilai tag ikut diganti.** `AC/DC` tidak boleh berubah menjadi dua folder: bentuk path ditentukan polanya, bukan tagnya.
 - **Usulan berkeyakinan rendah tidak tercentang.** Ambangnya 0,85. Di bawah itu usulannya tetap ditampilkan untuk dibaca, tapi tidak satu pun field-nya tercentang — menekan "terapkan" tanpa membaca tidak mengubah apa-apa. Field yang mengusulkan persis nilai yang sudah ada juga tidak pernah tercentang.
 - **Batas laju ditunggu di thread yang meminta**, bukan dijadwalkan. Thread itu selalu thread pekerja, jadi antrean lookup memperlambat dirinya sendiri, bukan hal yang sedang dilihat pengguna. MusicBrainz 1 permintaan per detik (SPEC §8), AcoustID 3 per detik sesuai dokumentasinya.
+
+## 2026-09-14 · Halaman Rapikan: cakupan yang selalu terlihat, ringkasan sebelum tombol
+
+- **`ONSA_DATA_DIR` memindahkan database, cover, dan log sekaligus.** Dibuat supaya pengujian bisa berjalan terhadap library sekali pakai tanpa pernah membuka library sungguhan pemilik proyek — dan nanti berguna lagi untuk build portable (M12). Satu variabel memindahkan ketiganya, karena library tanpa cover-nya bukan library yang sama.
+- **Cakupan disimpan, bukan ditanyakan tiap kali.** Folder yang sedang dibatasi adalah satu-satunya hal yang tidak boleh diragukan, jadi ia harus bisa ditampilkan terus-menerus, juga setelah aplikasi dibuka lagi.
+- **Spanduk cakupan diberi warna menurut isinya**: dibatasi folder memakai warna "aktif", sementara "seluruh library" memakai warna peringatan beserta satu kalimat yang menyebutkan akibatnya. Keadaan yang lebih berbahaya harus terlihat lebih berbahaya.
+- **Nama folder ditampilkan lebih dulu, path lengkapnya di bawahnya dan dibungkus, bukan dipotong.** Path yang dipotong di tengah menyembunyikan justru ujungnya — bagian yang membedakan satu folder dari yang lain.
+- **Tombol terapkan milik komponen ringkasan**, dan secara struktur berada di bawah angka-angkanya. Ringkasan yang harus digulir balik untuk dibaca adalah ringkasan yang tidak dibaca.
+- **Ringkasan basi dihapus begitu permintaannya berubah.** Mengganti field, nilai, pola, atau folder tujuan langsung mengosongkan ringkasan; ringkasan basi di atas tombol terapkan persis hal yang harus dihindari.
+- **Rencana rename disusun ulang di backend saat diterapkan**, bukan diambil dari antarmuka. Nama yang keburu ditempati sejak rencana dibuat ketahuan sekarang, bukan dipercaya dari semenit lalu.
+- **Tujuan rename ditampilkan relatif terhadap folder tujuan.** Semua baris berawalan sama dan terlalu panjang untuk dibaca utuh; yang membedakan satu baris dari yang lain ada di ujungnya.
+- **Menulis file dan memindahkan file berjalan di `spawn_blocking`.** Membaca dan menulis ratusan file bukan pekerjaan thread yang menjawab antarmuka.
+
+## 2026-09-14 · Path tidak lagi dipotong sendiri-sendiri di komponen
+
+- Regex pemisah path ditulis ulang di berbagai komponen, dan **empat kali dalam satu sesi sebuah backslash hilang saat berkasnya ditulis** (`/[\/]/` alih-alih `/[\\/]/`). Tiap kali hasilnya terlihat benar sampai sebuah path Windows melewatinya, lalu path utuh muncul di tempat nama berkas seharusnya.
+- Sekarang `fileName()` dan `relativeTo()` ada satu-satunya di `ui/src/lib/format.ts`, **dengan tesnya**, dan tidak ada komponen yang menulis regex path lagi. Tesnya yang menangkap kesalahan itu, bukan mata.
