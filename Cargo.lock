@@ -3454,6 +3454,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "onsa-audio",
+ "onsa-downloader",
  "onsa-library",
  "reqwest",
  "serde",
