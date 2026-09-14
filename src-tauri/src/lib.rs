@@ -9,6 +9,7 @@
 mod commands;
 mod dto;
 mod error;
+mod keys;
 mod library;
 mod logging;
 mod media;
@@ -119,6 +120,8 @@ pub fn run() -> Result<()> {
             commands::playlist_export,
             commands::playlist_import,
             commands::smart_preview,
+            commands::metadata_get,
+            commands::settings_set_metadata,
         ])
         .run(tauri::generate_context!())
         .context("the application window could not be started")

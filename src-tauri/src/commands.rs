@@ -20,11 +20,14 @@ use crate::dto::{
     QueueEntryDto, QueuePlace, SearchDto, SortKey, TrackDto,
 };
 pub use crate::error::ErrorCode;
+use crate::keys::{self, KeyStatus};
 use crate::library::{LibraryService, ScanStatus, PLAYLISTS_EVENT};
 use crate::logging::Logging;
 use crate::player::{Player, Snapshot, Watching};
 use crate::session::{self, WindowMode};
-use crate::settings::{self, BandPrefs, DisplayPrefs, DspPrefs, OutputPrefs, PlaybackPrefs};
+use crate::settings::{
+    self, BandPrefs, DisplayPrefs, DspPrefs, MetadataPrefs, OutputPrefs, PlaybackPrefs,
+};
 use crate::sleep::{self, SleepTimer};
 use crate::theme::{self, Theme};
 use crate::tray::{self, TrayLabels};
@@ -1114,6 +1117,72 @@ fn tidy_file_name(name: &str) -> String {
     } else {
         cleaned
     }
+}
+
+// ------------------------------------------------------- metadata and keys
+
+/// What the interface is told about the metadata settings.
+///
+/// The AcoustID key itself is deliberately not here. The interface can set
+/// it and can ask whether there is one, but it never reads it back: a key
+/// that never leaves the backend cannot end up in a log or a report.
+#[derive(Debug, Clone, Copy, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MetadataDto {
+    /// Whether Onsa may ask the internet about metadata at all.
+    pub online: bool,
+    /// Whether there is an AcoustID key, and where it came from.
+    pub acoustid: KeyStatus,
+}
+
+fn metadata_dto(prefs: &MetadataPrefs) -> MetadataDto {
+    MetadataDto {
+        online: prefs.online,
+        acoustid: KeyStatus::from(keys::acoustid(prefs.acoustid_key.as_deref()).as_ref()),
+    }
+}
+
+/// The metadata settings, and where the AcoustID key comes from.
+#[tauri::command]
+pub fn metadata_get(library: State<'_, LibraryService>) -> Result<MetadataDto, ErrorCode> {
+    let prefs = library.read(|library| {
+        Ok(settings::load::<MetadataPrefs>(
+            library,
+            settings::METADATA_KEY,
+        ))
+    })?;
+    Ok(metadata_dto(&prefs))
+}
+
+/// Turns the internet on or off for metadata, and stores a key.
+///
+/// `acoustid_key` left out leaves the stored key alone; an empty one clears
+/// it, which falls back to the environment or the build.
+#[tauri::command]
+pub fn settings_set_metadata(
+    library: State<'_, LibraryService>,
+    online: bool,
+    acoustid_key: Option<String>,
+) -> Result<MetadataDto, ErrorCode> {
+    let mut prefs = library.read(|library| {
+        Ok(settings::load::<MetadataPrefs>(
+            library,
+            settings::METADATA_KEY,
+        ))
+    })?;
+    prefs.online = online;
+    if let Some(key) = acoustid_key {
+        let key = key.trim().to_string();
+        prefs.acoustid_key = (!key.is_empty()).then_some(key);
+    }
+    library.read(|library| settings::save(library, settings::METADATA_KEY, &prefs))?;
+    // The log says that a key was stored, never which one.
+    tracing::info!(
+        online = prefs.online,
+        acoustid = prefs.acoustid_key.is_some(),
+        "metadata settings stored"
+    );
+    Ok(metadata_dto(&prefs))
 }
 
 #[cfg(test)]

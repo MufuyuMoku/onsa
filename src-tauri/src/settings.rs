@@ -36,6 +36,8 @@ pub const LOG_DEBUG_KEY: &str = "logDebug";
 pub const CLOSE_TO_TRAY_KEY: &str = "closeToTray";
 /// What the interface shows beyond the theme.
 pub const DISPLAY_KEY: &str = "display";
+/// Key of the metadata settings.
+pub const METADATA_KEY: &str = "metadata";
 
 /// Reads one setting, or its default.
 pub fn load<T: DeserializeOwned + Default>(library: &Library, key: &str) -> T {
@@ -328,6 +330,21 @@ pub struct ColumnPrefs {
     pub widths: BTreeMap<String, f64>,
     /// Columns the listener took off this list.
     pub hidden: Vec<String>,
+}
+
+/// What Onsa may do over the internet for metadata, and the key it uses
+/// (SPEC §8, §14).
+///
+/// Nothing here reaches the internet unless `online` is on: that is the
+/// listener's consent, and it starts off.
+#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct MetadataPrefs {
+    /// Whether Onsa may ask the internet about metadata at all.
+    pub online: bool,
+    /// The listener's own AcoustID application key, when they have one.
+    /// Never sent back to the interface, never logged.
+    pub acoustid_key: Option<String>,
 }
 
 /// What the interface shows beyond the theme itself.

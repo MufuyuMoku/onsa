@@ -42,6 +42,11 @@ struct Cli {
 enum Command {
     /// List the audio output devices.
     Devices,
+    /// Say whether an AcoustID application key is in the environment.
+    ///
+    /// It reports that a key is there and how long it is, never the key
+    /// itself, so the output is safe to paste anywhere.
+    AcoustidCheck,
     /// Play one file.
     Play {
         /// The file to play.
@@ -354,6 +359,7 @@ fn main() -> Result<()> {
 
     match cli.command {
         Command::Devices => devices(),
+        Command::AcoustidCheck => acoustid_check(),
         Command::Play {
             file,
             start,
@@ -386,6 +392,60 @@ fn main() -> Result<()> {
             dsp,
         } => render_wav(&files, &output, rate, channels, format, &playback, &dsp),
         Command::EqCheck { file, rate } => eq_check(&file, rate),
+    }
+}
+
+/// The environment variable holding an AcoustID application key. The same
+/// name the application itself reads.
+const ACOUSTID_ENV: &str = "ONSA_ACOUSTID_API_KEY";
+
+/// Reports whether an AcoustID application key is in the environment.
+///
+/// The key is never printed. What is printed is whether it is there, how
+/// many characters it has, and whether it carries anything a shell or a
+/// copy-paste tends to leave behind — which is what usually goes wrong.
+fn acoustid_check() -> Result<()> {
+    let raw = match std::env::var(ACOUSTID_ENV) {
+        Ok(value) => value,
+        Err(std::env::VarError::NotPresent) => {
+            println!("{ACOUSTID_ENV} is not set.");
+            println!("Set it, open a new terminal, and run this again.");
+            bail!("no key in the environment");
+        }
+        Err(error) => bail!("{ACOUSTID_ENV} cannot be read: {error}"),
+    };
+    let key = raw.trim();
+    if key.is_empty() {
+        println!("{ACOUSTID_ENV} is set but empty.");
+        bail!("the key is empty");
+    }
+
+    let mut complaints = Vec::new();
+    if raw != key {
+        complaints.push("it has spaces or newlines around it");
+    }
+    if key.starts_with('"') || key.ends_with('"') || key.starts_with('\'') || key.ends_with('\'') {
+        complaints.push("it still has the quotes around it");
+    }
+    if key.chars().any(char::is_whitespace) {
+        complaints.push("it has a space inside it");
+    }
+    if !key
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
+    {
+        complaints.push("it has characters an AcoustID key does not use");
+    }
+
+    println!("{ACOUSTID_ENV} is set: {} characters.", key.chars().count());
+    if complaints.is_empty() {
+        println!("It looks like a key. Onsa will use it.");
+        Ok(())
+    } else {
+        for complaint in &complaints {
+            println!("But {complaint}.");
+        }
+        bail!("the key does not look right")
     }
 }
 

@@ -339,6 +339,20 @@ export interface ColumnPrefs {
 	hidden: string[];
 }
 
+/** Where a key came from. Onsa never tells the interface what it is. */
+export type KeySource = 'settings' | 'environment' | 'build' | 'none';
+
+export interface KeyStatus {
+	present: boolean;
+	source: KeySource;
+}
+
+/** What Onsa may ask the internet about a track, and which key it has. */
+export interface MetadataPrefs {
+	online: boolean;
+	acoustid: KeyStatus;
+}
+
 export interface DisplayPrefs {
 	/** How far the colour follows the character of the sound. */
 	toneColor: ToneStrength;
@@ -522,6 +536,10 @@ export const setOutput = (output: OutputPrefs) => call<void>('settings_set_outpu
 export const setPlayback = (playback: PlaybackPrefs) =>
 	call<void>('settings_set_playback', { playback });
 export const setDsp = (dsp: DspPrefs) => call<void>('settings_set_dsp', { dsp });
+export const metadataGet = () => call<MetadataPrefs>('metadata_get');
+/** Leave `acoustidKey` out to keep the stored key; empty clears it. */
+export const setMetadata = (online: boolean, acoustidKey?: string) =>
+	call<MetadataPrefs>('settings_set_metadata', { online, acoustidKey });
 export const setDisplay = (display: DisplayPrefs) =>
 	call<void>('settings_set_display', { display });
 export const watchAnalysis = (watching: Watching) => call<void>('player_watch', { watching });

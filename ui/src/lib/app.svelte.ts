@@ -23,7 +23,13 @@ import { initPlaylists } from '$lib/playlists.svelte';
 import { loadSettings } from '$lib/settings.svelte';
 import { loadThemes } from '$lib/theme/index.svelte';
 
-export type SettingsSection = 'output' | 'dsp' | 'library' | 'appearance' | 'about';
+export type SettingsSection =
+	| 'output'
+	| 'dsp'
+	| 'library'
+	| 'metadata'
+	| 'appearance'
+	| 'about';
 
 /** What the main area shows. */
 export type View =

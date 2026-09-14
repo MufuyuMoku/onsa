@@ -374,3 +374,13 @@ Catatan keputusan yang diambil saat spesifikasi kurang jelas. Format: tanggal, k
 - **Yang dibawa adalah satu baris yang ditekan**, bukan seluruh daftar tempatnya berasal. Untuk memasukkan seluruh album atau seluruh artis sekaligus ada tombol tersendiri di kepala halamannya, yang mengirim `PlayContext`-nya apa adanya — backend yang menentukan lagu mana saja, jadi tidak ada daftar yang perlu disusun di UI lebih dulu.
 - **Sidebar menampilkan enam playlist terakhir berubah**, lalu "Lihat semua". Enam cukup untuk jadi sasaran jatuh tanpa mendorong pengaturan keluar layar; sisanya satu klik jauhnya. Di mode ikon daftar itu tidak muncul: strip selebar ikon tidak punya tempat untuk nama.
 - **Lencana yang mengikuti kursor tidak menerima pointer event** (`pointer-events: none`), supaya ia tidak menutupi sasaran yang ada persis di bawahnya.
+
+## 2026-09-14 · Kunci layanan luar: dari mana, dan apa yang boleh dilihat
+
+- **Satu variabel lingkungan per layanan**, dinamai seperti kunci Last.fm: `ONSA_ACOUSTID_API_KEY`.
+- **Tiga sumber, yang pertama menang**: (1) kunci yang diketik pengguna di Pengaturan dan disimpan di database miliknya sendiri, (2) variabel lingkungan aplikasi yang sedang berjalan, (3) variabel lingkungan mesin yang mem-build (lewat `option_env!`). Kunci kosong dianggap tidak ada, jadi mengosongkan kolomnya jatuh kembali ke sumber berikutnya.
+- **Kunci tidak pernah kembali ke antarmuka.** UI bisa menulisnya dan bisa bertanya *apakah* ada dan *dari mana*, tapi tidak pernah membacanya lagi. Yang tidak pernah meninggalkan backend tidak bisa berakhir di log atau laporan. Ada tes yang memeriksa bahwa JSON statusnya tidak memuat nilai kuncinya.
+- **Log hanya mencatat bahwa sebuah kunci tersimpan**, bukan kuncinya (`acoustid=true`).
+- **AcoustID punya dua jenis kunci, dan yang dibutuhkan adalah yang application.** Dokumentasi web service-nya menyebut `client` sebagai *"application's API key"* yang wajib untuk `/v2/lookup`, dan `user` sebagai *"user's API key"* yang hanya tambahan untuk `/v2/submit`, dengan catatan tegas: *"You should not store this key in your application code, each user should provide their own"*. Onsa hanya melakukan lookup, jadi yang dipakai adalah kunci aplikasi dari `acoustid.org/new-application`.
+- **Fitur internet mati secara bawaan** (`MetadataPrefs.online = false`). Persetujuan pengguna adalah syarat, jadi keadaan awalnya bukan menyala.
+- **Perintah uji ada di `onsa-cli`, bukan di aplikasi**: `onsa-cli acoustid-check` membaca variabel lingkungan dan melaporkan ada/tidak, jumlah karakter, dan keluhan yang lazim (masih ada tanda kutip, ada spasi di dalamnya, ada karakter yang bukan milik kunci AcoustID). Jumlah karakter bukan isi kuncinya dan itulah yang menangkap tempelan yang terpotong.

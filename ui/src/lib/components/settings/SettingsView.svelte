@@ -5,6 +5,7 @@
 	import AppearanceSettings from './AppearanceSettings.svelte';
 	import DspSettings from './DspSettings.svelte';
 	import LibrarySettings from './LibrarySettings.svelte';
+	import MetadataSettings from './MetadataSettings.svelte';
 	import OutputSettings from './OutputSettings.svelte';
 
 	let { section }: { section: SettingsSection } = $props();
@@ -17,6 +18,8 @@
 		<DspSettings />
 	{:else if section === 'library'}
 		<LibrarySettings />
+	{:else if section === 'metadata'}
+		<MetadataSettings />
 	{:else if section === 'appearance'}
 		<AppearanceSettings />
 	{:else}

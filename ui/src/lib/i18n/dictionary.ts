@@ -372,6 +372,25 @@ const id = {
 	'sortField.added_at': 'Ditambahkan',
 	'sortField.random': 'Acak',
 
+	'settings.metadata': 'Metadata',
+	'metadata.internet': 'Akses internet',
+	'metadata.online': 'Ambil metadata dari internet',
+	'metadata.onlineHint':
+		'Selama ini mati, Onsa tidak pernah menghubungi layanan mana pun untuk metadata. Setiap usulan dari internet tetap harus kamu setujui sebelum diterapkan.',
+	'metadata.acoustid': 'Kunci AcoustID',
+	'metadata.acoustidHint':
+		'AcoustID mengenali lagu dari suaranya sendiri, berguna untuk file tanpa tag. Kuncinya gratis: daftarkan aplikasi di acoustid.org/new-application, lalu salin "application API key" dari acoustid.org/my-applications. Bukan kunci pribadi di halaman akun — itu hanya untuk mengirim fingerprint.',
+	'metadata.key': 'Kunci aplikasi',
+	'metadata.keyPlaceholder': 'tempel kuncimu di sini',
+	'metadata.keySave': 'Simpan kunci',
+	'metadata.keyClear': 'Hapus kunci',
+	'metadata.keySaved': 'Kunci tersimpan. Onsa tidak pernah menampilkannya lagi.',
+	'metadata.keyCleared': 'Kunci dihapus.',
+	'metadata.keyFromSettings': 'Memakai kunci yang kamu simpan di sini.',
+	'metadata.keyFromEnvironment': 'Memakai kunci dari variabel lingkungan ONSA_ACOUSTID_API_KEY.',
+	'metadata.keyFromBuild': 'Memakai kunci yang dipasang saat build.',
+	'metadata.keyMissing': 'Belum ada kunci. Pengenalan lewat AcoustID tidak akan berjalan.',
+
 	'error.backend': 'Backend tidak terjangkau. Jalankan Onsa lewat jendela aplikasinya.',
 	'error.theme_not_found': 'Tema itu tidak ada.',
 	'error.library': 'Library gagal diakses. Detailnya ada di log.',
@@ -745,6 +764,25 @@ const en: Record<MessageKey, string> = {
 	'sortField.last_played': 'Last played',
 	'sortField.added_at': 'Date added',
 	'sortField.random': 'Random',
+
+	'settings.metadata': 'Metadata',
+	'metadata.internet': 'Internet access',
+	'metadata.online': 'Look metadata up on the internet',
+	'metadata.onlineHint':
+		'While this is off, Onsa never contacts any service for metadata. Anything the internet suggests still has to be approved before it is applied.',
+	'metadata.acoustid': 'AcoustID key',
+	'metadata.acoustidHint':
+		'AcoustID recognises a track from the sound itself, which is what untagged files need. The key is free: register an application at acoustid.org/new-application, then copy the application API key from acoustid.org/my-applications. Not the personal key on the account page — that one only signs fingerprint submissions.',
+	'metadata.key': 'Application key',
+	'metadata.keyPlaceholder': 'paste your key here',
+	'metadata.keySave': 'Save the key',
+	'metadata.keyClear': 'Remove the key',
+	'metadata.keySaved': 'The key is stored. Onsa never shows it again.',
+	'metadata.keyCleared': 'The key is gone.',
+	'metadata.keyFromSettings': 'Using the key you stored here.',
+	'metadata.keyFromEnvironment': 'Using the key from the ONSA_ACOUSTID_API_KEY environment variable.',
+	'metadata.keyFromBuild': 'Using the key built into this copy of Onsa.',
+	'metadata.keyMissing': 'There is no key yet. AcoustID recognition will not run.',
 
 	'error.backend': 'The backend cannot be reached. Start Onsa from its own window.',
 	'error.theme_not_found': 'There is no such theme.',
