@@ -268,6 +268,7 @@ const id = {
 	'language.en': 'Inggris',
 
 	'nav.playlists': 'Playlist',
+	'nav.allPlaylists': 'Lihat semua',
 	'playlist.manual': 'Playlist biasa',
 	'playlist.smart': 'Playlist pintar',
 	'playlist.count': '{n} lagu',
@@ -289,6 +290,8 @@ const id = {
 	'playlist.emptySmart': 'Belum ada lagu yang cocok dengan aturannya.',
 	'playlist.play': 'Putar playlist',
 	'playlist.addTo': 'Tambah ke playlist',
+	'playlist.dropHint': 'Tarik lagu ke sini untuk menambahkannya',
+	'playlist.carried': '{n} lagu',
 	'playlist.addedTo': '{n} lagu ditambahkan ke "{name}".',
 	'playlist.removeTrack': 'Hapus dari playlist',
 	'playlist.moveUp': 'Naikkan',
@@ -639,6 +642,7 @@ const en: Record<MessageKey, string> = {
 	'language.en': 'English',
 
 	'nav.playlists': 'Playlists',
+	'nav.allPlaylists': 'See them all',
 	'playlist.manual': 'Playlist',
 	'playlist.smart': 'Smart playlist',
 	'playlist.count': '{n} tracks',
@@ -660,6 +664,8 @@ const en: Record<MessageKey, string> = {
 	'playlist.emptySmart': 'Nothing matches these rules yet.',
 	'playlist.play': 'Play the playlist',
 	'playlist.addTo': 'Add to playlist',
+	'playlist.dropHint': 'Drop tracks here to add them',
+	'playlist.carried': '{n} tracks',
 	'playlist.addedTo': '{n} tracks added to "{name}".',
 	'playlist.removeTrack': 'Remove from the playlist',
 	'playlist.moveUp': 'Move up',

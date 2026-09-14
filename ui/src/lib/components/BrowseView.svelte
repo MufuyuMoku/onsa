@@ -23,6 +23,7 @@
 	import { playContext } from '$lib/player.svelte';
 	import Icon from './Icon.svelte';
 	import type { ListView } from '$lib/columns.svelte';
+	import AddToPlaylist from './AddToPlaylist.svelte';
 	import TrackList from './TrackList.svelte';
 	import VirtualList from './VirtualList.svelte';
 
@@ -149,14 +150,17 @@
 				{#if kind === 'folders'}<span class="numeric">{name}</span> · {/if}
 				{t('library.tracks', { n: tracks.length })}
 			</p>
-			<button
-				type="button"
-				class="btn primary"
-				disabled={tracks.length === 0}
-				onclick={() => playContext(context(0)).catch(() => {})}
-			>
-				{t('transport.play')}
-			</button>
+			<div class="actions">
+				<button
+					type="button"
+					class="btn primary"
+					disabled={tracks.length === 0}
+					onclick={() => playContext(context(0)).catch(() => {})}
+				>
+					{t('transport.play')}
+				</button>
+				<AddToPlaylist context={context(0)} enabled={tracks.length > 0} />
+			</div>
 		</header>
 		<div class="list">
 			<TrackList source={{ kind: 'tracks', tracks }} view={listView} showAlbum={kind !== 'folders'} />
@@ -202,6 +206,13 @@
 
 	.empty {
 		padding: 24px;
+	}
+
+	.actions {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 8px;
 	}
 
 	.detail {

@@ -12,6 +12,8 @@
 	import type { MessageKey } from '$lib/i18n/dictionary';
 	import { closeOverlays, layout } from '$lib/layout.svelte';
 	import { library, scanSummary, setQuery } from '$lib/library.svelte';
+	import { addToPlaylist, playlists } from '$lib/playlists.svelte';
+	import { carry, dropTarget, type Carried } from '$lib/carry.svelte';
 	import Icon from './Icon.svelte';
 
 	interface Props {
@@ -62,6 +64,19 @@
 
 	const view = $derived(app.view);
 
+	/** How many playlists the sidebar lists before it says "see them all". */
+	const SHORTLIST = 6;
+
+	// The ones changed most recently, which is the order the backend lists
+	// them in; the rest are one click away on the playlist page.
+	const recent = $derived(playlists.all.slice(0, SHORTLIST));
+	const more = $derived(playlists.all.length > recent.length);
+
+	/** What was carried has landed on a playlist. */
+	function accept(id: number, what: Carried): void {
+		addToPlaylist(id, what.context).catch(() => {});
+	}
+
 	function current(entry: Entry): boolean {
 		if (library.query) return false;
 		if (!entry.kinds.includes(view.kind)) return false;
@@ -104,6 +119,45 @@
 	{/snippet}
 
 	{@render group('nav.library', libraryPages)}
+
+	{#if mode === 'full' && playlists.all.length > 0}
+		<h2 class="label">{t('nav.playlists')}</h2>
+		{#each recent as playlist (playlist.id)}
+			<button
+				type="button"
+				class="item playlist"
+				class:over={carry.over === `playlist:${playlist.id}`}
+				aria-current={view.kind === 'playlist' && view.id === playlist.id}
+				title={playlist.name}
+				use:dropTarget={{
+					key: `playlist:${playlist.id}`,
+					accept: (what) => accept(playlist.id, what)
+				}}
+				onclick={() => {
+					setQuery('');
+					navigate({ kind: 'playlist', id: playlist.id });
+					closeOverlays();
+				}}
+			>
+				<Icon name={playlist.kind === 'smart' ? 'eq' : 'playlist'} />
+				<span class="text ellipsis">{playlist.name}</span>
+			</button>
+		{/each}
+		{#if more}
+			<button
+				type="button"
+				class="item all"
+				onclick={() => {
+					setQuery('');
+					navigate({ kind: 'playlists' });
+					closeOverlays();
+				}}
+			>
+				<span class="text ellipsis">{t('nav.allPlaylists')}</span>
+			</button>
+		{/if}
+	{/if}
+
 	{@render group('nav.settings', settingsPages)}
 
 	{#if library.scan.running}
@@ -188,6 +242,23 @@
 	.item[aria-current='true'] {
 		color: var(--onsa-role-active);
 		background: var(--onsa-surface-raised);
+	}
+
+	/* A playlist the carried track is over, waiting to take it. */
+	.item.over {
+		color: var(--onsa-role-active);
+		box-shadow: inset 0 0 0 var(--onsa-hairline) var(--onsa-role-active);
+	}
+
+	.item.playlist :global(svg) {
+		width: 15px;
+		height: 15px;
+	}
+
+	.item.all {
+		padding-left: 34px;
+		font-size: 12px;
+		color: var(--onsa-text-secondary);
 	}
 
 	.scan {

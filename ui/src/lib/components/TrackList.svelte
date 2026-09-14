@@ -26,6 +26,7 @@
 	import { library, sortBy } from '$lib/library.svelte';
 	import { addToQueue, player, playContext } from '$lib/player.svelte';
 	import { addToPlaylist, playlists } from '$lib/playlists.svelte';
+	import { startCarry } from '$lib/carry.svelte';
 	import Icon from './Icon.svelte';
 	import VirtualList from './VirtualList.svelte';
 
@@ -103,6 +104,17 @@
 		menu = null;
 		if (!chosen) return;
 		addToPlaylist(playlistId, { kind: 'tracks', ids: [chosen.id], index: 0 }).catch(() => {});
+	}
+
+	/** Carrying a row out of the list, onto a playlist in the sidebar. */
+	function lift(event: PointerEvent, track: Track): void {
+		if (track.id < 0) return;
+		startCarry(event, () => ({
+			// The one row that was picked up, not the list it came from.
+			context: { kind: 'tracks', ids: [track.id], index: 0 },
+			label: track.title ?? fileName(track.path),
+			count: 1
+		}));
 	}
 
 	// Only manual playlists take tracks: a smart one is its rules.
@@ -277,6 +289,7 @@
 							tabindex="0"
 							title={t('track.playHint')}
 							ondblclick={() => activate(index)}
+							onpointerdown={(event) => lift(event, track)}
 							oncontextmenu={(event) => openMenu(event, track)}
 							onkeydown={(event) => {
 								if (event.key === 'Enter') activate(index);

@@ -5,6 +5,7 @@
 	import { t } from '$lib/i18n/index.svelte';
 	import { library } from '$lib/library.svelte';
 	import { playContext } from '$lib/player.svelte';
+	import AddToPlaylist from './AddToPlaylist.svelte';
 	import Icon from './Icon.svelte';
 	import TrackList from './TrackList.svelte';
 
@@ -38,14 +39,20 @@
 				{first?.albumArtist ?? first?.artist ?? ''}{first?.year ? ` · ${first.year}` : ''} ·
 				{t('album.tracks', { n: tracks.length })}
 			</p>
-			<button
-				type="button"
-				class="btn primary"
-				disabled={tracks.length === 0}
-				onclick={() => playContext({ kind: 'album', albumId: id, index: 0 }).catch(() => {})}
-			>
-				{t('album.play')}
-			</button>
+			<div class="actions">
+				<button
+					type="button"
+					class="btn primary"
+					disabled={tracks.length === 0}
+					onclick={() => playContext({ kind: 'album', albumId: id, index: 0 }).catch(() => {})}
+				>
+					{t('album.play')}
+				</button>
+				<AddToPlaylist
+					context={{ kind: 'album', albumId: id, index: 0 }}
+					enabled={tracks.length > 0}
+				/>
+			</div>
 		</div>
 	</header>
 	<div class="list">
@@ -54,6 +61,13 @@
 </div>
 
 <style>
+	.actions {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 8px;
+	}
+
 	.album {
 		display: grid;
 		grid-template-rows: auto 1fr;

@@ -7,6 +7,7 @@
 	import { nextTrack, previousTrack, seek, togglePlay } from '$lib/backend';
 	import { followTone } from '$lib/analysis.svelte';
 	import { app, navigate, setMiniPlayer } from '$lib/app.svelte';
+	import { carry } from '$lib/carry.svelte';
 	import { closeOverlays, followWidth, layout, toggleMenu, toggleQueue } from '$lib/layout.svelte';
 	import { t } from '$lib/i18n/index.svelte';
 	import { library, setQuery } from '$lib/library.svelte';
@@ -214,9 +215,35 @@
 		<div class="transport"><Transport /></div>
 		<div class="signal"><SignalPath /></div>
 	</div>
+
+	{#if carry.what && carry.at}
+		<!-- What is being carried, following the pointer. It is a label, not
+		     a control: pointer events pass straight through it. -->
+		<div class="carried" style:left="{carry.at.x + 14}px" style:top="{carry.at.y + 12}px">
+			{carry.what.count > 1
+				? t('playlist.carried', { n: carry.what.count })
+				: carry.what.label}
+		</div>
+	{/if}
 {/if}
 
 <style>
+	.carried {
+		position: fixed;
+		z-index: 60;
+		max-width: 260px;
+		padding: 3px 9px;
+		border: var(--onsa-hairline) solid var(--onsa-role-active);
+		border-radius: var(--onsa-radius-sm);
+		background: var(--onsa-surface-raised);
+		color: var(--onsa-text-primary);
+		font-size: 12px;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		pointer-events: none;
+	}
+
 	.center {
 		display: grid;
 		place-items: center;
