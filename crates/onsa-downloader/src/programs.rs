@@ -527,13 +527,20 @@ mod tests {
     fn a_program_that_will_not_say_its_version_has_none() {
         // The program is there and runs, but complains about the flag. Its
         // complaint must not end up where a version number belongs.
+        //
+        // The stand-in has to be one that actually refuses `-version` on
+        // both systems: `echo` would happily print it and succeed.
         let dir = temp_dir("no version");
-        let (name, _) = quick();
+        let (name, _) = slow();
         let real = on_path(&platform::executable(name)).expect("a program to run");
         let mut programs = Programs::new(&dir).use_system(false);
         assert!(programs.choose(Program::Fpcalc, &real));
-        // ping has no -version flag, and says so.
+        let started = Instant::now();
         assert_eq!(programs.version(Program::Fpcalc), None);
+        assert!(
+            started.elapsed() < Duration::from_secs(5),
+            "it refused rather than waiting"
+        );
         let _ = std::fs::remove_dir_all(&dir);
     }
 
