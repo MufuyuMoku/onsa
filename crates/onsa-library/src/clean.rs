@@ -306,6 +306,193 @@ fn split_on_dash(text: &str) -> Vec<String> {
     parts
 }
 
+// ------------------------------------------------- tidying what a tag says
+
+/// Words that stay in lower case inside a title, unless they begin or end it.
+///
+/// English only, and short on purpose: these are the words whose capitals
+/// look wrong to everybody. Anything longer is somebody's choice.
+const SMALL_WORDS: &[&str] = &[
+    "a",
+    "an",
+    "and",
+    "as",
+    "at",
+    "but",
+    "by",
+    "for",
+    "from",
+    "in",
+    "into",
+    "nor",
+    "of",
+    "on",
+    "or",
+    "the",
+    "to",
+    "vs",
+    "via",
+    "with",
+    // A credit is written in lower case wherever it appears in a title.
+    "feat",
+    "feat.",
+    "ft",
+    "ft.",
+    "featuring",
+];
+
+/// The ways people write a featuring credit, and the one Onsa settles on.
+const CREDITS: &[&str] = &["feat.", "feat", "ft.", "ft", "featuring"];
+/// What a featuring credit is written as once tidied.
+pub const CREDIT: &str = "feat.";
+
+/// Whether a word has no case to correct at all: a word with a digit in it,
+/// or one not written in Latin letters. `MP3`, `1985`, `夜明けのうた`.
+fn never_touch(word: &str) -> bool {
+    let letters: Vec<char> = word.chars().filter(|ch| ch.is_alphanumeric()).collect();
+    if letters.is_empty() {
+        return true;
+    }
+    if letters.iter().any(char::is_ascii_digit) {
+        return true;
+    }
+    // Anything outside the Latin alphabet has no case to correct.
+    !letters.iter().all(|ch| ch.is_ascii_alphabetic())
+}
+
+/// Whether a word in capitals is standing out on purpose: `DJ`, `EP`,
+/// `MINA`, `BANG`.
+///
+/// This only means anything when the words around it are **not** in capitals.
+/// In a title that shouts every word, `THE` and `OF` are in capitals too, and
+/// protecting them would leave half a title shouting.
+fn stands_out(word: &str) -> bool {
+    let letters: Vec<char> = word.chars().filter(|ch| ch.is_alphanumeric()).collect();
+    !letters.is_empty() && letters.iter().all(|ch| ch.is_uppercase())
+}
+
+/// Whether a piece of text is written all in one case, and so was probably
+/// not written that way on purpose.
+///
+/// Text that already mixes cases is left alone: somebody wrote `iPhone`,
+/// `dArkSide`, or `BANG BANG` next to `Sore`, and Onsa is not the judge of
+/// that.
+///
+/// Neither is a **single word**. `AC/DC`, `LILITH` and `deadmau5` are one
+/// word each, and a single word in one case is how names are written at
+/// least as often as it is a mistake. Shouting is something a phrase does,
+/// so that is where a correction is offered.
+pub fn one_case(text: &str) -> bool {
+    if text.split_whitespace().count() < 2 {
+        return false;
+    }
+    let letters: Vec<char> = text.chars().filter(|ch| ch.is_alphabetic()).collect();
+    if letters.len() < 4 {
+        return false;
+    }
+    if !letters.iter().any(char::is_ascii_alphabetic) {
+        return false;
+    }
+    letters.iter().all(|ch| ch.is_uppercase()) || letters.iter().all(|ch| ch.is_lowercase())
+}
+
+/// A title with its words capitalised the way a title usually is.
+///
+/// Only the words that need it are touched, and a word that looks deliberate
+/// is not one of them (see [`leave_alone`]). The first and last words are
+/// always capitalised, whatever they are.
+pub fn title_case(text: &str) -> String {
+    let words: Vec<&str> = text.split_whitespace().collect();
+    let last = words.len().saturating_sub(1);
+    // When the whole thing is in capitals, nothing in it is standing out.
+    let shouting = text
+        .chars()
+        .filter(|ch| ch.is_alphabetic())
+        .all(|ch| ch.is_uppercase());
+    let mut out = Vec::with_capacity(words.len());
+    for (index, word) in words.iter().enumerate() {
+        if never_touch(word) || (!shouting && stands_out(word)) {
+            out.push((*word).to_string());
+            continue;
+        }
+        let lower = word.to_lowercase();
+        let small = SMALL_WORDS.contains(&lower.trim_matches(|ch: char| !ch.is_alphanumeric()));
+        if small && index != 0 && index != last {
+            out.push(lower);
+        } else {
+            out.push(capitalise(&lower));
+        }
+    }
+    out.join(" ")
+}
+
+/// One word with its first letter in upper case, keeping what surrounds it.
+///
+/// A word inside brackets or quotes still starts at its first letter, and a
+/// hyphenated name has both halves capitalised: `jean-luc` is `Jean-Luc`.
+fn capitalise(word: &str) -> String {
+    let mut out = String::with_capacity(word.len());
+    let mut fresh = true;
+    for ch in word.chars() {
+        if fresh && ch.is_alphabetic() {
+            out.extend(ch.to_uppercase());
+            fresh = false;
+        } else {
+            out.push(ch);
+            // After a hyphen or a slash the next letter starts a new word.
+            if ch == '-' || ch == '/' || ch == '(' || ch == '"' || ch == '\'' {
+                fresh = true;
+            }
+        }
+    }
+    out
+}
+
+/// A credit written the one way, whichever way it came.
+///
+/// `ft`, `FEAT`, `Featuring` all become `feat.`, and the spacing around it is
+/// made even. Nothing else about the name is changed: who is credited and in
+/// what order is what the record says.
+pub fn tidy_credit(text: &str) -> String {
+    let words: Vec<&str> = text.split_whitespace().collect();
+    let mut out: Vec<String> = Vec::with_capacity(words.len());
+    for word in words {
+        let bare = word.trim_matches(|ch: char| !ch.is_alphanumeric() && ch != '.');
+        if CREDITS.iter().any(|known| bare.eq_ignore_ascii_case(known)) {
+            out.push(CREDIT.to_string());
+        } else {
+            out.push(word.to_string());
+        }
+    }
+    out.join(" ")
+}
+
+/// The artist a track is mostly by: what comes before the credit.
+///
+/// `Lilith feat. ミナ` is mostly by `Lilith`. This is what an album should be
+/// filed under when nothing says otherwise — not so the other name is
+/// forgotten, but so one album does not become four.
+pub fn main_artist(text: &str) -> String {
+    let tidied = tidy_credit(text);
+    match tidied.split(&format!(" {CREDIT} ")).next() {
+        Some(first) if !first.trim().is_empty() => first.trim().to_string(),
+        _ => text.trim().to_string(),
+    }
+}
+
+/// The key two spellings of the same name share.
+///
+/// Case, spaces and punctuation are dropped, so `Lilith`, `LILITH` and
+/// `lilith.` all answer to the same key. It is only ever used to **group**
+/// spellings; what gets suggested is always one of the spellings that
+/// actually appear.
+pub fn same_name_key(text: &str) -> String {
+    text.chars()
+        .filter(|ch| ch.is_alphanumeric())
+        .flat_map(char::to_lowercase)
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -441,5 +628,117 @@ mod tests {
         for name in ["Lilith - BANG BANG", "02 Lampu Kota", "夜明け"] {
             assert!(guess_from_name(name).confidence < 0.85, "{name}");
         }
+    }
+
+    // ------------------------------------------------- tidying what a tag says
+
+    #[test]
+    fn text_written_all_in_one_case_is_the_only_text_offered_a_correction() {
+        assert!(one_case("BANG BANG"));
+        assert!(one_case("lampu kota"));
+        // Somebody wrote these this way on purpose.
+        assert!(!one_case("Lampu Kota"));
+        assert!(!one_case("iPhone"));
+        assert!(!one_case("dArkSide"));
+        // One word is a name as often as it is shouting: AC/DC, LILITH,
+        // deadmau5. A phrase is what shouts.
+        assert!(!one_case("AC/DC"));
+        assert!(!one_case("LILITH"));
+        assert!(!one_case("deadmau5"));
+        // Too short to tell, or nothing to correct.
+        assert!(!one_case("EP"));
+        assert!(!one_case("夜明けのうた"));
+        assert!(!one_case(""));
+    }
+
+    #[test]
+    fn a_title_is_capitalised_the_way_a_title_is() {
+        assert_eq!(
+            title_case("lampu kota di malam hari"),
+            "Lampu Kota Di Malam Hari"
+        );
+        assert_eq!(title_case("THE END OF THE LINE"), "The End of the Line");
+        assert_eq!(title_case("a day in the life"), "A Day in the Life");
+    }
+
+    #[test]
+    fn the_first_and_last_words_are_capitalised_whatever_they_are() {
+        assert_eq!(title_case("the who"), "The Who");
+        assert_eq!(title_case("all i ask of you"), "All I Ask of You");
+        assert_eq!(
+            title_case("what are you waiting for"),
+            "What Are You Waiting For"
+        );
+    }
+
+    #[test]
+    fn what_looks_deliberate_is_left_exactly_as_it_is() {
+        // An abbreviation, a number, and a script with no case at all.
+        assert_eq!(
+            title_case("DJ SHADOW feat. MINA"),
+            "DJ SHADOW feat. MINA",
+            "capitals among words that are not keep them"
+        );
+        assert_eq!(title_case("live at wembley 1985"), "Live at Wembley 1985");
+        assert_eq!(
+            title_case("mp3 era"),
+            "mp3 Era",
+            "a word with a digit is untouched"
+        );
+        assert_eq!(title_case("夜明けのうた"), "夜明けのうた");
+        assert_eq!(title_case("ミナ feat. lilith"), "ミナ feat. Lilith");
+    }
+
+    #[test]
+    fn a_hyphenated_name_is_capitalised_on_both_sides() {
+        assert_eq!(title_case("jean-luc ponty"), "Jean-Luc Ponty");
+        assert_eq!(title_case("(live at bandung)"), "(Live at Bandung)");
+    }
+
+    #[test]
+    fn a_credit_is_written_one_way_however_it_arrived() {
+        for written in [
+            "Lilith ft ミナ",
+            "Lilith ft. ミナ",
+            "Lilith FEAT ミナ",
+            "Lilith Featuring ミナ",
+            "Lilith feat. ミナ",
+        ] {
+            assert_eq!(tidy_credit(written), "Lilith feat. ミナ", "{written}");
+        }
+    }
+
+    #[test]
+    fn nothing_but_the_credit_word_is_changed() {
+        // Who is credited, and in what order, is what the record says.
+        assert_eq!(tidy_credit("ミナ & Lilith"), "ミナ & Lilith");
+        assert_eq!(tidy_credit("AC/DC"), "AC/DC");
+        assert_eq!(tidy_credit(""), "");
+        // A word that merely contains "ft" is not a credit.
+        assert_eq!(tidy_credit("Soft Machine"), "Soft Machine");
+    }
+
+    #[test]
+    fn an_album_is_filed_under_the_artist_it_is_mostly_by() {
+        assert_eq!(main_artist("Lilith feat. ミナ"), "Lilith");
+        assert_eq!(main_artist("Lilith ft ミナ"), "Lilith");
+        assert_eq!(main_artist("Lilith"), "Lilith");
+        assert_eq!(
+            main_artist("ミナ & Lilith"),
+            "ミナ & Lilith",
+            "not a credit"
+        );
+        assert_eq!(main_artist("  "), "");
+    }
+
+    #[test]
+    fn two_spellings_of_one_name_answer_to_the_same_key() {
+        let key = same_name_key("Lilith");
+        assert_eq!(same_name_key("LILITH"), key);
+        assert_eq!(same_name_key("lilith."), key);
+        assert_eq!(same_name_key(" Li li th "), key);
+        assert_ne!(same_name_key("Lilit"), key);
+        // It never invents a spelling: it is only a key.
+        assert_eq!(same_name_key("ミナ"), "ミナ");
     }
 }

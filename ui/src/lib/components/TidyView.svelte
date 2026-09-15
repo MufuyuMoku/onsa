@@ -6,7 +6,15 @@
 	underneath it. Every run can be taken back from the list at the bottom.
 -->
 <script lang="ts">
-	import type { EditBatch, RenamePlan, TidyChange, TidyReport, TidySummary } from '$lib/backend';
+	import {
+		tidyAuto,
+		type EditBatch,
+		type RenamePlan,
+		type Suggestion,
+		type TidyChange,
+		type TidyReport,
+		type TidySummary
+	} from '$lib/backend';
 	import { fileName, relativeTo } from '$lib/format';
 	import { t } from '$lib/i18n/index.svelte';
 	import {
@@ -33,14 +41,48 @@
 		undo,
 		writeToFiles
 	} from '$lib/tidy.svelte';
+	import AutoList from './AutoList.svelte';
 	import Icon from './Icon.svelte';
 	import MatchList from './MatchList.svelte';
 	import ScopeBar from './ScopeBar.svelte';
 	import TidySummaryPanel from './TidySummary.svelte';
 
-	/** Which of the four jobs is open. */
-	type Job = 'edit' | 'write' | 'rename' | 'match';
+	/** Which of the five jobs is open. */
+	type Job = 'edit' | 'write' | 'rename' | 'match' | 'auto';
 	let job = $state<Job>('edit');
+
+	/** What the library would tidy about itself, once it has been asked. */
+	let suggestions = $state<Suggestion[] | null>(null);
+	let picked = $state<Record<string, boolean>>({});
+
+	const keyOf = (one: Suggestion) => `${one.trackId}:${one.field}`;
+
+	/** A correction ticks itself; a matter of taste does not. */
+	const ticksItself = (one: Suggestion) => !one.reasons.includes('capitals');
+
+	async function lookForTidying(): Promise<void> {
+		report = null;
+		summary = null;
+		const found = await guardAuto();
+		if (!found) return;
+		suggestions = found;
+		picked = Object.fromEntries(found.map((one) => [keyOf(one), ticksItself(one)]));
+	}
+
+	async function guardAuto(): Promise<Suggestion[] | null> {
+		try {
+			return await tidyAuto();
+		} catch {
+			return null;
+		}
+	}
+
+	/** The changes the ticked suggestions add up to. */
+	function tidyChanges(): TidyChange[] {
+		return (suggestions ?? [])
+			.filter((one) => picked[keyOf(one)])
+			.map((one) => ({ trackId: one.trackId, field: one.field, value: one.value }));
+	}
 
 	/** The fields a bulk edit can set. */
 	const FIELDS = ['artist', 'album', 'album_artist', 'genre', 'year'] as const;
@@ -90,7 +132,9 @@
 	const asked = $derived(
 		job === 'match'
 			? `${chosenChanges().length}:${chosenCovers().length}:${matching.found.length}`
-			: ''
+			: job === 'auto'
+				? `${tidyChanges().length}:${suggestions?.length ?? 0}`
+				: ''
 	);
 
 	const ids = $derived(scope.tracks.map((track) => track.id));
@@ -110,6 +154,8 @@
 			summary = await previewEdits(changes());
 		} else if (job === 'write') {
 			summary = await previewWrites(ids);
+		} else if (job === 'auto') {
+			summary = await previewEdits(tidyChanges());
 		} else if (job === 'match') {
 			// Both halves of what was ticked are counted before anything is
 			// applied: the fields go through the ordinary preview, and the
@@ -140,6 +186,12 @@
 	}
 
 	async function apply(): Promise<void> {
+		if (job === 'auto') {
+			report = await applyEdits(t('tidy.noteAuto'), tidyChanges());
+			summary = null;
+			suggestions = null;
+			return;
+		}
 		if (job === 'match') {
 			// The same door as everything else on this page: the fields go
 			// through the ordinary apply, and each half is its own run in
@@ -187,7 +239,7 @@
 	<ScopeBar />
 
 	<div class="jobs">
-		{#each [['edit', 'tidy.jobEdit'], ['write', 'tidy.jobWrite'], ['rename', 'tidy.jobRename'], ['match', 'tidy.jobMatch']] as [key, label] (key)}
+		{#each [['edit', 'tidy.jobEdit'], ['write', 'tidy.jobWrite'], ['rename', 'tidy.jobRename'], ['auto', 'tidy.jobAuto'], ['match', 'tidy.jobMatch']] as [key, label] (key)}
 			<button
 				type="button"
 				class="chip"
@@ -216,6 +268,27 @@
 			</div>
 		{:else if job === 'write'}
 			<p class="muted what">{t('tidy.writeWhat')}</p>
+		{:else if job === 'auto'}
+			<p class="muted what">{t('tidy.autoWhat')}</p>
+			<p class="muted note">{t('auto.capitalsNote')}</p>
+			<div class="row">
+				<button type="button" class="btn" disabled={scope.busy} onclick={lookForTidying}>
+					{t('tidy.autoLook')}
+				</button>
+				{#if suggestions}
+					<span class="numeric muted">{t('tidy.autoFound', { n: suggestions.length })}</span>
+				{/if}
+			</div>
+			{#if suggestions && suggestions.length === 0}
+				<p class="muted note">{t('tidy.autoNone')}</p>
+			{:else if suggestions}
+				<AutoList
+					found={suggestions}
+					root={scope.value?.folder ?? ''}
+					ticks={picked}
+					ontick={(key, on) => (picked = { ...picked, [key]: on })}
+				/>
+			{/if}
 		{:else if job === 'match'}
 			<p class="muted what">{t('tidy.matchWhat')}</p>
 
@@ -297,7 +370,9 @@
 		<button
 			type="button"
 			class="btn"
-			disabled={scope.busy || (job === 'match' && matching.found.length === 0)}
+			disabled={scope.busy ||
+				(job === 'match' && matching.found.length === 0) ||
+				(job === 'auto' && (suggestions?.length ?? 0) === 0)}
 			onclick={look}
 		>
 			{t('tidy.look')}

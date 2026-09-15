@@ -9,6 +9,7 @@
 
 #![warn(missing_docs)]
 
+pub mod auto;
 pub mod clean;
 pub mod cover;
 mod db;
@@ -27,6 +28,7 @@ pub mod tags;
 pub mod watch;
 pub mod write;
 
+pub use auto::{Reason, Suggestion};
 pub use db::Library;
 pub use edits::{Batch, BatchReport, Scope, Skipped, Summary, UndoReport};
 pub use error::{Error, Result};

@@ -134,6 +134,7 @@ pub fn run() -> Result<()> {
             tidy::tidy_set_scope,
             tidy::tidy_pick_folder,
             tidy::tidy_tracks,
+            tidy::tidy_auto,
             tidy::tidy_preview_edits,
             tidy::tidy_apply_edits,
             tidy::tidy_preview_writes,

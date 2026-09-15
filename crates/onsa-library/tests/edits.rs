@@ -728,3 +728,160 @@ fn a_picture_that_is_not_a_picture_changes_nothing() {
     assert_eq!(report.batch, None, "nothing to take back");
     assert_eq!(cover_of(&library, one), None);
 }
+
+// --------------------------------------------------- tidying what tags say
+
+/// A library where one name is spelled three ways, with one way in the lead.
+fn library_with_spellings(dir: &Path) -> (Library, PathBuf) {
+    let trial = dir.join("salinan uji");
+    song(&trial.join("01 Satu.wav"), "Satu", "Lilith");
+    song(&trial.join("02 Dua.wav"), "Dua", "Lilith");
+    song(&trial.join("03 Tiga.wav"), "Tiga", "LILITH");
+    song(
+        &trial.join("04 Empat.wav"),
+        "BANG BANG (Official Video)",
+        "lilith.",
+    );
+    song(&trial.join("05 Lima.wav"), "Lima", "Mina ft Lilith");
+
+    let mut library = Library::open(&dir.join("library.db"), &dir.join("cache")).unwrap();
+    library.add_folder(&trial).unwrap();
+    library.scan(|_| {}).unwrap();
+    (library, trial)
+}
+
+fn suggestion_for<'a>(
+    found: &'a [onsa_library::Suggestion],
+    library: &Library,
+    path: &Path,
+    field: Field,
+) -> Option<&'a onsa_library::Suggestion> {
+    let id = id_at(library, path);
+    found
+        .iter()
+        .find(|one| one.track_id == id && one.field == field)
+}
+
+#[test]
+fn a_name_spelled_three_ways_settles_on_the_one_used_most() {
+    let dir = temp_dir("spellings");
+    let (library, trial) = library_with_spellings(&dir);
+    let found = library
+        .tidy_suggestions(&Scope::folder(&trial), 50)
+        .unwrap();
+
+    let shouted = suggestion_for(&found, &library, &trial.join("03 Tiga.wav"), Field::Artist)
+        .expect("LILITH is not how this library spells it");
+    assert_eq!(shouted.value, "Lilith");
+    assert_eq!(shouted.reasons, vec![onsa_library::Reason::Spelling]);
+
+    let dotted = suggestion_for(&found, &library, &trial.join("04 Empat.wav"), Field::Artist)
+        .expect("lilith. is not either");
+    assert_eq!(dotted.value, "Lilith");
+
+    // The two tracks that already spell it that way are left alone.
+    assert!(
+        suggestion_for(&found, &library, &trial.join("01 Satu.wav"), Field::Artist).is_none(),
+        "nothing to say about the spelling that won"
+    );
+}
+
+#[test]
+fn a_title_is_tidied_and_the_reasons_are_given() {
+    let dir = temp_dir("title tidy");
+    let (library, trial) = library_with_spellings(&dir);
+    let found = library
+        .tidy_suggestions(&Scope::folder(&trial), 50)
+        .unwrap();
+    let title = suggestion_for(&found, &library, &trial.join("04 Empat.wav"), Field::Title)
+        .expect("a title with a download's leftovers on it");
+    assert_eq!(title.value, "Bang Bang");
+    assert_eq!(
+        title.reasons,
+        vec![
+            onsa_library::Reason::Residue,
+            onsa_library::Reason::Capitals
+        ]
+    );
+}
+
+#[test]
+fn a_credit_is_written_one_way() {
+    let dir = temp_dir("credit tidy");
+    let (library, trial) = library_with_spellings(&dir);
+    let found = library
+        .tidy_suggestions(&Scope::folder(&trial), 50)
+        .unwrap();
+    let credit = suggestion_for(&found, &library, &trial.join("05 Lima.wav"), Field::Artist)
+        .expect("ft is not how it is written");
+    assert_eq!(credit.value, "Mina feat. Lilith");
+    assert!(credit.reasons.contains(&onsa_library::Reason::Credit));
+}
+
+#[test]
+fn what_is_suggested_goes_through_the_same_door_as_everything_else() {
+    let dir = temp_dir("auto apply");
+    let (mut library, trial) = library_with_spellings(&dir);
+    let found = library
+        .tidy_suggestions(&Scope::folder(&trial), 50)
+        .unwrap();
+    assert!(!found.is_empty());
+
+    let changes: Vec<Change> = found
+        .iter()
+        .map(|one| Change {
+            track_id: one.track_id,
+            field: one.field,
+            value: Some(one.value.clone()),
+        })
+        .collect();
+
+    let summary = library
+        .preview_edits(&Scope::folder(&trial), &changes)
+        .unwrap();
+    assert_eq!(summary.fields, changes.len());
+
+    let report = library
+        .apply_edits("perapihan otomatis", &Scope::folder(&trial), &changes)
+        .unwrap();
+    assert_eq!(report.changed, summary.fields);
+    assert_eq!(
+        library
+            .track(id_at(&library, &trial.join("03 Tiga.wav")))
+            .unwrap()
+            .unwrap()
+            .artist
+            .as_deref(),
+        Some("Lilith")
+    );
+
+    // And it can be taken back like any other run.
+    let undone = library.undo_batch(report.batch.unwrap()).unwrap();
+    assert_eq!(undone.restored, report.changed);
+    assert_eq!(
+        library
+            .track(id_at(&library, &trial.join("03 Tiga.wav")))
+            .unwrap()
+            .unwrap()
+            .artist
+            .as_deref(),
+        Some("LILITH"),
+        "exactly as it was"
+    );
+}
+
+#[test]
+fn nothing_outside_the_folder_is_suggested_anything() {
+    let dir = temp_dir("auto scope");
+    let (library, trial, real) = library_with_two_folders(&dir);
+    let found = library
+        .tidy_suggestions(&Scope::folder(&trial), 50)
+        .unwrap();
+    assert!(
+        found
+            .iter()
+            .all(|one| Path::new(&one.path).starts_with(&trial)),
+        "{found:?}"
+    );
+    assert!(!real.as_os_str().is_empty());
+}

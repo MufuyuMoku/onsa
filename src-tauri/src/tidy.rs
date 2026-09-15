@@ -298,6 +298,50 @@ pub async fn tidy_pick_folder(app: AppHandle, title: String) -> Result<Option<St
         .map(|path| path.display().to_string()))
 }
 
+/// One thing Onsa would write differently, and why.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SuggestionDto {
+    /// The track.
+    pub track_id: i64,
+    /// Where its file is.
+    pub path: String,
+    /// The field, by the name the overrides table uses.
+    pub field: String,
+    /// What it says now.
+    pub current: Option<String>,
+    /// What it would say.
+    pub value: String,
+    /// Fixed words the interface translates.
+    pub reasons: Vec<String>,
+}
+
+/// What Onsa would tidy up about the tracks in the folder (SPEC §8).
+///
+/// It asks nothing of the internet: this is the library reading itself. What
+/// comes back is a list of suggestions, applied — if at all — through the
+/// same commands as everything else on this page.
+#[tauri::command]
+pub fn tidy_auto(library: State<'_, LibraryService>) -> Result<Vec<SuggestionDto>, ErrorCode> {
+    let scope = scope_of(&prefs(&library)?);
+    let found = library.read(|library| library.tidy_suggestions(&scope, PAGE))?;
+    Ok(found
+        .into_iter()
+        .map(|one| SuggestionDto {
+            track_id: one.track_id,
+            path: one.path,
+            field: one.field.name().to_string(),
+            current: one.current,
+            value: one.value,
+            reasons: one
+                .reasons
+                .iter()
+                .map(|reason| reason.name().to_string())
+                .collect(),
+        })
+        .collect())
+}
+
 /// The tracks a run would be allowed to look at.
 #[tauri::command]
 pub fn tidy_tracks(library: State<'_, LibraryService>) -> Result<Vec<TrackDto>, ErrorCode> {

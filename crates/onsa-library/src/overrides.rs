@@ -35,7 +35,10 @@ pub enum Field {
 
 impl Field {
     /// The name stored in the `overrides` table; a fixed string per field.
-    pub(crate) fn name(self) -> &'static str {
+    ///
+    /// It is also the name the interface knows the field by, so a suggestion
+    /// can say which field it is about without a second vocabulary.
+    pub fn name(self) -> &'static str {
         match self {
             Self::Title => "title",
             Self::Artist => "artist",

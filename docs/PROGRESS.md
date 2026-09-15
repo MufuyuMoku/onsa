@@ -651,3 +651,20 @@ Semuanya masuk lewat pintu yang sudah ada. Pencocokan hanya menghasilkan **dafta
 Pemeriksa tata letak dijalankan ulang dengan daftar usulan terbuka di dalamnya — 6 lebar × 12 halaman + 4 panel.
 
 **Temuan**: heredoc bash di lingkungan ini memakan satu backslash, **untuk kelima kalinya dalam dua sesi** — kali ini di sebuah skrip uji, yang membuat folder cakupan menjadi omong kosong. Kebetulan itu membuktikan cakupannya tidak tertipu (nol lagu, nol perubahan), tapi pelajarannya tetap: berkas yang mengandung backslash ditulis lewat alat tulis berkas, tidak pernah lewat heredoc.
+
+### Perapihan otomatis, tanpa jaringan (2026-09-15)
+
+Chip kelima di halaman Rapikan: `Rapikan otomatis`. Library membaca dirinya sendiri dan menyebutkan apa yang akan ditulisnya berbeda — sisa nama unduhan yang menempel di judul, judul yang berteriak atau berbisik, `ft`/`FEAT`/`Featuring` yang jadi satu bentuk, nama artis yang tertulis beda-beda di library yang sama, dan album tanpa artis album. Tiap baris menyebut alasannya.
+
+Diterapkan lewat pintu yang sama seperti sebelumnya: ringkasan dulu, tombol di bawahnya, riwayat yang bisa dibatalkan. Yang jelas perbaikan tercentang; yang menyangkut huruf besar-kecil tidak — sering kali itu memang ditulis begitu dengan sengaja, dan halaman itu mengatakannya.
+
+Diuji pada folder buatan yang sama, 14 pemeriksaan pada perintah dan 9 pada antarmuka, semuanya lulus:
+
+- nama yang ditulis tiga cara menetap pada ejaan yang dipakai paling banyak — dan **seri tidak menghasilkan usulan apa pun**;
+- judul kehilangan `(Official Video)` dan berhenti berteriak, dengan dua alasan tercantum;
+- `Mina ft Lilith` menjadi `Mina feat. Lilith`;
+- tidak ada satu pun usulan untuk lagu di luar folder cakupan;
+- yang diterapkan sama persis dengan ringkasannya, file di disk tidak tersentuh, dan pembatalan mengembalikan ejaan lamanya;
+- bertanya lagi sesudahnya tidak menemukan lagi apa yang baru saja diperbaiki.
+
+**Temuan dari melihat daftarnya sendiri**: baris pertama mengusulkan `AC/DC → Ac/Dc`. Satu kata dalam satu jenis huruf sama seringnya adalah cara menulis nama, bukan teriakan; sekarang usulan huruf besar-kecil hanya berlaku untuk frasa dua kata atau lebih. `LILITH` dan `deadmau5` ikut selamat karena aturan yang sama.

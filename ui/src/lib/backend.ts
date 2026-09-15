@@ -587,6 +587,18 @@ export const tidySetScope = (folder: string | null, limit: number) =>
 export const tidyPickFolder = (title: string) =>
 	call<string | null>('tidy_pick_folder', { title });
 export const tidyTracks = () => call<Track[]>('tidy_tracks');
+
+/** One thing Onsa would write differently about the tags it already has. */
+export interface Suggestion {
+	trackId: number;
+	path: string;
+	field: string;
+	current: string | null;
+	value: string;
+	reasons: string[];
+}
+
+export const tidyAuto = () => call<Suggestion[]>('tidy_auto');
 export const tidyPreviewEdits = (changes: TidyChange[]) =>
 	call<TidySummary>('tidy_preview_edits', { changes });
 export const tidyApplyEdits = (note: string, changes: TidyChange[]) =>
