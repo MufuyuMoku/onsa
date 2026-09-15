@@ -619,3 +619,35 @@ Sesuai permintaan pemilik proyek: berkas ujinya dibuat sendiri, seluruh alurnya 
 Pemeriksa tata letak dijalankan ulang dengan halaman ini ikut di dalamnya — 6 lebar × 11 halaman + 4 panel, bersih.
 
 **Temuan**: regex pemisah path yang disalin di banyak komponen kehilangan sebuah backslash **empat kali dalam satu sesi**. Sekarang `fileName()` dan `relativeTo()` ada satu-satunya di `ui/src/lib/format.ts` dengan tesnya, dan tidak ada komponen yang menulis regex path lagi.
+
+### Mencari tahu lewat internet: AcoustID, MusicBrainz, Cover Art Archive (2026-09-15)
+
+Semuanya masuk lewat pintu yang sudah ada. Pencocokan hanya menghasilkan **daftar usulan**; yang dicentang dikirim ke perintah yang sama dengan editan manual, jadi cakupan folder, ringkasan sebelum tombol, dan riwayat yang bisa dibatalkan berlaku dengan sendirinya. Tidak ada jalur pintas — itu yang diuji, bukan sekadar diklaim.
+
+**Pengelola program luar** (`onsa-downloader::programs`) dibuat sekali dan dipakai bersama: `fpcalc` sekarang, yt-dlp/ffmpeg/Deno di M10. Array argumen tanpa shell, `CREATE_NO_WINDOW` di Windows, tenggat dengan kill di ujungnya, keluaran dibaca di thread sendiri. Dicari di pilihan pengguna → folder `bin` Onsa → PATH sistem. Mengunduh binary-nya sendiri ditunda ke M10, tempat tiga program lain butuh pembongkaran arsip yang sama.
+
+**Tingkat keyakinan menentukan perilaku.** Sidik suara memakai skor AcoustID; pencarian teks MusicBrainz ditahan di bawah ambang centang kalau tidak sama dengan judul *dan* artis yang ada di file; tebakan dari nama file bernilai 0,6 atau 0,35. Di bawah 0,85 tidak ada yang tercentang. Kalau sidik suara dan nama file berbeda, **keduanya ditampilkan dan tidak ada yang tercentang**; kalau usulan keduanya terlalu lemah untuk ditampilkan (misalnya berkas bernama `03 kosong` yang "berjudul" kosong), ia tidak dihitung sebagai perselisihan — kalau tidak, hampir semua lagu tanpa tag harus diputuskan satu per satu.
+
+**Cover** diambil sekali per rilis, ditampilkan sebagai gambar lewat protokol `onsa://` sebelum disetujui, masuk ke database (bukan ke dalam berkas), dan bisa dibatalkan seperti perubahan lain. Menanamkan gambar ke dalam tag belum dikerjakan.
+
+**Pengujiannya** memakai layanan tiruan yang berdiri di 127.0.0.1 dan `fpcalc` tiruan di folder `bin` sekali pakai. Alamat layanan hanya bisa dipindahkan ke loopback — di luar itu diabaikan dan dicatat — jadi seluruh alurnya diuji terhadap **build rilis**, lewat HTTP sungguhan dengan klien dan batas laju yang sama, tanpa key sungguhan, tanpa internet, dan tanpa menyentuh musik siapa pun. Berkas ujinya bertambah dua: nama unduhan tanpa tag, satu beraksara Latin dan satu beraksara Jepang.
+
+48 pemeriksaan pada perintah, 18 pada antarmuka, semuanya lulus. Yang terpenting:
+
+- **fitur internet mati = tidak ada satu pun permintaan** yang sampai ke layanan, dan tombolnya mati;
+- mematikannya di tengah jalan **menghentikan run yang sedang berjalan**, dan yang sudah ditemukan tetap ada;
+- lagu tanpa tag dikenali lewat suaranya, lengkap dengan tahun dari MusicBrainz, dan **sudah tercentang** karena keyakinannya 96%;
+- lagu yang nama berkasnya bertentangan dengan suaranya **ditandai, dan tidak satu field pun tercentang**;
+- nama berkas dibaca tanpa `[dQw4w9WgXcQ]` dan tanpa `(Official Video)`;
+- berkas yang bukan berkas suara menyebut alasannya dan tidak menghentikan yang lain;
+- usulan 55% ditampilkan tapi tidak tercentang;
+- sampul tampil sebagai gambar yang benar-benar termuat, dipasang, lalu dibatalkan sampai kembali kosong;
+- **aplikasi tetap menjawab dalam 2 ms** sementara layanan yang lambat membuat run berjalan puluhan detik;
+- layanan yang mati di tengah jalan: run tetap selesai, tiap lagu menyebut apa yang terjadi, dan yang sudah selesai tidak hilang;
+- ringkasan muncul hanya setelah diminta, tombolnya di bawah angka-angkanya, dan **mengubah satu centang langsung menghapus ringkasannya**;
+- run yang diterapkan sebelum aplikasi ditutup **masih bisa dibatalkan setelah dibuka lagi**, sementara daftar usulannya sendiri tidak ikut disimpan;
+- perintah yang diarahkan langsung ke berkas di luar folder tetap ditolak.
+
+Pemeriksa tata letak dijalankan ulang dengan daftar usulan terbuka di dalamnya — 6 lebar × 12 halaman + 4 panel.
+
+**Temuan**: heredoc bash di lingkungan ini memakan satu backslash, **untuk kelima kalinya dalam dua sesi** — kali ini di sebuah skrip uji, yang membuat folder cakupan menjadi omong kosong. Kebetulan itu membuktikan cakupannya tidak tertipu (nol lagu, nol perubahan), tapi pelajarannya tetap: berkas yang mengandung backslash ditulis lewat alat tulis berkas, tidak pernah lewat heredoc.

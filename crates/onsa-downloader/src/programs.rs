@@ -278,11 +278,17 @@ impl Programs {
     /// What version a program says it is, for the interface to show.
     ///
     /// Only the first line is kept: these programs answer with a version and
-    /// then a paragraph about their build.
+    /// then a paragraph about their build. A program that fails when asked
+    /// has no version to report — its complaint is not a version number, and
+    /// showing one where the other belongs is worse than showing neither.
     pub fn version(&self, program: Program) -> Option<String> {
         let ran = self
             .run(program, program.version_args(), VERSION_TIMEOUT)
             .ok()?;
+        if !ran.ok {
+            tracing::debug!(program = program.key(), "would not say its version");
+            return None;
+        }
         let text = if ran.out.trim().is_empty() {
             ran.err
         } else {
@@ -515,6 +521,20 @@ mod tests {
             said.contains(marker),
             "it arrived whole, not cut into commands: {said}"
         );
+    }
+
+    #[test]
+    fn a_program_that_will_not_say_its_version_has_none() {
+        // The program is there and runs, but complains about the flag. Its
+        // complaint must not end up where a version number belongs.
+        let dir = temp_dir("no version");
+        let (name, _) = quick();
+        let real = on_path(&platform::executable(name)).expect("a program to run");
+        let mut programs = Programs::new(&dir).use_system(false);
+        assert!(programs.choose(Program::Fpcalc, &real));
+        // ping has no -version flag, and says so.
+        assert_eq!(programs.version(Program::Fpcalc), None);
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]

@@ -45,9 +45,12 @@
 	/** How sure, as whole percent. */
 	const percent = (confidence: number) => Math.round(confidence * 100);
 
-	/** What a field is called, falling back to its own name. */
+	/** What a field is called, falling back to its own name.
+	 *
+	 * The list of fields comes from the backend, so a field the dictionary
+	 * has never heard of must still be readable rather than blank. */
 	function fieldLabel(field: string): string {
-		return t(`field.${field}` as never);
+		return t(`field.${field}` as never) || field.replace(/_/g, ' ');
 	}
 </script>
 
@@ -59,9 +62,12 @@
 				{root ? relativeTo(track.path, root) : fileName(track.path)}
 			</p>
 
+			<!-- A row can say both: the sound could not be read, and here is
+			     what the name suggests anyway. -->
 			{#if track.failure}
 				<p class="muted note">{t(why(track.failure))}</p>
-			{:else}
+			{/if}
+			{#if track.candidates.length > 0}
 				{#if track.disagree}
 					<p class="note caution-text">{t('match.disagree')}</p>
 				{/if}
@@ -158,8 +164,12 @@
 </ul>
 
 <style>
+	/* One column, and a column that may be narrower than what is in it:
+	   without the minmax, a long path or a long title sets the width of the
+	   whole list and the rows spill out of the page. */
 	.matches {
 		display: grid;
+		grid-template-columns: minmax(0, 1fr);
 		gap: 6px;
 		width: 100%;
 		margin: 0;
@@ -168,6 +178,7 @@
 	}
 
 	.match {
+		min-width: 0;
 		padding: 8px 10px;
 		border: var(--onsa-hairline) solid var(--onsa-surface-line);
 		border-radius: var(--onsa-radius-sm);
@@ -180,6 +191,7 @@
 	}
 
 	.file {
+		min-width: 0;
 		margin: 0 0 6px;
 		font-size: 12.5px;
 		color: var(--onsa-text-primary);
@@ -196,10 +208,12 @@
 
 	.answers {
 		display: grid;
+		grid-template-columns: minmax(0, 1fr);
 		gap: 6px;
 	}
 
 	.answer {
+		min-width: 0;
 		padding: 6px 8px;
 		border-radius: var(--onsa-radius-sm);
 		background: var(--onsa-surface-raised);
@@ -213,9 +227,10 @@
 
 	.who {
 		display: grid;
-		grid-template-columns: auto auto minmax(60px, 1fr);
+		grid-template-columns: minmax(0, auto) auto minmax(40px, 1fr);
 		align-items: center;
 		gap: 8px;
+		min-width: 0;
 	}
 
 	.use,
@@ -260,7 +275,9 @@
 
 	.fields {
 		display: grid;
+		grid-template-columns: minmax(0, 1fr);
 		gap: 2px;
+		min-width: 0;
 		margin: 6px 0 0;
 		padding: 0;
 		list-style: none;
@@ -268,9 +285,10 @@
 
 	.field {
 		display: grid;
-		grid-template-columns: minmax(100px, auto) minmax(0, 1fr) auto minmax(0, 1.2fr);
+		grid-template-columns: minmax(0, auto) minmax(0, 1fr) auto minmax(0, 1.2fr);
 		align-items: center;
 		gap: 8px;
+		min-width: 0;
 		font-size: 12px;
 	}
 
@@ -292,8 +310,10 @@
 
 	.cover {
 		display: flex;
+		flex-wrap: wrap;
 		align-items: center;
 		gap: 10px;
+		min-width: 0;
 		margin-top: 8px;
 	}
 
@@ -307,7 +327,9 @@
 		font-size: 11px;
 	}
 
-	@container content (max-width: 640px) {
+	/* A field row is four things across; below this there is not enough
+	   width for four, so the name of the field takes a line of its own. */
+	@container content (max-width: 820px) {
 		.field {
 			grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
 		}

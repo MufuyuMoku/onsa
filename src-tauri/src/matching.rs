@@ -303,8 +303,10 @@ fn look_at(
         }
     }
 
-    // The way back, always offered when the sound found nothing, and always
-    // as its own answer rather than mixed into one.
+    // The way back. A name that gave up both halves is an answer in its own
+    // right and is always offered; a name that gave up only a title is worth
+    // showing only when there is nothing else, because a file called
+    // "03 kosong" is a file name and not a claim about a recording.
     let guess = clean::guess_from_name(&stem);
     if !guess.is_empty() && !tagged {
         if candidates.is_empty() {
@@ -320,7 +322,9 @@ fn look_at(
                 ));
             }
         }
-        candidates.push(from_the_name(track, &guess));
+        if guess.confidence >= crate::proposal::WORTH_SHOWING || candidates.is_empty() {
+            candidates.push(from_the_name(track, &guess));
+        }
     }
 
     if candidates.is_empty() {
@@ -351,7 +355,10 @@ fn look_at(
         }
     }
 
+    // A row can carry a suggestion and a complaint at once: the sound could
+    // not be read, and here is what the name says anyway.
     TrackMatch::new(track.id, &track.path, candidates)
+        .despite(trouble.as_ref().map(|failure| failure.name().to_string()))
 }
 
 /// Whether a track already says enough about itself to be looked up by it.

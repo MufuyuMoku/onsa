@@ -187,6 +187,12 @@ impl Proposal {
 /// they disagree, **both are kept and neither is ticked**: a disagreement is
 /// exactly the case a person has to look at, and picking one of them
 /// silently would be the machine choosing while appearing not to.
+///
+/// Only an answer worth showing can disagree, though. A file called
+/// `03 kosong` will happily claim the title "kosong", and letting that stand
+/// in the way of a fingerprint match at 96% would mean settling by hand every
+/// track that was saved under a meaningless name — which is most of the ones
+/// this is for.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TrackMatch {
@@ -216,7 +222,9 @@ impl TrackMatch {
                 .partial_cmp(&a.confidence)
                 .unwrap_or(std::cmp::Ordering::Equal)
         });
-        let disagree = candidates.len() > 1 && !agree(&candidates[0], &candidates[1]);
+        let disagree = candidates.len() > 1
+            && candidates[1].confidence >= WORTH_SHOWING
+            && !agree(&candidates[0], &candidates[1]);
         let picked = match candidates.first() {
             Some(best) if best.trusted && !disagree => Some(0),
             _ => None,
@@ -234,6 +242,16 @@ impl TrackMatch {
             disagree,
             failure: None,
         }
+    }
+
+    /// The same, with something that went wrong noted alongside it.
+    ///
+    /// A file whose sound could not be read may still have a name worth
+    /// reading. The row says both: here is what the name suggests, and here
+    /// is why the sound had nothing to add.
+    pub fn despite(mut self, why: Option<String>) -> Self {
+        self.failure = why;
+        self
     }
 
     /// A track nothing could be found out about, and the reason.
@@ -464,6 +482,44 @@ mod tests {
         assert_eq!(found.picked, None);
         assert!(!found.disagree, "there is nothing to disagree with");
         assert!(!found.would_change());
+    }
+
+    #[test]
+    fn an_answer_too_faint_to_show_does_not_stand_in_the_way() {
+        // A file called "03 kosong" claims the title "kosong". That is a file
+        // name, not a competing account of what the recording is, and it must
+        // not turn a fingerprint match at 96% into something to settle by
+        // hand.
+        let faint = Proposal::new(
+            7,
+            "/music/03 kosong.m4a",
+            Source::FileName,
+            0.35,
+            vec![field("title", None, Some("kosong"))],
+        );
+        assert!(faint.confidence < WORTH_SHOWING);
+        let found = TrackMatch::new(
+            7,
+            "/music/03 kosong.m4a",
+            vec![from(Source::AcoustId, 0.96, "Kota Sunyi", "Lilith"), faint],
+        );
+        assert!(!found.disagree);
+        assert_eq!(found.picked, Some(0));
+        assert!(found.would_change());
+        assert_eq!(found.candidates.len(), 2, "it is still there to read");
+    }
+
+    #[test]
+    fn a_row_can_carry_a_suggestion_and_a_complaint_at_once() {
+        // The sound could not be read; the name still says something.
+        let found = TrackMatch::new(
+            7,
+            "/music/broken.flac",
+            vec![from(Source::FileName, 0.6, "Sore", "Lilith")],
+        )
+        .despite(Some("unreadable".into()));
+        assert_eq!(found.failure.as_deref(), Some("unreadable"));
+        assert_eq!(found.candidates.len(), 1);
     }
 
     #[test]

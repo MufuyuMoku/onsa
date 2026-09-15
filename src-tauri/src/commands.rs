@@ -1161,10 +1161,17 @@ pub fn metadata_get(library: State<'_, LibraryService>) -> Result<MetadataDto, E
 /// it, which falls back to the environment or the build.
 #[tauri::command]
 pub fn settings_set_metadata(
-    library: State<'_, LibraryService>,
+    app: AppHandle,
     online: bool,
     acoustid_key: Option<String>,
 ) -> Result<MetadataDto, ErrorCode> {
+    let library = app.state::<LibraryService>();
+    if !online {
+        // Off means off, including a run that is going at this moment. What
+        // it has already found stays where it is; it simply stops asking.
+        app.state::<std::sync::Arc<crate::matching::Matching>>()
+            .stop();
+    }
     let mut prefs = library.read(|library| {
         Ok(settings::load::<MetadataPrefs>(
             library,

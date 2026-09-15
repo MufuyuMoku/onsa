@@ -239,7 +239,8 @@ Downloader punya bagian tersendiri di UI. yt-dlp dijalankan sebagai proses terpi
 
 ### 7.1 Pengelolaan binary
 
-- Onsa membutuhkan tiga program: **yt-dlp**, **ffmpeg** (beserta ffprobe), dan **Deno**. Deno dibutuhkan yt-dlp untuk dukungan YouTube yang lengkap.
+- Onsa membutuhkan tiga program untuk pengunduh: **yt-dlp**, **ffmpeg** (beserta ffprobe), dan **Deno**. Deno dibutuhkan yt-dlp untuk dukungan YouTube yang lengkap. Metadata (§8) menambah satu lagi: **fpcalc** dari Chromaprint, untuk sidik suara AcoustID.
+- Pengelola program luar ini **satu untuk semuanya** (`onsa-downloader::programs`), dipakai M7 maupun M10: pencarian (pilihan pengguna → folder `bin` Onsa → PATH sistem), menjalankan, dan menanyakan versi.
 - Lokasi: `<app_data>/bin/`.
 - Saat bagian downloader pertama kali dibuka, tampilkan daftar yang akan diunduh (nama, sumber, perkiraan ukuran). Unduhan baru dimulai setelah pengguna menekan tombol setuju.
 - Sumber hanya dari rilis resmi di GitHub:
@@ -287,7 +288,13 @@ Downloader punya bagian tersendiri di UI. yt-dlp dijalankan sebagai proses terpi
 - **Editan disimpan di database dulu** (tabel `overrides`). "Tulis ke file" adalah aksi terpisah, per lagu atau massal. Dengan begitu, pengguna bisa punya koreksi yang hanya berlaku di Onsa tanpa mengubah file asli.
 - **Penulisan ke file yang aman**: salin file ke file sementara di folder yang sama, tulis tag ke file sementara, fsync, lalu rename atomik menimpa file asli. Ada opsi menyimpan cadangan. Bila gagal, file asli tetap utuh.
 - **Rename/pindah file berdasarkan pola**, misalnya `{album_artist}/{album}/{disc}-{track:02} {title}`. Selalu tampilkan pratinjau (dry-run) dan daftar bentrokan sebelum dijalankan. Karakter ilegal di Windows diganti otomatis.
-- (Opsional, di akhir M7) Ambil data dari MusicBrainz. Wajib memakai User-Agent `Onsa/<versi> (<kontak>)` dan batas 1 request per detik. Hasilnya berupa usulan yang harus dikonfirmasi pengguna.
+- **Mencari tahu lewat internet** (akhir M7). Semuanya mati secara bawaan dan bisa dimatikan total kapan saja, termasuk menghentikan pencarian yang sedang berjalan.
+  - **AcoustID lewat sidik suara** untuk lagu yang tagnya kosong, dengan `fpcalc` sebagai program luar (lihat §7.1 dan §7.3). Yang dikirim hanya ringkasan sidik suara, panjang lagu, dan API key — bukan audio.
+  - **Nama file sebagai jalur cadangan**: sisa nama unduhan (`[j9RGt9Z_UeE]`, `(Official Video)`) dibersihkan lebih dulu. Bila sidik suara dan nama file memberi hasil berbeda, keduanya ditampilkan dan pengguna yang memilih.
+  - **MusicBrainz** untuk lagu yang sudah bertag, dan untuk melengkapi tahun rilis. Wajib memakai User-Agent `Onsa/<versi> (<kontak>)` dan batas 1 request per detik.
+  - **Cover Art Archive** untuk sampul, diambil sekali per rilis, ditampilkan sebagai gambar sebelum disetujui.
+  - Hasilnya **selalu berupa usulan**. Tiap usulan menyebut tingkat keyakinannya; yang rendah tidak tercentang otomatis. Menerapkannya melewati jalur yang sama dengan editan manual: cakupan folder, ringkasan sebelum tombol, dan riwayat yang bisa dibatalkan.
+  - Jaringan yang mati atau lambat tidak boleh membekukan aplikasi, dan hasil yang sudah terkumpul tidak boleh hilang.
 
 ---
 
