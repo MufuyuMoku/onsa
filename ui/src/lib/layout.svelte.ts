@@ -21,9 +21,13 @@ export const STEPS = {
 /** How the sidebar is showing. */
 export type SidebarMode = 'full' | 'icons' | 'hidden';
 
+/** What the right-hand panel is showing (SPEC section 9.2). */
+export type PanelTab = 'queue' | 'lyrics';
+
 let width = $state(1180);
 let queueOpen = $state(false);
 let menuOpen = $state(false);
+let panelTab = $state<PanelTab>('queue');
 
 export const layout = {
 	/** Width of the window, in CSS pixels. */
@@ -49,8 +53,18 @@ export const layout = {
 	/** Whether the sidebar is covering the content. */
 	get menuFloating() {
 		return this.sidebar === 'hidden' && menuOpen;
+	},
+	/** Which of the panel's two tabs is showing. */
+	get panelTab(): PanelTab {
+		return panelTab;
 	}
 };
+
+/** Shows one of the panel's tabs, opening the panel if it is away. */
+export function showInPanel(tab: PanelTab): void {
+	panelTab = tab;
+	if (!layout.queueDocked) queueOpen = true;
+}
 
 /** Opens or closes the queue panel. */
 export function toggleQueue(): void {

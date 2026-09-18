@@ -15,20 +15,12 @@
 		removeQueueEntry,
 		toggleShuffle
 	} from '$lib/player.svelte';
-	import { closeOverlays } from '$lib/layout.svelte';
 	import { reorderable, reorderKey } from '$lib/reorder';
 	import { settings } from '$lib/settings.svelte';
 	import { saveQueueAsPlaylist } from '$lib/playlists.svelte';
 	import Icon from './Icon.svelte';
 	import NamePrompt from './NamePrompt.svelte';
 	import VirtualList from './VirtualList.svelte';
-
-	interface Props {
-		/** Whether the panel is covering the content rather than beside it. */
-		floating?: boolean;
-	}
-
-	const { floating = false }: Props = $props();
 
 	const ROW = 44;
 
@@ -75,20 +67,7 @@
 	}
 </script>
 
-<aside class="queue" class:floating>
-	<header class="head">
-		<h2 class="label">{t('queue.title')}</h2>
-		<span class="grow"></span>
-		{#if items.length > 0}
-			<span class="numeric muted">{t('queue.count', { n: items.length })}</span>
-		{/if}
-		{#if floating}
-			<button type="button" class="icon-btn" aria-label={t('search.clear')} onclick={closeOverlays}>
-				<Icon name="close" />
-			</button>
-		{/if}
-	</header>
-
+<div class="queue">
 	<div class="tools">
 		<button
 			type="button"
@@ -186,7 +165,7 @@
 			</div>
 		{/if}
 	</div>
-</aside>
+</div>
 
 {#if saving}
 	<NamePrompt
@@ -201,31 +180,8 @@
 <style>
 	.queue {
 		display: grid;
-		grid-template-rows: auto auto 1fr;
+		grid-template-rows: auto minmax(0, 1fr);
 		min-height: 0;
-		border-left: var(--onsa-hairline) solid var(--onsa-surface-line);
-		background: var(--onsa-surface-body);
-	}
-
-	.head {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		padding: 16px 10px 6px 14px;
-	}
-
-	.grow {
-		flex: 1;
-	}
-
-	h2 {
-		margin: 0;
-		font-size: 11px;
-		font-weight: 500;
-	}
-
-	.head span {
-		font-size: 11px;
 	}
 
 	.tools {

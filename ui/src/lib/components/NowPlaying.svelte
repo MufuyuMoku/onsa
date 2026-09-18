@@ -10,6 +10,7 @@
 	import { t } from '$lib/i18n/index.svelte';
 	import { player } from '$lib/player.svelte';
 	import Icon from './Icon.svelte';
+	import LyricsPanel from './LyricsPanel.svelte';
 	import Spectrum from './Spectrum.svelte';
 
 	const snapshot = $derived(player.snapshot);
@@ -96,6 +97,10 @@
 				{/if}
 			</dl>
 		</div>
+		<section class="words">
+			<h2 class="label">{t('lyrics.title')}</h2>
+			<LyricsPanel large />
+		</section>
 		<div class="visualizer">
 			<Spectrum height={170} />
 		</div>
@@ -136,6 +141,24 @@
 	.visualizer {
 		grid-column: 1 / -1;
 		min-width: 0;
+	}
+
+	/* The words get a box of their own rather than the whole page's
+	   scrolling: the line being sung has to stay where the eye expects it,
+	   and it cannot if the page moves underneath. */
+	.words {
+		grid-column: 1 / -1;
+		display: grid;
+		grid-template-rows: auto minmax(0, 1fr);
+		gap: 6px;
+		min-width: 0;
+		height: min(42vh, 360px);
+	}
+
+	.words h2 {
+		margin: 0;
+		font-size: 11px;
+		font-weight: 500;
 	}
 
 	.back {

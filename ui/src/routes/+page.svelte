@@ -11,6 +11,7 @@
 	import { closeOverlays, followWidth, layout, toggleMenu, toggleQueue } from '$lib/layout.svelte';
 	import { t } from '$lib/i18n/index.svelte';
 	import { library, setQuery } from '$lib/library.svelte';
+	import { followLyrics } from '$lib/lyrics.svelte';
 	import { player } from '$lib/player.svelte';
 	import { settings, updateDsp } from '$lib/settings.svelte';
 	import { themeFailure } from '$lib/theme/index.svelte';
@@ -25,7 +26,7 @@
 	import DownloadsView from '$lib/components/DownloadsView.svelte';
 	import TidyView from '$lib/components/TidyView.svelte';
 	import PlaylistView from '$lib/components/PlaylistView.svelte';
-	import QueuePanel from '$lib/components/QueuePanel.svelte';
+	import SidePanel from '$lib/components/SidePanel.svelte';
 	import SearchView from '$lib/components/SearchView.svelte';
 	import Sidebar from '$lib/components/Sidebar.svelte';
 	import SignalPath from '$lib/components/SignalPath.svelte';
@@ -46,6 +47,8 @@
 	followTone();
 	// The panels follow the width of the window (SPEC section 9.2).
 	followWidth();
+	// And the words follow whatever is playing (SPEC section 10).
+	followLyrics();
 
 	function editing(target: EventTarget | null): boolean {
 		return (
@@ -209,14 +212,14 @@
 				<div class="scrim" role="presentation" onclick={closeOverlays}></div>
 			{/if}
 			{#if layout.queueFloating}
-				<QueuePanel floating />
+				<SidePanel floating />
 			{/if}
 			{#if layout.menuFloating}
 				<div class="drawer"><Sidebar mode="full" /></div>
 			{/if}
 		</main>
 		{#if layout.queueDocked}
-			<QueuePanel />
+			<SidePanel />
 		{/if}
 		<div class="transport"><Transport /></div>
 		<div class="signal"><SignalPath /></div>
@@ -316,7 +319,7 @@
 		box-shadow: 8px 0 24px rgb(0 0 0 / 0.45);
 	}
 
-	.content > :global(.queue.floating) {
+	.content > :global(.side.floating) {
 		position: absolute;
 		top: 0;
 		right: 0;
@@ -337,7 +340,7 @@
 		background: var(--onsa-surface-app);
 	}
 
-	.shell > :global(.queue) {
+	.shell > :global(.side) {
 		grid-area: queue;
 	}
 

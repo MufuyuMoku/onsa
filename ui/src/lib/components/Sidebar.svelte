@@ -59,6 +59,7 @@
 			['dsp', 'settings.dsp', 'eq'],
 			['library', 'settings.library', 'shelf'],
 			['metadata', 'settings.metadata', 'info'],
+			['lyrics', 'settings.lyrics', 'info'],
 			['appearance', 'settings.appearance', 'palette'],
 			['about', 'settings.about', 'info']
 		] as const

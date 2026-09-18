@@ -5,6 +5,7 @@
 	import AppearanceSettings from './AppearanceSettings.svelte';
 	import DspSettings from './DspSettings.svelte';
 	import LibrarySettings from './LibrarySettings.svelte';
+	import LyricsSettings from './LyricsSettings.svelte';
 	import MetadataSettings from './MetadataSettings.svelte';
 	import OutputSettings from './OutputSettings.svelte';
 
@@ -20,6 +21,8 @@
 		<LibrarySettings />
 	{:else if section === 'metadata'}
 		<MetadataSettings />
+	{:else if section === 'lyrics'}
+		<LyricsSettings />
 	{:else if section === 'appearance'}
 		<AppearanceSettings />
 	{:else}

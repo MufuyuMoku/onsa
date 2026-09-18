@@ -812,6 +812,49 @@ export const playlistImport = (title: string, filterName: string) =>
 export const smartPreview = (rules: Rules, limit: number) =>
 	call<Track[]>('smart_preview', { rules, limit });
 
+// Lyrics (SPEC section 10) -------------------------------------------------
+
+/** Where a song's words came from. */
+export type LyricsSource = 'edited' | 'file' | 'tag' | 'lrclib' | 'none';
+
+/** One line of lyrics. `atMs` is null for a line with no time of its own. */
+export interface LyricsLine {
+	atMs: number | null;
+	text: string;
+}
+
+/** A song's words, and everything needed to show them. */
+export interface Lyrics {
+	trackId: number;
+	source: LyricsSource;
+	synced: boolean;
+	lines: LyricsLine[];
+	offsetMs: number;
+	looking: boolean;
+	online: boolean;
+	canAsk: boolean;
+	beside: boolean;
+}
+
+/** What Onsa may do about a song's words. */
+export interface LyricsPrefs {
+	online: boolean;
+	writeBeside: boolean;
+}
+
+/** Asks for a song's words, and lets a lookup start if one is worth it. */
+export const lyricsFor = (trackId: number) => call<Lyrics>('lyrics_for', { trackId });
+/** The same, starting nothing: what to ask after a lookup says it finished. */
+export const lyricsState = (trackId: number) => call<Lyrics>('lyrics_state', { trackId });
+export const lyricsLookAgain = (trackId: number) => call<Lyrics>('lyrics_look_again', { trackId });
+export const lyricsOffset = (trackId: number, offsetMs: number) =>
+	call<Lyrics>('lyrics_offset', { trackId, offsetMs });
+export const lyricsWriteBeside = (trackId: number) =>
+	call<Lyrics>('lyrics_write_beside', { trackId });
+export const lyricsSettings = () => call<LyricsPrefs>('lyrics_settings');
+export const setLyricsSettings = (online: boolean, writeBeside: boolean) =>
+	call<LyricsPrefs>('lyrics_set_settings', { online, writeBeside });
+
 // Settings -----------------------------------------------------------------
 
 export const settingsGet = () => call<Settings>('settings_get');
@@ -857,7 +900,8 @@ export const EVENTS = {
 	windowMode: 'window://mode',
 	matching: 'match://progress',
 	binary: 'downloads://binary',
-	downloads: 'downloads://progress'
+	downloads: 'downloads://progress',
+	lyrics: 'lyrics://arrived'
 } as const;
 
 /** URL of a cover thumbnail, served by the backend's `onsa` protocol. */

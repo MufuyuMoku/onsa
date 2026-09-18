@@ -28,6 +28,7 @@ export type SettingsSection =
 	| 'dsp'
 	| 'library'
 	| 'metadata'
+	| 'lyrics'
 	| 'appearance'
 	| 'about';
 
