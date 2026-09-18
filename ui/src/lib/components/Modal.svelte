@@ -66,6 +66,12 @@
 		inset: 0;
 		z-index: 41;
 		display: grid;
+		/* A row of its own height, so the panel's `max-height: 100%` has
+		   something definite to be a percentage of. Left to size itself
+		   around its contents, the row grows with them and a long panel
+		   pushes its own footer off the bottom of the window. */
+		grid-template-rows: minmax(0, 1fr);
+		grid-template-columns: minmax(0, 1fr);
 		place-items: center;
 		padding: 16px;
 		pointer-events: none;

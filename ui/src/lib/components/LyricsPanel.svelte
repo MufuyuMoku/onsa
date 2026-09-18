@@ -51,9 +51,18 @@
 	const nothing = $derived.by(() => {
 		if (!playing) return 'lyrics.nothingPlaying';
 		if (words?.looking) return 'lyrics.looking';
-		if (words?.canAsk && words?.online === false) return 'lyrics.offline';
 		return 'lyrics.none';
 	});
+
+	/**
+	 * Whether to add that the service is off.
+	 *
+	 * It is the second thing a listener wants to know, after whether there
+	 * are any words at all — and only when a service could have been asked.
+	 */
+	const alsoOffline = $derived(
+		playing && !words?.looking && words?.canAsk === true && words?.online === false
+	);
 
 	let box: HTMLDivElement | undefined = $state();
 	let theirsUntil = 0;
@@ -126,6 +135,9 @@
 	<div class="body" role="group" bind:this={box} onwheel={theirs} ontouchmove={theirs}>
 		{#if !words || words.lines.length === 0}
 			<p class="muted empty">{t(nothing)}</p>
+			{#if alsoOffline}
+				<p class="muted empty">{t('lyrics.offline')}</p>
+			{/if}
 		{:else if words.synced}
 			<ol class="lines" title={t('lyrics.seekHint')}>
 				{#each words.lines as line, index (index)}
@@ -205,7 +217,9 @@
 		border: 0;
 		border-radius: var(--onsa-radius-sm);
 		background: none;
-		color: var(--onsa-lit-secondary);
+		/* A block of words is text, not an indicator: the lit colours are
+		   for the things that are lit. */
+		color: var(--onsa-text-secondary);
 		font: inherit;
 		font-size: 13px;
 		line-height: 1.5;
@@ -240,7 +254,7 @@
 		padding: 2px 6px;
 		font-size: 13px;
 		line-height: 1.55;
-		color: var(--onsa-lit-secondary);
+		color: var(--onsa-text-secondary);
 	}
 
 	.plain p.blank {
