@@ -13,6 +13,7 @@
 	import { navigate, type SettingsSection } from '$lib/app.svelte';
 	import { db, rate } from '$lib/format';
 	import { t } from '$lib/i18n/index.svelte';
+	import { tip } from '$lib/tip';
 	import { measure } from '$lib/layout.svelte';
 	import { player } from '$lib/player.svelte';
 	import { settings, updateDsp } from '$lib/settings.svelte';
@@ -77,7 +78,7 @@
 	class="path"
 	role="group"
 	aria-label={t('signal.label')}
-	title={t('signal.hint')}
+	use:tip={t('signal.hint')}
 	use:measure={(seen) => (width = seen)}
 >
 	<span class="stage static source" class:on={source !== null}>{source ?? t('signal.idle')}</span>

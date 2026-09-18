@@ -13,6 +13,13 @@ export type PanelTexture = 'glass' | 'bezel' | 'brushed';
 export type StageIndicator = 'glow-chip' | 'outline-chip' | 'led';
 export type TimeDisplay = 'ghost-segment' | 'plain';
 export type LabelCase = 'as-written' | 'uppercase';
+export type ControlShape = 'soft' | 'square' | 'pill' | 'bevel';
+export type FrameStyle = 'hairline' | 'inset' | 'raised' | 'none';
+export type RowStyle = 'lines' | 'stripes' | 'plain';
+export type Scrollbar = 'thin' | 'classic' | 'hidden';
+export type TooltipStyle = 'plain' | 'panel';
+export type DialogStyle = 'flat' | 'raised' | 'titled';
+export type Easing = 'standard' | 'linear' | 'snap' | 'soft';
 export type Density = 'comfortable' | 'compact';
 export type ToneTarget = 'spectrum' | 'meter' | 'progress' | 'cover-glow';
 
@@ -61,11 +68,18 @@ export interface Theme {
 			knob: string;
 			led: string;
 		};
+		/** The two sides of a raised or sunken edge. */
+		edge: {
+			light: string;
+			dark: string;
+		};
 	};
 	shape: {
 		radius: { sm: number; md: number; lg: number };
 		density: Density;
 		hairline: number;
+		control: ControlShape;
+		frame: FrameStyle;
 	};
 	variants: {
 		meter: MeterVariant;
@@ -73,12 +87,22 @@ export interface Theme {
 		panelTexture: PanelTexture;
 		stageIndicator: StageIndicator;
 		timeDisplay: TimeDisplay;
+		rows: RowStyle;
+		scrollbar: Scrollbar;
+		tooltip: TooltipStyle;
+		dialog: DialogStyle;
 	};
 	effects: {
 		glow: boolean;
 		glassReflection: boolean;
 		grain: number;
 		labelCase: LabelCase;
+	};
+	/** How long things take to move, and how they move. */
+	motion: {
+		fast: number;
+		slow: number;
+		ease: Easing;
 	};
 	toneColor: {
 		enabled: boolean;

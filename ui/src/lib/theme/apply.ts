@@ -12,7 +12,7 @@ import type { Theme } from './types';
  * Exported on its own so it can be read without a document.
  */
 export function themeVariables(theme: Theme): Record<string, string> {
-	const { color, shape, fonts, effects } = theme;
+	const { color, shape, fonts, effects, motion } = theme;
 	return {
 		'--onsa-surface-app': color.surface.app,
 		'--onsa-surface-body': color.surface.body,
@@ -41,6 +41,9 @@ export function themeVariables(theme: Theme): Record<string, string> {
 		'--onsa-lit-knob': color.lit.knob,
 		'--onsa-lit-led': color.lit.led,
 
+		'--onsa-edge-light': color.edge.light,
+		'--onsa-edge-dark': color.edge.dark,
+
 		'--onsa-radius-sm': `${shape.radius.sm}px`,
 		'--onsa-radius-md': `${shape.radius.md}px`,
 		'--onsa-radius-lg': `${shape.radius.lg}px`,
@@ -50,9 +53,26 @@ export function themeVariables(theme: Theme): Record<string, string> {
 		'--onsa-font-label': fontStack(fonts.label, fonts.cjkFallback),
 		'--onsa-font-numeric': fontStack(fonts.numeric, fonts.cjkFallback, 'ui-monospace, monospace'),
 
-		'--onsa-grain': `${effects.grain}`
+		'--onsa-grain': `${effects.grain}`,
+
+		'--onsa-motion-fast': `${motion.fast}ms`,
+		'--onsa-motion': `${motion.slow}ms`,
+		'--onsa-ease': EASINGS[motion.ease] ?? EASINGS.standard
 	};
 }
+
+/**
+ * The curves a theme may ask for, as CSS writes them.
+ *
+ * None of them overshoot: an interface that reads as an instrument does not
+ * bounce (SPEC section 9.1).
+ */
+const EASINGS: Record<string, string> = {
+	standard: 'cubic-bezier(0.2, 0, 0, 1)',
+	linear: 'linear',
+	snap: 'cubic-bezier(0.4, 0, 1, 1)',
+	soft: 'cubic-bezier(0.4, 0, 0.2, 1)'
+};
 
 /** Builds the `data-onsa-*` attributes of a theme. */
 export function themeAttributes(theme: Theme): Record<string, string> {
@@ -65,6 +85,12 @@ export function themeAttributes(theme: Theme): Record<string, string> {
 		'data-onsa-stage-indicator': theme.variants.stageIndicator,
 		'data-onsa-time-display': theme.variants.timeDisplay,
 		'data-onsa-density': theme.shape.density,
+		'data-onsa-control': theme.shape.control,
+		'data-onsa-frame': theme.shape.frame,
+		'data-onsa-rows': theme.variants.rows,
+		'data-onsa-scrollbar': theme.variants.scrollbar,
+		'data-onsa-tooltip': theme.variants.tooltip,
+		'data-onsa-dialog': theme.variants.dialog,
 		'data-onsa-label-case': theme.effects.labelCase,
 		'data-onsa-glow': String(theme.effects.glow),
 		'data-onsa-glass-reflection': String(theme.effects.glassReflection),

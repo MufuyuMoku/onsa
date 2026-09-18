@@ -27,6 +27,8 @@ pub struct Theme {
     pub variants: Variants,
     /// Decorative effects.
     pub effects: Effects,
+    /// How long things take to move, and how they move (SPEC §9.1).
+    pub motion: Motion,
     /// Tone colour behaviour (SPEC §9.5).
     pub tone_color: ToneColor,
 }
@@ -66,6 +68,22 @@ pub struct Colors {
     pub role: RoleColors,
     /// Colours of things that light up: displays, needles, indicator lamps.
     pub lit: LitColors,
+    /// The two sides of a raised or sunken edge.
+    pub edge: EdgeColors,
+}
+
+/// The two sides of an edge that catches light.
+///
+/// A bevel is drawn with a lit side and a shaded side. Every theme has them,
+/// and a theme that draws nothing raised simply never uses them — which is
+/// what lets a panel look moulded rather than printed without a single line
+/// of code that knows which theme is on.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct EdgeColors {
+    /// The side the light comes from.
+    pub light: String,
+    /// The side away from it.
+    pub dark: String,
 }
 
 /// Panel and window surfaces.
@@ -145,6 +163,10 @@ pub struct Shape {
     pub density: Density,
     /// Hairline width in pixels.
     pub hairline: f32,
+    /// How a control is cut and edged.
+    pub control: ControlShape,
+    /// How a panel is framed.
+    pub frame: FrameStyle,
 }
 
 /// Corner radii in pixels.
@@ -172,6 +194,29 @@ pub struct Variants {
     pub stage_indicator: StageIndicator,
     /// How the time display is drawn.
     pub time_display: TimeDisplay,
+    /// How the rows of a list are told apart.
+    pub rows: RowStyle,
+    /// How a scrollbar is drawn.
+    pub scrollbar: Scrollbar,
+    /// How a tooltip is drawn.
+    pub tooltip: TooltipStyle,
+    /// How a dialog is drawn.
+    pub dialog: DialogStyle,
+}
+
+/// How long things take to move, and how they move (SPEC §9.1).
+///
+/// A theme may set the pace but not the manner: both durations are held
+/// inside a range that stays quick, and the easings on offer all settle
+/// rather than bounce.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct Motion {
+    /// A small change: a colour, an outline. Milliseconds.
+    pub fast: f32,
+    /// A larger one: a panel opening. Milliseconds.
+    pub slow: f32,
+    /// The curve both follow.
+    pub ease: Easing,
 }
 
 /// Decorative effects.
@@ -349,3 +394,105 @@ theme_enum!(
         CoverGlow => "cover-glow",
     }
 );
+
+theme_enum!(
+    /// How a control is cut and edged.
+    ControlShape, default Soft {
+        /// Rounded by the theme's own radius.
+        Soft => "soft",
+        /// Square corners, whatever the radius says.
+        Square => "square",
+        /// Fully rounded ends.
+        Pill => "pill",
+        /// A moulded edge: lit on one side, shaded on the other.
+        Bevel => "bevel",
+    }
+);
+
+theme_enum!(
+    /// How a panel is framed.
+    FrameStyle, default Hairline {
+        /// One thin line.
+        Hairline => "hairline",
+        /// Sunken into the surface around it.
+        Inset => "inset",
+        /// Standing out of it.
+        Raised => "raised",
+        /// Nothing at all.
+        None => "none",
+    }
+);
+
+theme_enum!(
+    /// How the rows of a list are told apart.
+    RowStyle, default Plain {
+        /// Nothing between them but space, which is what Onsa has always
+        /// done: a list of tracks is quiet until something is under the
+        /// pointer.
+        Plain => "plain",
+        /// A hairline under each row.
+        Lines => "lines",
+        /// Every other row on a slightly different ground.
+        Stripes => "stripes",
+    }
+);
+
+theme_enum!(
+    /// How a scrollbar is drawn.
+    Scrollbar, default Thin {
+        /// A narrow bar that stays out of the way.
+        Thin => "thin",
+        /// A wide bar with a visible track, the way a desktop draws one.
+        Classic => "classic",
+        /// No bar at all; the panel still scrolls.
+        Hidden => "hidden",
+    }
+);
+
+theme_enum!(
+    /// How a tooltip is drawn.
+    TooltipStyle, default Plain {
+        /// A small dark box.
+        Plain => "plain",
+        /// The same material as a panel.
+        Panel => "panel",
+    }
+);
+
+theme_enum!(
+    /// How a dialog is drawn.
+    DialogStyle, default Flat {
+        /// A panel with a hairline around it.
+        Flat => "flat",
+        /// Standing out of the window, with a shadow under it.
+        Raised => "raised",
+        /// With a bar across the top carrying its name.
+        Titled => "titled",
+    }
+);
+
+theme_enum!(
+    /// The curve a change follows. None of them overshoot (SPEC §9.1).
+    Easing, default Standard {
+        /// Quick away, settling at the end.
+        Standard => "standard",
+        /// The same speed throughout.
+        Linear => "linear",
+        /// Away at once, then slowing.
+        Snap => "snap",
+        /// Gentle at both ends.
+        Soft => "soft",
+    }
+);
+
+impl Easing {
+    /// The curve as CSS writes it.
+    pub fn css(self) -> &'static str {
+        match self {
+            Self::Standard => "cubic-bezier(0.2, 0, 0, 1)",
+            Self::Linear => "linear",
+            Self::Snap => "cubic-bezier(0.4, 0, 1, 1)",
+            Self::Soft => "cubic-bezier(0.4, 0, 0.2, 1)",
+        }
+    }
+}

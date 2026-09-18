@@ -337,7 +337,7 @@ Downloader punya bagian tersendiri di UI. yt-dlp dijalankan sebagai proses terpi
 
 Tema adalah file JSON. Tema bawaan ada di `themes/` dan bersifat baca saja. Pengguna bisa menduplikasi lalu mengeditnya. Tema buatan pengguna disimpan di `<app_config>/themes/*.json`. Tema divalidasi saat dimuat: field yang hilang atau salah diganti nilai default, dan tema tidak boleh membuat aplikasi rusak.
 
-Tema terdiri dari tiga lapis:
+Tema terdiri dari lima lapis:
 
 1. **Token warna**, termasuk **peran warna berbasis arti** yang wajib diisi setiap tema:
 
@@ -352,9 +352,15 @@ Tema terdiri dari tiga lapis:
 
    Peran boleh berbagi warna yang sama (misalnya di tema Kaca asap), tapi komponen selalu memakai peran, bukan warna mentah.
 
-2. **Varian komponen**: gaya meter (`bar`, `segment`, `needle`), gaya spektrum (`segment`, `bar`, `soft`), tekstur panel (`glass`, `bezel`, `brushed`), indikator tahap (`glow-chip`, `outline-chip`, `led`), dan tampilan waktu (`ghost-segment`, `plain`).
+   Selain peran, ada **warna tepi** (`color.edge.light` dan `color.edge.dark`): sisi yang kena cahaya dan sisi yang tidak. Itulah yang membuat sebuah kontrol bisa tampak dicetak atau dicetak-timbul tanpa satu baris kode pun yang tahu tema mana yang sedang dipakai.
 
-3. **Efek dan aset**: glow, pantulan kaca, grain, dan gambar tekstur opsional.
+2. **Bentuk**: radius sudut, kerapatan baris, tebal hairline, **bentuk kontrol** (`soft`, `square`, `pill`, `bevel`), dan **bingkai panel** (`hairline`, `inset`, `raised`, `none`).
+
+3. **Varian komponen**: gaya meter (`bar`, `segment`, `needle`), gaya spektrum (`segment`, `bar`, `soft`), tekstur panel (`glass`, `bezel`, `brushed`), indikator tahap (`glow-chip`, `outline-chip`, `led`), tampilan waktu (`ghost-segment`, `plain`), **baris daftar** (`plain`, `lines`, `stripes`), **scrollbar** (`thin`, `classic`, `hidden`), **tooltip** (`plain`, `panel`), dan **dialog** (`flat`, `raised`, `titled`).
+
+4. **Gerak** (`motion`): `fast` dan `slow` dalam milidetik, dan `ease` (`standard`, `linear`, `snap`, `soft`). Tema boleh mengatur temponya, tidak boleh mengatur perangainya: kedua durasi dijepit ke rentang yang tetap cepat, dan semua kurva yang tersedia berhenti tanpa memantul (§9.1).
+
+5. **Efek dan aset**: glow, pantulan kaca, grain, dan gambar tekstur opsional.
 
 Token diterjemahkan menjadi CSS variables berprefiks `--onsa-`. Varian dipasang sebagai atribut `data-*` pada root, dan komponen membaca varian tersebut. Contoh lengkapnya ada di file `themes/*.json`.
 

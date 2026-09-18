@@ -9,9 +9,10 @@ use anyhow::{anyhow, Context, Result};
 use serde_json::Value;
 
 use super::model::{
-    Base, Colors, Density, Effects, Fonts, LabelCase, LitColors, LocalizedName, MeterVariant,
-    PanelTexture, Radius, RoleColors, Shape, SpectrumVariant, StageIndicator, SurfaceColors,
-    TextColors, Theme, TimeDisplay, ToneColor, ToneTarget, Variants,
+    Base, Colors, ControlShape, Density, DialogStyle, Easing, EdgeColors, Effects, Fonts,
+    FrameStyle, LabelCase, LitColors, LocalizedName, MeterVariant, Motion, PanelTexture, Radius,
+    RoleColors, RowStyle, Scrollbar, Shape, SpectrumVariant, StageIndicator, SurfaceColors,
+    TextColors, Theme, TimeDisplay, ToneColor, ToneTarget, TooltipStyle, Variants,
 };
 
 /// A theme as read from a file, together with what had to be corrected.
@@ -126,6 +127,19 @@ pub fn parse_theme(id_hint: &str, source: &str) -> Result<LoadedTheme> {
         secondary: lit_secondary,
     };
 
+    let edge_node = cx.child(color_node, "edge", "color.edge");
+    let edge = EdgeColors {
+        // What a raised edge looks like when nobody says: a little light on
+        // top, rather more shadow underneath.
+        light: cx.color(
+            edge_node,
+            "light",
+            "color.edge.light",
+            "rgba(255,255,255,0.10)",
+        ),
+        dark: cx.color(edge_node, "dark", "color.edge.dark", "rgba(0,0,0,0.45)"),
+    };
+
     let shape_node = cx.child(root, "shape", "shape");
     let radius_node = cx.child(shape_node, "radius", "shape.radius");
     let shape = Shape {
@@ -136,6 +150,8 @@ pub fn parse_theme(id_hint: &str, source: &str) -> Result<LoadedTheme> {
         },
         density: cx.enumeration(shape_node, "density", "shape.density"),
         hairline: cx.number(shape_node, "hairline", "shape.hairline", 1.0, 0.5, 4.0),
+        control: cx.enumeration::<ControlShape>(shape_node, "control", "shape.control"),
+        frame: cx.enumeration::<FrameStyle>(shape_node, "frame", "shape.frame"),
     };
 
     let variants_node = cx.child(root, "variants", "variants");
@@ -157,6 +173,10 @@ pub fn parse_theme(id_hint: &str, source: &str) -> Result<LoadedTheme> {
             "timeDisplay",
             "variants.timeDisplay",
         ),
+        rows: cx.enumeration::<RowStyle>(variants_node, "rows", "variants.rows"),
+        scrollbar: cx.enumeration::<Scrollbar>(variants_node, "scrollbar", "variants.scrollbar"),
+        tooltip: cx.enumeration::<TooltipStyle>(variants_node, "tooltip", "variants.tooltip"),
+        dialog: cx.enumeration::<DialogStyle>(variants_node, "dialog", "variants.dialog"),
     };
 
     let effects_node = cx.child(root, "effects", "effects");
@@ -170,6 +190,15 @@ pub fn parse_theme(id_hint: &str, source: &str) -> Result<LoadedTheme> {
         ),
         grain: cx.number(effects_node, "grain", "effects.grain", 0.0, 0.0, 1.0),
         label_case: cx.enumeration::<LabelCase>(effects_node, "labelCase", "effects.labelCase"),
+    };
+
+    // A theme may set the pace but not the manner: quick stays quick, and
+    // every easing on offer settles rather than bounces (SPEC §9.1).
+    let motion_node = cx.child(root, "motion", "motion");
+    let motion = Motion {
+        fast: cx.number(motion_node, "fast", "motion.fast", 100.0, 40.0, 220.0),
+        slow: cx.number(motion_node, "slow", "motion.slow", 150.0, 60.0, 320.0),
+        ease: cx.enumeration::<Easing>(motion_node, "ease", "motion.ease"),
     };
 
     let tone_node = cx.child(root, "toneColor", "toneColor");
@@ -192,10 +221,12 @@ pub fn parse_theme(id_hint: &str, source: &str) -> Result<LoadedTheme> {
             text,
             role,
             lit,
+            edge,
         },
         shape,
         variants,
         effects,
+        motion,
         tone_color,
     };
 
@@ -370,13 +401,20 @@ macro_rules! impl_theme_enum {
 
 impl_theme_enum!(
     Base,
+    ControlShape,
     Density,
+    DialogStyle,
+    Easing,
+    FrameStyle,
     LabelCase,
     MeterVariant,
     PanelTexture,
+    RowStyle,
+    Scrollbar,
     SpectrumVariant,
     StageIndicator,
     TimeDisplay,
+    TooltipStyle,
 );
 
 /// Whether a string is one of the CSS colour notations Onsa uses: a hex
@@ -516,5 +554,109 @@ mod tests {
         ] {
             assert!(!is_css_color(bad), "should refuse {bad}");
         }
+    }
+
+    #[test]
+    fn a_theme_that_says_nothing_about_shape_looks_the_way_onsa_always_did() {
+        // Everything the deeper scheme added has to default to what was
+        // there before it existed, or every theme written so far changes
+        // the moment Onsa updates.
+        let loaded = parse_theme("bare", "{}").expect("an object");
+        let theme = loaded.theme;
+        assert_eq!(theme.shape.control, ControlShape::Soft);
+        assert_eq!(theme.shape.frame, FrameStyle::Hairline);
+        assert_eq!(theme.variants.rows, RowStyle::Plain);
+        assert_eq!(theme.variants.scrollbar, Scrollbar::Thin);
+        assert_eq!(theme.variants.tooltip, TooltipStyle::Plain);
+        assert_eq!(theme.variants.dialog, DialogStyle::Flat);
+        assert_eq!(theme.motion.ease, Easing::Standard);
+        assert_eq!(theme.motion.fast, 100.0);
+        assert_eq!(theme.motion.slow, 150.0);
+        assert!(theme.color.edge.light.starts_with("rgba("));
+        assert!(theme.color.edge.dark.starts_with("rgba("));
+    }
+
+    #[test]
+    fn a_theme_can_be_moulded_rather_than_printed() {
+        let source = r##"{
+            "id": "moulded",
+            "color": { "edge": { "light": "#FFFFFF", "dark": "#404040" } },
+            "shape": { "control": "bevel", "frame": "raised" },
+            "variants": {
+                "rows": "stripes",
+                "scrollbar": "classic",
+                "tooltip": "panel",
+                "dialog": "titled"
+            },
+            "motion": { "fast": 60, "slow": 90, "ease": "snap" }
+        }"##;
+        let loaded = parse_theme("moulded", source).expect("an object");
+        assert!(loaded.warnings.is_empty(), "{:?}", loaded.warnings);
+        let theme = loaded.theme;
+        assert_eq!(theme.shape.control, ControlShape::Bevel);
+        assert_eq!(theme.shape.frame, FrameStyle::Raised);
+        assert_eq!(theme.variants.rows, RowStyle::Stripes);
+        assert_eq!(theme.variants.scrollbar, Scrollbar::Classic);
+        assert_eq!(theme.variants.tooltip, TooltipStyle::Panel);
+        assert_eq!(theme.variants.dialog, DialogStyle::Titled);
+        assert_eq!(theme.color.edge.light, "#FFFFFF");
+        assert_eq!(theme.motion.fast, 60.0);
+        assert_eq!(theme.motion.ease, Easing::Snap);
+    }
+
+    #[test]
+    fn a_theme_may_set_the_pace_but_not_the_manner() {
+        // Onsa's animations are short and never bounce (SPEC §9.1). A theme
+        // asking for half a second is brought back to what is still quick,
+        // and the warning says so.
+        let source = r##"{ "motion": { "fast": 900, "slow": 5, "ease": "boing" } }"##;
+        let loaded = parse_theme("slow", source).expect("an object");
+        assert!(
+            loaded.theme.motion.fast <= 220.0,
+            "{}",
+            loaded.theme.motion.fast
+        );
+        assert!(
+            loaded.theme.motion.slow >= 60.0,
+            "{}",
+            loaded.theme.motion.slow
+        );
+        assert_eq!(
+            loaded.theme.motion.ease,
+            Easing::Standard,
+            "an unknown curve"
+        );
+        assert_eq!(loaded.warnings.len(), 3, "{:?}", loaded.warnings);
+
+        // None of the curves on offer overshoot: a bezier whose control
+        // points stay between 0 and 1 cannot go past where it is heading,
+        // which is what bouncing looks like (SPEC §9.1).
+        for ease in [Easing::Standard, Easing::Linear, Easing::Snap, Easing::Soft] {
+            let css = ease.css();
+            let Some(inside) = css
+                .strip_prefix("cubic-bezier(")
+                .and_then(|rest| rest.strip_suffix(')'))
+            else {
+                continue;
+            };
+            let points: Vec<f32> = inside
+                .split(',')
+                .filter_map(|part| part.trim().parse().ok())
+                .collect();
+            assert_eq!(points.len(), 4, "{css}");
+            for height in [points[1], points[3]] {
+                assert!((0.0..=1.0).contains(&height), "{css} overshoots");
+            }
+        }
+    }
+
+    #[test]
+    fn a_shape_nobody_has_heard_of_falls_back_and_is_reported() {
+        let source =
+            r##"{ "shape": { "control": "octagonal" }, "variants": { "rows": "zebra" } }"##;
+        let loaded = parse_theme("odd", source).expect("an object");
+        assert_eq!(loaded.theme.shape.control, ControlShape::Soft);
+        assert_eq!(loaded.theme.variants.rows, RowStyle::Plain);
+        assert_eq!(loaded.warnings.len(), 2, "{:?}", loaded.warnings);
     }
 }

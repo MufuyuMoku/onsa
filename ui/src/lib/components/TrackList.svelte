@@ -278,7 +278,8 @@
 				{#snippet row(track: Track | undefined, index: number)}
 					{#if track}
 						<div
-							class="row"
+							class="row listrow"
+							class:alt={index % 2 === 1}
 							class:playing={player.snapshot?.track?.id === track.id}
 							class:dim={track.status !== 'ok'}
 							role="button"

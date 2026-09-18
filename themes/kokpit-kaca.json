@@ -40,6 +40,10 @@
       "ghost": "rgba(63,224,138,0.06)",
       "glow": "rgba(0,0,0,0)",
       "secondary": "#35D0F2"
+    },
+    "edge": {
+      "light": "rgba(255,255,255,0.16)",
+      "dark": "rgba(0,0,0,0.5)"
     }
   },
   "shape": {
@@ -49,14 +53,20 @@
       "lg": 10
     },
     "density": "comfortable",
-    "hairline": 1
+    "hairline": 1,
+    "control": "square",
+    "frame": "raised"
   },
   "variants": {
     "meter": "bar",
     "spectrum": "bar",
     "panelTexture": "bezel",
     "stageIndicator": "outline-chip",
-    "timeDisplay": "plain"
+    "timeDisplay": "plain",
+    "rows": "lines",
+    "scrollbar": "thin",
+    "tooltip": "panel",
+    "dialog": "raised"
   },
   "effects": {
     "glow": false,
@@ -70,5 +80,10 @@
     ],
     "warm": "#FFB020",
     "cool": "#35D0F2"
+  },
+  "motion": {
+    "fast": 80,
+    "slow": 120,
+    "ease": "snap"
   }
 }

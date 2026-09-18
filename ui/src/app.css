@@ -44,6 +44,9 @@
 	--onsa-font-label: system-ui, sans-serif;
 	--onsa-font-numeric: ui-monospace, monospace;
 
+	--onsa-edge-light: rgba(255, 255, 255, 0.1);
+	--onsa-edge-dark: rgba(0, 0, 0, 0.45);
+
 	--onsa-grain: 0;
 	--onsa-tone-range: 70deg;
 
@@ -242,4 +245,161 @@ input[type='checkbox'] {
 	overflow: hidden;
 	white-space: nowrap;
 	text-overflow: ellipsis;
+}
+
+/* ------------------------------------------------------- what a theme cuts
+ * The shape of a control, the frame around a panel, how rows are told apart,
+ * the scrollbars, the tooltips and the dialogs are all the theme's to choose
+ * (SPEC section 9.3). A theme that says nothing gets exactly what Onsa looked
+ * like before any of this existed; a theme that wants to be moulded rather
+ * than printed says so here, and no code anywhere knows its name.
+ */
+
+/* --- controls: how they are cut ------------------------------------------ */
+
+:root[data-onsa-control='square'] .btn,
+:root[data-onsa-control='square'] .chip,
+:root[data-onsa-control='square'] .field,
+:root[data-onsa-control='square'] .icon-btn {
+	border-radius: 0;
+}
+
+:root[data-onsa-control='pill'] .btn,
+:root[data-onsa-control='pill'] .chip,
+:root[data-onsa-control='pill'] .field {
+	border-radius: 999px;
+}
+
+/* A moulded edge: light where the light falls, shadow where it does not. */
+:root[data-onsa-control='bevel'] .btn,
+:root[data-onsa-control='bevel'] .chip,
+:root[data-onsa-control='bevel'] .icon-btn {
+	border-color: var(--onsa-edge-dark);
+	box-shadow:
+		inset 1px 1px 0 var(--onsa-edge-light),
+		inset -1px -1px 0 var(--onsa-edge-dark);
+}
+
+/* Pressed in is the same edge the other way round. */
+:root[data-onsa-control='bevel'] .btn:active:not(:disabled),
+:root[data-onsa-control='bevel'] .chip[aria-pressed='true'],
+:root[data-onsa-control='bevel'] .icon-btn:active:not(:disabled) {
+	box-shadow:
+		inset 1px 1px 0 var(--onsa-edge-dark),
+		inset -1px -1px 0 var(--onsa-edge-light);
+}
+
+:root[data-onsa-control='bevel'] .field {
+	box-shadow: inset 1px 1px 0 var(--onsa-edge-dark);
+}
+
+/* --- panels: how they are framed ----------------------------------------- */
+
+:root[data-onsa-frame='inset'] .panel {
+	box-shadow:
+		inset 1px 1px 0 var(--onsa-edge-dark),
+		inset -1px -1px 0 var(--onsa-edge-light);
+}
+
+:root[data-onsa-frame='raised'] .panel {
+	border-color: var(--onsa-edge-dark);
+	box-shadow:
+		inset 1px 1px 0 var(--onsa-edge-light),
+		inset -1px -1px 0 var(--onsa-edge-dark);
+}
+
+:root[data-onsa-frame='none'] .panel {
+	border-color: transparent;
+}
+
+/* --- rows of a list ------------------------------------------------------ */
+
+:root[data-onsa-rows='lines'] .listrow,
+:root[data-onsa-rows='lines'] .entry {
+	box-shadow: inset 0 -1px 0 var(--onsa-surface-line);
+}
+
+/* The stripe follows the row's own number rather than its place among the
+   rows drawn: a virtual list only keeps the visible ones, and stripes that
+   move while the list scrolls are worse than no stripes. */
+:root[data-onsa-rows='stripes'] .listrow.alt {
+	background: var(--onsa-surface-body-highlight);
+}
+
+/* --- scrollbars ---------------------------------------------------------- */
+
+:root[data-onsa-scrollbar='classic'] * {
+	scrollbar-width: auto;
+}
+
+:root[data-onsa-scrollbar='classic'] ::-webkit-scrollbar {
+	width: 14px;
+	height: 14px;
+}
+
+:root[data-onsa-scrollbar='classic'] ::-webkit-scrollbar-track {
+	background: var(--onsa-surface-well);
+}
+
+:root[data-onsa-scrollbar='classic'] ::-webkit-scrollbar-thumb {
+	border: var(--onsa-hairline) solid var(--onsa-edge-dark);
+	background: var(--onsa-surface-raised);
+	box-shadow:
+		inset 1px 1px 0 var(--onsa-edge-light),
+		inset -1px -1px 0 var(--onsa-edge-dark);
+}
+
+:root[data-onsa-scrollbar='hidden'] * {
+	scrollbar-width: none;
+}
+
+:root[data-onsa-scrollbar='hidden'] ::-webkit-scrollbar {
+	width: 0;
+	height: 0;
+}
+
+/* --- tooltips Onsa draws itself ------------------------------------------ */
+
+.tip {
+	position: fixed;
+	z-index: 60;
+	max-width: 320px;
+	padding: 3px 8px;
+	border: var(--onsa-hairline) solid var(--onsa-surface-line);
+	border-radius: var(--onsa-radius-sm);
+	background: var(--onsa-surface-well);
+	color: var(--onsa-text-primary);
+	font-size: 11.5px;
+	line-height: 1.4;
+	pointer-events: none;
+}
+
+:root[data-onsa-tooltip='panel'] .tip {
+	border-color: var(--onsa-edge-dark);
+	background: var(--onsa-surface-raised);
+	box-shadow:
+		inset 1px 1px 0 var(--onsa-edge-light),
+		0 2px 6px var(--onsa-edge-dark);
+}
+
+/* --- dialogs ------------------------------------------------------------- */
+
+:root[data-onsa-dialog='raised'] .panel[role='dialog'],
+:root[data-onsa-dialog='titled'] .panel[role='dialog'] {
+	border-color: var(--onsa-edge-dark);
+	box-shadow:
+		inset 1px 1px 0 var(--onsa-edge-light),
+		0 8px 28px var(--onsa-edge-dark);
+}
+
+/* A bar across the top carrying the dialog's name. The heading is already
+   there; this is the strip it sits in. */
+:root[data-onsa-dialog='titled'] .panel[role='dialog'] > header {
+	padding-inline: 12px;
+	background: var(--onsa-surface-raised);
+	box-shadow: inset 0 -1px 0 var(--onsa-edge-dark);
+}
+
+:root[data-onsa-dialog='titled'] .panel[role='dialog'] > header h2 {
+	color: var(--onsa-text-primary);
 }

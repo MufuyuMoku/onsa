@@ -15,6 +15,7 @@
 	import { t } from '$lib/i18n/index.svelte';
 	import type { MessageKey } from '$lib/i18n/dictionary';
 	import { matching, pick, tick, tickCover } from '$lib/matching.svelte';
+	import { tip } from '$lib/tip';
 
 	interface Props {
 		/** The folder the rows are shown from, when there is one. */
@@ -89,7 +90,7 @@
 								<span
 									class="sure numeric"
 									class:trusted={candidate.trusted}
-									title={t('match.sureTitle')}>{sure}%</span
+									use:tip={t('match.sureTitle')}>{sure}%</span
 								>
 								<span class="bar" aria-hidden="true">
 									<span

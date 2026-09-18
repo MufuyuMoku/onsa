@@ -45,6 +45,10 @@
       "needle": "#C8401F",
       "knob": "#B8BBC1",
       "led": "#4B8BFF"
+    },
+    "edge": {
+      "light": "rgba(255,255,255,0.09)",
+      "dark": "rgba(0,0,0,0.6)"
     }
   },
   "shape": {
@@ -54,14 +58,20 @@
       "lg": 10
     },
     "density": "comfortable",
-    "hairline": 1
+    "hairline": 1,
+    "control": "bevel",
+    "frame": "raised"
   },
   "variants": {
     "meter": "needle",
     "spectrum": "soft",
     "panelTexture": "brushed",
     "stageIndicator": "led",
-    "timeDisplay": "plain"
+    "timeDisplay": "plain",
+    "rows": "stripes",
+    "scrollbar": "classic",
+    "tooltip": "panel",
+    "dialog": "raised"
   },
   "effects": {
     "glow": true,
@@ -77,5 +87,10 @@
     ],
     "warm": "#C8401F",
     "cool": "#7FA6C8"
+  },
+  "motion": {
+    "fast": 130,
+    "slow": 200,
+    "ease": "standard"
   }
 }

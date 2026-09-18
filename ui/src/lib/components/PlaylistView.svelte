@@ -253,7 +253,8 @@
 					{#each tracks as track, index (`${track.id}-${index}`)}
 						<li>
 							<div
-								class="row"
+								class="row listrow"
+								class:alt={index % 2 === 1}
 								class:dim={track.status !== 'ok'}
 								data-index={index}
 								role="button"
