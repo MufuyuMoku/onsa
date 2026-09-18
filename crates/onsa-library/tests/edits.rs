@@ -424,6 +424,27 @@ fn what_was_written_is_read_back_before_the_original_is_replaced() {
     assert_eq!(write::read_field(&file, "year").unwrap(), None);
 }
 
+#[test]
+fn words_a_format_cannot_hold_are_refused_rather_than_lost() {
+    let dir = temp_dir("lyrics");
+    let file = dir.join("satu.wav");
+    song(&file, "Satu", "Rian");
+
+    // A WAV carrying a RIFF INFO tag has nowhere to put lyrics. What must
+    // not happen is the words quietly going nowhere while Onsa reports a
+    // success — so the write is refused and the file is left as it was.
+    let words = "[00:01.00]Baris pertama
+[00:05.00]Baris kedua
+";
+    let refused = write::write_fields(&file, &[("lyrics".into(), Some(words.into()))]);
+    assert!(refused.is_err(), "it should say so rather than lose them");
+    assert_eq!(
+        write::read_field(&file, "title").unwrap().as_deref(),
+        Some("Satu"),
+        "and the file keeps what it had"
+    );
+}
+
 // ------------------------------------------------------- renaming and moving
 
 #[test]

@@ -219,6 +219,7 @@ fn field_of(name: &str) -> Result<Field, ErrorCode> {
         "year" => Field::Year,
         "genre" => Field::Genre,
         "composer" => Field::Composer,
+        "lyrics" => Field::Lyrics,
         _ => return Err(ErrorCode::Library),
     })
 }

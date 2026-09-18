@@ -7,11 +7,15 @@
 //! Version 1 holds what the library itself needs (M3), version 2 the
 //! playlists (M6), version 3 the record of what Onsa has changed so that it
 //! can be taken back again (M7), and version 4 lets that record hold a
-//! cover as well. Lyrics, the scrobble queue and downloads arrive as later
-//! migrations with the milestones that use them.
+//! cover as well, and version 5 holds the lyrics (M8). The scrobble queue
+//! and the download queue arrive as later migrations with the milestones
+//! that use them.
+//!
+//! The numbers follow the order the work was done in, not the milestone
+//! numbers (see `docs/DECISIONS.md`).
 
 /// The migrations, in order. Index 0 is version 1.
-pub const MIGRATIONS: &[&str] = &[V1, V2, V3, V4];
+pub const MIGRATIONS: &[&str] = &[V1, V2, V3, V4, V5];
 
 const V1: &str = r#"
 CREATE TABLE folders (
@@ -219,4 +223,25 @@ SELECT id, batch_id, position, track_id, kind, field, before, after FROM edit_st
 DROP TABLE edit_steps;
 ALTER TABLE edit_steps_v4 RENAME TO edit_steps;
 CREATE INDEX edit_steps_batch ON edit_steps(batch_id, position);
+"#;
+
+const V5: &str = r#"
+-- A song's words, and how they sit against it (SPEC §10).
+--
+-- Only what came from the internet is kept here. A `.lrc` beside the song
+-- and the words in the song's own tags are read again each time, because
+-- reading a small file costs less than working out whether what was
+-- remembered about it is still true.
+--
+-- The offset the listener set is in the same row, and outlives the text: a
+-- song can have an offset with nothing cached, and asking the source again
+-- does not lose the half second the listener tuned by ear.
+CREATE TABLE lyrics (
+    track_id    INTEGER PRIMARY KEY REFERENCES tracks(id) ON DELETE CASCADE,
+    source      TEXT,                        -- 'lrclib', or 'none' for a miss
+    text        TEXT,                        -- LRC or plain words
+    synced      INTEGER NOT NULL DEFAULT 0,
+    offset_ms   INTEGER NOT NULL DEFAULT 0,
+    fetched_at  INTEGER                      -- when the source was asked
+);
 "#;

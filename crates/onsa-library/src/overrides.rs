@@ -31,6 +31,8 @@ pub enum Field {
     Genre,
     /// Composer.
     Composer,
+    /// The song's words, kept in the file's own lyrics tag (SPEC §8, §10).
+    Lyrics,
 }
 
 impl Field {
@@ -49,6 +51,7 @@ impl Field {
             Self::Year => "year",
             Self::Genre => "genre",
             Self::Composer => "composer",
+            Self::Lyrics => "lyrics",
         }
     }
 }

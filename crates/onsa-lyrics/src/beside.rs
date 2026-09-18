@@ -51,7 +51,8 @@ pub fn read_beside(song: &Path) -> Option<String> {
 /// Reads the words kept inside the song's own tags.
 ///
 /// Which tag that is depends on the format — `USLT` in ID3, `LYRICS` in a
-/// Vorbis comment, `©lyr` in MP4 — and lofty knows them all by one name.
+/// Vorbis comment, `©lyr` in MP4 — and lofty knows them under two names:
+/// ID3's frame is the unsynchronised one, everything else the plain one.
 pub fn read_embedded(song: &Path) -> Option<String> {
     let tagged = match lofty::read_from_path(song) {
         Ok(tagged) => tagged,
@@ -63,7 +64,10 @@ pub fn read_embedded(song: &Path) -> Option<String> {
     tagged
         .tags()
         .iter()
-        .find_map(|tag| tag.get_string(ItemKey::Lyrics))
+        .find_map(|tag| {
+            tag.get_string(ItemKey::Lyrics)
+                .or_else(|| tag.get_string(ItemKey::UnsyncLyrics))
+        })
         .map(str::to_string)
         .filter(|words| !words.trim().is_empty())
 }
@@ -122,6 +126,26 @@ fn text_of(bytes: Vec<u8>) -> String {
 mod tests {
     use super::*;
 
+    /// A short silent WAV, which is a real file lofty will tag.
+    fn song_at(path: &Path) {
+        let frames = 400u32;
+        let mut bytes = Vec::new();
+        bytes.extend_from_slice(b"RIFF");
+        bytes.extend_from_slice(&(36 + frames * 2).to_le_bytes());
+        bytes.extend_from_slice(b"WAVEfmt ");
+        bytes.extend_from_slice(&16u32.to_le_bytes());
+        bytes.extend_from_slice(&1u16.to_le_bytes());
+        bytes.extend_from_slice(&1u16.to_le_bytes());
+        bytes.extend_from_slice(&44_100u32.to_le_bytes());
+        bytes.extend_from_slice(&88_200u32.to_le_bytes());
+        bytes.extend_from_slice(&2u16.to_le_bytes());
+        bytes.extend_from_slice(&16u16.to_le_bytes());
+        bytes.extend_from_slice(b"data");
+        bytes.extend_from_slice(&(frames * 2).to_le_bytes());
+        bytes.extend_from_slice(&vec![0u8; frames as usize * 2]);
+        std::fs::write(path, bytes).expect("the song");
+    }
+
     /// A folder of this test's own, named after the test.
     fn folder(name: &str) -> PathBuf {
         let path = std::env::temp_dir().join(format!("onsa-lyrics-{name}"));
@@ -173,6 +197,48 @@ mod tests {
         std::fs::write(&song, b"not really audio").expect("the song");
         std::fs::write(at.join("lagu.lrc"), vec![b'x'; MAX_LRC as usize + 1]).expect("the lyrics");
         assert_eq!(read_beside(&song), None);
+    }
+
+    #[test]
+    fn the_words_inside_the_song_s_own_tags_are_read() {
+        use lofty::config::WriteOptions;
+        use lofty::prelude::TagExt;
+        use lofty::tag::{ItemValue, Tag, TagItem, TagType};
+
+        let at = folder("embedded");
+        let song = at.join("lagu.wav");
+        song_at(&song);
+        assert_eq!(read_embedded(&song), None, "nothing in it yet");
+
+        let mut tag = Tag::new(TagType::Id3v2);
+        // ID3 keeps the words in `USLT`, which lofty calls the
+        // unsynchronised one; the plain name it will not take at all.
+        tag.insert(TagItem::new(
+            ItemKey::UnsyncLyrics,
+            ItemValue::Text(
+                "[00:01.00]satu
+[00:02.00]dua"
+                    .into(),
+            ),
+        ));
+        tag.save_to_path(&song, WriteOptions::default())
+            .expect("the tag");
+
+        assert_eq!(
+            read_embedded(&song).as_deref(),
+            Some(
+                "[00:01.00]satu
+[00:02.00]dua"
+            )
+        );
+    }
+
+    #[test]
+    fn something_that_is_not_audio_has_no_words_rather_than_failing() {
+        let at = folder("notaudio");
+        let song = at.join("lagu.mp3");
+        std::fs::write(&song, b"not really audio").expect("the file");
+        assert_eq!(read_embedded(&song), None);
     }
 
     #[test]

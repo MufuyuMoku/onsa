@@ -30,6 +30,7 @@ pub const WRITABLE: &[&str] = &[
     "year",
     "genre",
     "composer",
+    "lyrics",
 ];
 
 /// Reads one tag field from a file, as text.
@@ -59,8 +60,16 @@ pub fn read_field(path: &Path, field: &str) -> Result<Option<String>> {
             .or_else(|| tag.get_string(ItemKey::Year).map(str::to_string)),
         "genre" => tag.genre().map(|value| value.to_string()),
         "composer" => tag.get_string(ItemKey::Composer).map(str::to_string),
+        "lyrics" => read_lyrics(tag),
         _ => None,
     })
+}
+
+/// The words a tag carries, under whichever of the two names it uses.
+fn read_lyrics(tag: &Tag) -> Option<String> {
+    tag.get_string(ItemKey::Lyrics)
+        .or_else(|| tag.get_string(ItemKey::UnsyncLyrics))
+        .map(str::to_string)
 }
 
 /// Puts one field into a tag, or takes it out when the value is `None`.
@@ -119,6 +128,22 @@ fn set_field(tag: &mut Tag, field: &str, value: Option<&str>) -> Result<()> {
             tag.remove_key(key);
             if let Some(value) = value {
                 tag.insert(TagItem::new(key, ItemValue::Text(value.to_string())));
+            }
+        }
+        "lyrics" => {
+            // Two keys, because two families of tag disagree about what the
+            // field is called: ID3 keeps the words in `USLT`, which lofty
+            // knows as the unsynchronised one, while a Vorbis comment and an
+            // MP4 atom use the plain name. Both are cleared and whichever
+            // the tag will take is written, so a file never ends up with the
+            // words in one place and the old words in the other.
+            tag.remove_key(ItemKey::Lyrics);
+            tag.remove_key(ItemKey::UnsyncLyrics);
+            if let Some(value) = value {
+                let words = ItemValue::Text(value.to_string());
+                if !tag.insert(TagItem::new(ItemKey::Lyrics, words.clone())) {
+                    tag.insert(TagItem::new(ItemKey::UnsyncLyrics, words));
+                }
             }
         }
         other => return Err(Error::Invalid(format!("{other} is not a tag Onsa writes"))),
@@ -274,6 +299,26 @@ mod tests {
             set_field(&mut tag, field, None).expect("and clearable");
         }
         assert!(set_field(&mut tag, "nonsense", Some("x")).is_err());
+    }
+
+    #[test]
+    fn a_song_s_words_keep_their_lines_in_every_kind_of_tag() {
+        // Lyrics are the one field with newlines in it, and the one whose
+        // name the formats disagree about: ID3 will not take it under the
+        // plain name at all.
+        let words = "[00:01.00]Baris pertama
+[00:05.00]Baris kedua";
+        for kind in [
+            lofty::tag::TagType::Id3v2,
+            lofty::tag::TagType::VorbisComments,
+            lofty::tag::TagType::Mp4Ilst,
+        ] {
+            let mut tag = Tag::new(kind);
+            set_field(&mut tag, "lyrics", Some(words)).expect("it should write");
+            assert_eq!(read_lyrics(&tag).as_deref(), Some(words), "{kind:?}");
+            set_field(&mut tag, "lyrics", None).expect("it should clear");
+            assert_eq!(read_lyrics(&tag), None, "{kind:?}");
+        }
     }
 
     #[test]
