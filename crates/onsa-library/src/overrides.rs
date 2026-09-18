@@ -10,6 +10,19 @@ use crate::db::Library;
 use crate::error::Result;
 use crate::search::{track_row, TrackRow, TRACK_COLUMNS};
 
+/// What a file says about its own loudness.
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
+pub struct ReplayGain {
+    /// Track gain in dB.
+    pub track_gain_db: Option<f64>,
+    /// Track peak, linear.
+    pub track_peak: Option<f64>,
+    /// Album gain in dB.
+    pub album_gain_db: Option<f64>,
+    /// Album peak, linear.
+    pub album_peak: Option<f64>,
+}
+
 /// One value Onsa holds instead of what the file says.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Edited {
@@ -138,6 +151,29 @@ impl Library {
             })
         })?;
         Ok(rows.collect::<std::result::Result<Vec<_>, _>>()?)
+    }
+
+    /// What the file says about its own loudness (SPEC §8).
+    ///
+    /// Read only: ReplayGain belongs to whoever measured the recording, and
+    /// Onsa shows it rather than offering to change it.
+    pub fn replay_gain(&self, track_id: i64) -> Result<Option<ReplayGain>> {
+        Ok(self
+            .conn
+            .query_row(
+                "SELECT rg_track_gain, rg_track_peak, rg_album_gain, rg_album_peak
+                 FROM tracks WHERE id = ?1",
+                [track_id],
+                |row| {
+                    Ok(ReplayGain {
+                        track_gain_db: row.get(0)?,
+                        track_peak: row.get(1)?,
+                        album_gain_db: row.get(2)?,
+                        album_peak: row.get(3)?,
+                    })
+                },
+            )
+            .optional()?)
     }
 
     /// The id of the track at `path`, if the library knows it.

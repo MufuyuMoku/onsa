@@ -10,6 +10,7 @@ mod acoustid;
 mod commands;
 mod downloads;
 mod dto;
+mod editor;
 mod error;
 mod keys;
 mod library;
@@ -169,6 +170,10 @@ pub fn run() -> Result<()> {
             lyrics::lyrics_write_beside,
             lyrics::lyrics_settings,
             lyrics::lyrics_set_settings,
+            editor::track_fields,
+            editor::track_preview,
+            editor::track_apply,
+            editor::track_write,
         ])
         .run(tauri::generate_context!())
         .context("the application window could not be started")

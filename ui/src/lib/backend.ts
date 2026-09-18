@@ -812,6 +812,49 @@ export const playlistImport = (title: string, filterName: string) =>
 export const smartPreview = (rules: Rules, limit: number) =>
 	call<Track[]>('smart_preview', { rules, limit });
 
+// Editing one track's tags (SPEC section 8) --------------------------------
+
+/** One field, as the editor shows it. */
+export interface TrackField {
+	name: string;
+	value: string | null;
+	/** Whether the value shown is Onsa's rather than the file's. */
+	edited: boolean;
+	/** Whether the file itself still says something else. */
+	unwritten: boolean;
+}
+
+/** What a file says about its own loudness. Read only. */
+export interface TrackGain {
+	trackGainDb: number | null;
+	trackPeak: number | null;
+	albumGainDb: number | null;
+	albumPeak: number | null;
+}
+
+/** One song, as the editor sees it. */
+export interface TrackFields {
+	trackId: number;
+	path: string;
+	fields: TrackField[];
+	gain: TrackGain;
+	anyUnwritten: boolean;
+}
+
+/** One value the listener typed. */
+export interface TypedField {
+	field: string;
+	value: string | null;
+}
+
+export const trackFields = (trackId: number) => call<TrackFields>('track_fields', { trackId });
+export const trackPreview = (trackId: number, fields: TypedField[]) =>
+	call<TidySummary>('track_preview', { trackId, fields });
+export const trackApply = (note: string, trackId: number, fields: TypedField[]) =>
+	call<TidyReport>('track_apply', { note, trackId, fields });
+export const trackWrite = (note: string, trackId: number) =>
+	call<TidyReport>('track_write', { note, trackId });
+
 // Lyrics (SPEC section 10) -------------------------------------------------
 
 /** Where a song's words came from. */

@@ -28,6 +28,7 @@
 	import { addToPlaylist, playlists } from '$lib/playlists.svelte';
 	import { startCarry } from '$lib/carry.svelte';
 	import Icon from './Icon.svelte';
+	import TrackEditor from './TrackEditor.svelte';
 	import VirtualList from './VirtualList.svelte';
 
 	type Source =
@@ -104,6 +105,15 @@
 		menu = null;
 		if (!chosen) return;
 		addToPlaylist(playlistId, { kind: 'tracks', ids: [chosen.id], index: 0 }).catch(() => {});
+	}
+
+	/** The song whose tags are being edited, if any (SPEC section 8). */
+	let editing = $state<number | null>(null);
+
+	function editOne(): void {
+		const chosen = menu;
+		menu = null;
+		if (chosen) editing = chosen.id;
 	}
 
 	/** Carrying a row out of the list, onto a playlist in the sidebar. */
@@ -335,6 +345,9 @@
 		<li>
 			<button type="button" onclick={() => addOne('end')}>{t('queue.addToEnd')}</button>
 		</li>
+		<li>
+			<button type="button" onclick={() => editOne()}>{t('editor.open')}</button>
+		</li>
 		{#if manual.length > 0}
 			<li class="heading label" role="presentation">{t('playlist.addTo')}</li>
 			{#each manual as playlist (playlist.id)}
@@ -346,6 +359,10 @@
 			{/each}
 		{/if}
 	</menu>
+{/if}
+
+{#if editing !== null}
+	<TrackEditor trackId={editing} onclose={() => (editing = null)} />
 {/if}
 
 <svelte:window
