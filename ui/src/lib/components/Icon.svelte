@@ -32,6 +32,7 @@
 		| 'copy'
 		| 'export'
 		| 'import'
+		| 'download'
 		| 'up'
 		| 'down';
 
@@ -61,6 +62,7 @@
 			'M12 4a4 4 0 1 1 0 8 4 4 0 0 1 0-8zm0 10c4.4 0 8 2.2 8 4.5V20H4v-1.5C4 16.2 7.6 14 12 14z',
 		genre: 'M4 4h7.2l8.8 8.8-7.2 7.2L4 11.2zm3.4 2.6a1.8 1.8 0 1 0 0 3.6 1.8 1.8 0 0 0 0-3.6z',
 		folder: 'M3 5h6l2 2.4h10V19H3zm2 2v10h14V9.4H10L8 7z',
+		download: 'M11 3h2v8.2l3.1-3.1 1.4 1.4-5.5 5.5-5.5-5.5 1.4-1.4L11 11.2zM4 18h16v2H4z',
 		sliders:
 			'M4 7h9v2H4zm11 0h5v2h-5zM4 15h5v2H4zm7 0h9v2h-9zM13 5h2v6h-2zM9 13h2v6H9z',
 		eq: 'M4 18h2V9H4zm4.5 0h2V4h-2zM13 18h2v-6h-2zm4.5 0h2V7h-2z',

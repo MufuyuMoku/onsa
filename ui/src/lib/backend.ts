@@ -418,7 +418,9 @@ const ERROR_KEYS: Record<string, MessageKey> = {
 	dialog: 'error.dialog',
 	io: 'error.io',
 	auto_eq_empty: 'error.auto_eq_empty',
-	offline: 'error.offline'
+	offline: 'error.offline',
+	busy: 'error.busy',
+	download: 'error.download'
 };
 
 async function call<T>(command: string, args?: Record<string, unknown>): Promise<T> {
@@ -692,6 +694,43 @@ export const programStatus = () => call<ProgramStatus[]>('program_status');
 export const programChoose = (program: string, path: string | null) =>
 	call<void>('program_choose', { program, path });
 export const programPick = (title: string) => call<string | null>('program_pick', { title });
+
+// The downloader (SPEC section 7) ------------------------------------------
+
+/** One program the downloader needs, and what Onsa can do about it. */
+export interface BinaryStatus {
+	key: string;
+	present: boolean;
+	from: 'managed' | 'chosen' | 'system' | null;
+	path: string | null;
+	version: string | null;
+	installable: boolean;
+	url: string | null;
+	aboutBytes: number | null;
+	required: boolean;
+}
+
+/** How far along fetching a program is. */
+export interface FetchProgress {
+	key: string;
+	done: number;
+	total: number | null;
+	finished: boolean;
+	failed: string | null;
+}
+
+/** The programs, and whether a copy already on the system may be used. */
+export interface Binaries {
+	programs: BinaryStatus[];
+	useSystem: boolean;
+}
+
+export const binariesStatus = () => call<Binaries>('binaries_status');
+export const binaryInstall = (program: string) =>
+	call<BinaryStatus>('binary_install', { program });
+export const binaryStop = () => call<void>('binary_stop');
+export const binariesUseSystem = (allowed: boolean) =>
+	call<Binaries>('binaries_use_system', { allowed });
 export const matchState = () => call<MatchState>('match_state');
 export const matchStart = (tracks: number[]) => call<MatchState>('match_start', { tracks });
 export const matchStop = () => call<MatchState>('match_stop');
@@ -771,7 +810,8 @@ export const EVENTS = {
 	libraryChanged: 'library://changed',
 	playlists: 'library://playlists',
 	windowMode: 'window://mode',
-	matching: 'match://progress'
+	matching: 'match://progress',
+	binary: 'downloads://binary'
 } as const;
 
 /** URL of a cover thumbnail, served by the backend's `onsa` protocol. */

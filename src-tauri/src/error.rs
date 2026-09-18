@@ -26,6 +26,10 @@ pub enum ErrorCode {
     AutoEqEmpty,
     /// Looking things up on the internet is switched off (SPEC §14).
     Offline,
+    /// Something else is already using that, and only one at a time may.
+    Busy,
+    /// A program could not be fetched or installed (SPEC §7.1).
+    Download,
 }
 
 impl From<onsa_library::Error> for ErrorCode {

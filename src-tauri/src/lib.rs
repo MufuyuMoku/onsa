@@ -8,6 +8,7 @@
 
 mod acoustid;
 mod commands;
+mod downloads;
 mod dto;
 mod error;
 mod keys;
@@ -151,6 +152,10 @@ pub fn run() -> Result<()> {
             online::match_stop,
             online::tidy_preview_covers,
             online::tidy_apply_covers,
+            downloads::binaries_status,
+            downloads::binary_install,
+            downloads::binary_stop,
+            downloads::binaries_use_system,
         ])
         .run(tauri::generate_context!())
         .context("the application window could not be started")
@@ -254,6 +259,7 @@ fn setup(app: &mut tauri::App) -> Result<()> {
         cache: cache_dir.clone(),
     });
     app.manage(std::sync::Arc::new(matching::Matching::default()));
+    app.manage(std::sync::Arc::new(downloads::Fetching::default()));
     app.manage(logging);
     app.manage(library);
     app.manage(player);

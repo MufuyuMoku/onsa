@@ -33,6 +33,8 @@ pub enum NetError {
     Unreachable,
     /// The answer was larger than Onsa is willing to read.
     TooLarge,
+    /// The listener asked for it to stop.
+    Stopped,
 }
 
 impl std::fmt::Display for NetError {
@@ -40,6 +42,7 @@ impl std::fmt::Display for NetError {
         match self {
             Self::Unreachable => write!(f, "the service could not be reached"),
             Self::TooLarge => write!(f, "the answer was too large"),
+            Self::Stopped => write!(f, "it was stopped"),
         }
     }
 }
@@ -306,6 +309,57 @@ pub fn ask_bytes(service: Service, path: &str, limit: u64) -> Result<Vec<u8>, Ne
     read_capped(response, limit)
 }
 
+/// Fetches a file, telling the caller how far along it is.
+///
+/// Used for the programs Onsa installs for itself (SPEC §7.1), which are
+/// tens of megabytes rather than the kilobytes a metadata answer is, so this
+/// reads in pieces rather than in one go: the caller can draw a progress bar
+/// and, by answering `false`, stop it part way.
+///
+/// Nothing is written to disk here. What comes back is bytes, and what is
+/// done with them — checking the checksum first — belongs to the code that
+/// knows what it asked for.
+pub fn fetch(
+    url: &str,
+    limit: u64,
+    mut watching: impl FnMut(u64, Option<u64>) -> bool,
+) -> Result<Vec<u8>, NetError> {
+    let client = client().ok_or(NetError::Unreachable)?;
+    let response = client.get(url).send().map_err(|error| {
+        tracing::debug!("a program could not be fetched: {}", tidy(&error));
+        NetError::Unreachable
+    })?;
+    if !response.status().is_success() {
+        tracing::debug!(status = response.status().as_u16(), "the release refused");
+        return Err(NetError::Unreachable);
+    }
+    let expected = response.content_length().filter(|size| *size > 0);
+    if expected.is_some_and(|size| size > limit) {
+        return Err(NetError::TooLarge);
+    }
+
+    let mut body = Vec::with_capacity(expected.unwrap_or(1024 * 1024).min(limit) as usize);
+    let mut piece = vec![0u8; 64 * 1024];
+    let mut reader = response;
+    loop {
+        let read = reader.read(&mut piece).map_err(|error| {
+            tracing::debug!("the fetch stopped part way: {error}");
+            NetError::Unreachable
+        })?;
+        if read == 0 {
+            break;
+        }
+        if body.len() as u64 + read as u64 > limit {
+            return Err(NetError::TooLarge);
+        }
+        body.extend_from_slice(&piece[..read]);
+        if !watching(body.len() as u64, expected) {
+            return Err(NetError::Stopped);
+        }
+    }
+    Ok(body)
+}
+
 /// A well-formed track id that stands for nothing in particular. AcoustID
 /// answers a key it knows with an empty result, which is all this asks.
 const NOWHERE_TRACK: &str = "00000000-0000-4000-8000-000000000000";
@@ -385,7 +439,7 @@ mod tests {
 
     #[test]
     fn every_failure_has_something_to_say() {
-        for error in [NetError::Unreachable, NetError::TooLarge] {
+        for error in [NetError::Unreachable, NetError::TooLarge, NetError::Stopped] {
             assert!(!error.to_string().is_empty());
         }
     }

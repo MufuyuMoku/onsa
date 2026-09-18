@@ -14,9 +14,11 @@
 
 #![warn(missing_docs)]
 
+pub mod install;
 pub mod platform;
 pub mod programs;
 
+pub use install::Release;
 pub use programs::{Found, Program, Programs, Ran, Where};
 
 use thiserror::Error;
