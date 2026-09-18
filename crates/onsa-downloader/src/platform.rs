@@ -206,11 +206,12 @@ mod tests {
 
     #[test]
     fn a_group_can_be_made_and_let_go_of() {
-        // Making one and dropping it must be safe on its own, with nothing
-        // ever put inside it.
         let group = Group::new();
         assert!(group.is_some(), "this system should give one");
-        drop(group);
+        // Letting go happens here, where the scope ends: on Windows that
+        // closes the job handle, and doing so with nothing inside must be
+        // safe. It cannot be written as an explicit `drop`, because on Linux
+        // a group owns nothing and clippy rightly objects.
     }
 
     #[test]
