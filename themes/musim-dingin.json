@@ -1,0 +1,95 @@
+{
+  "$schema": "onsa-theme/1",
+  "id": "musim-dingin",
+  "name": {
+    "id": "Musim dingin utara",
+    "en": "Northern Winter"
+  },
+  "version": 1,
+  "builtin": true,
+  "base": "light",
+  "fonts": {
+    "ui": "B612",
+    "numeric": "B612 Mono",
+    "label": "Barlow Condensed",
+    "cjkFallback": "Noto Sans JP"
+  },
+  "color": {
+    "surface": {
+      "app": "#D5DEE6",
+      "body": "#F4F7FA",
+      "bodyHighlight": "#FFFFFF",
+      "well": "#E7EEF4",
+      "raised": "#FFFFFF",
+      "line": "#BFCDDA"
+    },
+    "text": {
+      "primary": "#17242E",
+      "secondary": "#4F6375"
+    },
+    "role": {
+      "label": "#4F6375",
+      "adjustable": "#35648F",
+      "active": "#2F6E5A",
+      "position": "#8C4F24",
+      "caution": "#9A6A16",
+      "clip": "#A33528"
+    },
+    "lit": {
+      "on": "#35648F",
+      "ghost": "rgba(23,36,46,0.08)",
+      "glow": "rgba(0,0,0,0)",
+      "secondary": "#8C4F24",
+      "meterFace": "#FDFBF6",
+      "needle": "#A33528",
+      "knob": "#AFBFCD",
+      "led": "#35648F"
+    },
+    "edge": {
+      "light": "#FFFFFF",
+      "dark": "rgba(23,36,46,0.20)"
+    }
+  },
+  "shape": {
+    "radius": {
+      "sm": 3,
+      "md": 6,
+      "lg": 12
+    },
+    "density": "comfortable",
+    "hairline": 1,
+    "control": "soft",
+    "frame": "inset"
+  },
+  "variants": {
+    "meter": "needle",
+    "spectrum": "bar",
+    "panelTexture": "brushed",
+    "stageIndicator": "led",
+    "timeDisplay": "plain",
+    "rows": "plain",
+    "scrollbar": "thin",
+    "tooltip": "plain",
+    "dialog": "flat"
+  },
+  "effects": {
+    "glow": false,
+    "glassReflection": false,
+    "grain": 0.05,
+    "labelCase": "uppercase"
+  },
+  "motion": {
+    "fast": 120,
+    "slow": 190,
+    "ease": "soft"
+  },
+  "toneColor": {
+    "enabled": true,
+    "targets": [
+      "spectrum",
+      "meter"
+    ],
+    "warm": "#8C4F24",
+    "cool": "#35648F"
+  }
+}

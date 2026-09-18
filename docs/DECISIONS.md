@@ -481,3 +481,20 @@ Diminta pemilik proyek: pengaman dulu, baru jaringan. Semua di bawah ini ada dan
 - **Usulan huruf besar-kecil tidak tercentang otomatis**, termasuk kalau di baris yang sama ada perbaikan lain — nilai yang diterapkan adalah hasil rapi seutuhnya, huruf besar-kecil termasuk. Sisanya (sisa unduhan, penulisan `feat.`, penulisan nama, artis album kosong) tercentang.
 - **Artis album kosong diisi dengan artis utama** (bagian sebelum `feat.`), supaya satu album tidak terpecah menjadi empat album satu lagu.
 - **Memisahkan artis kolaborasi menjadi beberapa artis belum dikerjakan.** Itu butuh library yang tahu satu lagu bisa punya beberapa artis, bukan satu teks — perubahan skema tersendiri. Yang dikerjakan sekarang: penulisan kreditnya diseragamkan dan album difilekan di bawah artis utamanya.
+
+## 2026-09-18 · Skema tema diperdalam, dan tiga tema terang
+
+- **Kosakatanya yang diperdalam, bukan temanya yang di-hardcode.** Supaya sebuah tema bisa tampak dicetak-timbul, berbaris, atau berbilah judul, yang ditambah adalah kosakata skema (§9.3) — bukan kode yang tahu nama tema tertentu. Aturan yang dipegang: kalau sebuah tema butuh sesuatu yang belum ada di skema, skemanya yang diperdalam.
+- **Warna tepi (`color.edge`) adalah kuncinya.** Satu sisi kena cahaya, satu sisi tidak. Dengan dua token itu, tombol, panel, scrollbar, tooltip, dan dialog bisa tampak moulded tanpa satu pun aturan CSS yang menyebut nama tema.
+- **Semua bawaan baru harus persis seperti sebelumnya.** Tiap field yang ditambahkan default-nya sama dengan tampilan Onsa sebelum field itu ada, dan ada tesnya — kalau tidak, setiap tema yang sudah ditulis orang akan berubah sendiri begitu Onsa diperbarui. `rows` default-nya `plain` justru karena daftar lagu Onsa memang tidak bergaris.
+- **Tema boleh mengatur tempo, tidak boleh mengatur perangai.** `motion.fast` dan `motion.slow` dijepit ke rentang yang tetap cepat, dan keempat kurva yang tersedia berhenti tanpa memantul (SPEC §9.1). Ada tes yang membuktikan titik kontrol tiap kurva tidak melewati 0–1.
+- **Onsa menggambar tooltip-nya sendiri** untuk catatan pendek di atas instrumen, karena tooltip milik sistem tidak bisa ditema. Tooltip sistem tetap dipakai untuk path panjang: menunggu sebentar lalu membungkus teks adalah yang orang harapkan dari nama berkas.
+- **Garis-belang mengikuti nomor baris, bukan urutan baris yang sedang digambar.** Daftar lagu hanya menggambar yang terlihat; belang yang ikut bergeser saat digulir lebih buruk daripada tidak ada belang.
+- **Bilah judul dialog memakai warna `adjustable`, tulisannya memakai warna `surface.body`.** Keduanya dipunyai setiap tema dan jaraknya sejauh warna tema itu sendiri, jadi namanya terbaca entah temanya terang atau gelap. Diperiksa di keenam tema.
+
+### Tiga tema terang
+
+- **Keputusan pemilik proyek (2026-09-18)**: tema terang boleh, dan ikut dibundel. SPEC §1 diperbarui menjadi enam tema bawaan (tiga gelap, tiga terang); butir "tema terang dan tema tambahan" dihapus dari §16. Onsa tetap membuka dengan tema gelap.
+- **Terinspirasi, bukan meniru.** Tidak ada logo, ikon, wallpaper, atau aset asli dari mana pun. Yang diambil adalah *watak*: kantor awal 2000-an yang bersudut siku dan bertepi timbul, plastik bening milenium, dan pagi bersalju di utara. Nama temanya pun tidak menyebut produk atau negara mana pun.
+- **Tidak ada font baru.** Ketiganya memakai font yang sudah dibundel (Barlow, Barlow Condensed, B612, B612 Mono, Chakra Petch, Share Tech Mono), dipilih ulang untuk masing-masing watak. Menambah font berarti mengunduh berkas baru dan menambah lisensi baru ke repo; memilih ulang yang sudah ada memberi tiga suara yang berbeda tanpa keduanya.
+- **Tema terang tidak butuh CSS baru.** Seluruh antarmuka sudah memakai token, jadi yang berubah hanya nilainya. Yang diperiksa: panel benar-benar terang, teks benar-benar gelap (ada tesnya), dan pemeriksa tata letak dijalankan di tema terang berscrollbar lebar.

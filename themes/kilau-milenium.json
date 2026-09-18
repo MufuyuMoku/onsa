@@ -1,0 +1,95 @@
+{
+  "$schema": "onsa-theme/1",
+  "id": "kilau-milenium",
+  "name": {
+    "id": "Kilau milenium",
+    "en": "Millennium Shine"
+  },
+  "version": 1,
+  "builtin": true,
+  "base": "light",
+  "fonts": {
+    "ui": "Chakra Petch",
+    "numeric": "Share Tech Mono",
+    "label": "Chakra Petch",
+    "cjkFallback": "Noto Sans JP"
+  },
+  "color": {
+    "surface": {
+      "app": "#CFE4F0",
+      "body": "#F2F7FB",
+      "bodyHighlight": "#FFFFFF",
+      "well": "#E4F2F9",
+      "raised": "#FFFFFF",
+      "line": "#B3D2E4"
+    },
+    "text": {
+      "primary": "#10232E",
+      "secondary": "#456878"
+    },
+    "role": {
+      "label": "#456878",
+      "adjustable": "#0090B0",
+      "active": "#6A4CE0",
+      "position": "#E03A93",
+      "caution": "#E07A00",
+      "clip": "#D41B57"
+    },
+    "lit": {
+      "on": "#0090B0",
+      "ghost": "rgba(16,35,46,0.08)",
+      "glow": "rgba(0,144,176,0.35)",
+      "secondary": "#6A4CE0",
+      "meterFace": "#FFFFFF",
+      "needle": "#E03A93",
+      "knob": "#BBD2DE",
+      "led": "#6A4CE0"
+    },
+    "edge": {
+      "light": "#FFFFFF",
+      "dark": "rgba(16,35,46,0.22)"
+    }
+  },
+  "shape": {
+    "radius": {
+      "sm": 8,
+      "md": 12,
+      "lg": 18
+    },
+    "density": "comfortable",
+    "hairline": 1,
+    "control": "pill",
+    "frame": "none"
+  },
+  "variants": {
+    "meter": "bar",
+    "spectrum": "soft",
+    "panelTexture": "glass",
+    "stageIndicator": "glow-chip",
+    "timeDisplay": "plain",
+    "rows": "stripes",
+    "scrollbar": "thin",
+    "tooltip": "panel",
+    "dialog": "raised"
+  },
+  "effects": {
+    "glow": true,
+    "glassReflection": true,
+    "grain": 0.0,
+    "labelCase": "as-written"
+  },
+  "motion": {
+    "fast": 140,
+    "slow": 220,
+    "ease": "soft"
+  },
+  "toneColor": {
+    "enabled": true,
+    "targets": [
+      "spectrum",
+      "progress"
+    ],
+    "warm": "#E03A93",
+    "cool": "#0090B0"
+  }
+}

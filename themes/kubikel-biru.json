@@ -1,0 +1,93 @@
+{
+  "$schema": "onsa-theme/1",
+  "id": "kubikel-biru",
+  "name": {
+    "id": "Kubikel biru",
+    "en": "Blue Cubicle"
+  },
+  "version": 1,
+  "builtin": true,
+  "base": "light",
+  "fonts": {
+    "ui": "Barlow",
+    "numeric": "B612 Mono",
+    "label": "Barlow Condensed",
+    "cjkFallback": "Noto Sans JP"
+  },
+  "color": {
+    "surface": {
+      "app": "#DAD6C8",
+      "body": "#EDEAE0",
+      "bodyHighlight": "#F8F6EF",
+      "well": "#FFFFFF",
+      "raised": "#E3E0D4",
+      "line": "#B4AE9C"
+    },
+    "text": {
+      "primary": "#1B1B17",
+      "secondary": "#59574E",
+      "silkscreen": "#59574E"
+    },
+    "role": {
+      "label": "#59574E",
+      "adjustable": "#1F5FA9",
+      "active": "#2E7D32",
+      "position": "#1F5FA9",
+      "caution": "#A9660A",
+      "clip": "#B3261E"
+    },
+    "lit": {
+      "on": "#1F5FA9",
+      "ghost": "rgba(27,27,23,0.10)",
+      "glow": "rgba(0,0,0,0)",
+      "secondary": "#A9660A",
+      "meterFace": "#FFFFFF",
+      "needle": "#B3261E",
+      "knob": "#8A8778",
+      "led": "#2E7D32"
+    },
+    "edge": {
+      "light": "#FFFFFF",
+      "dark": "rgba(27,27,23,0.38)"
+    }
+  },
+  "shape": {
+    "radius": {
+      "sm": 2,
+      "md": 3,
+      "lg": 4
+    },
+    "density": "comfortable",
+    "hairline": 1,
+    "control": "bevel",
+    "frame": "raised"
+  },
+  "variants": {
+    "meter": "bar",
+    "spectrum": "bar",
+    "panelTexture": "bezel",
+    "stageIndicator": "outline-chip",
+    "timeDisplay": "plain",
+    "rows": "lines",
+    "scrollbar": "classic",
+    "tooltip": "panel",
+    "dialog": "titled"
+  },
+  "effects": {
+    "glow": false,
+    "glassReflection": false,
+    "grain": 0.0,
+    "labelCase": "as-written"
+  },
+  "motion": {
+    "fast": 90,
+    "slow": 140,
+    "ease": "standard"
+  },
+  "toneColor": {
+    "enabled": false,
+    "targets": [],
+    "warm": "#A9660A",
+    "cool": "#1F5FA9"
+  }
+}

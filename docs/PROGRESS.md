@@ -668,3 +668,27 @@ Diuji pada folder buatan yang sama, 14 pemeriksaan pada perintah dan 9 pada anta
 - bertanya lagi sesudahnya tidak menemukan lagi apa yang baru saja diperbaiki.
 
 **Temuan dari melihat daftarnya sendiri**: baris pertama mengusulkan `AC/DC → Ac/Dc`. Satu kata dalam satu jenis huruf sama seringnya adalah cara menulis nama, bukan teriakan; sekarang usulan huruf besar-kecil hanya berlaku untuk frasa dua kata atau lebih. `LILITH` dan `deadmau5` ikut selamat karena aturan yang sama.
+
+### Skema tema diperdalam, dan tiga tema terang (2026-09-18)
+
+**Skemanya** kini lima lapis, bukan tiga (SPEC §9.3). Yang bertambah: warna tepi (`color.edge`), bentuk kontrol (`soft`, `square`, `pill`, `bevel`), bingkai panel (`hairline`, `inset`, `raised`, `none`), gaya baris daftar (`plain`, `lines`, `stripes`), scrollbar (`thin`, `classic`, `hidden`), tooltip (`plain`, `panel`), dialog (`flat`, `raised`, `titled`), dan gerak (`motion.fast`, `motion.slow`, `motion.ease`).
+
+Aturannya: **kalau sebuah tema butuh sesuatu, skemanya yang diperdalam, bukan kodenya yang diberi pengecualian.** Tidak ada satu pun aturan CSS yang menyebut nama tema. Dan tiap field baru default-nya persis seperti tampilan Onsa sebelum field itu ada — ada tesnya, supaya tema yang sudah ditulis siapa pun tidak berubah sendiri.
+
+Tema boleh mengatur tempo, tidak boleh mengatur perangai: kedua durasi dijepit ke rentang yang tetap cepat, dan keempat kurva yang tersedia dibuktikan tidak memantul.
+
+Onsa juga menggambar **tooltip-nya sendiri** sekarang untuk catatan pendek di atas instrumen; tooltip sistem tetap dipakai untuk path panjang.
+
+**Tiga tema bawaan yang lama** kini menyebutkan dirinya lewat kosakata baru itu: Kaca asap lembut dan cekung dan bergerak pelan; Kokpit kaca bersudut siku, timbul, dan bergerak patah; Deck malam bertepi timbul, berbaris belang, dengan scrollbar yang bisa dipegang pakai sarung tangan.
+
+**Tiga tema baru** (atas persetujuan pemilik proyek, SPEC §1 diperbarui jadi enam bawaan — tiga gelap, tiga terang; Onsa tetap membuka dengan yang gelap):
+
+- **Kubikel biru** — kantor awal 2000-an: panel krem-abu, kontrol siku bertepi timbul, bilah judul dialog biru, scrollbar lebar, garis tipis antar baris.
+- **Kilau milenium** — plastik bening: kontrol kapsul, kaca, glow, playhead merah muda, baris berselang-seling.
+- **Musim dingin utara** — pagi bersalju: putih kebiruan, meter jarum bermuka krem, aksen tembaga, panel sedikit cekung, label kapital kecil.
+
+Ketiganya **terinspirasi, bukan meniru**: tidak ada logo, ikon, wallpaper, atau aset asli dari mana pun, dan namanya tidak menyebut produk atau negara. Tidak ada font baru — enam font yang sudah dibundel dipilih ulang untuk masing-masing watak.
+
+**Diperiksa**: keenam tema dibuka satu per satu dan dibuktikan benar-benar memakai apa yang dikatakannya (atribut di root, token bernilai, tepi yang benar-benar timbul, garis baris yang benar-benar ada); nama dialog dibuktikan terbaca di atas bilahnya di keenam tema; dan pemeriksa tata letak dijalankan ulang dua kali lagi — sekali di tema berscrollbar lebar, sekali di tema terang — 6 lebar × 13 halaman + 4 panel, bersih.
+
+**Temuan**: sebuah backslash hilang lagi, kali ini dimakan template literal JavaScript di skrip pemeriksa, membuat regex-nya diam-diam tidak pernah cocok sehingga pemeriksaan kontras membaca latar yang salah. Pelajarannya sama dengan heredoc: di tempat yang memproses escape, jangan menulis regex — pemeriksaannya ditulis ulang tanpa satu backslash pun.

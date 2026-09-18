@@ -22,7 +22,7 @@ Keputusan berikut sudah final. Jangan diubah tanpa persetujuan pemilik proyek.
 | Audio | `symphonia` (decode), `rubato` (resample), `cpal` (output), `rtrb` (ring buffer lock-free), `realfft` (analisis) |
 | Tag | `lofty` (baca dan tulis) |
 | HTTP | `reqwest` dengan TLS bawaannya (rustls), klien blocking. Satu klien untuk seluruh proyek: M7 sampai M10 memakai yang sama. Wajib: User-Agent `Onsa/<versi> (<kontak>)`, timeout koneksi dan timeout total, batas ukuran jawaban dan unduhan, serta kegagalan jaringan yang dikembalikan sebagai nilai — tidak boleh membuat aplikasi macet atau berhenti. |
-| Tema bawaan | Kaca asap, Kokpit kaca, Deck malam (lihat §9). Semua gelap. |
+| Tema bawaan | Enam: tiga gelap (Kaca asap, Kokpit kaca, Deck malam) dan tiga terang (Kubikel biru, Kilau milenium, Musim dingin utara). Lihat §9. Onsa tetap membuka dengan tema gelap. |
 | Bahasa UI | Indonesia dan Inggris, default mengikuti locale OS |
 
 ---
@@ -364,7 +364,7 @@ Tema terdiri dari lima lapis:
 
 Token diterjemahkan menjadi CSS variables berprefiks `--onsa-`. Varian dipasang sebagai atribut `data-*` pada root, dan komponen membaca varian tersebut. Contoh lengkapnya ada di file `themes/*.json`.
 
-### 9.4 Tiga tema bawaan
+### 9.4 Enam tema bawaan
 
 Referensi visual: `docs/design/palet-preview.html`.
 
@@ -372,9 +372,13 @@ Referensi visual: `docs/design/palet-preview.html`.
 - **Kokpit kaca** (`kokpit-kaca`): bezel berlapis di latar navy. Warna sepenuhnya mengikuti peran (putih label, cyan bisa diatur, hijau aktif, magenta posisi putar, amber hati-hati, merah clip). Font: B612 + B612 Mono, font terbuka yang dirancang untuk layar kokpit.
 - **Deck malam** (`deck-malam`): pelat logam hitam bertekstur sikat, meter jarum VU dengan muka krem yang disinari lampu hangat, jarum merah, dan LED biru untuk tahap aktif. Label bergaya sablon huruf kapital kecil. Font: Barlow + Barlow Condensed.
 
-Semua tema memakai **Noto Sans JP** sebagai fallback untuk teks Jepang/CJK. Semua font berlisensi OFL dan **dibundel di dalam aplikasi** (tidak dimuat dari internet), di `ui/static/fonts/`, lengkap dengan file lisensinya.
+Tiga tema terang, dibuat sebagai **terinspirasi, bukan tiruan**: tidak ada logo, ikon, wallpaper, atau aset asli dari mana pun, dan tidak ada kode yang tahu nama tema tertentu — semuanya lewat skema §9.3.
 
-Tema terang belum dirancang (lihat §16).
+- **Kubikel biru** (`kubikel-biru`): panel krem-abu dengan kontrol bersudut siku dan tepi timbul, bilah judul dialog berwarna biru dengan tulisan terang, scrollbar lebar, dan garis tipis antar baris. Rasa kantor awal 2000-an. Font: Barlow + Barlow Condensed + B612 Mono.
+- **Kilau milenium** (`kilau-milenium`): plastik bening di atas putih kebiruan — kontrol berbentuk kapsul, kaca, glow, playhead merah muda, baris berselang-seling. Font: Chakra Petch + Share Tech Mono.
+- **Musim dingin utara** (`musim-dingin`): putih kebiruan seperti pagi bersalju, meter jarum bermuka krem, aksen tembaga, panel yang sedikit cekung, label huruf kapital kecil, dan sedikit grain. Font: B612 + B612 Mono + Barlow Condensed.
+
+Semua tema memakai **Noto Sans JP** sebagai fallback untuk teks Jepang/CJK. Semua font berlisensi OFL dan **dibundel di dalam aplikasi** (tidak dimuat dari internet), di `ui/static/fonts/`, lengkap dengan file lisensinya. Tema tambahan tidak menambah font baru: yang sudah dibundel dipilih ulang untuk masing-masing watak.
 
 ### 9.5 Warna nada
 
@@ -542,6 +546,5 @@ Hal-hal di bawah tidak menghalangi milestone M0–M11. Tanyakan ke pemilik proye
 
 - Lisensi proyek (dibutuhkan paling lambat di M12).
 - Ikon final. Sampai saat itu, pakai placeholder `assets/icon.svg` (garpu tala sederhana).
-- Tema terang dan tema tambahan di luar tiga tema bawaan.
 - Distribusi tambahan: Flatpak/Flathub, AUR, winget.
 - Analisis loudness EBU R128 dan ListenBrainz.

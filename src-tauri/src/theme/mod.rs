@@ -16,7 +16,7 @@ pub use parse::{parse_theme, LoadedTheme};
 pub const DEFAULT_THEME_ID: &str = "kaca-asap";
 
 /// The three built-in themes, in the order the first-run screen shows them.
-const BUILTIN_SOURCES: [(&str, &str); 3] = [
+const BUILTIN_SOURCES: [(&str, &str); 6] = [
     ("kaca-asap", include_str!("../../../themes/kaca-asap.json")),
     (
         "kokpit-kaca",
@@ -25,6 +25,18 @@ const BUILTIN_SOURCES: [(&str, &str); 3] = [
     (
         "deck-malam",
         include_str!("../../../themes/deck-malam.json"),
+    ),
+    (
+        "kubikel-biru",
+        include_str!("../../../themes/kubikel-biru.json"),
+    ),
+    (
+        "kilau-milenium",
+        include_str!("../../../themes/kilau-milenium.json"),
+    ),
+    (
+        "musim-dingin",
+        include_str!("../../../themes/musim-dingin.json"),
     ),
 ];
 
@@ -110,6 +122,7 @@ pub fn builtin_theme(id: &str) -> Option<Theme> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::theme::model::Base;
 
     #[test]
     fn every_builtin_theme_reads_without_a_single_correction() {
@@ -128,11 +141,62 @@ mod tests {
     }
 
     #[test]
-    fn the_three_themes_of_the_specification_are_present() {
+    fn the_themes_of_the_specification_are_present() {
         let themes = builtin_themes();
         let ids: Vec<&str> = themes.iter().map(|theme| theme.id.as_str()).collect();
-        assert_eq!(ids, ["kaca-asap", "kokpit-kaca", "deck-malam"]);
+        assert_eq!(
+            ids,
+            [
+                "kaca-asap",
+                "kokpit-kaca",
+                "deck-malam",
+                "kubikel-biru",
+                "kilau-milenium",
+                "musim-dingin"
+            ],
+            "SPEC §1: three dark, then three light"
+        );
         assert!(ids.contains(&DEFAULT_THEME_ID));
+        // The three dark ones come first, and Onsa opens on one of them.
+        let dark: Vec<&str> = themes
+            .iter()
+            .filter(|theme| theme.base == Base::Dark)
+            .map(|theme| theme.id.as_str())
+            .collect();
+        assert_eq!(dark, ["kaca-asap", "kokpit-kaca", "deck-malam"]);
+    }
+
+    #[test]
+    fn a_light_theme_is_light_the_whole_way_through() {
+        // A theme that says it is light and then paints a dark panel would
+        // leave the window's own scrollbars and form controls fighting it.
+        for theme in builtin_themes()
+            .iter()
+            .filter(|one| one.base == Base::Light)
+        {
+            assert!(
+                lightness(&theme.color.surface.body) > 0.6,
+                "theme {} says light but its panel is dark",
+                theme.id
+            );
+            assert!(
+                lightness(&theme.color.text.primary) < 0.4,
+                "theme {} would write light text on a light panel",
+                theme.id
+            );
+        }
+    }
+
+    /// Roughly how light a `#rrggbb` colour is, from 0 to 1.
+    fn lightness(hex: &str) -> f32 {
+        let hex = hex.trim_start_matches('#');
+        if hex.len() != 6 {
+            return 0.5;
+        }
+        let part =
+            |at: usize| u8::from_str_radix(&hex[at..at + 2], 16).unwrap_or(128) as f32 / 255.0;
+        // The eye is far more sensitive to green than to blue.
+        0.2126 * part(0) + 0.7152 * part(2) + 0.0722 * part(4)
     }
 
     #[test]

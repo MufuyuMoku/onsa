@@ -393,13 +393,25 @@ input[type='checkbox'] {
 }
 
 /* A bar across the top carrying the dialog's name. The heading is already
-   there; this is the strip it sits in. */
+   there; this is the strip it sits in.
+
+   The strip takes the theme's adjustable colour, and what sits on it takes
+   the panel colour back: every theme has both, and the two are as far apart
+   as that theme's colours go, so the name is readable whichever way round
+   the theme is lit. */
 :root[data-onsa-dialog='titled'] .panel[role='dialog'] > header {
 	padding-inline: 12px;
-	background: var(--onsa-surface-raised);
+	background: var(--onsa-role-adjustable);
 	box-shadow: inset 0 -1px 0 var(--onsa-edge-dark);
 }
 
-:root[data-onsa-dialog='titled'] .panel[role='dialog'] > header h2 {
-	color: var(--onsa-text-primary);
+:root[data-onsa-dialog='titled'] .panel[role='dialog'] > header h2,
+:root[data-onsa-dialog='titled'] .panel[role='dialog'] > header .icon-btn {
+	color: var(--onsa-surface-body);
+}
+
+:root[data-onsa-dialog='titled'] .panel[role='dialog'] > header .icon-btn {
+	border-color: transparent;
+	background: transparent;
+	box-shadow: none;
 }
