@@ -498,3 +498,19 @@ Diminta pemilik proyek: pengaman dulu, baru jaringan. Semua di bawah ini ada dan
 - **Terinspirasi, bukan meniru.** Tidak ada logo, ikon, wallpaper, atau aset asli dari mana pun. Yang diambil adalah *watak*: kantor awal 2000-an yang bersudut siku dan bertepi timbul, plastik bening milenium, dan pagi bersalju di utara. Nama temanya pun tidak menyebut produk atau negara mana pun.
 - **Tidak ada font baru.** Ketiganya memakai font yang sudah dibundel (Barlow, Barlow Condensed, B612, B612 Mono, Chakra Petch, Share Tech Mono), dipilih ulang untuk masing-masing watak. Menambah font berarti mengunduh berkas baru dan menambah lisensi baru ke repo; memilih ulang yang sudah ada memberi tiga suara yang berbeda tanpa keduanya.
 - **Tema terang tidak butuh CSS baru.** Seluruh antarmuka sudah memakai token, jadi yang berubah hanya nilainya. Yang diperiksa: panel benar-benar terang, teks benar-benar gelap (ada tesnya), dan pemeriksa tata letak dijalankan di tema terang berscrollbar lebar.
+
+## 2026-09-18 · Urutan milestone diubah pemilik proyek
+
+- **Keputusan**: sesudah M7a, yang dikerjakan adalah **pengambil binary eksternal dari M10** (unduh, verifikasi checksum, bongkar arsip) dengan **yt-dlp sebagai konsumen pertama**, lalu **integrasi yt-dlp** itu sendiri, baru **M8 (lirik)**. **M9 (scrobble) dilewati**, tanpa tanggal.
+- **Alasan pemilik proyek**: empat hal yang menentukan rilis pertama adalah tema, tata letak, lirik, dan yt-dlp. Dua yang pertama sudah selesai.
+- Ini menyimpang dari `CLAUDE.md` ("kerjakan milestone secara berurutan"). Dicatat di sini supaya jejaknya jujur, bukan supaya aturannya dianggap tidak ada.
+- **M7 ditutup sebagai M7a**; sisa §8 (hapus/ekspor sampul, menanam sampul ke berkas, aturan 1200 px, "(beragam)", tiga field yang belum bisa di-override) menjadi **M7b**, dikerjakan setelah M10 penuh. **Editor tag satuan pindah ke M8**, karena lirik adalah salah satu field yang diedit di sana dan membangun editornya dua kali tidak masuk akal.
+- **Deno dan ffmpeg menunggu M10 penuh.** Pengambil binary yang dikerjakan sekarang mengambil **berkas tunggal** saja — yt-dlp memang berkas tunggal dengan `SHA2-256SUMS` di rilisnya — jadi tidak ada dependensi baru yang ditambahkan. Keputusan soal pembongkar zip/tar.xz diambil di M10 penuh, bukan sekarang.
+- **Job Object di Windows ikut dalam integrasi yt-dlp**, tidak ditunda: tanpa itu kriteria selesai M10 ("tombol batal menghentikan semua proses turunan") tidak terpenuhi. Di Linux process group sudah dipasang sejak pengelola program luar dibuat.
+- **Halaman Unduhan dibuat sekarang**, dan daftar persetujuan §7.1 tinggal di sana sejak awal — tidak menumpang di Pengaturan, supaya tidak dipindahkan dua kali.
+
+## 2026-09-18 · Utang yang sengaja dibiarkan, supaya tidak terlupa
+
+- **Prioritas format unduhan tetap `bestaudio[ext=m4a]/bestaudio`** sesuai SPEC §7.2, dan **akan diubah menjadi `bestaudio` di M11**, setelah decoder Opus ada. Sampai saat itu Onsa mengunduh m4a dengan sengaja, bukan karena lupa. Kriteria selesai M11 ("file Opus hasil yt-dlp bisa diputar gapless") justru baru bisa diuji setelah pengunduh ada, jadi urutan yang diubah ini membantu yang satu itu.
+- **Nomor migrasi mengikuti urutan pengerjaan, bukan nomor milestone.** Antrean unduhan mendapat versi berikutnya yang kosong, dan lirik mendapat versi sesudahnya — jadi nomor migrasi tidak lagi sejajar dengan nomor milestone. Yang menentukan tetap satu hal: migrasi yang sudah diterapkan tidak pernah diubah.
+- **M9 dilewati, dan tidak ada pola penyimpanan rahasia kedua yang dibangun sekarang.** Keyring menunggu M9; `keys.rs` tetap satu-satunya jalan (Pengaturan → env aplikasi → env build). Menyatukannya dengan keyring adalah urusan M9.

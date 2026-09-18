@@ -486,6 +486,8 @@ Fitur khas Onsa: rona spektrum (dan elemen lain yang dipilih tema) bergeser meng
 
 Kerjakan berurutan. Milestone berikutnya dimulai setelah **kriteria selesai** milestone sebelumnya terpenuhi dan dilaporkan di `docs/PROGRESS.md`.
 
+Urutannya pernah diubah sekali, atas keputusan pemilik proyek (2026-09-18): sesudah M7a, yang dikerjakan adalah sebagian M10 (pengambil binary dan yt-dlp) lalu M8, dan M9 dilewati. Alasannya beserta utang yang timbul ada di `docs/DECISIONS.md`.
+
 ### M0. Kerangka proyek
 Workspace Cargo sesuai §2, Tauri 2 + SvelteKit berjalan di Windows dan Linux, CI sesuai §12, dan pemuat tema (stub) yang sudah membaca satu tema bawaan.
 **Selesai bila:** jendela kosong bertema terbuka di kedua OS, dan CI hijau.
@@ -518,8 +520,10 @@ Playlist manual, smart playlist beserta editor aturannya, simpan antrean sebagai
 Editor tag satuan dan massal, cover, `overrides` dengan aksi "tulis ke file", penulisan aman, rename berdasarkan pola dengan pratinjau, lalu MusicBrainz (opsional).
 **Selesai bila:** tes metadata lulus, termasuk simulasi kegagalan penulisan.
 
+Dibelah atas keputusan pemilik proyek (2026-09-18): **M7a** (edit massal, penulisan aman, rename, pengaman, dan pencarian online) selesai; **M7b** (hapus/ekspor sampul, menanam sampul ke berkas beserta aturan 1200 px, "(beragam)", dan tiga field yang belum bisa di-override) dikerjakan setelah M10 penuh; **editor tag satuan pindah ke M8**, karena lirik salah satu field di dalamnya.
+
 ### M8. Lirik
-Tiga sumber lirik, cache, parser LRC, tampilan sinkron, klik untuk seek, dan offset per lagu.
+Tiga sumber lirik, cache, parser LRC, tampilan sinkron, klik untuk seek, offset per lagu, dan **editor tag satuan** (pindahan dari M7).
 **Selesai bila:** lirik `.lrc` lokal dan lirik dari LRCLIB tampil sinkron, dan offset tersimpan.
 
 ### M9. Scrobble
@@ -529,6 +533,8 @@ Autentikasi Last.fm, now playing, aturan scrobble, antrean offline, dan keyring.
 ### M10. Downloader
 Pengelolaan binary (persetujuan, checksum, update, opsi program sistem), pratinjau URL/playlist, pilihan format, antrean unduhan paralel, progres, batal, dan impor otomatis ke library.
 **Selesai bila:** URL satu video dan satu playlist bisa diunduh sampai muncul di library di kedua OS, tidak ada jendela konsol di Windows, dan tombol batal menghentikan semua proses turunan.
+
+Dikerjakan lebih awal dan dibelah atas keputusan pemilik proyek (2026-09-18): **M10a** = pengambil binary berkas tunggal (unduh + checksum) dengan yt-dlp sebagai konsumen pertama, integrasi yt-dlp, dan halaman Unduhan beserta persetujuan §7.1. **M10b** = Deno dan ffmpeg (yang butuh pembongkar arsip), antrean paralel, dan sisanya. Urutan barunya: M7a → M10a → M8 → M10b.
 
 ### M11. Kualitas lanjutan
 Decoder Opus (lalu ubah prioritas format downloader), exclusive mode WASAPI, dan penyempurnaan mode hemat daya.

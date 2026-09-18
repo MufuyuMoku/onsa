@@ -692,3 +692,45 @@ Ketiganya **terinspirasi, bukan meniru**: tidak ada logo, ikon, wallpaper, atau 
 **Diperiksa**: keenam tema dibuka satu per satu dan dibuktikan benar-benar memakai apa yang dikatakannya (atribut di root, token bernilai, tepi yang benar-benar timbul, garis baris yang benar-benar ada); nama dialog dibuktikan terbaca di atas bilahnya di keenam tema; dan pemeriksa tata letak dijalankan ulang dua kali lagi — sekali di tema berscrollbar lebar, sekali di tema terang — 6 lebar × 13 halaman + 4 panel, bersih.
 
 **Temuan**: sebuah backslash hilang lagi, kali ini dimakan template literal JavaScript di skrip pemeriksa, membuat regex-nya diam-diam tidak pernah cocok sehingga pemeriksaan kontras membaca latar yang salah. Pelajarannya sama dengan heredoc: di tempat yang memproses escape, jangan menulis regex — pemeriksaannya ditulis ulang tanpa satu backslash pun.
+
+## M7a. Metadata — selesai (2026-09-18)
+
+**Kriteria selesai** (SPEC §15): tes metadata lulus, termasuk simulasi kegagalan penulisan.
+
+| Kriteria | Hasil |
+|---|---|
+| Tes metadata lulus | ✅ 23 tes integrasi di `crates/onsa-library/tests/edits.rs`, ditambah tes unit `write`, `rename`, `clean`, `auto`, `edits` |
+| Simulasi kegagalan penulisan | ✅ `a_write_that_fails_leaves_the_original_alone`: berkas yang tidak bisa dibaca lofty ditolak, aslinya tetap **byte per byte** seperti semula, dan tidak ada berkas sementara yang tertinggal di sebelahnya |
+| Tes (§12) | ✅ 273 tes Rust dan 29 tes antarmuka; `cargo fmt --check`, clippy `-D warnings`, dan `svelte-check` bersih |
+| CI | ✅ hijau di windows-latest dan ubuntu-latest |
+
+Milestone ini ditutup sebagai **M7a** atas keputusan pemilik proyek (2026-09-18): sisa §8 yang belum dikerjakan dicatat sebagai **M7b** di bawah, dan **editor tag satuan pindah ke M8** karena lirik adalah salah satu field yang diedit di sana — membangun editornya dua kali tidak masuk akal.
+
+### Yang dibuat
+
+- **Skema versi 3 dan 4**: `edit_batches` dan `edit_steps` — catatan apa yang Onsa ubah, supaya bisa dikembalikan. `track_id` sengaja bukan foreign key: catatannya harus hidup lebih lama daripada baris track-nya. Versi 4 melebarkan catatan itu agar bisa memuat sampul.
+- **Tiga lapis yang bisa dibatalkan** (SPEC §8): editan masuk `overrides` dulu (tidak ada berkas yang tersentuh), "tulis ke berkas" aksi kedua, memindahkan berkas aksi ketiga. Pembatalan menuruni tangga yang sama, langkah terakhir lebih dulu.
+- **Penulisan aman**: salin ke berkas sementara di folder yang sama, tulis, `fsync`, **baca ulang setiap field sebelum menggantikan aslinya**, lalu rename atomik. Bila gagal di mana pun, yang asli tidak pernah tersentuh.
+- **Rename berpola dengan dry-run**: pola `{album_artist}/{album}/{track:02} {title}`, karakter yang tidak boleh ada di path diganti (termasuk pemisah path di dalam nilai tag, supaya `AC/DC` tidak menjadi dua folder), bentrokan ditampilkan dan tidak dijalankan, dan rencananya disusun ulang di backend saat diterapkan.
+- **Pengaman** (diminta pemilik proyek sebelum apa pun ditulis): cakupan folder yang selalu terlihat, batas per sekali jalan (50, langit-langit 500), ringkasan sebelum tombol, dan riwayat yang bisa dibatalkan — termasuk setelah aplikasi ditutup dan dibuka lagi.
+- **Halaman Rapikan** dengan lima pekerjaan: edit massal, tulis ke berkas, ganti nama berpola, **rapikan otomatis** (tanpa jaringan), dan **cari data online**.
+- **AcoustID, MusicBrainz, dan Cover Art Archive** di belakang pintu yang sama persis: pencocokan hanya menghasilkan usulan, dan yang dicentang dikirim ke perintah yang sama dengan editan manual. Tingkat keyakinan menentukan apa yang tercentang sendiri; dua sumber yang berbeda ditampilkan berdua tanpa satu pun tercentang.
+- **Pengelola program luar** (`onsa-downloader::programs`), dibuat sekali untuk M7 dan M10.
+- **Klien HTTP tunggal** (SPEC §1): User-Agent, timeout, batas ukuran jawaban, batas laju per layanan, dan kegagalan yang dikembalikan sebagai nilai.
+
+### Cara verifikasi
+
+Semuanya di `docs/PROGRESS.md` bagian-bagian di atas: 36 pemeriksaan untuk halaman Rapikan, 48 + 19 untuk pencarian online, 14 + 9 untuk perapihan otomatis — seluruhnya terhadap **build rilis** dengan library sekali pakai (`ONSA_DATA_DIR`), berkas uji buatan sendiri, dan layanan tiruan di loopback. Tag diperiksa dengan ffprobe, bukan dengan Onsa sendiri.
+
+### M7b — utang §8 yang belum dikerjakan
+
+Dikerjakan **setelah M10 penuh**, atas keputusan pemilik proyek:
+
+- **Sampul belum bisa dihapus atau diekspor.** Sekarang hanya bisa diganti (dari Cover Art Archive).
+- **Sampul belum ditanam ke berkas.** Yang ada baru pointer di database plus thumbnail 128/512 di cache; aturan §8 "gambar besar diperkecil dulu, maksimal 1200 px, dengan opsi mempertahankan asli" belum berlaku karena belum ada yang menulis gambar ke tag.
+- **"(beragam)" belum ada.** Edit massal menyetel satu nilai untuk semua lagu; field yang nilainya berbeda antar-lagu belum ditampilkan sebagai "(beragam)" dan dibiarkan.
+- **Empat field belum bisa di-override**: nomor trek total, nomor disk total, dan komentar. (Lirik ikut M8.)
+
+### Pindah ke M8
+
+- **Editor tag satuan (per lagu)** — lirik adalah salah satu field di dalamnya.
