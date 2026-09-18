@@ -74,7 +74,7 @@ pub fn search(artist: &str, title: &str, album: Option<&str>) -> Result<Vec<Foun
         "/recording",
         &[("query", query.as_str()), ("limit", "5"), ("fmt", "json")],
     )?;
-    Ok(read_search(&answer, artist, title))
+    Ok(read_search(&answer.body, artist, title))
 }
 
 /// A value for a Lucene query, with the characters that mean something to
@@ -224,7 +224,9 @@ pub fn release_group(id: &str) -> Result<Option<i32>, NetError> {
         &format!("/release-group/{id}"),
         &[("fmt", "json")],
     )?;
-    Ok(year_of(text(answer.get("first-release-date")).as_deref()))
+    Ok(year_of(
+        text(answer.body.get("first-release-date")).as_deref(),
+    ))
 }
 
 /// The front cover of a release group, at the size a list can show.

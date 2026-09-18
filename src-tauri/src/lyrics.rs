@@ -262,6 +262,20 @@ fn assemble(app: &AppHandle, track_id: i64, start_looking: bool) -> Result<Lyric
     })
 }
 
+/// What came of asking a service.
+///
+/// The difference that matters is between "it knows of no words for this
+/// song" and "it could not be asked". The first is worth remembering, so a
+/// song is not asked about every time it plays. The second is worth
+/// nothing: an outage is not an answer, and a song must not be marked as
+/// wordless because the network was down for a minute.
+enum Answer {
+    /// It answered: these words, or none it knows of.
+    Said(Option<lrclib::Found>),
+    /// It could not be asked at all.
+    Unreachable,
+}
+
 /// Asks LRCLIB, on a thread of its own.
 fn ask_away(app: AppHandle, track_id: i64, ask: lrclib::Ask) {
     let lookups = app.state::<Arc<Lookups>>().inner().clone();
@@ -287,7 +301,17 @@ fn ask_away(app: AppHandle, track_id: i64, ask: lrclib::Ask) {
             if !still_allowed {
                 return;
             }
-            let (text, synced) = match &answer {
+            let said = match answer {
+                Answer::Said(said) => said,
+                Answer::Unreachable => {
+                    // Nothing is remembered, so the song can be asked about
+                    // again once the service is back.
+                    tracing::info!(track_id, "a lyrics service could not be reached");
+                    let _ = app.emit(LYRICS_EVENT, track_id);
+                    return;
+                }
+            };
+            let (text, synced) = match &said {
                 Some(found) => (found.best().map(str::to_string), found.synced.is_some()),
                 None => (None, false),
             };
@@ -310,23 +334,28 @@ fn ask_away(app: AppHandle, track_id: i64, ask: lrclib::Ask) {
 }
 
 /// Asks the service, the exact question first and the broad one after.
-fn fetch(ask: &lrclib::Ask) -> Option<lrclib::Found> {
+fn fetch(ask: &lrclib::Ask) -> Answer {
     let exact: Vec<(String, String)> = ask.get_query();
     let query: Vec<(&str, &str)> = exact
         .iter()
         .map(|(key, value)| (key.as_str(), value.as_str()))
         .collect();
     match net::ask_json(Service::LrcLib, lrclib::GET, &query) {
+        // A service that refuses — too busy, fallen over, asked too often —
+        // has said nothing about the song. Remembering that as "this one
+        // has no words" would be remembering the weather.
+        Ok(answer) if !answer.is_an_answer() => {
+            tracing::debug!(status = answer.status, "lrclib refused to answer");
+            return Answer::Unreachable;
+        }
         Ok(answer) => {
-            if let Some(found) = lrclib::read_get(&answer) {
-                return Some(found);
+            if let Some(found) = lrclib::read_get(&answer.body) {
+                return Answer::Said(Some(found));
             }
         }
         Err(error) => {
             tracing::debug!("lrclib could not be asked: {error}");
-            // A service that cannot be reached is not a service that said
-            // no: there is nothing to remember, and it can be tried again.
-            return None;
+            return Answer::Unreachable;
         }
     }
     let broad: Vec<(String, String)> = ask.search_query();
@@ -335,10 +364,14 @@ fn fetch(ask: &lrclib::Ask) -> Option<lrclib::Found> {
         .map(|(key, value)| (key.as_str(), value.as_str()))
         .collect();
     match net::ask_json(Service::LrcLib, lrclib::SEARCH, &query) {
-        Ok(answer) => lrclib::read_search(&answer, ask),
+        Ok(answer) if !answer.is_an_answer() => {
+            tracing::debug!(status = answer.status, "lrclib refused to search");
+            Answer::Unreachable
+        }
+        Ok(answer) => Answer::Said(lrclib::read_search(&answer.body, ask)),
         Err(error) => {
             tracing::debug!("lrclib could not be searched: {error}");
-            None
+            Answer::Unreachable
         }
     }
 }

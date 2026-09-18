@@ -264,6 +264,29 @@ fn loopback(url: &str) -> bool {
     )
 }
 
+/// What a service answered, and what it called the answer.
+///
+/// The status is carried rather than swallowed because the two are not the
+/// same thing: a service that answers "I have never heard of this" is
+/// worth remembering, and one that answers "not right now" is not. A caller
+/// that does not care can read the body alone.
+pub struct Answered {
+    /// The HTTP status, as a number.
+    pub status: u16,
+    /// What came back, parsed.
+    pub body: serde_json::Value,
+}
+
+impl Answered {
+    /// Whether the service answered rather than refused.
+    ///
+    /// A 404 counts: "there is no such thing here" is an answer, and the
+    /// one several of these services give most often.
+    pub fn is_an_answer(&self) -> bool {
+        (200..300).contains(&self.status) || self.status == 404
+    }
+}
+
 /// Asks a service for JSON, keeping to its rate limit.
 ///
 /// Everything about it comes back as a value: a service that is down, slow,
@@ -273,7 +296,7 @@ pub fn ask_json(
     service: Service,
     path: &str,
     query: &[(&str, &str)],
-) -> Result<serde_json::Value, NetError> {
+) -> Result<Answered, NetError> {
     let client = client().ok_or(NetError::Unreachable)?;
     service.limit().wait();
     let url = format!("{}{path}", service.base());
@@ -296,9 +319,13 @@ pub fn ask_json(
         // A refusal still carries JSON often enough to be worth reading; the
         // caller decides what an answer without results means.
     }
-    serde_json::from_slice(&body).map_err(|error| {
+    let body = serde_json::from_slice(&body).map_err(|error| {
         tracing::debug!(service = ?service, "answered something that is not JSON: {error}");
         NetError::Unreachable
+    })?;
+    Ok(Answered {
+        status: status.as_u16(),
+        body,
     })
 }
 
