@@ -160,6 +160,9 @@ impl RateLimit {
 pub static MUSICBRAINZ: RateLimit = RateLimit::new(Duration::from_millis(1000));
 /// AcoustID: three requests a second, as its documentation asks.
 pub static ACOUSTID: RateLimit = RateLimit::new(Duration::from_millis(334));
+/// LRCLIB: two requests a second. It publishes no limit and asks for none;
+/// this is Onsa being a guest rather than a limit to be crept up to.
+pub static LRCLIB: RateLimit = RateLimit::new(Duration::from_millis(500));
 
 /// A service Onsa asks about metadata (SPEC §8).
 ///
@@ -174,6 +177,8 @@ pub enum Service {
     MusicBrainz,
     /// The Cover Art Archive, which has the picture.
     CoverArt,
+    /// LRCLIB, which has the words (SPEC §10).
+    LrcLib,
 }
 
 impl Service {
@@ -183,6 +188,7 @@ impl Service {
             Self::AcoustId => "https://api.acoustid.org/v2",
             Self::MusicBrainz => "https://musicbrainz.org/ws/2",
             Self::CoverArt => "https://coverartarchive.org",
+            Self::LrcLib => "https://lrclib.net/api",
         }
     }
 
@@ -192,6 +198,7 @@ impl Service {
             Self::AcoustId => "ONSA_ACOUSTID_URL",
             Self::MusicBrainz => "ONSA_MUSICBRAINZ_URL",
             Self::CoverArt => "ONSA_COVERART_URL",
+            Self::LrcLib => "ONSA_LRCLIB_URL",
         }
     }
 
@@ -202,6 +209,7 @@ impl Service {
             // The Cover Art Archive is fronted by MusicBrainz and counted
             // against the same allowance.
             Self::MusicBrainz | Self::CoverArt => &MUSICBRAINZ,
+            Self::LrcLib => &LRCLIB,
         }
     }
 

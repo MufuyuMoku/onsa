@@ -42,6 +42,8 @@ pub const METADATA_KEY: &str = "metadata";
 pub const TIDY_KEY: &str = "tidy";
 /// Key of where the outside programs are.
 pub const PROGRAMS_KEY: &str = "programs";
+/// Key the lyrics settings are stored under.
+pub const LYRICS_KEY: &str = "lyrics";
 
 /// Reads one setting, or its default.
 pub fn load<T: DeserializeOwned + Default>(library: &Library, key: &str) -> T {
@@ -349,6 +351,22 @@ pub struct MetadataPrefs {
     /// The listener's own AcoustID application key, when they have one.
     /// Never sent back to the interface, never logged.
     pub acoustid_key: Option<String>,
+}
+
+/// What Onsa may do about a song's words (SPEC §10, §14).
+///
+/// Like every other way out to the internet, asking a lyrics service starts
+/// off and can be turned off again at any moment. The two sources that need
+/// no network — a `.lrc` beside the song and the words in its own tags —
+/// are read whatever this says, because they are already the listener's.
+#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct LyricsPrefs {
+    /// Whether Onsa may ask a lyrics service on the internet.
+    pub online: bool,
+    /// Whether words that came from a service are also written as a `.lrc`
+    /// beside the song, so they are the listener's to keep.
+    pub write_beside: bool,
 }
 
 /// Where the outside programs are (SPEC §7.1).

@@ -3456,6 +3456,7 @@ dependencies = [
  "onsa-audio",
  "onsa-downloader",
  "onsa-library",
+ "onsa-lyrics",
  "reqwest",
  "serde",
  "serde_json",

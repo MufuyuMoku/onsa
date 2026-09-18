@@ -14,6 +14,7 @@ mod error;
 mod keys;
 mod library;
 mod logging;
+mod lyrics;
 mod matching;
 mod media;
 mod musicbrainz;
@@ -161,6 +162,13 @@ pub fn run() -> Result<()> {
             downloads::download_queue,
             downloads::download_start,
             downloads::download_stop,
+            lyrics::lyrics_for,
+            lyrics::lyrics_state,
+            lyrics::lyrics_look_again,
+            lyrics::lyrics_offset,
+            lyrics::lyrics_write_beside,
+            lyrics::lyrics_settings,
+            lyrics::lyrics_set_settings,
         ])
         .run(tauri::generate_context!())
         .context("the application window could not be started")
@@ -266,6 +274,7 @@ fn setup(app: &mut tauri::App) -> Result<()> {
     app.manage(std::sync::Arc::new(matching::Matching::default()));
     app.manage(std::sync::Arc::new(downloads::Fetching::default()));
     app.manage(std::sync::Arc::new(downloads::Queue::default()));
+    app.manage(std::sync::Arc::new(lyrics::Lookups::default()));
     app.manage(logging);
     app.manage(library);
     app.manage(player);

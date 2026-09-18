@@ -10,6 +10,17 @@ use crate::db::Library;
 use crate::error::Result;
 use crate::search::{track_row, TrackRow, TRACK_COLUMNS};
 
+/// One value Onsa holds instead of what the file says.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Edited {
+    /// The field's name, as the `overrides` table spells it.
+    pub field: String,
+    /// What Onsa shows instead. `None` means the field was emptied.
+    pub value: Option<String>,
+    /// Whether the file itself still says something else.
+    pub unwritten: bool,
+}
+
 /// A field that can be overridden.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Field {
@@ -91,6 +102,42 @@ impl Library {
                 track_row,
             )
             .optional()?)
+    }
+
+    /// One override, when the track has one for that field.
+    ///
+    /// `track_view` answers this for the fields it carries, but not for the
+    /// ones it does not — the lyrics above all, which are far too long to
+    /// put in a view every list query reads.
+    pub fn override_value(&self, track_id: i64, field: Field) -> Result<Option<String>> {
+        Ok(self
+            .conn
+            .query_row(
+                "SELECT value FROM overrides WHERE track_id = ?1 AND field = ?2",
+                params![track_id, field.name()],
+                |row| row.get::<_, Option<String>>(0),
+            )
+            .optional()?
+            .flatten())
+    }
+
+    /// Everything Onsa has changed about one track.
+    ///
+    /// What the editor needs to tell the listener which values are the
+    /// file's and which are Onsa's, and which of Onsa's have yet to reach
+    /// the file (SPEC §8).
+    pub fn overrides_of(&self, track_id: i64) -> Result<Vec<Edited>> {
+        let mut statement = self
+            .conn
+            .prepare("SELECT field, value, unwritten FROM overrides WHERE track_id = ?1")?;
+        let rows = statement.query_map([track_id], |row| {
+            Ok(Edited {
+                field: row.get(0)?,
+                value: row.get(1)?,
+                unwritten: row.get::<_, i64>(2)? != 0,
+            })
+        })?;
+        Ok(rows.collect::<std::result::Result<Vec<_>, _>>()?)
     }
 
     /// The id of the track at `path`, if the library knows it.

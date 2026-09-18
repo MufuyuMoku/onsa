@@ -35,7 +35,7 @@ pub use edits::{Batch, BatchReport, Scope, Skipped, Summary, UndoReport};
 pub use error::{Error, Result};
 pub use lyrics::Cached;
 pub use m3u::{ImportReport, PathStyle};
-pub use overrides::Field;
+pub use overrides::{Edited, Field};
 pub use playlist::{PlaylistKind, PlaylistRow};
 pub use rename::{Move, RenamePlan};
 pub use scan::{ChangeReport, ScanProgress, ScanReport, SUPPORTED_EXTENSIONS};
