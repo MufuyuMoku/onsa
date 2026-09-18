@@ -11,17 +11,19 @@
 //! before it is written anywhere, and that check lives in `onsa-downloader`,
 //! which never speaks to the network itself.
 
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
+use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::{Arc, Mutex};
 
 use onsa_downloader::install::{self, MAX_BINARY};
 use onsa_downloader::{Program, Where};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Manager};
 
 use crate::error::ErrorCode;
 use crate::net::{self, NetError};
 use crate::online;
+use crate::ytdlp;
 
 /// What the interface listens for while a program is being fetched.
 pub const BINARY_EVENT: &str = "downloads://binary";
@@ -282,5 +284,333 @@ fn why(error: NetError) -> String {
         NetError::Unreachable => "unreachable".to_string(),
         NetError::TooLarge => "tooLarge".to_string(),
         NetError::Stopped => "stopped".to_string(),
+    }
+}
+
+// ------------------------------------------------------ downloading (SPEC §7.2)
+
+/// What the interface listens for while a download is going.
+pub const DOWNLOAD_EVENT: &str = "downloads://progress";
+
+/// One thing waiting to be downloaded, or being downloaded, or done.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ItemDto {
+    /// Which one, for the interface to follow.
+    pub id: u64,
+    /// The URL of this one item.
+    pub url: String,
+    /// What it is called.
+    pub title: String,
+    /// `waiting`, `running`, `done`, `failed` or `stopped`.
+    pub state: String,
+    /// How far along, from nothing to one, when that is known.
+    pub fraction: Option<f64>,
+    /// Bytes a second, as yt-dlp reckons it.
+    pub speed: Option<f64>,
+    /// Seconds left, as yt-dlp reckons it.
+    pub eta: Option<f64>,
+    /// The file that arrived, once one has.
+    pub file: Option<String>,
+    /// Why it failed, as a fixed word the interface translates.
+    pub failed: Option<String>,
+}
+
+/// The queue as it stands.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct QueueDto {
+    /// Whether anything is being downloaded right now.
+    pub running: bool,
+    /// Everything asked for in this run of Onsa, newest last.
+    pub items: Vec<ItemDto>,
+    /// Where finished files are being put.
+    pub folder: Option<String>,
+}
+
+/// One row of the queue, as the application holds it.
+#[derive(Debug, Clone)]
+struct Item {
+    id: u64,
+    url: String,
+    title: String,
+    state: &'static str,
+    fraction: Option<f64>,
+    speed: Option<f64>,
+    eta: Option<f64>,
+    file: Option<String>,
+    failed: Option<String>,
+}
+
+impl Item {
+    fn dto(&self) -> ItemDto {
+        ItemDto {
+            id: self.id,
+            url: self.url.clone(),
+            title: self.title.clone(),
+            state: self.state.to_string(),
+            fraction: self.fraction,
+            speed: self.speed,
+            eta: self.eta,
+            file: self.file.clone(),
+            failed: self.failed.clone(),
+        }
+    }
+}
+
+/// The downloads asked for, and whether one is going.
+///
+/// One at a time for now: running several at once, and remembering the queue
+/// across restarts, belong to the rest of M10 (SPEC §7.3).
+#[derive(Debug, Default)]
+pub struct Queue {
+    items: Mutex<Vec<Item>>,
+    next_id: AtomicU64,
+    running: AtomicBool,
+    stop: Arc<AtomicBool>,
+}
+
+impl Queue {
+    fn snapshot(&self, folder: Option<String>) -> QueueDto {
+        let items = self.items.lock().unwrap_or_else(|e| e.into_inner());
+        QueueDto {
+            running: self.running.load(Ordering::Relaxed),
+            items: items.iter().map(Item::dto).collect(),
+            folder,
+        }
+    }
+
+    /// Asks whatever is downloading to stop, and drops what is waiting.
+    pub fn stop(&self) {
+        self.stop.store(true, Ordering::SeqCst);
+        let mut items = self.items.lock().unwrap_or_else(|e| e.into_inner());
+        for item in items.iter_mut().filter(|one| one.state == "waiting") {
+            item.state = "stopped";
+        }
+    }
+}
+
+/// Where finished downloads go: inside the library, so they appear in it.
+///
+/// The first library folder is used. Onsa refuses to download at all when
+/// there is none rather than inventing somewhere — a file nobody asked for,
+/// somewhere nobody chose, is worse than a clear refusal (SPEC §7.3).
+fn output_folder(app: &AppHandle) -> Result<PathBuf, ErrorCode> {
+    let library = app.state::<crate::library::LibraryService>();
+    let folders = library.read(|library| library.folders())?;
+    let first = folders.first().ok_or(ErrorCode::NoFolder)?;
+    Ok(PathBuf::from(&first.name).join("Unduhan"))
+}
+
+/// Asks what is at a URL, without fetching any of it (SPEC §7.2).
+#[tauri::command]
+pub async fn download_probe(app: AppHandle, url: String) -> Result<ytdlp::Probe, ErrorCode> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let programs = online::programs(&app)?;
+        ytdlp::probe(&programs, &url).map_err(|why| {
+            tracing::info!(why, "a URL could not be looked at");
+            ErrorCode::Download
+        })
+    })
+    .await
+    .map_err(|_| ErrorCode::Library)?
+}
+
+/// The queue as it stands.
+#[tauri::command]
+pub fn download_queue(app: AppHandle) -> Result<QueueDto, ErrorCode> {
+    let folder = output_folder(&app)
+        .ok()
+        .map(|path| path.display().to_string());
+    Ok(app.state::<Arc<Queue>>().snapshot(folder))
+}
+
+/// Adds items to the queue and starts working through them.
+#[tauri::command]
+pub fn download_start(
+    app: AppHandle,
+    items: Vec<DownloadRequest>,
+    format: String,
+) -> Result<QueueDto, ErrorCode> {
+    let format = ytdlp::Format::from_name(&format).ok_or(ErrorCode::Library)?;
+    let into = output_folder(&app)?;
+    let queue = app.state::<Arc<Queue>>().inner().clone();
+
+    {
+        let mut waiting = queue.items.lock().unwrap_or_else(|e| e.into_inner());
+        for one in items {
+            if !ytdlp::is_a_url(&one.url) {
+                continue;
+            }
+            let id = queue.next_id.fetch_add(1, Ordering::SeqCst) + 1;
+            waiting.push(Item {
+                id,
+                url: one.url,
+                title: one.title,
+                state: "waiting",
+                fraction: None,
+                speed: None,
+                eta: None,
+                file: None,
+                failed: None,
+            });
+        }
+    }
+
+    tracing::info!(
+        format = format.name(),
+        folder = %into.display(),
+        "downloads were asked for"
+    );
+
+    if queue
+        .running
+        .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
+        .is_ok()
+    {
+        queue.stop.store(false, Ordering::SeqCst);
+        let handle = app.clone();
+        let mine = queue.clone();
+        // A download takes minutes and reads a pipe the whole time; it
+        // belongs on a thread of its own, not on the one answering the
+        // interface.
+        if let Err(error) = std::thread::Builder::new()
+            .name("onsa-downloads".into())
+            .spawn(move || {
+                work_through(&handle, &mine, format, &into);
+                mine.running.store(false, Ordering::SeqCst);
+                let _ = handle.emit(DOWNLOAD_EVENT, ());
+            })
+        {
+            tracing::error!("the download thread could not be started: {error}");
+            queue.running.store(false, Ordering::SeqCst);
+            return Err(ErrorCode::Download);
+        }
+    }
+
+    download_queue(app)
+}
+
+/// One thing the interface asked to download.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DownloadRequest {
+    /// The URL of this one item.
+    pub url: String,
+    /// What to call it in the list while it waits.
+    pub title: String,
+}
+
+/// Stops the download that is going, and drops what was waiting.
+#[tauri::command]
+pub fn download_stop(app: AppHandle) -> Result<QueueDto, ErrorCode> {
+    app.state::<Arc<Queue>>().stop();
+    tracing::info!("the downloads were asked to stop");
+    download_queue(app)
+}
+
+/// Works through the queue, one item at a time.
+fn work_through(app: &AppHandle, queue: &Queue, format: ytdlp::Format, into: &Path) {
+    loop {
+        if queue.stop.load(Ordering::SeqCst) {
+            return;
+        }
+        // The next one waiting, marked as running before the lock is let go.
+        let next = {
+            let mut items = queue.items.lock().unwrap_or_else(|e| e.into_inner());
+            match items.iter_mut().find(|one| one.state == "waiting") {
+                Some(item) => {
+                    item.state = "running";
+                    Some((item.id, item.url.clone()))
+                }
+                None => None,
+            }
+        };
+        let Some((id, url)) = next else {
+            return;
+        };
+        let _ = app.emit(DOWNLOAD_EVENT, ());
+
+        let programs = match online::programs(app) {
+            Ok(programs) => programs,
+            Err(_) => {
+                finish(app, queue, id, "failed", None, Some("cannotRun".into()));
+                continue;
+            }
+        };
+
+        let handle = app.clone();
+        let outcome = ytdlp::download(&programs, &url, format, into, queue.stop.clone(), |step| {
+            {
+                let mut items = queue.items.lock().unwrap_or_else(|e| e.into_inner());
+                if let Some(item) = items.iter_mut().find(|one| one.id == id) {
+                    item.fraction = step.fraction;
+                    item.speed = step.speed;
+                    item.eta = step.eta;
+                    if let Some(name) = step.name {
+                        item.title = name;
+                    }
+                }
+            }
+            let _ = handle.emit(DOWNLOAD_EVENT, ());
+        });
+
+        match outcome {
+            Ok(files) => {
+                let file = files.first().map(|path| path.display().to_string());
+                if let Some(path) = files.first() {
+                    hand_to_library(app, path);
+                }
+                finish(app, queue, id, "done", file, None);
+            }
+            Err(why) => {
+                let state = if why == "stopped" {
+                    "stopped"
+                } else {
+                    "failed"
+                };
+                finish(app, queue, id, state, None, Some(why));
+            }
+        }
+    }
+}
+
+/// Writes down how one item ended, and tells the interface.
+fn finish(
+    app: &AppHandle,
+    queue: &Queue,
+    id: u64,
+    state: &'static str,
+    file: Option<String>,
+    failed: Option<String>,
+) {
+    {
+        let mut items = queue.items.lock().unwrap_or_else(|e| e.into_inner());
+        if let Some(item) = items.iter_mut().find(|one| one.id == id) {
+            item.state = state;
+            item.file = file;
+            item.failed = failed;
+            item.fraction = if state == "done" {
+                Some(1.0)
+            } else {
+                item.fraction
+            };
+            item.speed = None;
+            item.eta = None;
+        }
+    }
+    let _ = app.emit(DOWNLOAD_EVENT, ());
+}
+
+/// Hands a finished file to the library, so it appears there (SPEC §7.2).
+///
+/// The folder downloads go into is inside a library folder, so the watcher
+/// usually notices on its own; asking for a scan makes it immediate rather
+/// than eventual.
+fn hand_to_library(app: &AppHandle, file: &Path) {
+    tracing::info!(file = %file.display(), "a download finished");
+    let library = app.state::<crate::library::LibraryService>();
+    if let Err(error) = library.rescan() {
+        tracing::warn!("the library could not be told about a download: {error:?}");
     }
 }

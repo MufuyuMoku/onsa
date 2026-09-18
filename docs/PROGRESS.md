@@ -734,3 +734,50 @@ Dikerjakan **setelah M10 penuh**, atas keputusan pemilik proyek:
 ### Pindah ke M8
 
 - **Editor tag satuan (per lagu)** — lirik adalah salah satu field di dalamnya.
+
+## M10a. Pengambil binary dan yt-dlp — selesai (2026-09-18)
+
+Dikerjakan lebih awal atas keputusan pemilik proyek (lihat `docs/DECISIONS.md`): bagian M10 yang menentukan rilis pertama, dikerjakan sebelum M8.
+
+**Kriteria selesai M10** belum terpenuhi seluruhnya — itu milik M10b. Yang sudah terpenuhi dari kriteria itu:
+
+| Kriteria M10 | Keadaan |
+|---|---|
+| URL satu video diunduh sampai muncul di library | ✅ diuji ujung ke ujung terhadap build rilis |
+| URL satu playlist | ⏳ pratinjau playlist sudah ada dan bisa dicentang per item; antrean paralel M10b |
+| Tidak ada jendela konsol di Windows | ✅ `CREATE_NO_WINDOW` di semua proses luar sejak pengelola program dibuat |
+| Tombol batal menghentikan semua proses turunan | ✅ Job Object di Windows, process group di Linux — diuji dengan menghitung proses sebelum, saat, dan sesudah |
+| Pengelolaan binary: persetujuan, checksum, opsi program sistem, versi | ✅ untuk berkas tunggal (yt-dlp). Update = unduh ulang. Deno dan ffmpeg (arsip) M10b |
+
+### Yang dibuat
+
+- **Pengambil binary** (`onsa-downloader::install`): katalog sumber resmi yang **ditulis di kode** (URL, nama berkas di daftar checksum, perkiraan ukuran), pembacaan `SHA2-256SUMS`, dan pemasangan yang menulis ke berkas sementara, `fsync`, memberi izin jalan di Unix, lalu rename. **Yang checksum-nya tidak cocok tidak ditulis ke mana pun.**
+- **Halaman Unduhan** dengan persetujuan §7.1 sejak awal: nama, sumber, perkiraan ukuran, lalu tombol — tidak ada yang diambil sebelum ditekan. Program yang berbentuk arsip menyebutkan dirinya begitu, bukan diam-diam hilang. Opsi "pakai program sistem" ada di halaman itu, dan nilainya datang dari yang tersimpan, bukan dari tebakan.
+- **Pengambilan bertahap** lewat klien HTTP yang sama dengan seluruh proyek, dengan batas ukuran, laporan kemajuan, dan tombol hentikan.
+- **Penghentian sampai ke anak-anaknya** (`onsa-downloader::platform::Group`): Job Object di Windows (dengan `KILL_ON_JOB_CLOSE`, jadi unduhan tidak hidup lebih lama daripada Onsa) dan process group di Linux. Tidak ada dependensi baru: `windows-sys` dan `libc` sudah ada di pohon dependensi.
+- **Aliran baris** (`onsa-downloader::runner`): tiap baris yt-dlp dibaca saat dicetak, stderr dikuras di thread sendiri supaya pipa penuh tidak membuat semuanya berhenti, dan permintaan berhenti dijawab di antara baris.
+- **yt-dlp** (`src-tauri::ytdlp`): pratinjau `-J --flat-playlist` (satu video maupun playlist), argumen §7.2 **di satu tempat** supaya prioritas format yang harus berubah di M11 satu baris, parser progres yang toleran (baris asing masuk log, tidak menggagalkan apa pun), dan `--print after_move:filepath` sebagai satu-satunya sumber nama berkas hasil.
+- **Antrean** satu per satu di memori, dengan status per baris (menunggu, sedang diunduh, selesai, gagal, dihentikan), kecepatan, dan sisa waktu. Berkas yang selesai diserahkan ke library, jadi lagunya langsung muncul.
+
+### Cara verifikasi
+
+**Berkas uji dibuat sendiri dan dilayani dari mesin ini**: sepotong nada 90 detik dibuat dengan ffmpeg lalu disajikan lewat HTTP di 127.0.0.1, dengan varian yang sengaja lambat. Jadi seluruh alur unduhan diuji tanpa mengambil musik siapa pun dan tanpa bergantung pada layanan mana pun.
+
+- **Pengambil binary, 15 pemeriksaan**: halaman menyebut sumber dan ukuran sebelum apa pun terjadi; yt-dlp benar-benar diunduh dari rilis resminya; **hasilnya dibandingkan byte per byte dengan checksum yang diterbitkan rilis itu** (diperiksa di luar Onsa, dengan hash sendiri); tidak ada `.part` atau `.old` tertinggal; versinya terbaca; memasang ulang mengganti; opsi program sistem berpengaruh; program yang belum bisa dipasang ditolak.
+- **yt-dlp, 16 pemeriksaan**: URL ditanyakan tanpa mengunduh; yang bukan alamat web ditolak; antrean menerima, berjalan, dan selesai; berkasnya benar-benar ada, utuh, di folder yang disebutkan; **muncul di library**; lalu unduhan lambat dihentikan — **jumlah proses yt-dlp dan ffmpeg sebelum dan sesudah sama**, dan barisnya menyebut dirinya dihentikan.
+- **Antarmuka, 8 pemeriksaan**: bagian URL muncul hanya setelah yt-dlp ada; daftar isinya bisa dicentang; catatan "konversi tidak menambah kualitas" muncul hanya saat konversi dipilih; antrean menunjukkan yang sedang berjalan lalu selesai.
+- **Pemeriksa tata letak** dijalankan ulang dengan halaman Unduhan di dalamnya.
+
+### Temuan saat pengujian (sudah diperbaiki)
+
+- Bar kemajuan menggambar **penuh** selama panjang berkas belum diketahui — terbaca seperti sudah selesai. Sekarang kosong sampai ada yang bisa diisi.
+- Dua pembacaan daftar program bisa berjalan bersamaan, dan yang lambat bisa mendarat di atas yang baru — saklar "pakai program sistem" tampak tidak berfungsi. Sekarang jawaban yang lebih baru selalu menang.
+- Saklar itu juga digambar dari tebakan, bukan dari yang tersimpan; sekarang nilainya ikut dalam jawaban yang sama dengan daftarnya.
+- Daftar programnya kosong selama beberapa detik pertama (memeriksa versi tiap program butuh waktu), tanpa mengatakan apa-apa. Sekarang ia mengatakannya.
+
+### Belum dikerjakan (M10b)
+
+- Deno dan ffmpeg: keduanya arsip, jadi butuh pembongkar arsip beserta keputusan dependensinya.
+- Antrean paralel (bawaan 2) dan antrean yang disimpan di database.
+- Menanyakan apakah folder keluaran mau ditambahkan ke library bila ia di luar library (sekarang hasil unduhan selalu ditaruh di dalam folder library pertama, dan Onsa menolak mengunduh bila belum ada folder library sama sekali).
+- Tombol update khusus yt-dlp (`yt-dlp -U`) — sekarang "perbarui" berarti mengunduh ulang rilis terbaru, yang hasilnya sama.

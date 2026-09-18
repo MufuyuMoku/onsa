@@ -30,6 +30,8 @@ pub enum ErrorCode {
     Busy,
     /// A program could not be fetched or installed (SPEC §7.1).
     Download,
+    /// There is no library folder for a download to go into.
+    NoFolder,
 }
 
 impl From<onsa_library::Error> for ErrorCode {

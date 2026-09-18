@@ -9,3 +9,19 @@ publish.workspace = true
 sha2.workspace = true
 thiserror.workspace = true
 tracing.workspace = true
+
+# Stopping a program together with everything it started (SPEC §7.3). Both
+# of these are already in the tree — Tauri and cpal bring them — so nothing
+# new is added to the supply chain by asking for them directly.
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = [
+    "Win32_Foundation",
+    "Win32_System_JobObjects",
+    # CreateJobObjectW takes security attributes, and the limits structure
+    # counts I/O, so those two corners of the API come along with it.
+    "Win32_Security",
+    "Win32_System_Threading",
+] }
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"

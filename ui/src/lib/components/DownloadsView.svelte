@@ -12,13 +12,22 @@
 		binariesUseSystem,
 		binaryInstall,
 		binaryStop,
+		downloadProbe,
+		downloadQueue,
+		downloadStart,
+		downloadStop,
 		EVENTS,
 		failureKey,
 		on,
 		type Binaries,
 		type BinaryStatus,
-		type FetchProgress
+		type DownloadFormat,
+		type DownloadQueue,
+		type FetchProgress,
+		type Probe,
+		type QueueItem
 	} from '$lib/backend';
+	import { clock } from '$lib/format';
 	import { t } from '$lib/i18n/index.svelte';
 	import type { MessageKey } from '$lib/i18n/dictionary';
 	import Icon from './Icon.svelte';
@@ -29,13 +38,76 @@
 	let useSystem = $state(true);
 	let busy = $state(false);
 
+	/** The URL half of the page. */
+	let url = $state('');
+	let looking = $state(false);
+	let probe = $state<Probe | null>(null);
+	let picked = $state<Record<string, boolean>>({});
+	let format = $state<DownloadFormat>('original');
+	let queue = $state<DownloadQueue | null>(null);
+
 	$effect(() => {
 		void look();
-		const stop = on<FetchProgress>(EVENTS.binary, (next) => (progress = next));
+		void readQueue();
+		const fetching = on<FetchProgress>(EVENTS.binary, (next) => (progress = next));
+		// The queue says only that it changed; what it changed to is asked
+		// for, so a burst of progress lines is one read rather than many.
+		const going = on(EVENTS.downloads, () => void readQueue());
 		return () => {
-			void stop.then((off) => off());
+			void fetching.then((off) => off());
+			void going.then((off) => off());
 		};
 	});
+
+	async function readQueue(): Promise<void> {
+		try {
+			queue = await downloadQueue();
+		} catch {
+			// A queue that cannot be read leaves the last one standing.
+		}
+	}
+
+	/** What is at the URL, without fetching any of it. */
+	async function lookAtUrl(): Promise<void> {
+		looking = true;
+		probe = null;
+		try {
+			const found = await downloadProbe(url.trim());
+			probe = found;
+			picked = Object.fromEntries(found.entries.map((one) => [one.url, true]));
+			failure = null;
+		} catch (error) {
+			failure = failureKey(error);
+		} finally {
+			looking = false;
+		}
+	}
+
+	const chosen = $derived(
+		(probe?.entries ?? []).filter((one) => picked[one.url] ?? true)
+	);
+
+	async function start(): Promise<void> {
+		try {
+			queue = await downloadStart(
+				chosen.map((one) => ({ url: one.url, title: one.title })),
+				format
+			);
+			probe = null;
+			url = '';
+			failure = null;
+		} catch (error) {
+			failure = failureKey(error);
+		}
+	}
+
+	const STATE: Record<QueueItem['state'], MessageKey> = {
+		waiting: 'downloads.waiting',
+		running: 'downloads.running',
+		done: 'downloads.done',
+		failed: 'downloads.failed',
+		stopped: 'downloads.wasStopped'
+	};
 
 	/**
 	 * Reading the list means running each program to ask its version, which
@@ -97,9 +169,13 @@
 	};
 
 	const WHY: Record<string, MessageKey> = {
+		notAUrl: 'downloads.notAUrl',
+		noYtDlp: 'downloads.needYtDlp',
+		refused: 'downloads.refused',
+		failed: 'downloads.failed',
+		stopped: 'downloads.stopped',
 		unreachable: 'downloads.unreachable',
 		tooLarge: 'downloads.tooLarge',
-		stopped: 'downloads.stopped',
 		noChecksum: 'downloads.noChecksum',
 		checksum: 'downloads.checksumFailed',
 		cannotWrite: 'downloads.cannotWrite',
@@ -129,6 +205,10 @@
 	<section class="programs">
 		<h2 class="label">{t('downloads.needs')}</h2>
 		<p class="muted note">{t('downloads.needsWhat')}</p>
+
+		{#if programs.length === 0}
+			<p class="muted note">{t('downloads.reading')}</p>
+		{/if}
 
 		<ul class="list">
 			{#each programs as program (program.key)}
@@ -213,13 +293,102 @@
 
 	<section class="fetch">
 		<h2 class="label">{t('downloads.fromUrl')}</h2>
-		{#if ready}
-			<p class="muted note">{t('downloads.soon')}</p>
-		{:else}
+
+		{#if !ready}
 			<p class="muted note">
 				<Icon name="info" />
 				{t('downloads.needYtDlp')}
 			</p>
+		{:else}
+			<div class="row">
+				<input
+					class="field grow numeric"
+					type="text"
+					placeholder={t('downloads.urlPlaceholder')}
+					bind:value={url}
+					onkeydown={(event) => {
+						if (event.key === 'Enter') void lookAtUrl();
+					}}
+				/>
+				<button type="button" class="btn" disabled={looking || url.trim() === ''} onclick={lookAtUrl}>
+					{looking ? t('downloads.looking') : t('downloads.look')}
+				</button>
+			</div>
+
+			{#if probe}
+				<p class="title ellipsis" title={probe.title}>{probe.title}</p>
+
+				<ul class="items candidates">
+					{#each probe.entries as entry, index (entry.url)}
+						<li class="item">
+							<label class="take">
+								<input
+									type="checkbox"
+									checked={picked[entry.url] ?? true}
+									onchange={(event) =>
+										(picked = { ...picked, [entry.url]: event.currentTarget.checked })}
+								/>
+								<span class="ellipsis">{index + 1}. {entry.title}</span>
+							</label>
+							<span class="numeric muted">{clock(entry.seconds)}</span>
+							<span class="muted ellipsis by">{entry.uploader ?? ''}</span>
+						</li>
+					{/each}
+				</ul>
+
+				<div class="row">
+					<label class="inline">
+						<span class="label">{t('downloads.format')}</span>
+						<select class="field" bind:value={format}>
+							<option value="original">{t('downloads.formatOriginal')}</option>
+							<option value="mp3">MP3</option>
+							<option value="flac">FLAC</option>
+						</select>
+					</label>
+					<button type="button" class="btn primary" disabled={chosen.length === 0} onclick={start}>
+						{t('downloads.fetchCount', { n: chosen.length })}
+					</button>
+				</div>
+				{#if format !== 'original'}
+					<p class="muted note">{t('downloads.conversionNote')}</p>
+				{/if}
+			{/if}
+
+			{#if queue && queue.items.length > 0}
+				<h2 class="label">{t('downloads.queue')}</h2>
+				{#if queue.folder}
+					<p class="muted note numeric where">{queue.folder}</p>
+				{/if}
+				<ul class="items queued">
+					{#each queue.items as item (item.id)}
+						<li class="item run" class:failed={item.state === 'failed'}>
+							<span class="ellipsis">{item.title}</span>
+							<span class="muted state">{t(STATE[item.state])}</span>
+							{#if item.state === 'running'}
+								<span class="bar" aria-hidden="true">
+									<span
+										class="fill"
+										style:width={item.fraction ? `${Math.round(item.fraction * 100)}%` : '0%'}
+									></span>
+								</span>
+								<span class="numeric muted rate">
+									{item.speed ? `${size(item.speed)}/s` : ''}
+									{item.eta ? `· ${clock(item.eta)}` : ''}
+								</span>
+							{:else if item.failed}
+								<span class="fault-text state">{t(WHY[item.failed] ?? 'downloads.failed')}</span>
+							{/if}
+						</li>
+					{/each}
+				</ul>
+				{#if queue.running}
+					<div class="row">
+						<button type="button" class="btn" onclick={() => downloadStop()}>
+							{t('downloads.stopAll')}
+						</button>
+					</div>
+				{/if}
+			{/if}
 		{/if}
 	</section>
 </div>
@@ -332,8 +501,75 @@
 
 	.row {
 		display: flex;
+		flex-wrap: wrap;
 		align-items: center;
 		gap: 8px;
+	}
+
+	.inline {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		min-width: 0;
+	}
+
+	.grow {
+		flex: 1 1 260px;
+		min-width: 0;
+	}
+
+	.title {
+		margin: 0;
+		font-size: 13px;
+		color: var(--onsa-text-primary);
+	}
+
+	.items {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+		gap: 2px;
+		width: 100%;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.item {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto minmax(0, 0.6fr);
+		align-items: center;
+		gap: 10px;
+		min-width: 0;
+		padding: 3px 8px;
+		border-radius: var(--onsa-radius-sm);
+		background: var(--onsa-surface-raised);
+		font-size: 12px;
+	}
+
+	.item.run {
+		grid-template-columns: minmax(0, 1fr) auto minmax(60px, 0.8fr) auto;
+	}
+
+	.item.failed {
+		outline: var(--onsa-hairline) solid var(--onsa-role-clip);
+	}
+
+	.take {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		min-width: 0;
+	}
+
+	.state,
+	.rate,
+	.by {
+		font-size: 11.5px;
+	}
+
+	/* A path is long, and the end of it is what tells it apart. */
+	.where {
+		overflow-wrap: anywhere;
 	}
 
 	.fetch :global(svg) {

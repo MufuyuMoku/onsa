@@ -420,7 +420,8 @@ const ERROR_KEYS: Record<string, MessageKey> = {
 	auto_eq_empty: 'error.auto_eq_empty',
 	offline: 'error.offline',
 	busy: 'error.busy',
-	download: 'error.download'
+	download: 'error.download',
+	no_folder: 'error.no_folder'
 };
 
 async function call<T>(command: string, args?: Record<string, unknown>): Promise<T> {
@@ -731,6 +732,50 @@ export const binaryInstall = (program: string) =>
 export const binaryStop = () => call<void>('binary_stop');
 export const binariesUseSystem = (allowed: boolean) =>
 	call<Binaries>('binaries_use_system', { allowed });
+
+/** One thing at a URL, as yt-dlp reports it without fetching anything. */
+export interface DownloadEntry {
+	url: string;
+	title: string;
+	seconds: number | null;
+	uploader: string | null;
+}
+
+/** What is at a URL. */
+export interface Probe {
+	title: string;
+	playlist: boolean;
+	entries: DownloadEntry[];
+}
+
+/** One row of the download queue. */
+export interface QueueItem {
+	id: number;
+	url: string;
+	title: string;
+	state: 'waiting' | 'running' | 'done' | 'failed' | 'stopped';
+	fraction: number | null;
+	speed: number | null;
+	eta: number | null;
+	file: string | null;
+	failed: string | null;
+}
+
+/** The queue as it stands. */
+export interface DownloadQueue {
+	running: boolean;
+	items: QueueItem[];
+	folder: string | null;
+}
+
+/** What Onsa asks yt-dlp for (SPEC section 7.2). */
+export type DownloadFormat = 'original' | 'mp3' | 'flac';
+
+export const downloadProbe = (url: string) => call<Probe>('download_probe', { url });
+export const downloadQueue = () => call<DownloadQueue>('download_queue');
+export const downloadStart = (items: { url: string; title: string }[], format: DownloadFormat) =>
+	call<DownloadQueue>('download_start', { items, format });
+export const downloadStop = () => call<DownloadQueue>('download_stop');
 export const matchState = () => call<MatchState>('match_state');
 export const matchStart = (tracks: number[]) => call<MatchState>('match_start', { tracks });
 export const matchStop = () => call<MatchState>('match_stop');
@@ -811,7 +856,8 @@ export const EVENTS = {
 	playlists: 'library://playlists',
 	windowMode: 'window://mode',
 	matching: 'match://progress',
-	binary: 'downloads://binary'
+	binary: 'downloads://binary',
+	downloads: 'downloads://progress'
 } as const;
 
 /** URL of a cover thumbnail, served by the backend's `onsa` protocol. */

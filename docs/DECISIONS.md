@@ -514,3 +514,16 @@ Diminta pemilik proyek: pengaman dulu, baru jaringan. Semua di bawah ini ada dan
 - **Prioritas format unduhan tetap `bestaudio[ext=m4a]/bestaudio`** sesuai SPEC §7.2, dan **akan diubah menjadi `bestaudio` di M11**, setelah decoder Opus ada. Sampai saat itu Onsa mengunduh m4a dengan sengaja, bukan karena lupa. Kriteria selesai M11 ("file Opus hasil yt-dlp bisa diputar gapless") justru baru bisa diuji setelah pengunduh ada, jadi urutan yang diubah ini membantu yang satu itu.
 - **Nomor migrasi mengikuti urutan pengerjaan, bukan nomor milestone.** Antrean unduhan mendapat versi berikutnya yang kosong, dan lirik mendapat versi sesudahnya — jadi nomor migrasi tidak lagi sejajar dengan nomor milestone. Yang menentukan tetap satu hal: migrasi yang sudah diterapkan tidak pernah diubah.
 - **M9 dilewati, dan tidak ada pola penyimpanan rahasia kedua yang dibangun sekarang.** Keyring menunggu M9; `keys.rs` tetap satu-satunya jalan (Pengaturan → env aplikasi → env build). Menyatukannya dengan keyring adalah urusan M9.
+
+## 2026-09-18 · Mengunduh: apa yang dipegang di mana
+
+- **Yang memasang tidak pernah bicara ke jaringan.** `onsa-downloader::install` menyebutkan sumber resmi, membaca daftar checksum, dan menaruh berkasnya; `src-tauri` yang mengambil, dengan klien HTTP yang sama dengan seluruh proyek (SPEC §1). Pembagian yang sama dengan sampul: yang mengambil ada di satu tempat, yang tahu untuk apa ada di tempat lain.
+- **Sumber rilis ditulis di kode, bukan diambil dari yang diunduh.** URL, nama berkas yang dicari di daftar checksum, dan perkiraan ukurannya semuanya tetap. Tidak ada yang bisa mengarahkan Onsa ke berkas lain.
+- **Checksum diambil lebih dulu, baru berkasnya.** Mengunduh 18 MB untuk kemudian menemukan tidak ada yang bisa dipakai membandingkan adalah unduhan yang terbuang.
+- **Yang tidak cocok tidak ditulis ke mana pun**, bahkan tidak untuk dilihat. Binary yang tidak bisa dijamin Onsa bukan binary yang pantas disimpan.
+- **Argumen yt-dlp disusun di satu tempat** (`ytdlp::arguments`), supaya bisa dibaca sekali pandang — dan supaya prioritas format yang harus berubah di M11 adalah satu baris, bukan pencarian.
+- **Satu-satunya sumber nama berkas hasil adalah `--print after_move:filepath`.** Menebaknya dari pola keluaran berarti menebak apa yang dilakukan yt-dlp terhadap nama yang mengandung karakter aneh.
+- **Baris yang tidak dikenali masuk log dan tidak menggagalkan apa pun** (SPEC §7.2). yt-dlp berbicara banyak; hanya dua bentuk baris yang berarti bagi Onsa.
+- **Penghentian memakai Job Object di Windows dan process group di Linux**, dan keduanya dibuat sejak proses dijalankan, bukan dicari saat hendak dihentikan. Job Object-nya diberi `KILL_ON_JOB_CLOSE`, jadi unduhan tidak hidup lebih lama daripada Onsa yang memulainya. Tidak ada dependensi baru: `windows-sys` dan `libc` sudah ada di pohon dependensi lewat Tauri dan cpal.
+- **Hasil unduhan ditaruh di dalam folder library**, di subfolder `Unduhan`, supaya ia muncul di library dengan sendirinya. Kalau belum ada folder library sama sekali, Onsa menolak mengunduh alih-alih mengarang tempat: berkas yang tidak diminta, di tempat yang tidak dipilih, lebih buruk daripada penolakan yang jelas.
+- **Satu unduhan pada satu waktu untuk sekarang.** Antrean paralel dan antrean yang disimpan di database adalah M10b.

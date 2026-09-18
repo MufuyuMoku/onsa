@@ -3498,9 +3498,11 @@ dependencies = [
 name = "onsa-downloader"
 version = "0.1.0"
 dependencies = [
+ "libc",
  "sha2",
  "thiserror 2.0.20",
  "tracing",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]

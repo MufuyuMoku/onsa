@@ -17,9 +17,11 @@
 pub mod install;
 pub mod platform;
 pub mod programs;
+pub mod runner;
 
 pub use install::Release;
 pub use programs::{Found, Program, Programs, Ran, Where};
+pub use runner::Finished;
 
 use thiserror::Error;
 

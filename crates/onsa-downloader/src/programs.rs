@@ -375,6 +375,13 @@ fn join(handle: std::thread::JoinHandle<Vec<u8>>) -> String {
         .unwrap_or_default()
 }
 
+/// The first file of this name on the system's `PATH`, for tests in this
+/// crate that need a real program to run.
+#[cfg(test)]
+pub(crate) fn tests_on_path(file_name: &str) -> Option<PathBuf> {
+    on_path(file_name)
+}
+
 /// The first file of this name on the system's `PATH`.
 fn on_path(file_name: &str) -> Option<PathBuf> {
     let path = std::env::var_os("PATH")?;

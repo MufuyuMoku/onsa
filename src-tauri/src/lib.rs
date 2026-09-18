@@ -29,6 +29,7 @@ mod sleep;
 pub mod theme;
 mod tidy;
 mod tray;
+mod ytdlp;
 
 use anyhow::{Context, Result};
 use tauri::{AppHandle, Manager, WebviewWindow, WindowEvent};
@@ -156,6 +157,10 @@ pub fn run() -> Result<()> {
             downloads::binary_install,
             downloads::binary_stop,
             downloads::binaries_use_system,
+            downloads::download_probe,
+            downloads::download_queue,
+            downloads::download_start,
+            downloads::download_stop,
         ])
         .run(tauri::generate_context!())
         .context("the application window could not be started")
@@ -260,6 +265,7 @@ fn setup(app: &mut tauri::App) -> Result<()> {
     });
     app.manage(std::sync::Arc::new(matching::Matching::default()));
     app.manage(std::sync::Arc::new(downloads::Fetching::default()));
+    app.manage(std::sync::Arc::new(downloads::Queue::default()));
     app.manage(logging);
     app.manage(library);
     app.manage(player);
