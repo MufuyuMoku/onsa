@@ -18,7 +18,7 @@ use onsa_audio::{
 };
 use onsa_library::TrackRow;
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Manager};
 
 use crate::dto::{QueueEntryDto, QueuePlace, TrackDto};
 use crate::error::ErrorCode;
@@ -773,6 +773,35 @@ impl Shared {
         }
     }
 
+    /// Tells the library that a track could not be played.
+    ///
+    /// Only the file being gone is recorded this way. A file that is there
+    /// but unreadable is already marked when the scanner reads it, and a
+    /// file the engine refuses for some other reason is not the library's
+    /// business to guess about.
+    fn mark_missing(&self, path: &std::path::Path) {
+        if path.exists() {
+            return;
+        }
+        let Some(library) = self.app.try_state::<crate::library::LibraryService>() else {
+            return;
+        };
+        let outcome = library.write(|library: &mut onsa_library::Library| {
+            let Some(id) = library.track_id(path)? else {
+                return Ok(false);
+            };
+            library.mark_missing(id)
+        });
+        match outcome {
+            Ok(true) => {
+                tracing::info!(path = %path.display(), "marked missing: the file is not there");
+                let _ = self.app.emit(crate::library::CHANGED_EVENT, ());
+            }
+            Ok(false) => {}
+            Err(code) => tracing::warn!("the library could not be told: {code:?}"),
+        }
+    }
+
     fn on_event(&self, event: Event) {
         match event {
             Event::TrackStarted {
@@ -818,6 +847,10 @@ impl Shared {
                 tracing::warn!(index, path = %path.display(), "track cannot be played: {reason}");
                 lock(&self.state).failed_track = Some(path.display().to_string());
                 self.emit_state();
+                // The transport says so at once; the lists would go on
+                // offering the track as if nothing were wrong until the
+                // next scan, so the library is told as well.
+                self.mark_missing(&path);
             }
             Event::QueueEnded => {
                 tracing::debug!("queue ended");

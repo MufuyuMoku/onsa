@@ -649,6 +649,20 @@ impl Library {
         Ok(())
     }
 
+    /// Marks one track missing, by id.
+    ///
+    /// The scanner marks tracks missing when it walks the folders, but
+    /// playing one is the other moment the truth shows up: the file the
+    /// engine went to open was not there. Saying so at once means the list
+    /// stops offering it as if nothing had happened.
+    pub fn mark_missing(&mut self, track_id: i64) -> Result<bool> {
+        let changed = self.conn.execute(
+            "UPDATE tracks SET status = 'missing' WHERE id = ?1 AND status != 'missing'",
+            [track_id],
+        )?;
+        Ok(changed > 0)
+    }
+
     /// A file (or folder) went away: its tracks are marked missing.
     pub(crate) fn file_removed(&mut self, path: &Path, report: &mut ChangeReport) -> Result<()> {
         let Ok(text) = path_text(path) else {
