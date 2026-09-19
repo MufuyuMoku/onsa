@@ -28,6 +28,7 @@ mod queue;
 mod session;
 mod settings;
 mod sleep;
+mod startup;
 pub mod theme;
 mod tidy;
 mod tray;
@@ -58,10 +59,14 @@ pub fn run() -> Result<()> {
         .register_uri_scheme_protocol("onsa", library::cover_protocol)
         .setup(|app| setup(app).map_err(Into::into))
         .invoke_handler(tauri::generate_handler![
+            startup::startup_trouble,
+            startup::startup_open_folder,
             commands::app_info,
             commands::app_state,
             commands::theme_list,
             commands::theme_get,
+            commands::theme_troubles,
+            commands::theme_copy_builtin,
             commands::theme_open_folder,
             commands::set_theme,
             commands::set_locale,
@@ -227,12 +232,23 @@ fn setup(app: &mut tauri::App) -> Result<()> {
         "Onsa starting"
     );
 
-    let library = LibraryService::start(
-        app.handle().clone(),
-        &data_dir.join("library.db"),
-        &cache_dir,
-    )
-    .context("the library cannot be opened")?;
+    let database = data_dir.join("library.db");
+    let library = match LibraryService::start(app.handle().clone(), &database, &cache_dir)
+        .context("the library cannot be opened")
+    {
+        Ok(library) => library,
+        Err(error) => {
+            // The one failure that must not end the application before the
+            // window exists. Onsa opens anyway and says what happened; the
+            // database is the listener's to decide about (see `startup`).
+            tracing::error!("the library cannot be opened: {error:#}");
+            app.manage(startup::Startup::from(&error, &database));
+            if let Some(window) = app.get_webview_window(session::MAIN_WINDOW) {
+                let _ = window.show();
+            }
+            return Ok(());
+        }
+    };
     let (output, playback, dsp, log_debug) = library
         .read(|library| {
             Ok((

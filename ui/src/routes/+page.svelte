@@ -33,6 +33,7 @@
 	import TrackList from '$lib/components/TrackList.svelte';
 	import Transport from '$lib/components/Transport.svelte';
 	import SettingsView from '$lib/components/settings/SettingsView.svelte';
+	import StartupTrouble from '$lib/components/StartupTrouble.svelte';
 
 	/** Seek step of the arrow keys (SPEC section 13). */
 	const SEEK_STEP = 5;
@@ -113,7 +114,9 @@
 
 <svelte:window onkeydown={onKey} />
 
-{#if fault}
+{#if app.trouble}
+	<StartupTrouble trouble={app.trouble} />
+{:else if fault}
 	<main class="center"><p class="fault-text">{t(fault)}</p></main>
 {:else if !app.ready}
 	<main class="center"><p class="muted">{t('shell.loading')}</p></main>

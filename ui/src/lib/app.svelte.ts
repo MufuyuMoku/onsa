@@ -11,9 +11,11 @@ import {
 	on,
 	setLocaleSetting,
 	setMini,
+	startupTrouble,
 	traySetup,
 	type AppInfo,
-	type AppState
+	type AppState,
+	type StartupTrouble
 } from '$lib/backend';
 import { detectLocale, isLocale, setLocale, t, type Locale } from '$lib/i18n/index.svelte';
 import type { MessageKey } from '$lib/i18n/dictionary';
@@ -53,6 +55,7 @@ export type View =
 let info = $state<AppInfo | null>(null);
 let stored = $state<AppState | null>(null);
 let failure = $state<MessageKey | null>(null);
+let trouble = $state<StartupTrouble | null>(null);
 let ready = $state(false);
 let firstRun = $state(false);
 let mini = $state(false);
@@ -70,6 +73,16 @@ export const app = {
 	/** Why the window could not start, if that is where we are. */
 	get failure() {
 		return failure;
+	},
+	/**
+	 * Set when the library itself could not be opened.
+	 *
+	 * Nothing else in the window works in that state — every other command
+	 * wants the library — so this is asked first and answered on a screen
+	 * of its own.
+	 */
+	get trouble() {
+		return trouble;
 	},
 	/** Whether everything is loaded. */
 	get ready() {
@@ -96,6 +109,11 @@ export const app = {
 export async function start(root: HTMLElement): Promise<void> {
 	setLocale(detectLocale());
 	try {
+		trouble = await startupTrouble();
+		if (trouble) {
+			ready = true;
+			return;
+		}
 		info = await appInfo();
 		stored = await appState();
 		if (stored.locale && isLocale(stored.locale)) setLocale(stored.locale);

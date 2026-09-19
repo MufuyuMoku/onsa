@@ -13,6 +13,20 @@ export type Locale = (typeof LOCALES)[number];
 const id = {
 	'shell.loading': 'Memuat…',
 
+	'startup.title': 'Onsa tidak bisa membuka library-nya',
+	'startup.newer':
+		'Berkas library ini ditulis oleh Onsa versi yang lebih baru. Versi ini tidak bisa membacanya, dan memaksanya bisa merusak isinya.',
+	'startup.newerWhat':
+		'Pakai Onsa versi terbaru untuk membukanya. Kalau kamu memang ingin memakai versi ini, pindahkan dulu berkas itu ke tempat lain — Onsa akan membuat library baru yang kosong, dan yang lama tetap utuh untuk dibuka nanti.',
+	'startup.unreadable':
+		'Berkas library ini tidak bisa dibaca. Biasanya karena komputer mati saat Onsa sedang menulis, atau berkasnya rusak di disk.',
+	'startup.unreadableWhat':
+		'Pindahkan berkas itu ke tempat lain, lalu buka Onsa lagi: library baru akan dibuat dan folder musikmu dipindai ulang. Berkas musikmu sendiri tidak tersentuh oleh ini. Simpan yang lama kalau kamu ingin mencoba menyelamatkannya.',
+	'startup.nothingTouched': 'Onsa tidak menghapus dan tidak memperbaiki berkas itu sendiri. Keputusannya ada padamu.',
+	'startup.where': 'Berkasnya ada di',
+	'startup.openFolder': 'Buka foldernya',
+	'startup.said': 'Yang dilaporkan',
+
 	'nav.library': 'Library',
 	'nav.tracks': 'Lagu',
 	'nav.albums': 'Album',
@@ -616,6 +630,20 @@ export type MessageKey = keyof typeof id;
 
 const en: Record<MessageKey, string> = {
 	'shell.loading': 'Loading…',
+
+	'startup.title': 'Onsa cannot open its library',
+	'startup.newer':
+		'This library file was written by a newer version of Onsa. This version cannot read it, and forcing it could damage what is inside.',
+	'startup.newerWhat':
+		'Open it with the newest Onsa. If you would rather use this version, move that file somewhere else first — Onsa will start a new, empty library, and the old file stays whole for later.',
+	'startup.unreadable':
+		'This library file cannot be read. Usually that means the computer stopped while Onsa was writing, or the file was damaged on the disk.',
+	'startup.unreadableWhat':
+		'Move that file somewhere else and open Onsa again: a new library is made and your music folders are scanned afresh. Your music files themselves are untouched by any of this. Keep the old file if you want to try to rescue it.',
+	'startup.nothingTouched': 'Onsa neither deletes nor repairs that file by itself. That decision is yours.',
+	'startup.where': 'The file is at',
+	'startup.openFolder': 'Open the folder',
+	'startup.said': 'What it reported',
 
 	'nav.library': 'Library',
 	'nav.tracks': 'Tracks',

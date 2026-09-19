@@ -446,6 +446,23 @@ export function failureKey(error: unknown): MessageKey {
 	return error instanceof BackendError ? error.messageKey : 'error.backend';
 }
 
+// When the library cannot be opened at all ---------------------------------
+
+/** Which kind of trouble the database is in. */
+export type TroubleKind = 'fromNewerOnsa' | 'unreadable';
+
+/** What the window is told when the library could not be opened. */
+export interface StartupTrouble {
+	kind: TroubleKind;
+	database: string;
+	folder: string;
+	said: string;
+}
+
+/** Nothing means the library opened, which is the ordinary answer. */
+export const startupTrouble = () => call<StartupTrouble | null>('startup_trouble');
+export const startupOpenFolder = () => call<void>('startup_open_folder');
+
 // Application --------------------------------------------------------------
 
 export const appInfo = () => call<AppInfo>('app_info');
