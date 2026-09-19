@@ -471,7 +471,7 @@ mod tests {
         let path = if cfg!(windows) {
             r"C:\music\Lilith\Lampu Kota [abc].m4a"
         } else {
-            "/home/sorar/music/Lilith/Lampu Kota [abc].m4a"
+            "/home/rian/music/Lilith/Lampu Kota [abc].m4a"
         };
         match read_line(path) {
             Line::File(found) => assert_eq!(found, PathBuf::from(path)),

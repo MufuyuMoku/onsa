@@ -13,13 +13,13 @@ import { test } from 'node:test';
 import { clock, fileName, relativeTo } from './format.ts';
 
 test('a Windows path gives up its file name', () => {
-	assert.equal(fileName('C:\\Users\\sorar\\Music\\Lilith\\BANG BANG.mp3'), 'BANG BANG.mp3');
+	assert.equal(fileName('C:\\Users\\rian\\Music\\Lilith\\BANG BANG.mp3'), 'BANG BANG.mp3');
 	assert.equal(fileName('D:\\音楽\\夜明け.flac'), '夜明け.flac');
 });
 
 test('a Linux path gives up its file name', () => {
-	assert.equal(fileName('/home/sorar/Music/Lilith/BANG BANG.mp3'), 'BANG BANG.mp3');
-	assert.equal(fileName('/home/sorar/音楽/夜明け.flac'), '夜明け.flac');
+	assert.equal(fileName('/home/rian/Music/Lilith/BANG BANG.mp3'), 'BANG BANG.mp3');
+	assert.equal(fileName('/home/rian/音楽/夜明け.flac'), '夜明け.flac');
 });
 
 test('a path with both kinds of separator still ends at the last one', () => {
