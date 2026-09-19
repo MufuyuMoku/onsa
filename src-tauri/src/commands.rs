@@ -79,6 +79,65 @@ pub fn theme_list(app: AppHandle) -> Vec<Theme> {
     themes
 }
 
+/// The theme files that could not be used, with what was wrong.
+///
+/// Empty is the ordinary answer. It is read again each time rather than
+/// remembered, so a file fixed while Onsa is open stops being reported as
+/// soon as the page is looked at again.
+#[tauri::command]
+pub fn theme_troubles(app: AppHandle) -> Vec<theme::Trouble> {
+    theme_dir(&app)
+        .map(|dir| theme::read_user_dir(&dir).1)
+        .unwrap_or_default()
+}
+
+/// Copies a built-in theme into the listener's theme folder, as something
+/// to start from.
+///
+/// Nobody can guess the shape of a file they have never seen, and the
+/// built-in themes are the shape. The copy is given the name asked for,
+/// and an existing file of that name is never overwritten.
+#[tauri::command]
+pub fn theme_copy_builtin(app: AppHandle, id: String, name: String) -> Result<String, ErrorCode> {
+    let Some(source) = theme::builtin_source(&id) else {
+        return Err(ErrorCode::ThemeNotFound);
+    };
+    let Some(dir) = theme_dir(&app) else {
+        return Err(ErrorCode::Io);
+    };
+    std::fs::create_dir_all(&dir).map_err(|error| {
+        tracing::warn!(dir = %dir.display(), "theme folder cannot be made: {error}");
+        ErrorCode::Io
+    })?;
+
+    // The name the listener sees comes from inside the file; the identifier
+    // comes from the file's own name. Both are set, so the copy does not
+    // arrive calling itself by the built-in's name.
+    let stem = theme::safe_stem(&name);
+    let mut written = serde_json::from_str::<serde_json::Value>(source).map_err(|error| {
+        tracing::error!(theme = id, "a built-in theme is not readable JSON: {error}");
+        ErrorCode::Io
+    })?;
+    if let Some(object) = written.as_object_mut() {
+        object.insert("id".to_string(), serde_json::Value::String(stem.clone()));
+        object.insert("name".to_string(), serde_json::Value::String(name.clone()));
+    }
+    let text = serde_json::to_string_pretty(&written).map_err(|_| ErrorCode::Io)?;
+
+    let mut path = dir.join(format!("{stem}.json"));
+    let mut n = 2;
+    while path.exists() {
+        path = dir.join(format!("{stem}-{n}.json"));
+        n += 1;
+    }
+    std::fs::write(&path, text).map_err(|error| {
+        tracing::warn!(file = %path.display(), "the theme copy cannot be written: {error}");
+        ErrorCode::Io
+    })?;
+    tracing::info!(file = %path.display(), "a built-in theme was copied to start from");
+    Ok(path.display().to_string())
+}
+
 /// Reads one theme by identifier.
 #[tauri::command]
 pub fn theme_get(app: AppHandle, id: String) -> Result<Theme, ErrorCode> {

@@ -68,9 +68,34 @@ pub fn user_dir(config_dir: &std::path::Path) -> std::path::PathBuf {
     config_dir.join("themes")
 }
 
+/// A theme file that could not be used, and why.
+///
+/// The log has said this since M4, which helps whoever reads logs. The
+/// window needs it too: somebody who writes a theme and mistypes one
+/// bracket should not have to guess why their theme never appears.
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Trouble {
+    /// The file, by name.
+    pub file: String,
+    /// What was wrong with it, in the parser's own words.
+    pub said: String,
+}
+
+/// The user's themes, and the files that could not be read.
+pub fn read_user_dir(dir: &std::path::Path) -> (Vec<Theme>, Vec<Trouble>) {
+    let mut troubles = Vec::new();
+    let themes = user_themes_reporting(dir, &mut troubles);
+    (themes, troubles)
+}
+
 /// Reads the user's own themes from `<app config>/themes/*.json`. A theme
 /// that cannot be read is reported and left out; the rest still load.
 pub fn user_themes(dir: &std::path::Path) -> Vec<Theme> {
+    user_themes_reporting(dir, &mut Vec::new())
+}
+
+fn user_themes_reporting(dir: &std::path::Path, troubles: &mut Vec<Trouble>) -> Vec<Theme> {
     let Ok(entries) = std::fs::read_dir(dir) else {
         return Vec::new();
     };
@@ -86,6 +111,10 @@ pub fn user_themes(dir: &std::path::Path) -> Vec<Theme> {
         // A user theme never shadows a built-in one.
         if BUILTIN_SOURCES.iter().any(|(name, _)| *name == id) {
             tracing::warn!(theme = id, "user theme uses a built-in name, skipped");
+            troubles.push(Trouble {
+                file: file_name(&path),
+                said: "a built-in theme already has that name".to_string(),
+            });
             continue;
         }
         match std::fs::read_to_string(&path) {
@@ -98,13 +127,64 @@ pub fn user_themes(dir: &std::path::Path) -> Vec<Theme> {
                 }
                 Err(error) => {
                     tracing::warn!(theme = id, "user theme cannot be read: {error:#}");
+                    troubles.push(Trouble {
+                        file: file_name(&path),
+                        said: format!("{error:#}"),
+                    });
                 }
             },
-            Err(error) => tracing::warn!(file = %path.display(), "theme cannot be read: {error}"),
+            Err(error) => {
+                tracing::warn!(file = %path.display(), "theme cannot be read: {error}");
+                troubles.push(Trouble {
+                    file: file_name(&path),
+                    said: error.to_string(),
+                });
+            }
         }
     }
     themes.sort_by(|a, b| a.id.cmp(&b.id));
     themes
+}
+
+/// A path as its file name alone: the window shows the file, not where
+/// the listener's folders happen to live.
+fn file_name(path: &std::path::Path) -> String {
+    path.file_name()
+        .map(|name| name.to_string_lossy().into_owned())
+        .unwrap_or_else(|| path.display().to_string())
+}
+
+/// A file name a theme copy can be given, from whatever was typed.
+///
+/// The identifier of a user theme is its file's name, so it has to be
+/// something a file system will take: letters, digits and hyphens, and
+/// never empty.
+pub fn safe_stem(name: &str) -> String {
+    let stem: String = name
+        .trim()
+        .to_lowercase()
+        .chars()
+        .map(|c| if c.is_alphanumeric() { c } else { '-' })
+        .collect();
+    let stem = stem.trim_matches('-').to_string();
+    let stem: String = stem
+        .split('-')
+        .filter(|piece| !piece.is_empty())
+        .collect::<Vec<_>>()
+        .join("-");
+    if stem.is_empty() {
+        "tema-saya".to_string()
+    } else {
+        stem.chars().take(60).collect()
+    }
+}
+
+/// The text of one built-in theme, for copying as a starting point.
+pub fn builtin_source(id: &str) -> Option<&'static str> {
+    BUILTIN_SOURCES
+        .iter()
+        .find(|(name, _)| *name == id)
+        .map(|(_, source)| *source)
 }
 
 /// Reads one built-in theme by identifier.

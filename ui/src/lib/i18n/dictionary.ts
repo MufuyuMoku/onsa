@@ -299,6 +299,13 @@ const id = {
 	'theme.openFolder': 'Buka folder tema',
 	'theme.userHint':
 		'Taruh file tema .json di folder itu, lalu buka Onsa lagi supaya temanya muncul di daftar.',
+	'theme.copy': 'Salin tema yang dipakai sekarang',
+	'theme.copyHint':
+		'Menyalin tema yang sedang dipakai ke folder itu, sebagai contoh yang bisa kamu ubah. Berkas yang sudah ada tidak ditimpa.',
+	'theme.copyName': 'Tema saya',
+	'theme.copied': 'Disalin ke {file}. Buka Onsa lagi supaya muncul di daftar.',
+	'theme.troubles': 'Berkas tema yang tidak terpakai',
+	'theme.troublesHint': 'Berkas ini ada di folder tema tapi tidak bisa dibaca, jadi tidak muncul di daftar.',
 	'language.label': 'Bahasa',
 	'language.id': 'Indonesia',
 	'language.en': 'Inggris',
@@ -917,6 +924,13 @@ const en: Record<MessageKey, string> = {
 	'theme.openFolder': 'Open the theme folder',
 	'theme.userHint':
 		'Put .json theme files there, then open Onsa again to see them in the list.',
+	'theme.copy': 'Copy the theme in use',
+	'theme.copyHint':
+		'Copies the theme you are using into that folder, as an example to change. An existing file is never overwritten.',
+	'theme.copyName': 'My theme',
+	'theme.copied': 'Copied to {file}. Open Onsa again for it to appear in the list.',
+	'theme.troubles': 'Theme files that could not be used',
+	'theme.troublesHint': 'These files are in the theme folder but cannot be read, so they are not in the list.',
 	'language.label': 'Language',
 	'language.id': 'Indonesian',
 	'language.en': 'English',

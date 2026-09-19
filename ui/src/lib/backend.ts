@@ -529,6 +529,17 @@ export const traySetup = (labels: TrayLabels) => call<void>('tray_setup', { labe
 export const setCloseToTray = (enabled: boolean) => call<void>('set_close_to_tray', { enabled });
 export const setMini = (mini: boolean) => call<boolean>('window_set_mini', { mini });
 export const themeOpenFolder = () => call<void>('theme_open_folder');
+
+/** A theme file that is in the folder but could not be used. */
+export interface ThemeTrouble {
+	file: string;
+	said: string;
+}
+
+export const themeTroubles = () => call<ThemeTrouble[]>('theme_troubles');
+/** Copies a built-in theme into the theme folder; answers with the path. */
+export const themeCopyBuiltin = (id: string, name: string) =>
+	call<string>('theme_copy_builtin', { id, name });
 export const setVolume = (db: number) => call<void>('player_set_volume', { db });
 
 // Tidying metadata (SPEC section 8) ----------------------------------------
