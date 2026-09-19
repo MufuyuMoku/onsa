@@ -865,3 +865,43 @@ Ditambahkan `.github/workflows/release-build.yml`, dijalankan hanya bila diminta
 - **Linux**: dibangun di runner Ubuntu yang bersih, lalu **dijalankan di Ubuntu 26.04** (WSLg) dari salinan artefak: 123 pustaka, **tidak ada yang hilang**, jendela bernama "Onsa" benar-benar terbuka, database dan log dibuat, dan mesin audio membuka output ALSA.
 
 Catatan: build Linux tidak bisa dijalankan langsung di WSL mesin ini karena jaringan WSL-nya mati (cargo tidak bisa mengunduh crate), jadi yang membangun adalah CI dan yang dijalankan adalah artefaknya.
+
+## v1.0.1 — enam perbaikan dari sesi audit (2026-09-19)
+
+Tidak ada fitur baru dan tidak ada yang diambil dari v1.1. Semuanya berasal dari sesi audit: hal-hal yang Onsa lakukan tanpa berkata apa-apa kepada orang yang tidak punya penulisnya di sebelahnya.
+
+### Yang diperbaiki
+
+- **Database yang tidak bisa dibuka kini punya jendela.** Sebelumnya `setup()` Tauri mengembalikan `Err` dan prosesnya mati sebelum satu jendela pun ada: mengklik ikon tidak menghasilkan apa-apa, dan satu-satunya keterangan ada di berkas log yang tidak diketahui siapa pun. Sekarang kegagalannya ditangkap, jendelanya tetap dibuka, dan isinya (`startup.rs`, `StartupTrouble.svelte`) membedakan **dua hal yang berbeda**: database dari Onsa yang lebih baru (skemanya dikenali, versinya di depan) dan database yang tidak terbaca. Keduanya menyebutkan apa yang terjadi, di mana berkasnya, dengan tombol untuk membuka foldernya, apa yang bisa dilakukan, dan kalimat mentah dari mesinnya di bagian yang bisa dibuka. **Onsa tidak menghapus dan tidak memperbaiki database itu sendiri** — itu data pengguna, dan jendelanya mengatakan bahwa tidak ada yang disentuh.
+- **Berkas lagu yang hilang ditandai, bukan didiamkan.** Saat mesin audio gagal membuka berkas, Onsa sudah mengatakannya di transport; yang belum ada adalah tanda di barisnya. Sekarang `Library::mark_missing` dipanggil dari jalur kegagalan pemutaran (hanya bila berkasnya memang tidak ada di disk), lalu kabar "library berubah" dikirim supaya daftarnya ikut berubah tanpa memindai ulang.
+- **`downloads.notAUrl` akhirnya sampai ke layar.** Kalimatnya sudah ada di kamus sejak lama tapi tidak punya kode kesalahan yang mengantarkannya. Ditambah `NotAUrl` dan `UrlRefused`, jadi "itu bukan alamat web" dan "yt-dlp tidak bisa membaca URL itu" adalah dua kalimat yang berbeda. Pesannya ditaruh di bagian URL, bukan di tempat pesan bersama, karena yang di sana terhapus tiap kali status program dibaca ulang.
+- **Berkas tema yang cacat mengeluh di layar.** Pembacanya sudah mencatat tiap berkas yang gagal di log, lengkap dengan nama dan alasannya; yang belum ada adalah jalan ke jendela. `read_user_dir` kini mengembalikan daftar keluhan bersama temanya, dan Pengaturan → Tampilan menampilkannya. Di halaman yang sama ada **tombol untuk menyalin tema yang sedang dipakai** ke folder tema sebagai titik mulai — sebelumnya orang harus menulis JSON tema dari nol tanpa contoh.
+- **Alasan gagal menulis tag tidak lagi kosong.** Kalimatnya dulu berisi tempat untuk alasan yang tidak pernah diisi. Sekarang alasannya dibawa dari `report.failed[0]` dan ditampilkan di bawahnya; kalimat utamanya tidak lagi punya lubang.
+- **Halaman Library mengatakan batasnya.** Satu baris: folder belum bisa dihapus di versi ini.
+
+### Cara verifikasi
+
+Tiap perbaikan diuji dengan cara yang sama persis seperti waktu ditemukan, pada aplikasi yang berjalan, bukan lewat tes.
+
+- **Database**: berkas `library.db` ditimpa dengan teks yang bukan SQLite → jendela terbuka dan berkata "Onsa tidak bisa membuka pustakanya" dengan jenis `unreadable`. Lalu `PRAGMA user_version` dinaikkan ke angka di depan skema yang dikenal → jendela yang sama dengan kalimat yang lain, jenis `fromNewerOnsa`. Tombol foldernya membuka Explorer di tempat yang benar, dan berkas databasenya **tidak berubah** sesudahnya (ukuran dan isinya diperiksa dari luar Onsa).
+- **Berkas lagu hilang**: mengganti nama berkas di folder yang sama ternyata dibaca pengintai folder sebagai **perpindahan** — dan memang begitu, berkasnya masih ada. Jadi diuji dua kali lagi: (a) berkasnya disalin ke luar lalu dihapus → barisnya berbunyi "Tiga hilang" dalam hitungan detik, dan kembali normal setelah berkasnya dikembalikan dan dipindai ulang; (b) lagu di drive yang **dicabut saat Onsa berjalan** (`subst`), yaitu satu-satunya jalur di mana pengintai folder tidak melihat apa pun dan hanya mesin audio yang tahu → transport berkata "Lagu tidak bisa diputar dan dilewati: lagu.flac" dan barisnya jadi `missing`.
+- **URL**: menempel "halo dunia ini bukan alamat" → "Itu bukan alamat web." dan kalimatnya **tetap ada** setelah enam detik (inilah yang dulu terhapus). Menempel alamat yang tidak bisa dibaca yt-dlp → "yt-dlp tidak bisa membaca URL itu." Dua kalimat berbeda untuk dua keadaan berbeda.
+- **Tema**: dua berkas cacat ditaruh di folder tema yang sebenarnya (`%APPDATA%\io.github.mufuyumoku.onsa\themes`) — satu JSON terpotong, satu kosong → keduanya muncul di Pengaturan → Tampilan dengan nama berkas dan alasan dari parsernya. Tombol salin menghasilkan `tema-saya.json` di folder itu dan halamannya mengatakan berkas apa yang dibuat. Berkas ujinya dihapus lagi sesudahnya.
+- **Menulis tag**: berkas dikunci dari proses lain (`FileShare.None`) lalu "tulis ke berkas" ditekan → "Tidak bisa menulis ke berkas." dengan alasan dari sistem operasi di bawahnya.
+- **Halaman Library**: kalimatnya ada di layar.
+
+### Dua temuan audit yang ternyata salah, dan itu salahku
+
+- **"Berkas hilang tidak dikatakan di transport"** — Onsa mengatakannya, dan sudah sejak sebelum v1.0.0: "Lagu tidak bisa diputar dan dilewati: 03 Tiga.flac". Pemeriksaku mencari kata Indonesia sementara jendelanya sedang berbahasa Inggris, jadi yang kulaporkan adalah keheningan pemeriksaku sendiri. Yang benar-benar kurang hanyalah tanda di barisnya, dan itulah yang diperbaiki.
+- **"Tema cacat didiamkan"** — log-nya memperingatkan per berkas, dengan nama dan alasan. Berkas ujiku kutaruh di `<ONSA_DATA_DIR>/config/themes`, tempat yang tidak pernah dibaca Onsa: `ONSA_DATA_DIR` mengalihkan data, cache, dan log, tapi folder tema selalu di folder konfigurasi aplikasi yang sebenarnya. Yang benar-benar kurang adalah jalan dari log ke layar, dan contoh untuk memulai.
+
+### Ditunda ke v1.1
+
+- **Pesan mentah yt-dlp** masih muncul apa adanya untuk sebab yang belum diterjemahkan.
+- **Folder library yang hilang** (drive dicabut, folder dipindah) masih butuh pindai ulang manual; belum ada yang mengatakannya sendiri.
+- **Baris ffmpeg di halaman Unduhan versus saklar "pakai program sistem"**: keduanya benar sendiri-sendiri tapi belum menjelaskan hubungannya.
+- **Tur atau menu bantuan** untuk pemakai pertama kali.
+
+### Perilaku yang belum diketahui
+
+- **Disk penuh saat mengunduh atau saat menulis tag** belum bisa diuji di mesin ini, jadi belum diketahui apa yang dikatakan Onsa. Penanganannya tidak dikarang tanpa bisa diuji; dicatat di sini sampai ada cara mengujinya.
