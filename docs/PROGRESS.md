@@ -4,6 +4,20 @@ Status tiap milestone dari `SPEC.md` §15. Diperbarui di akhir setiap milestone.
 
 ---
 
+## Garis rilis (keputusan pemilik proyek, 2026-09-19)
+
+**v1**: pemutar lengkap, unduhan satu per satu, tanpa Opus. Isinya M0–M8 dan M10a.
+Sesudah M8 tidak ada fitur baru yang masuk v1 — yang tersisa hanya penyiapan rilis.
+
+**v1.1**: M7b (hapus/ekspor sampul, menanam sampul ke berkas beserta aturan 1200 px,
+"(beragam)", dan tiga field yang belum bisa di-override), M10b (Deno dan ffmpeg, antrean
+paralel, antrean yang disimpan, tombol update yt-dlp), M11 (Opus dan kualitas lanjutan),
+dan M12 (paket rilis).
+
+M9 (scrobble) tetap dilewati dan belum punya tanggal.
+
+---
+
 ## M0. Kerangka proyek — selesai (2026-09-11)
 
 **Kriteria selesai**: jendela kosong bertema terbuka di kedua OS, dan CI hijau.
