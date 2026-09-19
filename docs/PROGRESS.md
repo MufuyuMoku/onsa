@@ -781,3 +781,44 @@ Dikerjakan lebih awal atas keputusan pemilik proyek (lihat `docs/DECISIONS.md`):
 - Antrean paralel (bawaan 2) dan antrean yang disimpan di database.
 - Menanyakan apakah folder keluaran mau ditambahkan ke library bila ia di luar library (sekarang hasil unduhan selalu ditaruh di dalam folder library pertama, dan Onsa menolak mengunduh bila belum ada folder library sama sekali).
 - Tombol update khusus yt-dlp (`yt-dlp -U`) — sekarang "perbarui" berarti mengunduh ulang rilis terbaru, yang hasilnya sama.
+
+## M8. Lirik dan editor tag satuan — selesai (2026-09-19)
+
+Termasuk **editor tag satuan**, pindahan dari M7 atas keputusan pemilik proyek: lirik salah satu field yang diedit di sana, jadi membangunnya dua kali tidak masuk akal.
+
+**Kriteria selesai M8** ("lirik `.lrc` lokal dan lirik dari LRCLIB tampil sinkron, dan offset tersimpan") terpenuhi, diuji ujung ke ujung terhadap build rilis.
+
+### Yang dibuat
+
+- **Format LRC** (`onsa-lyrics::lrc`): parser yang memaafkan apa yang benar-benar ditulis orang — beberapa waktu dalam satu baris, titik dua di tempat titik, tag tentang berkas (`[ti:]`, `[offset:]`), baris yang urutannya terbalik, timing per kata `<mm:ss.xx>`, dan berkas yang bukan UTF-8. Tidak ada yang ditolak, dan yang tak terbaca tetap jadi baris teks, bukan hilang.
+- **Empat sumber, yang terdekat lebih dulu** (`src-tauri::lyrics`): suntingan sendiri → `.lrc` di sebelah lagu → tag di dalam lagu → LRCLIB. Tiga yang pertama dibaca tiap kali lagu berganti (membaca berkas kecil lebih murah daripada mengingat); hanya yang keempat yang keluar dari mesin ini.
+- **LRCLIB** (`onsa-lyrics::lrclib`): pertanyaan dan pembacaan jawaban ada di crate; yang mengambil adalah klien HTTP yang sama dengan seluruh proyek. Yang dikirim hanya artis, judul, album, dan durasi. Hasil pencarian yang durasinya meleset lebih dari tiga detik dianggap rekaman lain.
+- **Cache dan offset dalam satu baris** (migrasi 5). Yang diingat hanya jawaban dari internet — termasuk "tidak ada liriknya", supaya lagu itu tidak ditanyakan terus. Offset yang disetel pendengar hidup lebih lama daripada liriknya: mengganti atau melupakan lirik tidak menghapus setengah detik yang disetel dengan telinga.
+- **Panel kanan jadi dua tab** (Antrean / Lirik, SPEC §9.2), dan lirik yang sama muncul besar di layar Sedang Diputar. Baris yang sedang dinyanyikan memakai warna yang di seluruh jendela berarti "di sini"; klik baris untuk melompat; lirik menggulir sendiri, kecuali saat pendengar sedang menggulirnya.
+- **Tombol ± per lagu** menggeser lirik terhadap lagu (0,25 detik sekali tekan, dijepit ±30 detik) dan nilainya tersimpan.
+- **Menyimpan `.lrc` di sebelah lagu**, baik lewat tombol maupun otomatis untuk hasil dari internet (opsional, mati secara bawaan) — supaya liriknya jadi milik pendengar dan tetap ada tanpa internet.
+- **Pengaturan → Lirik**: satu saklar untuk jaringan (mati secara bawaan) dan satu untuk menyimpan `.lrc`. Mematikannya juga **menghentikan pencarian yang sedang di udara**: apa pun yang kembali dibuang, tidak disimpan dan tidak ditampilkan.
+- **Editor tag satuan** (`src-tauri::editor`): sepuluh field termasuk lirik, dengan tanda pada yang nilainya milik Onsa dan tombol untuk mengembalikannya ke isi berkas. Suntingan masuk ke `overrides` dulu; "tulis ke berkas" tetap tombol terpisah. Cakupan satu jalannya adalah **folder lagu itu sendiri**, jadi editor yang terbuka atas satu lagu tidak bisa menyentuh yang lain. ReplayGain ditampilkan dan tidak ditawarkan untuk diubah.
+- **Lirik jadi field tag biasa**, jadi undo, riwayat, dan "tulis ke berkas" dipakai bersama. ID3 menyimpannya di `USLT`, Vorbis dan MP4 di nama biasa; format yang tidak bisa menampungnya (RIFF INFO di WAV) membuat penulisan **ditolak**, bukan liriknya diam-diam hilang.
+
+### Cara verifikasi
+
+**Berkas uji dibuat sendiri**: empat nada tiga detik dibuat dengan ffmpeg dan ditandai (`lirik uji/`), satu dengan `.lrc` di sebelahnya, satu dengan lirik tertanam di tag, satu yang liriknya hanya ada di layanan, satu yang tidak dikenal siapa pun. LRCLIB berdiri di 127.0.0.1. Tidak ada musik siapa pun yang disentuh dan tidak ada yang keluar dari mesin ini.
+
+- **Dari perintah, 43 pemeriksaan**: urutan sumber (yang terdekat menang, termasuk atas layanan); tag `[ti:]` tidak jadi baris lagu; waktu terbaca benar; dengan jaringan mati **tidak ada satu pun permintaan** dan "cari lagi" ditolak; dengan jaringan hidup jawabannya kembali seketika sementara layanan ditanya di thread lain; jawabannya diingat dan tidak ditanyakan berulang; **layanan yang mati tidak dicatat sebagai "lagu ini tidak punya lirik"**, dan liriknya datang sendiri setelah layanan kembali; mematikan jaringan saat pencarian di udara membuang hasilnya; offset tersimpan dan dijepit; `.lrc` bisa ditulis dan langsung jadi sumbernya; editor menyimpan ke Onsa tanpa menyentuh berkas (**diperiksa dengan ffprobe di luar Onsa**), lalu menulis ke berkas saat diminta, dan satu jalannya bisa dibatalkan lewat riwayat yang sama.
+- **Dari jendela, 21 pemeriksaan**: dua tab di panel kanan; lagu tanpa lirik mengatakannya; baris yang sedang dinyanyikan menyala dan berpindah saat lagu berjalan; klik baris melompat; tombol ± menggeser dan jendela menyebut berapa; layar Sedang Diputar menampilkan lirik yang sama; menu klik-kanan membuka editor; sepuluh field; menyimpan mengatakan "berkas belum diubah"; mengembalikan ke isi berkas jalan; halaman pengaturan menyebut apa yang dikirim.
+- **Editor di jendela terkecil, 6 pemeriksaan** (686×483 dan 1000×700): tidak ada yang tumpah, tidak ada yang menggulir ke samping, tombol tetap terjangkau.
+- **Pemeriksa tata letak** dijalankan ulang dengan halaman Pengaturan → Lirik di dalamnya: ALL CLEAR.
+
+### Temuan saat pengujian (sudah diperbaiki)
+
+- **Layanan yang menjawab 503 dianggap menjawab.** `ask_json` menelan status, jadi layanan yang tumbang terlihat persis seperti layanan yang berkata "tidak ada liriknya" — dan lagunya dicatat tak berlirik gara-gara jaringan sedang buruk satu menit. Status kini ikut dibawa, dan tiap pemanggil menentukan artinya sendiri.
+- **Lirik memakai warna lampu.** Satu blok lirik mengambil amber yang seharusnya untuk indikator, jadi semua baris berteriak dan baris yang sedang dinyanyikan tidak punya sisa untuk membedakan diri. Sekarang lirik adalah teks; yang sedang dinyanyikan memakai warna "di sini".
+- **Jawaban yang salah urutan.** Panel menjawab "pencarian lewat internet mati" padahal pertanyaan pertama pendengar adalah "ada liriknya tidak?". Sekarang yang pertama dijawab dulu, yang kedua ditambahkan di bawahnya.
+- **Dialog panjang mendorong tombolnya sendiri keluar layar.** `max-height: 100%` pada panel tidak punya tinggi pasti untuk dijadikan persentase. Diperbaiki di `Modal` yang dipakai bersama, jadi semua dialog ikut benar.
+
+### Belum dikerjakan
+
+- **Total trek, total disk, dan komentar** belum bisa di-override, jadi belum ada di editor — bagian dari **M7b** (bersama hapus/ekspor sampul dan aturan 1200 px), dikerjakan setelah M10 penuh.
+- **Edit banyak lagu sekaligus lewat editor ini** (dengan "(beragam)") juga M7b; edit massal yang sudah ada tetap lewat halaman Perapihan.
+- Timing per kata dibaca dan disimpan, tapi belum digambar per kata — barisnya yang menyala, bukan katanya.
