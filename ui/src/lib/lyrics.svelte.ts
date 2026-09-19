@@ -86,6 +86,24 @@ export function followLyrics(): void {
 			stop?.();
 		};
 	});
+
+	// Words typed into the tag editor are words about the song playing, and
+	// the panel has no other way of hearing about them.
+	$effect(() => {
+		let stop: (() => void) | undefined;
+		let gone = false;
+		on<null>(EVENTS.libraryChanged, () => {
+			const id = player.snapshot?.track?.id ?? null;
+			if (id !== null) void read(id, false);
+		}).then((off) => {
+			if (gone) off();
+			else stop = off;
+		});
+		return () => {
+			gone = true;
+			stop?.();
+		};
+	});
 }
 
 /** Moves the words against the song, and remembers it. */

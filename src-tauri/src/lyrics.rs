@@ -258,7 +258,7 @@ fn assemble(app: &AppHandle, track_id: i64, start_looking: bool) -> Result<Lyric
         looking: looking || (worth_asking && start_looking),
         online: prefs.online,
         can_ask: found.text.is_none() && song.ask.is_enough(),
-        beside: beside::read_beside(&song.path).is_some(),
+        beside: beside::beside_exists(&song.path),
     })
 }
 

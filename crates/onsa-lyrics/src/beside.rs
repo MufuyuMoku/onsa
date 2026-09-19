@@ -25,6 +25,16 @@ pub fn lrc_path(song: &Path) -> PathBuf {
     song.with_extension("lrc")
 }
 
+/// Whether there is a `.lrc` beside the song, without reading it.
+///
+/// The window asks this every time it draws the panel, and the answer is
+/// only used to decide whether to offer to write one.
+pub fn beside_exists(song: &Path) -> bool {
+    ["lrc", "LRC"]
+        .iter()
+        .any(|extension| song.with_extension(extension).is_file())
+}
+
 /// Reads the `.lrc` beside a song, if there is one.
 ///
 /// Both spellings of the extension are tried, because a file written on
@@ -169,6 +179,7 @@ mod tests {
         let song = at.join("lagu.mp3");
         std::fs::write(&song, b"not really audio").expect("the song");
         assert_eq!(read_beside(&song), None);
+        assert!(!beside_exists(&song));
     }
 
     #[test]
@@ -178,6 +189,10 @@ mod tests {
         std::fs::write(&song, b"not really audio").expect("the song");
         std::fs::write(at.join("lagu.lrc"), "[00:01.00]satu\n").expect("the lyrics");
         assert_eq!(read_beside(&song).as_deref(), Some("[00:01.00]satu\n"));
+        assert!(
+            beside_exists(&song),
+            "and it can be seen without reading it"
+        );
     }
 
     #[test]
