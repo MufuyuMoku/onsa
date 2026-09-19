@@ -430,7 +430,13 @@ pub async fn download_probe(app: AppHandle, url: String) -> Result<ytdlp::Probe,
         let programs = online::programs(&app)?;
         ytdlp::probe(&programs, &url).map_err(|why| {
             tracing::info!(why, "a URL could not be looked at");
-            ErrorCode::Download
+            // Two answers the listener can act on, rather than one that
+            // talks about installing a program: what they pasted is not an
+            // address at all, or it is one yt-dlp can make nothing of.
+            match why.as_str() {
+                "notAUrl" => ErrorCode::NotAUrl,
+                _ => ErrorCode::UrlRefused,
+            }
         })
     })
     .await

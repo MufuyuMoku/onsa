@@ -411,6 +411,8 @@ export function hasBackend(): boolean {
 
 /** The error codes the backend can send, mapped to dictionary keys. */
 const ERROR_KEYS: Record<string, MessageKey> = {
+	not_a_url: 'downloads.notAUrl',
+	url_refused: 'downloads.refused',
 	theme_not_found: 'error.theme_not_found',
 	library: 'error.library',
 	engine: 'error.engine',

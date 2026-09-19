@@ -43,6 +43,14 @@
 	let url = $state('');
 	let looking = $state(false);
 	let probe = $state<Probe | null>(null);
+	/**
+	 * What went wrong with the URL, kept apart from the page's own failure.
+	 *
+	 * The programs list is read again on every download event, and each of
+	 * those reads cleared the shared one — so the answer to a bad URL was
+	 * wiped a moment after it appeared, and nothing was ever seen.
+	 */
+	let urlTrouble = $state<MessageKey | null>(null);
 	let picked = $state<Record<string, boolean>>({});
 	let format = $state<DownloadFormat>('original');
 	let queue = $state<DownloadQueue | null>(null);
@@ -72,13 +80,13 @@
 	async function lookAtUrl(): Promise<void> {
 		looking = true;
 		probe = null;
+		urlTrouble = null;
 		try {
 			const found = await downloadProbe(url.trim());
 			probe = found;
 			picked = Object.fromEntries(found.entries.map((one) => [one.url, true]));
-			failure = null;
 		} catch (error) {
-			failure = failureKey(error);
+			urlTrouble = failureKey(error);
 		} finally {
 			looking = false;
 		}
@@ -325,6 +333,10 @@
 					{looking ? t('downloads.looking') : t('downloads.look')}
 				</button>
 			</div>
+
+			{#if urlTrouble}
+				<p class="fault-text note">{t(urlTrouble)}</p>
+			{/if}
 
 			{#if probe}
 				<p class="title ellipsis" title={probe.title}>{probe.title}</p>

@@ -32,6 +32,10 @@ pub enum ErrorCode {
     Download,
     /// There is no library folder for a download to go into.
     NoFolder,
+    /// What was pasted is not a web address at all.
+    NotAUrl,
+    /// yt-dlp could not make anything of that address.
+    UrlRefused,
 }
 
 impl From<onsa_library::Error> for ErrorCode {
