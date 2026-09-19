@@ -36,6 +36,8 @@
 	let track = $state<TrackFields | null>(null);
 	let typed = $state<Record<string, string>>({});
 	let failure = $state<MessageKey | null>(null);
+	/** What the file system said, when it said anything. */
+	let said = $state<string | null>(null);
 	let note = $state<MessageKey | null>(null);
 	let busy = $state(false);
 
@@ -91,10 +93,16 @@
 		try {
 			const report = await trackWrite(t('editor.title'), track.trackId);
 			track = await trackFields(track.trackId);
-			note = report.failed.length > 0 ? null : 'editor.written';
-			failure = report.failed.length > 0 ? 'editor.writeFailed' : null;
+			const refused = report.failed.length > 0;
+			note = refused ? null : 'editor.written';
+			failure = refused ? 'editor.writeFailed' : null;
+			// The reason is in hand — a locked file, a full disk, a format
+			// that cannot hold the field. Throwing it away left a sentence
+			// that stopped in the middle.
+			said = refused ? (report.failed[0] ?? null) : null;
 		} catch (error) {
 			failure = failureKey(error);
+			said = null;
 			note = null;
 		} finally {
 			busy = false;
@@ -184,10 +192,13 @@
 			<p class="note said">{t(note)}</p>
 		{/if}
 		{#if failure}
-			<p class="note fault-text">{t(failure, { reason: '' })}</p>
+			<p class="note fault-text">{t(failure)}</p>
+			{#if said}
+				<p class="note said">{said}</p>
+			{/if}
 		{/if}
 	{:else if failure}
-		<p class="note fault-text">{t(failure, { reason: '' })}</p>
+		<p class="note fault-text">{t(failure)}</p>
 	{/if}
 
 	{#snippet footer()}
@@ -301,5 +312,13 @@
 
 	.said {
 		color: var(--onsa-role-active);
+	}
+
+	/* What the file system reported: its words, not Onsa's, so it is set
+	   apart and allowed to be long. */
+	.note.said {
+		color: var(--onsa-text-secondary);
+		font-size: 11.5px;
+		overflow-wrap: anywhere;
 	}
 </style>
