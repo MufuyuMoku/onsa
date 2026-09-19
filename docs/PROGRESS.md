@@ -838,3 +838,30 @@ Termasuk **editor tag satuan**, pindahan dari M7 atas keputusan pemilik proyek: 
 - **Total trek, total disk, dan komentar** belum bisa di-override, jadi belum ada di editor — bagian dari **M7b** (bersama hapus/ekspor sampul dan aturan 1200 px), dikerjakan setelah M10 penuh.
 - **Edit banyak lagu sekaligus lewat editor ini** (dengan "(beragam)") juga M7b; edit massal yang sudah ada tetap lewat halaman Perapihan.
 - Timing per kata dibaca dan disimpan, tapi belum digambar per kata — barisnya yang menyala, bukan katanya.
+
+## Penyiapan rilis v1 (2026-09-19)
+
+Tidak ada fitur baru. Tiga hal: menyisir janji yang tidak bisa ditepati, menjalankan dari keadaan benar-benar baru, dan membangun rilis untuk kedua sistem.
+
+### Janji yang dicabut atau ditepati
+
+Temuan lengkap dan keputusannya ada di `docs/DECISIONS.md`. Yang terbesar: **unduhan gagal seluruhnya di mesin tanpa ffmpeg** — termasuk format "Asli" yang tidak mengonversi apa pun — karena `-x` dan penanaman metadata/sampul semuanya pekerjaan ffmpeg. Sekarang ketiganya hanya diminta bila ffmpeg ada; tanpa ffmpeg audionya diambil apa adanya dan halamannya mengatakan apa yang hilang. Selain itu: ffprobe digabung ke baris ffmpeg, Deno dihapus dari daftar, kata "belum" diganti keterangan cara memasang sendiri, prioritas format tidak lagi punya penadah yang bisa membawa Opus, alasan gagal dibawa sampai ke jendela, dan rujukan `docs/PROGRESS.md` di editor tag dihapus.
+
+**Cara verifikasi**: aplikasi dijalankan dengan PATH yang benar-benar bersih (`C:\Windows\system32;C:\Windows`), jadi yt-dlp pun tidak bisa menemukan ffmpeg di mana pun — satu-satunya bukti yang berlaku, karena mematikan "pakai program sistem" hanya menghentikan Onsa mencari, bukan yt-dlp. 12 pemeriksaan: daftar berisi dua program, konversi dilaporkan tidak tersedia, "Asli" terunduh sampai muncul di library, konversi yang tetap diminta hanya tidak dikonversi, dan kegagalan menyebut alasannya dengan kalimat. Lalu 5 pemeriksaan di mesin yang **punya** ffmpeg: tag tertanam kembali ada dan konversi ke MP3 tetap jalan.
+
+### Dari keadaan benar-benar baru
+
+Tanpa database, tanpa pengaturan, tanpa folder library, dan dengan PATH bersih:
+
+- Layar pertama muncul, menolak mulai sebelum ada folder, dan menunjukkan keenam tema sebelum dipilih.
+- Ke-15 halaman dibuka satu per satu, **dua kali**: dalam bahasa Inggris dan dalam bahasa Indonesia. Semuanya terbuka, mengatakan sesuatu yang benar untuk library kosong, tidak ada yang menggulir ke samping, tidak ada kunci kamus yang bocor ke layar, dan tidak ada yang melempar kesalahan.
+- Sedang Diputar tidak bisa dibuka saat tidak ada yang diputar — tombolnya mati, bukan membuka layar kosong. Mini player terbuka dan mengembalikan jendela.
+
+### Build rilis
+
+Ditambahkan `.github/workflows/release-build.yml`, dijalankan hanya bila diminta.
+
+- **Windows**: biner rilis dijalankan dari PATH bersih sepanjang pengujian di atas. Tidak ada `vcruntime`/`msvcp` di antara 27 DLL yang diimpornya — hanya DLL sistem Windows dan penerus UCRT, jadi tidak perlu Visual C++ redistributable dan tidak perlu toolchain.
+- **Linux**: dibangun di runner Ubuntu yang bersih, lalu **dijalankan di Ubuntu 26.04** (WSLg) dari salinan artefak: 123 pustaka, **tidak ada yang hilang**, jendela bernama "Onsa" benar-benar terbuka, database dan log dibuat, dan mesin audio membuka output ALSA.
+
+Catatan: build Linux tidak bisa dijalankan langsung di WSL mesin ini karena jaringan WSL-nya mati (cargo tidak bisa mengunduh crate), jadi yang membangun adalah CI dan yang dijalankan adalah artefaknya.
