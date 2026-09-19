@@ -178,6 +178,17 @@ fn read_probe(printed: &str, asked: &str) -> Option<Probe> {
     })
 }
 
+/// The formats Onsa asks for, in order of preference.
+///
+/// Only formats Onsa can actually play are named, and there is deliberately
+/// no `/bestaudio` at the end: without one, a site that has nothing but
+/// Opus is refused before anything is fetched, and the listener is told.
+/// With one, a file Onsa cannot decode would land on the disk and then
+/// quietly fail to appear in the library, which is worse than a refusal.
+///
+/// Opus is what changes in v1.1 (M11), here and in the decoder.
+pub const WANTED: &str = "bestaudio[ext=m4a]/bestaudio[ext=mp3]/bestaudio[ext=aac]";
+
 /// The arguments one download is run with (SPEC §7.2).
 ///
 /// Built here, in one place, so what Onsa asks of yt-dlp can be read at a
@@ -187,7 +198,7 @@ pub fn arguments(
     url: &str,
     format: Format,
     into: &Path,
-    programs: &Programs,
+    ffmpeg: Option<&Path>,
 ) -> Vec<std::ffi::OsString> {
     let mut args: Vec<std::ffi::OsString> = vec![
         "--newline".into(),
@@ -197,40 +208,33 @@ pub fn arguments(
         "--print".into(),
         "after_move:filepath".into(),
         "--no-playlist".into(),
-        "--embed-metadata".into(),
-        "--embed-thumbnail".into(),
-        "-x".into(),
     ];
 
-    match format {
-        // Until Onsa can decode Opus (M11), m4a is asked for first so that
-        // what arrives can actually be played. That priority changes there,
-        // and nowhere else.
-        Format::Original => {
-            args.push("-f".into());
-            args.push("bestaudio[ext=m4a]/bestaudio".into());
-        }
-        Format::Mp3 => {
-            args.push("--audio-format".into());
-            args.push("mp3".into());
-        }
-        Format::Flac => {
-            args.push("--audio-format".into());
-            args.push("flac".into());
-        }
-    }
-
-    // ffmpeg and Deno are optional; yt-dlp is only told where they are when
-    // Onsa actually has them.
-    if let Some(found) = programs.find(Program::Ffmpeg) {
+    // Everything that happens to a file after it lands needs ffmpeg —
+    // extracting the audio, putting the tags in, putting the cover in. On a
+    // machine without one, asking for any of it fails the whole download,
+    // and the listener is left with a file they never got and a word that
+    // does not say why. So Onsa asks for what it can have: the audio as the
+    // site already keeps it, and nothing written into it.
+    args.push("-f".into());
+    args.push(WANTED.into());
+    if let Some(found) = ffmpeg {
+        args.push("--embed-metadata".into());
+        args.push("--embed-thumbnail".into());
+        args.push("-x".into());
         args.push("--ffmpeg-location".into());
-        args.push(found.path.into_os_string());
-    }
-    if let Some(found) = programs.find(Program::Deno) {
-        let mut runtime = std::ffi::OsString::from("deno:");
-        runtime.push(found.path.as_os_str());
-        args.push("--js-runtimes".into());
-        args.push(runtime);
+        args.push(found.as_os_str().to_os_string());
+        match format {
+            Format::Original => {}
+            Format::Mp3 => {
+                args.push("--audio-format".into());
+                args.push("mp3".into());
+            }
+            Format::Flac => {
+                args.push("--audio-format".into());
+                args.push("flac".into());
+            }
+        }
     }
 
     args.push("-o".into());
@@ -267,7 +271,15 @@ pub fn download(
         "cannotWrite".to_string()
     })?;
 
-    let args = arguments(url, format, into, programs);
+    // What yt-dlp will find for itself, not what Onsa would choose: it
+    // searches PATH on its own account (see `Programs::reachable`).
+    let ffmpeg = programs.reachable(Program::Ffmpeg);
+    let args = arguments(
+        url,
+        format,
+        into,
+        ffmpeg.as_ref().map(|one| one.path.as_path()),
+    );
     let mut files: Vec<PathBuf> = Vec::new();
     let finished =
         onsa_downloader::runner::stream(&found.path, &args, stop, |line| match read_line(line) {
@@ -284,10 +296,29 @@ pub fn download(
         return Err("stopped".to_string());
     }
     if !finished.ok {
-        tracing::warn!("yt-dlp failed: {}", finished.reason());
-        return Err("failed".to_string());
+        let said = finished.reason();
+        tracing::warn!("yt-dlp failed: {said}");
+        return Err(why_of(&said));
     }
     Ok(files)
+}
+
+/// What a complaint from yt-dlp means, in a word the interface can say in
+/// the listener's own language.
+///
+/// Two of these are worth telling apart, because the listener can do
+/// something about each: a machine with no ffmpeg, and a site that has the
+/// song only in a format Onsa cannot play yet. Anything else keeps the
+/// program's own sentence, which is more use than "it failed".
+fn why_of(said: &str) -> String {
+    let lowered = said.to_lowercase();
+    if lowered.contains("ffmpeg not found") || lowered.contains("ffprobe and ffmpeg not found") {
+        return "noFfmpeg".to_string();
+    }
+    if lowered.contains("requested format is not available") {
+        return "noPlayableFormat".to_string();
+    }
+    said.to_string()
 }
 
 /// What one line of yt-dlp's output turned out to be.
@@ -460,20 +491,23 @@ mod tests {
         }
     }
 
+    /// The arguments as words, which is how these tests read them.
+    fn words_of(format: Format, ffmpeg: Option<&Path>) -> Vec<String> {
+        arguments(
+            "https://example.com/watch?v=abc",
+            format,
+            Path::new("/music"),
+            ffmpeg,
+        )
+        .iter()
+        .map(|one| one.to_string_lossy().to_string())
+        .collect()
+    }
+
     #[test]
     fn what_onsa_asks_yt_dlp_for_is_readable_at_a_glance() {
-        let programs =
-            Programs::new(std::env::temp_dir().join("onsa-no-programs-here")).use_system(false);
-        let args = arguments(
-            "https://example.com/watch?v=abc",
-            Format::Original,
-            Path::new("/music"),
-            &programs,
-        );
-        let words: Vec<String> = args
-            .iter()
-            .map(|one| one.to_string_lossy().to_string())
-            .collect();
+        let ffmpeg = PathBuf::from("/usr/bin/ffmpeg");
+        let words = words_of(Format::Original, Some(&ffmpeg));
 
         assert!(words.contains(&"-x".to_string()), "audio only");
         assert!(words.contains(&"--embed-metadata".to_string()));
@@ -481,36 +515,71 @@ mod tests {
             words.contains(&"--no-playlist".to_string()),
             "one at a time"
         );
-        // The priority that changes in M11, and nowhere else (SPEC §7.2).
-        assert!(words.contains(&"bestaudio[ext=m4a]/bestaudio".to_string()));
+        // Only formats Onsa can play, and no `bestaudio` to fall back to
+        // one it cannot. That is what changes in v1.1 (SPEC §7.2).
+        assert!(words.contains(&WANTED.to_string()));
+        assert!(!WANTED.contains("/bestaudio\""), "nothing catches all");
         assert_eq!(
             words.last().map(String::as_str),
             Some("https://example.com/watch?v=abc"),
             "the URL is an argument, and the last one"
         );
-        // Nothing is said about programs Onsa does not have.
-        assert!(!words.contains(&"--ffmpeg-location".to_string()));
-        assert!(!words.contains(&"--js-runtimes".to_string()));
+    }
+
+    #[test]
+    fn without_ffmpeg_nothing_is_asked_that_needs_it() {
+        // A machine with no ffmpeg cannot extract, cannot write tags in and
+        // cannot put a cover in. Asking anyway fails the whole download, so
+        // Onsa asks for the audio as it is and says nothing about the rest.
+        let words = words_of(Format::Original, None);
+        for needs_it in [
+            "-x",
+            "--embed-metadata",
+            "--embed-thumbnail",
+            "--ffmpeg-location",
+            "--audio-format",
+        ] {
+            assert!(!words.contains(&needs_it.to_string()), "{needs_it}");
+        }
+        assert!(
+            words.contains(&WANTED.to_string()),
+            "the audio is still asked for"
+        );
     }
 
     #[test]
     fn a_conversion_says_which_one() {
-        let programs =
-            Programs::new(std::env::temp_dir().join("onsa-no-programs-here")).use_system(false);
+        let ffmpeg = PathBuf::from("/usr/bin/ffmpeg");
         for (format, name) in [(Format::Mp3, "mp3"), (Format::Flac, "flac")] {
-            let args = arguments(
-                "https://example.com/x",
-                format,
-                Path::new("/music"),
-                &programs,
-            );
-            let words: Vec<String> = args
-                .iter()
-                .map(|one| one.to_string_lossy().to_string())
-                .collect();
+            let words = words_of(format, Some(&ffmpeg));
             assert!(words.contains(&"--audio-format".to_string()));
             assert!(words.contains(&name.to_string()));
         }
+        // And a conversion asked for without one is simply not asked for:
+        // the interface does not offer it, and the arguments do not carry it.
+        let words = words_of(Format::Mp3, None);
+        assert!(!words.contains(&"mp3".to_string()));
+    }
+
+    #[test]
+    fn a_complaint_becomes_something_the_window_can_say() {
+        assert_eq!(
+            why_of("ERROR: Postprocessing: ffmpeg not found. Please install"),
+            "noFfmpeg"
+        );
+        assert_eq!(
+            why_of("ERROR: ffprobe and ffmpeg not found. Please install"),
+            "noFfmpeg"
+        );
+        assert_eq!(
+            why_of("ERROR: [youtube] abc: Requested format is not available"),
+            "noPlayableFormat"
+        );
+        // Anything else keeps its own words, which say more than "failed".
+        assert_eq!(
+            why_of("ERROR: unable to download webpage"),
+            "ERROR: unable to download webpage"
+        );
     }
 
     #[test]

@@ -539,3 +539,18 @@ Diminta pemilik proyek: pengaman dulu, baru jaringan. Semua di bawah ini ada dan
 - **Editor tag satuan dijepit ke folder lagunya sendiri**, dengan batas satu lagu. Editor yang terbuka atas satu lagu tidak punya cara menyentuh yang lain, bahkan karena salah ketik.
 - **Parser LRC memaafkan, bukan menolak.** Berkas lirik ditulis tangan dan oleh seratus program berbeda. Yang tidak terbaca tetap menjadi baris teks; tidak ada lagu yang kehilangan liriknya karena satu tanda kurung.
 - **Batas ukuran `.lrc` 512 KiB.** Lirik lagu terpanjang beberapa kilobyte; yang seratus kali lipat itu berkas lain yang kebetulan berakhiran `.lrc`.
+
+## 2026-09-19 · Penyiapan v1: janji yang ditepati atau dicabut
+
+Sisiran seluruh antarmuka sebelum rilis, mencari hal yang mengarah ke fitur v1.1. Keputusan pemilik proyek atas temuannya:
+
+- **Unduhan jalan tanpa ffmpeg.** `-x`, `--embed-metadata`, dan `--embed-thumbnail` semuanya pekerjaan ffmpeg, dan mengirimnya ke mesin yang tidak punya ffmpeg **menggagalkan seluruh unduhan** — termasuk format "Asli" yang tidak mengonversi apa pun. Sekarang ketiganya hanya dikirim bila ada ffmpeg. Tanpa ffmpeg audionya diambil apa adanya: tanpa tag tertanam, tanpa sampul, tanpa konversi — dan halamannya mengatakan itu di tempat pilihannya dibuat.
+- **Yang ditanya adalah PATH yang akan dilihat yt-dlp, bukan pencarian Onsa** (`Programs::reachable`). yt-dlp mencari PATH atas namanya sendiri, jadi mematikan "pakai program sistem" tidak membuat ffmpeg hilang dari pandangannya. Menanyakan pertanyaan Onsa di tempat pertanyaan yt-dlp yang berlaku adalah cara sebuah unduhan gagal dengan alasan yang tidak bisa dijelaskan apa pun di jendela. Diuji dengan menjalankan aplikasi ber-PATH bersih; itu satu-satunya bukti yang berlaku.
+- **MP3 dan FLAC dinonaktifkan, bukan disembunyikan.** Orang perlu tahu fitur itu ada dan apa syaratnya.
+- **Prioritas format tidak lagi punya penadah `bestaudio`.** Yang diminta hanya format yang bisa diputar Onsa (`m4a`, `mp3`, `aac`). Dengan penadah, sumber yang hanya punya Opus akan mengirim berkas yang **mendarat di disk lalu tidak pernah muncul di library** — gagal tanpa sepatah kata. Tanpa penadah, yt-dlp menolak di muka dan Onsa mengatakannya. Opus menyusul di v1.1 bersama decoder-nya (M11).
+- **ffprobe tidak lagi jadi baris sendiri** di halaman Unduhan: ia datang bersama ffmpeg, dari folder yang sama. Dua baris untuk satu hal adalah dua pekerjaan yang sebenarnya satu.
+- **Deno dihapus dari daftar v1.** Tidak ada pengambilnya, perilakunya belum diuji, dan `--js-runtimes` tidak lagi dikirim — yt-dlp mencari sendiri kalau memang ada. Menampilkan program yang perilakunya belum dipahami lebih buruk daripada tidak menampilkannya.
+- **Alasan gagal dibawa sampai ke jendela.** Dua sebab yang bisa ditindaklanjuti pendengar diterjemahkan (tidak ada ffmpeg; tidak ada format yang bisa diputar); sisanya menampilkan kalimat yt-dlp sendiri. Onsa sudah memegang informasinya — membuangnya dan menulis "gagal" adalah kerugian gratis.
+- **Aplikasi tidak menunjuk berkas repo.** Catatan di editor tag tidak lagi menyebut `docs/PROGRESS.md`.
+- **Versi dinaikkan ke 1.0.0.**
+- **Menghapus folder library tetap v1.1**, dicatat di README sebagai batasan yang diketahui. Menambah fitur di minggu rilis lebih berisiko daripada menyebutnya dengan jujur.

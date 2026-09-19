@@ -19,7 +19,6 @@ const id = {
 	'nav.artists': 'Artis',
 	'nav.genres': 'Genre',
 	'nav.folders': 'Folder',
-	'nav.nowPlaying': 'Sedang diputar',
 	'nav.settings': 'Pengaturan',
 	'settings.output': 'Output & Kualitas',
 	'settings.dsp': 'DSP & EQ',
@@ -47,7 +46,6 @@ const id = {
 	'column.reset': 'Kembalikan ke bawaan',
 	'column.sortHint': 'Urutkan',
 
-	'track.untitled': 'Tanpa judul',
 	'track.unknownArtist': 'Artis tak dikenal',
 	'track.missing': 'hilang',
 	'track.failed': 'tak terbaca',
@@ -55,7 +53,6 @@ const id = {
 
 	'library.empty': 'Library masih kosong.',
 	'library.tracks': '{n} lagu',
-	'library.albums': '{n} album',
 
 	'album.play': 'Putar album',
 	'album.back': 'Semua album',
@@ -127,7 +124,6 @@ const id = {
 	'lyrics.resetOffset': 'Kembalikan geseran',
 	'lyrics.lookAgain': 'Cari lagi',
 	'lyrics.saveBeside': 'Simpan .lrc',
-	'lyrics.besideExists': 'Sudah ada .lrc di sebelah lagu',
 	'lyrics.seekHint': 'Klik baris untuk melompat ke sana',
 	'lyrics.settingsTitle': 'Lirik',
 	'lyrics.sourcesHint':
@@ -144,11 +140,9 @@ const id = {
 	'mini.open': 'Mini player',
 	'mini.close': 'Jendela penuh',
 	'sleep.title': 'Sleep timer',
-	'sleep.off': 'Mati',
 	'sleep.when': 'Berhenti',
 	'sleep.minutes': 'Setelah {n} menit',
 	'sleep.endOfTrack': 'Di akhir lagu ini',
-	'sleep.tracks': 'Setelah {n} lagu',
 	'sleep.customMinutes': 'Menit',
 	'sleep.customTracks': 'Jumlah lagu',
 	'sleep.action': 'Lalu',
@@ -318,7 +312,6 @@ const id = {
 	'playlist.emptySmart': 'Belum ada lagu yang cocok dengan aturannya.',
 	'playlist.play': 'Putar playlist',
 	'playlist.addTo': 'Tambah ke playlist',
-	'playlist.dropHint': 'Tarik lagu ke sini untuk menambahkannya',
 	'playlist.carried': '{n} lagu',
 	'playlist.addedTo': '{n} lagu ditambahkan ke "{name}".',
 	'playlist.removeTrack': 'Hapus dari playlist',
@@ -330,7 +323,6 @@ const id = {
 	'playlist.imported': '{n} lagu masuk ke "{name}".',
 	'playlist.importedNone': 'Tidak ada lagu dari file itu yang ada di library.',
 	'playlist.importMissing': '{n} entri tidak ditemukan di library.',
-	'playlist.missingTitle': 'Tidak ditemukan',
 	'playlist.fileFilter': 'Playlist M3U8',
 	'playlist.editRules': 'Ubah aturan',
 	'playlist.cancel': 'Batal',
@@ -398,8 +390,7 @@ const id = {
 	'editor.gainTrack': 'Lagu',
 	'editor.gainAlbum': 'Album',
 	'editor.peak': 'puncak {value}',
-	'editor.laterFields':
-		'Total trek, total disk, dan komentar belum bisa diubah; lihat docs/PROGRESS.md.',
+	'editor.laterFields': 'Total trek, total disk, dan komentar belum bisa diubah di versi ini.',
 	'field.has_artist': 'Tag artis',
 
 	'op.contains': 'mengandung',
@@ -513,12 +504,20 @@ const id = {
 	'downloads.needs': 'Program yang dibutuhkan',
 	'downloads.needsWhat': 'Onsa tidak mengunduh apa pun sebelum kamu menekan tombolnya. Berkasnya diambil dari rilis resmi di GitHub, dan dicocokkan dengan checksum yang diterbitkan rilis itu sebelum ditulis ke mana pun.',
 	'downloads.fromRelease': 'dari rilis resmi',
-	'downloads.notYet': 'belum bisa dipasang Onsa sendiri — berbentuk arsip',
+	'downloads.installYourself': 'dipasang sendiri',
+	'downloads.ffmpegWhere':
+		'ffmpeg dipasang sendiri karena rilisnya berbentuk arsip. Di Linux biasanya sudah ada, atau lewat paket ffmpeg. Di Windows: unduh dari ffmpeg.org, lalu taruh foldernya di PATH — atau centang "pakai program yang sudah ada di sistem" di bawah.',
+	'downloads.withoutFfmpeg':
+		'Tanpa ffmpeg, unduhan tetap jalan: berkasnya diambil apa adanya, tanpa tag dan tanpa sampul tertanam, dan konversi tidak tersedia.',
+	'downloads.noFfmpeg': 'Butuh ffmpeg, dan tidak ada yang ditemukan.',
+	'downloads.noPlayableFormat':
+		'Di sana tidak ada format yang bisa diputar Onsa. Opus menyusul di versi berikutnya.',
+	'downloads.cannotRun': 'yt-dlp tidak bisa dijalankan.',
 	'downloads.agree': 'Setuju dan unduh',
 	'downloads.update': 'Perbarui',
 	'downloads.stop': 'Hentikan',
 	'downloads.useSystem': 'Pakai program yang sudah ada di sistem',
-	'downloads.useSystemWhat': 'Kalau yt-dlp, ffmpeg, atau Deno sudah terpasang di sistem (biasa di Linux), Onsa memakainya. Salinan milik Onsa sendiri tetap didahulukan.',
+	'downloads.useSystemWhat': 'Kalau yt-dlp atau ffmpeg sudah terpasang di sistem (biasa di Linux), Onsa memakainya. Salinan milik Onsa sendiri tetap didahulukan.',
 	'downloads.fromUrl': 'Unduh dari URL',
 	'downloads.needYtDlp': 'yt-dlp harus ada dulu sebelum ada yang bisa diunduh.',
 	'downloads.reading': 'Memeriksa program yang ada…',
@@ -589,7 +588,7 @@ const id = {
 	'match.nothingFound': 'Tidak ada yang cocok.',
 
 	'programs.title': 'Program luar',
-	'programs.hint': 'Onsa menjalankan beberapa program luar. fpcalc dipakai untuk mengenali lagu lewat suaranya; tiga lainnya untuk pengunduh nanti. Onsa memakai yang ada di sistem kalau ada.',
+	'programs.hint': 'Onsa menjalankan beberapa program luar. fpcalc dipakai di halaman ini, untuk mengenali lagu lewat suaranya; yt-dlp dan ffmpeg dipakai di halaman Unduhan. Onsa memakai yang ada di sistem kalau ada.',
 	'programs.installed': 'terpasang',
 	'programs.missing': 'belum ada',
 	'programs.fromManaged': 'dari folder Onsa',
@@ -624,7 +623,6 @@ const en: Record<MessageKey, string> = {
 	'nav.artists': 'Artists',
 	'nav.genres': 'Genres',
 	'nav.folders': 'Folders',
-	'nav.nowPlaying': 'Now Playing',
 	'nav.settings': 'Settings',
 	'settings.output': 'Output & Quality',
 	'settings.dsp': 'DSP & EQ',
@@ -652,7 +650,6 @@ const en: Record<MessageKey, string> = {
 	'column.reset': 'Back to the defaults',
 	'column.sortHint': 'Sort',
 
-	'track.untitled': 'Untitled',
 	'track.unknownArtist': 'Unknown artist',
 	'track.missing': 'missing',
 	'track.failed': 'unreadable',
@@ -660,7 +657,6 @@ const en: Record<MessageKey, string> = {
 
 	'library.empty': 'The library is empty.',
 	'library.tracks': '{n} tracks',
-	'library.albums': '{n} albums',
 
 	'album.play': 'Play album',
 	'album.back': 'All albums',
@@ -732,7 +728,6 @@ const en: Record<MessageKey, string> = {
 	'lyrics.resetOffset': 'Put the shift back',
 	'lyrics.lookAgain': 'Look again',
 	'lyrics.saveBeside': 'Save .lrc',
-	'lyrics.besideExists': 'There is already a .lrc beside the song',
 	'lyrics.seekHint': 'Click a line to jump to it',
 	'lyrics.settingsTitle': 'Lyrics',
 	'lyrics.sourcesHint':
@@ -749,11 +744,9 @@ const en: Record<MessageKey, string> = {
 	'mini.open': 'Mini player',
 	'mini.close': 'Full window',
 	'sleep.title': 'Sleep timer',
-	'sleep.off': 'Off',
 	'sleep.when': 'Stop',
 	'sleep.minutes': 'After {n} minutes',
 	'sleep.endOfTrack': 'At the end of this track',
-	'sleep.tracks': 'After {n} tracks',
 	'sleep.customMinutes': 'Minutes',
 	'sleep.customTracks': 'Tracks',
 	'sleep.action': 'Then',
@@ -923,7 +916,6 @@ const en: Record<MessageKey, string> = {
 	'playlist.emptySmart': 'Nothing matches these rules yet.',
 	'playlist.play': 'Play the playlist',
 	'playlist.addTo': 'Add to playlist',
-	'playlist.dropHint': 'Drop tracks here to add them',
 	'playlist.carried': '{n} tracks',
 	'playlist.addedTo': '{n} tracks added to "{name}".',
 	'playlist.removeTrack': 'Remove from the playlist',
@@ -935,7 +927,6 @@ const en: Record<MessageKey, string> = {
 	'playlist.imported': '{n} tracks went into "{name}".',
 	'playlist.importedNone': 'The library holds none of the tracks in that file.',
 	'playlist.importMissing': '{n} entries are not in the library.',
-	'playlist.missingTitle': 'Not found',
 	'playlist.fileFilter': 'M3U8 playlist',
 	'playlist.editRules': 'Edit the rules',
 	'playlist.cancel': 'Cancel',
@@ -1003,8 +994,7 @@ const en: Record<MessageKey, string> = {
 	'editor.gainTrack': 'Track',
 	'editor.gainAlbum': 'Album',
 	'editor.peak': 'peak {value}',
-	'editor.laterFields':
-		'Track total, disc total and comment cannot be changed yet; see docs/PROGRESS.md.',
+	'editor.laterFields': 'Track total, disc total and comment cannot be changed in this version.',
 	'field.has_artist': 'Artist tag',
 
 	'op.contains': 'contains',
@@ -1118,12 +1108,20 @@ const en: Record<MessageKey, string> = {
 	'downloads.needs': 'The programs this needs',
 	'downloads.needsWhat': 'Onsa fetches nothing until you press the button. Files come from the official GitHub releases, and are checked against the checksum that release published before anything is written.',
 	'downloads.fromRelease': 'from the official release',
-	'downloads.notYet': 'Onsa cannot install this one yet — it comes as an archive',
+	'downloads.installYourself': 'installed by you',
+	'downloads.ffmpegWhere':
+		'ffmpeg is installed by you, because its release comes as an archive. On Linux it is usually there already, or in the ffmpeg package. On Windows: download it from ffmpeg.org and put its folder on PATH \u2014 or tick "use the programs already on this system" below.',
+	'downloads.withoutFfmpeg':
+		'Without ffmpeg a download still works: the audio comes as it is, with no tags and no cover written into it, and converting is unavailable.',
+	'downloads.noFfmpeg': 'This needs ffmpeg, and none was found.',
+	'downloads.noPlayableFormat':
+		'Nothing there is in a format Onsa can play. Opus arrives in the next version.',
+	'downloads.cannotRun': 'yt-dlp could not be run.',
 	'downloads.agree': 'Agree and fetch',
 	'downloads.update': 'Update',
 	'downloads.stop': 'Stop',
 	'downloads.useSystem': "Use the programs already on this system",
-	'downloads.useSystemWhat': 'If yt-dlp, ffmpeg or Deno are already installed (usual on Linux), Onsa uses those. A copy of its own still comes first.',
+	'downloads.useSystemWhat': 'If yt-dlp or ffmpeg is already installed (usual on Linux), Onsa uses that. A copy of its own still comes first.',
 	'downloads.fromUrl': 'Download from a URL',
 	'downloads.needYtDlp': 'yt-dlp has to be here before anything can be downloaded.',
 	'downloads.reading': 'Looking at what is installed…',
@@ -1194,7 +1192,7 @@ const en: Record<MessageKey, string> = {
 	'match.nothingFound': 'Nothing matched.',
 
 	'programs.title': 'Outside programs',
-	'programs.hint': 'Onsa runs a few outside programs. fpcalc is what recognises a track by its sound; the other three belong to the downloader later. A copy already on the system is used when there is one.',
+	'programs.hint': 'Onsa runs a few outside programs. fpcalc is the one this page uses, to recognise a track by its sound; yt-dlp and ffmpeg belong to the Downloads page. A copy already on the system is used when there is one.',
 	'programs.installed': 'installed',
 	'programs.missing': 'not there',
 	'programs.fromManaged': "from Onsa's own folder",

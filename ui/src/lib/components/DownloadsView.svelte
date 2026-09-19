@@ -36,6 +36,7 @@
 	let progress = $state<FetchProgress | null>(null);
 	let failure = $state<MessageKey | null>(null);
 	let useSystem = $state(true);
+	let canConvert = $state(false);
 	let busy = $state(false);
 
 	/** The URL half of the page. */
@@ -132,6 +133,9 @@
 	function take(answer: Binaries): void {
 		programs = answer.programs;
 		useSystem = answer.useSystem;
+		canConvert = answer.canConvert;
+		// A format that cannot be made is not a format to be left chosen.
+		if (!canConvert) format = 'original';
 	}
 
 	async function install(key: string): Promise<void> {
@@ -173,6 +177,9 @@
 		noYtDlp: 'downloads.needYtDlp',
 		refused: 'downloads.refused',
 		failed: 'downloads.failed',
+		noFfmpeg: 'downloads.noFfmpeg',
+		noPlayableFormat: 'downloads.noPlayableFormat',
+		cannotRun: 'downloads.cannotRun',
 		stopped: 'downloads.stopped',
 		unreachable: 'downloads.unreachable',
 		tooLarge: 'downloads.tooLarge',
@@ -230,7 +237,7 @@
 								{t('downloads.fromRelease')}
 								<span class="numeric">· {size(program.aboutBytes)}</span>
 							{:else}
-								{t('downloads.notYet')}
+								{t('downloads.installYourself')}
 							{/if}
 						</span>
 					{/if}
@@ -250,6 +257,10 @@
 
 					{#if program.url}
 						<span class="source numeric muted ellipsis" title={program.url}>{program.url}</span>
+					{/if}
+
+					{#if !program.installable && !program.present}
+						<span class="source muted">{t('downloads.ffmpegWhere')}</span>
 					{/if}
 
 					{#if progress && progress.key === program.key && !progress.finished}
@@ -341,8 +352,8 @@
 						<span class="label">{t('downloads.format')}</span>
 						<select class="field" bind:value={format}>
 							<option value="original">{t('downloads.formatOriginal')}</option>
-							<option value="mp3">MP3</option>
-							<option value="flac">FLAC</option>
+							<option value="mp3" disabled={!canConvert}>MP3</option>
+							<option value="flac" disabled={!canConvert}>FLAC</option>
 						</select>
 					</label>
 					<button type="button" class="btn primary" disabled={chosen.length === 0} onclick={start}>
@@ -351,6 +362,9 @@
 				</div>
 				{#if format !== 'original'}
 					<p class="muted note">{t('downloads.conversionNote')}</p>
+				{/if}
+				{#if !canConvert}
+					<p class="muted note">{t('downloads.withoutFfmpeg')}</p>
 				{/if}
 			{/if}
 
@@ -376,7 +390,14 @@
 									{item.eta ? `· ${clock(item.eta)}` : ''}
 								</span>
 							{:else if item.failed}
-								<span class="fault-text state">{t(WHY[item.failed] ?? 'downloads.failed')}</span>
+								<!-- A reason Onsa knows is said in the listener's own
+								     language; one it does not is yt-dlp's own sentence,
+								     which says more than "it failed" ever could. -->
+								{#if WHY[item.failed]}
+									<span class="fault-text state">{t(WHY[item.failed])}</span>
+								{:else}
+									<span class="fault-text said">{item.failed}</span>
+								{/if}
 							{/if}
 						</li>
 					{/each}
@@ -544,6 +565,13 @@
 		border-radius: var(--onsa-radius-sm);
 		background: var(--onsa-surface-raised);
 		font-size: 12px;
+	}
+
+	/* A program's own sentence, which is longer than a word. */
+	.said {
+		grid-column: 1 / -1;
+		font-size: 11.5px;
+		overflow-wrap: anywhere;
 	}
 
 	.item.run {

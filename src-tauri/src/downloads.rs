@@ -67,6 +67,13 @@ pub struct BinariesDto {
     pub programs: Vec<BinaryDto>,
     /// Whether a copy already on the system may be used (SPEC §7.1).
     pub use_system: bool,
+    /// Whether there is an ffmpeg for yt-dlp to use.
+    ///
+    /// Without one a download still works — Onsa asks for the audio as the
+    /// site keeps it — but converting it, writing the tags in and putting
+    /// the cover in are all ffmpeg's work, so the interface says so rather
+    /// than offering what would fail.
+    pub can_convert: bool,
 }
 
 /// How far along a fetch is.
@@ -101,10 +108,16 @@ impl Fetching {
 
 /// The programs the downloader needs, and what Onsa can do about each.
 ///
-/// yt-dlp is the one that must be there before anything can be downloaded.
-/// ffmpeg and Deno make it work properly — Deno is what yt-dlp wants for
-/// YouTube — and Onsa cannot install those for itself yet: they are
-/// published as archives, and unpacking them waits for the rest of M10.
+/// Two are listed, because two are what a listener can act on. yt-dlp is
+/// the downloader itself, and Onsa fetches it. ffmpeg is what turns a
+/// download into a tagged file with a cover on it, and what every
+/// conversion needs; it is published as an archive, so in this version it
+/// is installed by the listener rather than by Onsa.
+///
+/// ffprobe is not listed separately: it comes with ffmpeg, from the same
+/// folder, and a second row for it would be a second thing to do that is
+/// the same thing. Deno is not listed either — yt-dlp finds one for itself
+/// if there is one, and Onsa neither fetches it nor has tried it.
 #[tauri::command]
 pub async fn binaries_status(app: AppHandle) -> Result<BinariesDto, ErrorCode> {
     // Asking a program its version means running it.
@@ -121,11 +134,18 @@ pub async fn binaries_status(app: AppHandle) -> Result<BinariesDto, ErrorCode> {
                 .use_system
         };
         let programs = online::programs(&app)?;
-        let listed = Program::ALL
+        let listed = [Program::YtDlp, Program::Ffmpeg]
             .into_iter()
-            .filter(|program| *program != Program::Fpcalc)
             .map(|program| {
-                let found = programs.find(program);
+                // Onsa runs yt-dlp itself, so Onsa's own rules decide where
+                // it comes from. ffmpeg is run by yt-dlp, which searches
+                // PATH on its own account: what matters for that row is
+                // what yt-dlp will find, not what Onsa would have chosen.
+                let found = if program == Program::Ffmpeg {
+                    programs.reachable(program)
+                } else {
+                    programs.find(program)
+                };
                 let release = install::release_for(program);
                 BinaryDto {
                     key: program.key().to_string(),
@@ -150,6 +170,7 @@ pub async fn binaries_status(app: AppHandle) -> Result<BinariesDto, ErrorCode> {
         Ok(BinariesDto {
             programs: listed,
             use_system,
+            can_convert: programs.reachable(Program::Ffmpeg).is_some(),
         })
     })
     .await

@@ -724,6 +724,8 @@ export interface FetchProgress {
 export interface Binaries {
 	programs: BinaryStatus[];
 	useSystem: boolean;
+	/** Whether there is an ffmpeg for yt-dlp to use. */
+	canConvert: boolean;
 }
 
 export const binariesStatus = () => call<Binaries>('binaries_status');

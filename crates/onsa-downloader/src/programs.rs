@@ -252,6 +252,25 @@ impl Programs {
         self.find(program).is_some()
     }
 
+    /// What a program Onsa starts would find for itself.
+    ///
+    /// A different question from [`Programs::find`], and the difference
+    /// decides whether a download works at all. yt-dlp searches `PATH` on
+    /// its own account, so a copy there is one it will use whether or not
+    /// Onsa was told it may use the system's own programs. Asking Onsa's
+    /// question where yt-dlp's was meant is how a download fails for a
+    /// reason nothing in the window could explain.
+    pub fn reachable(&self, program: Program) -> Option<Found> {
+        if let Some(found) = self.find(program) {
+            return Some(found);
+        }
+        on_path(&program.file_name()).map(|path| Found {
+            program,
+            path,
+            from: Where::System,
+        })
+    }
+
     /// Runs a program and waits for it, for at most `limit`.
     ///
     /// The arguments are passed as they are: this never goes through a
@@ -385,7 +404,16 @@ pub(crate) fn tests_on_path(file_name: &str) -> Option<PathBuf> {
 /// The first file of this name on the system's `PATH`.
 fn on_path(file_name: &str) -> Option<PathBuf> {
     let path = std::env::var_os("PATH")?;
-    std::env::split_paths(&path)
+    in_folders(&path, file_name)
+}
+
+/// The first file of this name among folders written as `PATH` writes them.
+///
+/// Apart from the reading of the variable, this is the whole of the search
+/// — which is what makes it testable without touching the environment every
+/// other test in this binary is also reading.
+fn in_folders(path: &std::ffi::OsStr, file_name: &str) -> Option<PathBuf> {
+    std::env::split_paths(path)
         .map(|folder| folder.join(file_name))
         .find(|candidate| candidate.is_file())
 }
