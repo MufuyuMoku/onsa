@@ -1,0 +1,91 @@
+name: Release build
+
+# Only when it is asked for. A release build is not something every commit
+# needs, it takes far longer than the checks, and the Windows runner counts
+# double against a private repository's minutes.
+#
+# What it produces is the optimised binary for each system, and the list of
+# what that binary asks the system for — which is how "it runs on a machine
+# with no toolchain on it" is answered with evidence rather than belief.
+on:
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+
+jobs:
+  build:
+    name: release (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Free disk space
+        if: runner.os == 'Linux'
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc /usr/local/.ghcup
+          sudo rm -rf /usr/local/share/boost /usr/share/swift
+          sudo rm -rf "${AGENT_TOOLSDIRECTORY:-/opt/hostedtoolcache}"
+          df -h /
+
+      - name: Install Linux build dependencies
+        if: runner.os == 'Linux'
+        timeout-minutes: 10
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential file pkg-config libssl-dev \
+            libwebkit2gtk-4.1-dev libxdo-dev libayatana-appindicator3-dev \
+            librsvg2-dev libasound2-dev
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+
+      - name: npm ci
+        working-directory: ui
+        run: npm ci
+
+      # The Tauri context embeds the built interface into the binary.
+      - name: Build interface
+        working-directory: ui
+        run: npm run build
+
+      - name: Build the application
+        run: cargo build --release -p onsa
+
+      # What the binary asks of the system it lands on. Nothing here should
+      # be a compiler, a runtime Onsa ships without, or anything that only
+      # exists on a machine that builds software.
+      - name: What it needs at run time
+        if: runner.os == 'Linux'
+        run: |
+          ls -la target/release/onsa
+          file target/release/onsa
+          ldd target/release/onsa | sort
+
+      - name: Keep the binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: onsa-${{ matrix.os }}
+          path: |
+            target/release/onsa
+            target/release/onsa.exe
+          if-no-files-found: error
+          retention-days: 7
