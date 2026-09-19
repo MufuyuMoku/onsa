@@ -50,6 +50,7 @@
 				{t('librarySettings.rescan')}
 			</button>
 		</div>
+		<p class="note muted">{t('librarySettings.cannotRemove')}</p>
 		<p class="note numeric">{scanSummary()}</p>
 		{#if failure}<p class="note fault-text">{t(failure)}</p>{/if}
 	</section>

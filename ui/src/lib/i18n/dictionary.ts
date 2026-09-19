@@ -277,6 +277,8 @@ const id = {
 	'librarySettings.folders': 'Folder library',
 	'librarySettings.add': 'Tambah folder…',
 	'librarySettings.rescan': 'Scan ulang',
+	'librarySettings.cannotRemove':
+		'Folder belum bisa dihapus dari sini di versi ini. Folder yang berkasnya tidak ada lagi ditandai hilang saat scan ulang.',
 
 	'about.version': 'Versi {version}',
 	'about.logs': 'Log',
@@ -902,6 +904,8 @@ const en: Record<MessageKey, string> = {
 	'librarySettings.folders': 'Library folders',
 	'librarySettings.add': 'Add folder…',
 	'librarySettings.rescan': 'Rescan',
+	'librarySettings.cannotRemove':
+		'A folder cannot be removed here in this version. A folder whose files are gone is marked missing on the next rescan.',
 
 	'about.version': 'Version {version}',
 	'about.logs': 'Logs',
