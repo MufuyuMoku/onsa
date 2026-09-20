@@ -645,7 +645,413 @@ const id = {
 	'error.no_output': 'Tidak ada output audio yang bisa dibuka.',
 	'error.dialog': 'Jendela pemilih file tidak bisa dibuka.',
 	'error.io': 'File tidak bisa dibaca atau ditulis.',
-	'error.auto_eq_empty': 'File itu tidak berisi filter EQ yang bisa dipakai.'
+	'error.auto_eq_empty': 'File itu tidak berisi filter EQ yang bisa dipakai.',
+
+	'nav.help': 'Bantuan',
+	'help.open': 'Bantuan halaman ini',
+	'help.close': 'Tutup bantuan',
+	'help.here': 'Di halaman ini',
+	'help.controls': 'Kontrol di halaman ini',
+	'help.filesHead': 'Berkas musikmu sendiri',
+	'help.limitsHead': 'Batasan di halaman ini',
+	'help.elsewhere':
+		'Kontrol yang selalu ada di jendela — baris pemutar dan jalur sinyal di bawah, navigasi di kiri, panel antrean dan lirik di kanan — dijelaskan di halaman Bantuan.',
+	'help.toHelpPage': 'Buka halaman Bantuan',
+	'help.firstRun': 'Buka layar pertama lagi',
+	'help.title.album': 'Satu album',
+	'help.title.artist': 'Satu artis',
+	'help.title.genre': 'Satu genre',
+	'help.title.folder': 'Satu folder',
+	'help.title.playlist': 'Satu playlist',
+	'help.title.search': 'Hasil pencarian',
+	'help.title.header': 'Baris atas jendela',
+	'help.title.transport': 'Baris pemutar dan jalur sinyal',
+	'help.title.panel': 'Panel kanan: antrean dan lirik',
+	'help.tracks.what':
+		'Daftar semua lagu yang ditemukan Onsa di folder musikmu. Onsa memutar berkas yang sudah ada di komputermu; tidak ada katalog lagu di internet di sini, dan tidak ada yang dikirim ke mana pun. Klik dua kali sebuah baris untuk memutarnya.',
+	'help.tracks.limit':
+		'Yang terlihat di sini adalah hasil pemeriksaan folder yang terakhir. Berkas yang kamu tambahkan lewat program lain biasanya muncul sendiri dalam beberapa detik; kalau tidak muncul, ada tombol "Scan ulang" — yaitu memeriksa isi foldermu sekali lagi dari awal — di Pengaturan → Library.',
+	'help.albums.what':
+		'Semua album di library-mu, digambar dengan sampulnya. Sampul diambil dari dalam berkas lagunya atau dari gambar yang ada di folder yang sama. Onsa tidak mengambil gambar dari internet kecuali kamu menyalakannya sendiri di Pengaturan → Metadata, halaman yang mengatur apa yang boleh ditanyakan ke internet tentang lagumu.',
+	'help.album.what': 'Satu album: sampulnya, artisnya, dan lagunya menurut urutan di album itu.',
+	'help.artists.what':
+		'Semua artis di library-mu, dengan jumlah lagu masing-masing. Klik satu untuk melihat lagunya.',
+	'help.artist.what': 'Semua lagu dari satu artis, dikumpulkan dari seluruh album.',
+	'help.genres.what':
+		'Genre adalah jenis musik yang tertulis di dalam berkas lagunya sendiri — misalnya "Rock" atau "Jazz". Halaman ini mengumpulkan lagu-lagumu menurut jenis itu.',
+	'help.genres.limit':
+		'Lagu yang tidak punya keterangan genre di dalam berkasnya tidak muncul di sini. Kamu bisa mengisinya sendiri lewat "Sunting tag…" pada klik kanan sebuah lagu — jendela untuk mengubah keterangan yang tersimpan di dalam berkas itu — atau lewat halaman Rapikan.',
+	'help.genre.what': 'Semua lagu dari satu genre.',
+	'help.folders.what':
+		'Lagumu menurut folder tempat berkasnya benar-benar berada di komputermu, bukan menurut keterangan di dalam berkasnya.',
+	'help.folder.what': 'Semua lagu di dalam satu folder, seperti yang ada di komputermu.',
+	'help.playlists.what':
+		'Playlist adalah daftar lagu pilihanmu sendiri. Ada dua macam: yang kamu isi sendiri lagu demi lagu, dan yang pintar — yang isinya mengikuti aturan yang kamu buat, misalnya "semua lagu tahun 1990-an yang pernah kuputar", dan berubah sendiri ketika library-mu berubah.',
+	'help.playlists.files':
+		'Playlist hidup di dalam Onsa saja. Membuat, mengubah, atau menghapus playlist tidak menyentuh berkas musikmu sama sekali. "Impor M3U8" pun hanya membaca berkas daftarnya, tidak memindahkan apa pun.',
+	'help.playlist.what':
+		'Isi satu playlist, menurut urutan yang kamu susun. Lagu bisa diseret naik-turun untuk mengubah urutannya.',
+	'help.playlist.files':
+		'Menghapus lagu dari playlist hanya mengeluarkannya dari daftar ini. Berkasnya tetap ada di komputermu dan tetap ada di library.',
+	'help.search.what':
+		'Hasil pencarian dari kotak cari di atas: artis, album, dan lagu yang namanya cocok dengan yang kamu ketik. Pencarian ini hanya melihat library-mu sendiri.',
+	'help.search.limit':
+		'Yang dicari adalah judul, artis, album, dan genre. Lirik dan nama berkas tidak ikut dicari.',
+	'help.tidy.what':
+		'Halaman untuk merapikan keterangan lagu dalam jumlah banyak sekaligus. Keterangan ini — judul, artis, album, tahun, genre — tersimpan di dalam berkas lagunya sendiri; di mana-mana orang menyebutnya "tag". Setiap pekerjaan di halaman ini selalu ditampilkan dulu sebagai ringkasan sebelum dijalankan, dan setiap yang sudah dijalankan bisa dibatalkan lewat daftar Riwayat di bawah.',
+	'help.tidy.files':
+		'Dua pekerjaan di sini menyentuh berkas aslimu: "Tulis ke file" menulis keterangan ke dalam berkasnya, dan "Ganti nama berpola" mengganti nama berkas dan memindahkannya antar folder. Yang lain hanya disimpan di dalam Onsa — berkasmu tidak berubah sampai kamu menekan "Tulis ke file". Keduanya tetap lewat ringkasan dulu dan tetap ada di Riwayat, dan pembatalan mengembalikan nama berkas maupun isi keterangannya.',
+	'help.tidy.limit':
+		'Satu jalan mengerjakan paling banyak sebanyak angka di "Batas per jalan" — sisanya menunggu jalan berikutnya, supaya kesalahan tidak terlanjur mengenai seluruh library.',
+	'help.downloads.what':
+		'Mengambil audio dari sebuah alamat web (URL) dan menaruhnya di folder musikmu, satu alamat pada satu waktu. Yang mengambil bukan Onsa sendiri melainkan yt-dlp, sebuah program terpisah yang diunduh Onsa hanya setelah kamu menekan tombol persetujuannya. Kamu yang bertanggung jawab atas hak isi yang kamu unduh.',
+	'help.downloads.files':
+		'Hasil unduhan ditulis sebagai berkas baru di dalam folder library-mu, di subfolder "Unduhan", lalu muncul sendiri di library. Berkas musik yang sudah ada tidak disentuh.',
+	'help.downloads.limitOpus':
+		'Sumber yang hanya menyediakan audio format Opus ditolak di muka, dengan pesan, karena Onsa belum bisa memutar format itu.',
+	'help.downloads.limitOne':
+		'Satu unduhan berjalan pada satu waktu. Antrean yang berjalan bersamaan menyusul di versi berikutnya.',
+	'help.nowPlaying.what':
+		'Layar penuh untuk lagu yang sedang diputar: sampul besar, liriknya kalau ada, dan keterangan teknis tentang apa yang sedang terjadi pada suaranya.',
+	'help.output.what':
+		'Ke mana suara dikirim, dan seberapa teliti Onsa mengolahnya sebelum dikirim. Semua yang di halaman ini hanya mengubah suara yang keluar sekarang; tidak ada satu pun yang mengubah berkas musikmu.',
+	'help.dsp.what':
+		'Pengaturan suara yang diolah sebelum keluar: EQ (pengatur nada, menaikkan atau menurunkan bagian tinggi dan rendah), preamp (pengatur volume sebelum pengolahan), dan limiter (penjaga supaya suara tidak melewati batas dan pecah). Tidak ada satu pun di halaman ini yang mengubah berkas musikmu.',
+	'help.library.what':
+		'Folder mana saja yang dianggap Onsa sebagai tempat musikmu. Onsa membaca isinya dan mengingat apa yang ada di sana; isinya sendiri tidak dipindahkan, diganti nama, atau diubah.',
+	'help.library.files':
+		'Menambah folder dan memeriksanya ulang hanya membaca. Tidak ada berkas yang ditulis, dipindah, atau dihapus dari halaman ini.',
+	'help.metadata.what':
+		'Apakah Onsa boleh bertanya ke internet tentang lagumu, dan dengan apa. Semua ini mati secara bawaan: dengan keadaan mati, tidak ada satu pun permintaan yang dikirim. Kalau dinyalakan, yang dikirim adalah sidik jari suara lagu (angka yang dihitung dari bunyinya, bukan berkasnya) dan judul-artis-album, untuk ditanyakan ke AcoustID dan MusicBrainz. Hasilnya selalu berupa usulan yang harus kamu setujui.',
+	'help.lyricsSettings.what':
+		'Dari mana lirik boleh diambil, dan apakah lirik dari internet disimpan di sebelah lagunya. Keduanya mati secara bawaan.',
+	'help.lyricsSettings.files':
+		'Dengan saklar kedua dinyalakan, Onsa menulis satu berkas teks kecil berakhiran .lrc di sebelah berkas lagunya. Berkas lagunya sendiri tidak disentuh.',
+	'help.appearance.what':
+		'Rupa jendela: tema (kumpulan warna), warna yang ikut bergerak mengikuti bunyi, dan bahasa. Tidak ada yang di halaman ini menyentuh musik atau berkasmu.',
+	'help.about.what':
+		'Versi Onsa yang sedang berjalan, catatan kejadian (log) untuk dikirim kalau ada yang salah, dan apa yang terjadi ketika jendela ditutup.',
+	'help.header.what': 'Baris di atas isi halaman, dan selalu ada di halaman mana pun.',
+	'help.transport.what':
+		'Dua baris paling bawah jendela, selalu ada di halaman mana pun: kontrol pemutaran, dan di bawahnya jalur sinyal — rantai yang menunjukkan apa saja yang dilewati suara dari berkas sampai ke perangkat output.',
+	'help.panel.what':
+		'Panel di kanan jendela dengan dua tab: Antrean, yaitu daftar lagu yang akan diputar sesudah yang sekarang, dan Lirik. Di jendela yang sempit panel ini tersembunyi dan dibuka lewat tombol di baris atas.',
+	'help.panel.files':
+		'Tombol "Simpan .lrc" di tab Lirik menulis satu berkas teks kecil di sebelah berkas lagunya. Selain itu tidak ada yang menyentuh berkas.',
+	'help.help.what':
+		'Halaman ini: daftar seluruh halaman Onsa, ditambah hal-hal yang tidak menempel di satu halaman saja.',
+
+	'help.name.columns': 'Judul · Artis · Album · Tahun · Durasi',
+	'help.says.columns':
+		'Nama kolom, di atas daftar. Klik satu untuk mengurutkan daftar menurut kolom itu; klik sekali lagi untuk membalik urutannya. Panah kecil menunjukkan kolom mana yang sedang dipakai mengurutkan.',
+	'help.name.resize': 'Garis di antara dua nama kolom',
+	'help.says.resize':
+		'Tarik untuk melebarkan atau menyempitkan kolom di sebelah kirinya; lebarnya diingat. Dengan papan ketik: tekan Tab sampai garisnya terpilih, lalu pakai panah kiri dan kanan.',
+	'help.says.chooseColumns':
+		'Membuka daftar pilihan: kolom mana yang ditampilkan dan mana yang disembunyikan, dengan satu pilihan untuk mengembalikan semuanya ke bawaan.',
+	'help.name.row': 'Baris lagu',
+	'help.says.row':
+		'Satu baris satu lagu. Klik dua kali untuk memutarnya sekarang. Klik sekali untuk memilih; Ctrl+klik menambah satu lagi ke pilihan dan Shift+klik memilih sederet. Baris yang berkasnya tidak ada lagi di komputermu ditandai "hilang". Baris bisa diseret ke playlist di navigasi kiri.',
+	'help.name.rowMenu': 'Klik kanan pada baris lagu',
+	'help.says.rowMenu':
+		'Membuka menu kecil: "Putar berikutnya" menaruh lagu itu tepat sesudah yang sedang diputar, "Tambah ke antrean" menaruhnya di ujung daftar tunggu, "Tambah ke playlist" memasukkannya ke salah satu daftarmu, dan "Sunting tag…" membuka jendela untuk mengubah keterangan lagu itu — judul, artis, album, dan seterusnya — yang tersimpan di dalam berkasnya.',
+	'help.name.albumCard': 'Kartu album',
+	'help.says.albumCard': 'Sampul dengan nama album dan artisnya. Klik untuk membuka album itu.',
+	'help.says.albumBack': 'Kembali ke halaman berisi semua album.',
+	'help.says.albumPlay':
+		'Memutar album ini dari lagu pertamanya, menggantikan daftar tunggu yang ada.',
+	'help.says.addTo':
+		'Menaruh semua lagu yang terlihat di halaman ini ke salah satu playlist-mu. Berkasnya tidak berpindah ke mana-mana; yang bertambah hanya daftarnya.',
+	'help.name.artistRow': 'Baris artis',
+	'help.says.artistRow':
+		'Nama artis dan berapa lagunya yang kamu punya. Klik untuk melihat lagunya.',
+	'help.name.genreRow': 'Baris genre',
+	'help.says.genreRow':
+		'Nama genre dan berapa lagu yang punya keterangan genre itu di dalam berkasnya. Klik untuk melihat lagunya.',
+	'help.name.folderRow': 'Baris folder',
+	'help.says.folderRow':
+		'Nama folder beserta jalur lengkapnya di komputermu. Klik untuk melihat lagu di dalamnya.',
+	'help.name.browseBack': 'Tombol kembali di kiri atas',
+	'help.says.browseBack':
+		'Kembali ke daftar sebelumnya: semua artis, semua genre, atau semua folder.',
+	'help.says.browsePlay': 'Memutar semua lagu yang terlihat di halaman ini, dari yang pertama.',
+	'help.says.playlistNew':
+		'Membuat playlist kosong yang kamu isi sendiri. Onsa menanyakan namanya dulu.',
+	'help.says.playlistNewSmart':
+		'Membuat playlist yang isinya mengikuti aturan, bukan pilihan satu per satu. Kamu menyusun aturannya — misalnya tahun, artis, genre, berapa kali diputar — dan isinya menyesuaikan sendiri setiap kali library-mu berubah.',
+	'help.says.playlistImport':
+		'Membaca berkas daftar lagu buatan program lain (berakhiran .m3u8) dan membuat playlist dari isinya. Lagu yang tidak ada di library-mu dilewati dan jumlahnya disebutkan.',
+	'help.name.playlistCard': 'Kartu playlist',
+	'help.says.playlistCard':
+		'Nama playlist, jenisnya (biasa atau pintar), dan berapa lagu isinya. Klik untuk membukanya.',
+	'help.name.playlistBack': 'Tombol kembali di kiri atas',
+	'help.says.playlistBack': 'Kembali ke halaman semua playlist.',
+	'help.says.playlistPlay': 'Memutar playlist ini dari lagu pertamanya.',
+	'help.says.playlistQueue':
+		'Menaruh seluruh isi playlist ini di ujung daftar tunggu, tanpa menghentikan lagu yang sedang diputar.',
+	'help.says.playlistMore':
+		'Membuka menu: ganti nama, gandakan, ekspor jadi berkas .m3u8, dan hapus playlist. Menghapus playlist tidak menghapus satu pun berkas musik.',
+	'help.says.playlistRules':
+		'Hanya ada pada playlist pintar: membuka aturannya, supaya kamu bisa mengubah apa yang masuk ke daftar ini.',
+	'help.name.playlistRow': 'Baris lagu di playlist',
+	'help.says.playlistRow':
+		'Sama seperti baris lagu di halaman lain, ditambah dua hal: lagunya bisa diseret naik-turun untuk mengubah urutan, dan ada tombol untuk mengeluarkannya dari playlist ini. Mengeluarkan lagu tidak menghapus berkasnya.',
+	'help.name.searchArtist': 'Hasil berupa artis',
+	'help.says.searchArtist':
+		'Artis yang namanya cocok dengan yang kamu ketik. Klik untuk membuka halamannya.',
+	'help.name.searchAlbum': 'Hasil berupa album',
+	'help.says.searchAlbum':
+		'Album yang namanya cocok dengan yang kamu ketik. Klik untuk membukanya.',
+
+	'help.name.tidyScope': 'Cakupan',
+	'help.says.tidyScope':
+		'Tulisan di atas halaman yang menyebut lagu mana saja yang akan terkena pekerjaan di sini. Tanpa folder pembatas, cakupannya seluruh library-mu; dengan folder pembatas, hanya lagu di dalam folder itu.',
+	'help.says.tidyPick':
+		'Memilih satu folder sebagai pembatas, supaya pekerjaan di halaman ini tidak bisa menyentuh lagu di luar folder itu. Cara paling aman untuk mencoba sesuatu pertama kali.',
+	'help.says.tidyClear': 'Melepas folder pembatas, sehingga cakupannya kembali seluruh library.',
+	'help.says.tidyLimit':
+		'Berapa lagu paling banyak yang boleh dikerjakan dalam satu jalan. Sisanya menunggu jalan berikutnya. Gunanya supaya satu kesalahan tidak langsung mengenai seluruh library.',
+	'help.says.tidyEdit':
+		'Menyetel satu keterangan — misalnya artis album — untuk semua lagu yang masuk cakupan, yaitu yang disebut di baris paling atas halaman ini. Hasilnya baru tersimpan di dalam Onsa; berkas lagumu belum berubah sampai kamu menjalankan "Tulis ke file".',
+	'help.says.tidyWrite':
+		'Menulis keterangan yang tersimpan di dalam Onsa ke dalam berkas lagunya sendiri. Inilah satu-satunya tombol di halaman ini yang mengubah isi berkasmu.',
+	'help.says.tidyRename':
+		'Menyusun ulang nama berkas dan folder menurut pola yang kamu tulis — misalnya "artis/album/nomor judul". Berkasnya benar-benar diganti nama dan dipindah di komputermu, selalu setelah kamu melihat ringkasannya dulu.',
+	'help.says.tidyAuto':
+		'Memperbaiki hal-hal kecil tanpa internet: spasi berlebih, huruf besar yang kacau, nomor trek yang ditulis "3/12". Yang diusulkannya tetap lewat ringkasan sebelum dijalankan.',
+	'help.says.tidyMatch':
+		'Bertanya ke internet lagu apa ini, dengan menghitung sidik jari dari bunyinya lalu menanyakannya ke AcoustID dan MusicBrainz. Hanya jalan kalau kamu menyalakannya di Pengaturan → Metadata, halaman yang mengatur apa yang boleh ditanyakan ke internet. Hasilnya usulan yang kamu centang sendiri, bukan perubahan.',
+	'help.says.tidyField':
+		'Keterangan mana yang akan disetel oleh "Edit massal": artis, album, artis album, genre, atau tahun.',
+	'help.says.tidyValue':
+		'Nilai yang akan diisikan ke keterangan itu. Dikosongkan berarti menghapus editan yang tersimpan di Onsa dan mengembalikan nilai yang ada di dalam berkas.',
+	'help.says.tidyPattern':
+		'Pola nama berkas untuk "Ganti nama berpola". Bagian dalam kurung kurawal diganti isi lagunya, misalnya {artist} dan {title}; garis miring berarti folder baru.',
+	'help.says.tidyRoot':
+		'Folder tempat hasil penggantian nama diletakkan. Kosong berarti tetap di tempatnya sekarang.',
+	'help.says.tidyLook':
+		'Menghitung apa yang akan terjadi dan menampilkannya — berapa lagu terkena, berapa berkas ditulis, apa yang dilewati dan kenapa — tanpa mengubah apa pun.',
+	'help.says.tidyApply':
+		'Menjalankan apa yang baru saja ditampilkan di ringkasan. Baru sesudah tombol ini ditekan ada yang benar-benar berubah.',
+	'help.says.tidyUndo':
+		'Membatalkan satu jalan yang ada di daftar Riwayat, termasuk yang sudah ditulis ke berkas dan nama berkas yang sudah diganti.',
+	'help.says.useSystem':
+		'Kalau yt-dlp atau ffmpeg sudah ada di komputermu, Onsa memakai yang itu dan tidak perlu mengunduh apa pun. Kalau dimatikan, Onsa hanya memakai program yang ada di foldernya sendiri.',
+	'help.name.programRow': 'Baris program',
+	'help.says.programRow':
+		'Satu baris untuk tiap program yang dibutuhkan halaman ini, dengan keterangan apakah ia sudah ada, dari mana asalnya, dan versinya. yt-dlp wajib: tanpa dia tidak ada yang bisa diunduh. ffmpeg tidak wajib: tanpa dia unduhan tetap jalan, tapi tanpa keterangan lagu dan sampul yang tertanam, dan tanpa mengubah format.',
+	'help.says.agree':
+		'Mengunduh program itu dari halaman rilis resminya, dan mencocokkannya dengan sidik berkas yang diterbitkan rilis itu sebelum menyimpannya. Tidak ada yang diunduh sebelum tombol ini ditekan.',
+	'help.says.update': 'Mengambil versi terbaru program itu, dengan pemeriksaan yang sama.',
+	'help.says.urlField': 'Tempat menempelkan alamat web yang audionya ingin kamu ambil.',
+	'help.says.look':
+		'Menanyakan ke yt-dlp apa isi alamat itu — satu lagu atau sebuah daftar — dan menampilkan judulnya. Belum ada yang diunduh pada tahap ini.',
+	'help.says.format':
+		'Bentuk berkas yang kamu inginkan. "Asli" berarti berkasnya diambil apa adanya tanpa diubah. Pilihan MP3 dan FLAC mengubah bentuknya, dan itu pekerjaan ffmpeg — tanpa ffmpeg keduanya tidak bisa dipilih.',
+	'help.says.fetch': 'Mulai mengunduh apa yang ditemukan tadi ke folder musikmu.',
+	'help.says.stop':
+		'Menghentikan satu unduhan yang sedang berjalan. Berkas setengah jadi dibuang.',
+	'help.says.stopAll': 'Menghentikan semua yang sedang berjalan dan yang masih menunggu.',
+	'help.says.nowPlayingClose': 'Menutup layar ini dan kembali ke daftar lagu.',
+	'help.says.seek':
+		'Batang panjang berisi posisi lagu. Klik atau tarik untuk melompat ke bagian lain. Panah kiri dan kanan di papan ketik memundurkan atau memajukan lima detik.',
+	'help.name.nowPlayingLyrics': 'Lirik di layar ini',
+	'help.says.nowPlayingLyrics':
+		'Kalau lagunya punya lirik, barisnya muncul besar di sini dan baris yang sedang dinyanyikan menyala. Klik sebuah baris untuk melompat ke bagian itu.',
+
+	'help.says.device':
+		'Lewat mana suaranya keluar: speaker, headphone, atau perangkat lain yang dikenali komputermu. "Default sistem" berarti Onsa ikut ke mana pun Windows atau Linux mengirim suara, termasuk ketika kamu mencolok headphone.',
+	'help.says.sampleRate':
+		'Berapa kali per detik suara dikirim ke perangkat itu. "Ikuti perangkat" memakai angka yang disukai perangkatnya dan hampir selalu jawaban yang benar.',
+	'help.says.matchSource':
+		'Kalau dinyalakan, Onsa berusaha memakai angka yang sama dengan berkas lagunya, supaya suaranya tidak perlu dihitung ulang. Kalau perangkatnya tidak mendukung, Onsa tetap menghitung ulang.',
+	'help.says.quality':
+		'Seberapa teliti perhitungan ulang itu dilakukan ketika angka lagu dan angka perangkat berbeda. Tiga pilihannya: "Cepat", "Seimbang", dan "Terbaik". Makin teliti makin berat untuk prosesor; "Seimbang" cukup untuk hampir semua orang.',
+	'help.says.buffer':
+		'Seberapa banyak suara disiapkan lebih dulu sebelum dikirim, dengan tiga pilihan: "Rendah", "Normal", dan "Besar". Rendah berarti Onsa menanggapi lebih cepat; besar berarti lebih tahan terhadap komputer yang sedang sibuk. Kalau suaranya putus-putus, besarkan.',
+	'help.says.dither':
+		'Menambahkan desis yang sangat halus ketika suara dikecilkan ke 16-bit, supaya bagian yang paling pelan tidak terdengar kasar. Hanya berlaku untuk perangkat yang memang 16-bit.',
+	'help.says.powerSave':
+		'Mengurangi pekerjaan gambar bergerak seperti meter dan spektrum ketika jendela tidak terlihat, supaya baterai lebih awet.',
+	'help.says.crossfade':
+		'Berapa lama suara lagu lama dan lagu baru bertumpang tindih saat berganti. Nol berarti tidak ada tumpang tindih.',
+	'help.says.curve':
+		'Bentuk perpindahan antara dua lagu. "Equal power" menjaga kerasnya terdengar tetap di tengah perpindahan; "Linear" turun dan naik lurus.',
+	'help.says.albumGapless':
+		'Banyak album dibuat supaya satu lagu menyambung langsung ke lagu berikutnya tanpa jeda sedetik pun. Dengan pilihan ini dinyalakan, dua lagu berurutan dari album yang sama disambung persis seperti itu, tanpa tumpang tindih, dan crossfade hanya dipakai di luar album.',
+	'help.says.skipFade':
+		'Perpindahan singkat ketika kamu sendiri menekan tombol lagu berikutnya, supaya tidak terdengar terpotong mendadak.',
+	'help.says.rgMode':
+		'ReplayGain adalah angka kenyaringan yang sudah tersimpan di dalam banyak berkas lagu oleh program lain. Empat pilihannya: "Mati" tidak memakainya sama sekali, "Lagu" memakai angka per lagu, "Album" memakai angka per album — supaya perbedaan keras-pelan di dalam satu album tetap terjaga — dan "Otomatis" memakai angka album ketika yang diputar memang satu album.',
+	'help.says.rgPreamp':
+		'Menaikkan atau menurunkan seluruh hasil perataan kenyaringan itu, kalau menurutmu hasilnya terlalu pelan atau terlalu keras.',
+	'help.says.rgFallback':
+		'Berapa keras lagu yang tidak punya angka kenyaringan tersimpan di dalamnya, supaya tidak terdengar melonjak di antara lagu-lagu yang punya.',
+	'help.says.rgClip':
+		'Memakai angka puncak yang tersimpan bersama angka kenyaringan untuk menurunkan volume sedikit bila perlu, supaya suaranya tidak melewati batas dan pecah.',
+	'help.says.eqOn':
+		'Menyalakan atau mematikan pengatur nada. Dimatikan berarti suara lewat tanpa diubah sama sekali.',
+	'help.says.eqGraphic':
+		'Bentuk sederhana: sepuluh tuas, masing-masing untuk satu daerah nada dari yang paling rendah sampai yang paling tinggi.',
+	'help.says.eqParametric':
+		'Bentuk lanjut: kamu sendiri yang menentukan letak, lebar, dan jenis tiap filter. Untuk orang yang mengikuti setelan siap pakai dari internet.',
+	'help.name.eqBand':
+		'Tuas nada: 31 Hz, 62 Hz, 125 Hz, 250 Hz, 500 Hz, 1 kHz, 2 kHz, 4 kHz, 8 kHz, 16 kHz',
+	'help.says.eqBand':
+		'Sepuluh tuas, satu untuk tiap daerah nada. Angka kecil di kiri adalah suara rendah seperti bas; angka besar di kanan adalah suara tinggi seperti desis simbal. Menaikkan tuas membuat daerah itu lebih keras, menurunkannya membuat lebih pelan.',
+	'help.says.eqFlat': 'Mengembalikan semua tuas ke nol, yaitu tanpa perubahan nada sama sekali.',
+	'help.says.eqImport':
+		'Membaca berkas setelan EQ buatan AutoEQ — setelan siap pakai untuk model headphone tertentu — dan memakainya.',
+	'help.says.eqExport':
+		'Menyimpan setelan EQ-mu sekarang sebagai berkas teks dalam bentuk yang sama, supaya bisa dipakai di tempat lain.',
+	'help.says.eqAdd': 'Hanya pada bentuk parametrik: menambah satu filter baru.',
+	'help.says.eqRemove': 'Hanya pada bentuk parametrik: membuang filter itu.',
+	'help.says.preampAuto':
+		'Menurunkan volume sebelum pengatur nada, secukupnya, supaya tuas yang dinaikkan tidak membuat suara melewati batas dan pecah.',
+	'help.says.preampManual':
+		'Mengatur sendiri penurunan itu, kalau kamu tidak ingin Onsa menghitungnya.',
+	'help.says.limiterOn':
+		'Penjaga terakhir sebelum suara keluar: menahan puncak yang masih terlalu tinggi supaya tidak pecah.',
+	'help.says.limiterRelease':
+		'Berapa cepat penjaga itu melepaskan tahanannya setelah puncaknya lewat. Terlalu cepat terdengar bergetar, terlalu lambat terdengar menekan.',
+	'help.says.addFolder':
+		'Menambah satu folder lagi sebagai tempat musikmu. Onsa langsung membaca isinya.',
+	'help.says.rescan':
+		'Menyuruh Onsa melihat lagi seluruh folder itu dari awal. Berguna kalau ada berkas yang tidak muncul sendiri, misalnya setelah folder dipindah dari komputer lain.',
+	'help.name.folderList': 'Daftar folder',
+	'help.says.folderList': 'Folder yang sudah kamu tambahkan, dengan jumlah lagu di masing-masing.',
+	'help.says.metaOnline':
+		'Saklar utama untuk semua pertanyaan ke internet di halaman Rapikan. Selama mati, Onsa tidak mengirim apa pun ke mana pun.',
+	'help.says.metaKey':
+		'AcoustID meminta kunci aplikasi untuk setiap program yang bertanya kepadanya. Kunci itu gratis dan diambil sendiri dari situs AcoustID; Onsa tidak membawa kunci apa pun.',
+	'help.says.metaKeySave':
+		'Menyimpan kunci itu di komputermu saja, untuk dipakai pada pertanyaan berikutnya.',
+	'help.says.metaKeyClear': 'Menghapus kunci yang tersimpan.',
+	'help.says.metaKeyTry': 'Mengirim satu pertanyaan kecil untuk memastikan kuncinya diterima.',
+	'help.says.metaChoose':
+		'Menunjukkan sendiri letak berkas fpcalc di komputermu. fpcalc adalah program kecil yang menghitung sidik jari dari bunyi lagu; tanpa dia, "Cari data online" tidak bisa bertanya apa-apa.',
+	'help.says.metaForget': 'Melupakan letak yang tadi kamu tunjukkan.',
+	'help.says.metaRefresh':
+		'Memeriksa lagi apakah programnya sekarang ada, misalnya sesudah kamu memasangnya.',
+	'help.says.lyricsOnline':
+		'Boleh atau tidaknya Onsa bertanya ke LRCLIB — sebuah layanan lirik terbuka — untuk lagu yang liriknya tidak ada di komputermu. Yang dikirim hanya judul, artis, album, dan durasi lagunya.',
+	'help.says.lyricsBeside':
+		'Kalau dinyalakan, lirik yang datang dari internet disimpan sebagai berkas teks kecil berakhiran .lrc di sebelah berkas lagunya, sehingga tetap ada nanti tanpa internet.',
+	'help.says.themePick':
+		'Kumpulan warna untuk seluruh jendela. Enam tema bawaan: "Kaca asap", "Kokpit kaca", "Deck malam", "Kubikel biru", "Kilau milenium", dan "Musim dingin utara"; tema buatanmu sendiri muncul di baris yang sama. Tampilan langsung berganti saat kamu memilih; tidak ada yang perlu disimpan.',
+	'help.says.tone':
+		'Seberapa kuat warna jendela ikut bergerak mengikuti bunyi yang sedang diputar, dengan empat pilihan: "Mati", "Halus", "Sedang", dan "Kuat". Mati berarti warnanya diam saja.',
+	'help.says.themeFolder':
+		'Membuka folder tempat Onsa membaca tema buatan sendiri, di penjelajah berkas komputermu.',
+	'help.says.themeCopy':
+		'Menyalin tema yang sedang kamu pakai ke folder itu sebagai berkas yang bisa kamu ubah warnanya. Berkas yang sudah ada tidak pernah ditimpa.',
+	'help.says.language':
+		'Bahasa seluruh tulisan di jendela, termasuk bantuan ini: "Indonesia" atau "Inggris".',
+	'help.says.debug':
+		'Menyalakan catatan kejadian yang jauh lebih rinci. Dipakai ketika ada yang salah dan kamu ingin melaporkannya; matikan lagi sesudahnya, karena catatannya cepat membesar.',
+	'help.says.openLogs':
+		'Membuka folder tempat catatan itu disimpan, supaya berkasnya bisa kamu kirim.',
+	'help.says.closeToTray':
+		'Kalau dinyalakan, menutup jendela tidak menghentikan Onsa: ia menyembunyikan diri di dekat jam dan musiknya terus berjalan.',
+
+	'help.says.search':
+		'Mencari di library-mu sambil kamu mengetik. Ctrl+F melompat ke sini dari mana pun.',
+	'help.says.searchClear': 'Mengosongkan kotak cari dan mengembalikan halaman yang tadi terbuka.',
+	'help.says.queueButton':
+		'Hanya muncul kalau jendelanya sempit: membuka dan menutup panel antrean dan lirik.',
+	'help.name.menuButton': 'Tombol tiga garis',
+	'help.says.menuButton':
+		'Hanya muncul kalau jendelanya terlalu sempit untuk navigasi kiri: membuka daftar halaman sebagai laci.',
+	'help.says.helpButton':
+		'Tombol ini: membuka penjelasan halaman yang sedang kamu buka. Tempatnya sama di semua halaman, dan panelnya bisa ditutup kapan saja tanpa mengganggu apa yang sedang kamu kerjakan.',
+	'help.says.previous':
+		'Kembali ke lagu sebelumnya. Kalau lagu sudah berjalan lebih dari beberapa detik, tombol ini mengulang lagu itu dari awal dulu.',
+	'help.says.playPause':
+		'Memutar, dan menjeda kalau sedang berjalan. Bilah spasi di papan ketik melakukan hal yang sama.',
+	'help.says.next': 'Lompat ke lagu berikutnya di antrean.',
+	'help.says.volume':
+		'Kerasnya suara Onsa sendiri, terpisah dari volume sistem. Ctrl+panah atas dan bawah menaikkan dan menurunkannya.',
+	'help.says.openNowPlaying':
+		'Membuka layar penuh untuk lagu yang sedang diputar. Tombolnya mati kalau belum ada yang diputar.',
+	'help.name.sleep': 'Sleep timer',
+	'help.says.sleep':
+		'Menyuruh Onsa berhenti sendiri setelah waktu yang kamu pilih, atau setelah lagu yang sedang diputar selesai.',
+	'help.says.mini':
+		'Mengecilkan jendela jadi satu baris tipis yang muat di pojok layar. Tombol yang sama mengembalikannya.',
+	'help.name.signal': 'Jalur sinyal',
+	'help.says.signal':
+		'Baris paling bawah: rantai yang menunjukkan apa saja yang dilewati suara dari berkas sampai keluar. Tahapnya, dari kiri ke kanan: bentuk berkasnya, "Resample" (menghitung ulang kecepatan suara supaya cocok dengan perangkatnya), "ReplayGain" (meratakan kenyaringan antar lagu), "EQ" (pengatur nada), "Limiter" (penjaga supaya suara tidak pecah), dan di ujung kanan nama perangkat output beserta caranya tersambung. Tahap yang menyala sedang bekerja, yang redup sedang mati. Klik sebuah tahap untuk mematikan atau menyalakannya; klik kanan untuk membuka pengaturannya.',
+	'help.says.queueTab':
+		'Daftar lagu yang akan diputar sesudah yang sekarang. Lagu bisa diseret naik-turun untuk mengubah urutannya.',
+	'help.says.lyricsTab':
+		'Lirik lagu yang sedang diputar, kalau ada. Baris yang sedang dinyanyikan menyala, dan klik sebuah baris melompat ke bagian itu.',
+	'help.says.shuffle':
+		'Mengacak urutan antrean. Lagu yang sedang diputar tetap yang sedang diputar.',
+	'help.says.repeat':
+		'Berputar-putar: mati, mengulang seluruh antrean, atau mengulang satu lagu saja.',
+	'help.says.clearQueue': 'Mengosongkan daftar tunggu. Tidak ada berkas yang dihapus.',
+	'help.says.saveQueue': 'Menyimpan isi antrean sekarang sebagai playlist baru.',
+	'help.says.removeFromQueue': 'Mengeluarkan satu lagu dari daftar tunggu.',
+	'help.says.lyricsEarlier':
+		'Menggeser lirik supaya muncul seperempat detik lebih awal, kalau kata-katanya terasa ketinggalan dari suaranya. Geserannya disimpan untuk lagu itu saja dan tetap ada lain kali.',
+	'help.says.lyricsLater':
+		'Menggeser lirik seperempat detik lebih lambat, kalau kata-katanya mendahului suaranya. Juga disimpan per lagu.',
+	'help.says.lyricsReset': 'Mengembalikan geseran lagu itu ke nol.',
+	'help.says.lyricsSave':
+		'Menyimpan lirik yang sedang terlihat sebagai berkas teks kecil di sebelah berkas lagunya, supaya jadi milikmu sendiri dan tetap ada tanpa internet.',
+	'help.says.lyricsAgain':
+		'Bertanya sekali lagi ke layanan lirik untuk lagu ini. Hanya bisa kalau pencarian lirik lewat internet kamu nyalakan.',
+	'help.name.contents': 'Daftar halaman',
+	'help.says.contents':
+		'Setiap halaman Onsa. Klik satu untuk membukanya sekaligus membuka penjelasannya di panel kanan.',
+	'help.says.firstRunAgain':
+		'Menampilkan lagi layar pertama yang muncul saat Onsa baru dipasang, termasuk daftar hal yang mudah terlewat. Tidak ada yang berubah karena membukanya.',
+
+	'help.page.intro':
+		'Onsa memutar berkas musik yang sudah ada di komputermu. Halaman ini menjelaskan tiap bagiannya. Di tiap halaman ada tombol tanda tanya di kanan atas yang membuka penjelasan halaman itu saja.',
+	'help.page.contents': 'Halaman di Onsa',
+	'help.page.things': 'Hal yang perlu dijelaskan sendiri',
+	'help.lyrics.head': 'Lirik: dari mana datangnya',
+	'help.lyrics.body':
+		'Onsa mencari lirik di empat tempat, berurutan, dan yang ketemu lebih dulu yang dipakai. Pertama, lirik yang kamu sunting sendiri di dalam Onsa. Kedua, berkas teks kecil berakhiran .lrc yang ada di sebelah berkas lagunya, dengan nama yang sama. Ketiga, lirik yang tersimpan di dalam berkas lagunya sendiri. Keempat, layanan lirik LRCLIB di internet — dan itu hanya kalau kamu menyalakannya di Pengaturan → Lirik.',
+	'help.lyrics.offset':
+		'Kalau liriknya benar tapi waktunya meleset, dua tombol di panel lirik menggesernya seperempat detik lebih awal atau lebih lambat. Geseran itu disimpan untuk lagu itu sendiri, bukan untuk semua lagu, dan masih ada ketika lagunya kamu putar lagi besok. Mengganti atau melupakan liriknya tidak menghapus geseran itu.',
+	'help.theme.head': 'Tema buatan sendiri',
+	'help.theme.body':
+		'Tema adalah satu berkas teks berakhiran .json di folder tema Onsa. Cara paling mudah membuatnya: buka Pengaturan → Tampilan, tekan "Salin tema yang dipakai sekarang", lalu buka berkas hasilnya dengan editor teks apa pun dan ganti warnanya. Buka Onsa lagi dan temamu muncul di daftar. Warna ditulis sebagai kode enam angka seperti #3fb950. Bagian "role" adalah warna menurut artinya: label untuk tulisan tetap, adjustable untuk nilai yang bisa kamu atur, active untuk yang sedang aktif, position untuk posisi putar, caution untuk yang mendekati batas, clip untuk yang melewati batas. Nilai yang salah atau hilang diganti nilai bawaan, jadi tema yang keliru tidak merusak apa pun; berkas yang sama sekali tidak terbaca disebutkan di halaman Tampilan beserta alasannya.',
+	'help.theme.example': 'Contoh isi berkas tema',
+	'help.theme.copy': 'Salin contohnya',
+	'help.theme.copied': 'Tersalin.',
+	'help.write.head': '"Belum ditulis ke berkas": kapan Onsa menyentuh berkasmu',
+	'help.write.body':
+		'Keterangan lagu — judul, artis, album, tahun, genre, lirik — tersimpan di dalam berkas lagunya sendiri. Ketika kamu mengubahnya di Onsa, perubahan itu disimpan dulu di dalam Onsa saja, dan berkasnya sama sekali tidak disentuh. Itulah arti tanda "Belum ditulis ke berkas". Yang kamu lihat di seluruh Onsa adalah nilai yang sudah kamu ubah, sementara berkasnya masih berisi yang lama. Berkasnya baru berubah kalau kamu menekan "Tulis ke berkas" di editor satu lagu, atau menjalankan "Tulis ke file" di halaman Rapikan. Keduanya bisa dibatalkan lewat Riwayat.',
+	'help.write.never':
+		'Yang tidak pernah menyentuh berkasmu: memutar, playlist, antrean, pencarian, semua pengaturan suara, dan tema. Yang bisa menyentuh berkasmu hanya empat: menulis keterangan ke dalam berkas, mengganti nama berkas berpola, menyimpan lirik sebagai berkas teks kecil berakhiran .lrc di sebelah lagu, dan hasil unduhan yang ditulis sebagai berkas baru.',
+	'help.programs.head': 'yt-dlp dan ffmpeg',
+	'help.programs.body':
+		'Keduanya program terpisah yang bukan bagian dari Onsa, dan hanya dipakai di halaman Unduhan. yt-dlp wajib: dialah yang mengambil audio dari alamat web. ffmpeg tidak wajib: tanpa dia unduhan tetap berjalan, tapi berkas hasilnya datang apa adanya — tanpa judul dan artis yang tertanam di dalamnya, tanpa gambar sampul, dan tanpa bisa diubah ke MP3 atau FLAC. Onsa tidak mengunduh keduanya diam-diam: ada tombol persetujuan untuk masing-masing, berkasnya diambil dari halaman rilis resminya, dan dicocokkan dengan sidik berkas yang diterbitkan rilis itu sebelum disimpan. Kalau keduanya sudah ada di komputermu, nyalakan "pakai program yang sudah ada di sistem" dan Onsa tidak mengunduh apa pun.',
+	'help.limits.head': 'Yang belum bisa di versi ini',
+	'help.limits.opus':
+		'Alamat web yang audionya hanya tersedia dalam format Opus ditolak di muka dengan pesan, karena Onsa belum punya cara memutar format itu. Lebih baik ditolak sejak awal daripada berkasnya terunduh lalu tidak pernah bisa diputar.',
+	'help.limits.folder':
+		'Folder library belum bisa dihapus dari dalam Onsa; yang ada baru menambah dan memeriksa ulang. Lagu yang berkasnya hilang ditandai "hilang" dan tidak ikut diputar.',
+	'help.limits.lastfm': 'Belum ada pencatatan lagu ke Last.fm.',
+	'help.log.head': 'Kalau ada yang salah',
+	'help.log.body':
+		'Onsa menulis catatan kejadian di komputermu. Untuk melaporkan sesuatu: buka Pengaturan → Tentang, nyalakan "Log debug", tutup Onsa lalu buka lagi, kerjakan hal yang bermasalah itu sekali lagi, lalu tekan "Buka folder log". Kirim berkas hari itu. Catatannya berisi jalur berkas dan nama lagu di library-mu, jadi lihat dulu isinya sebelum dikirim ke orang lain. Matikan lagi "Log debug" sesudahnya, karena catatannya cepat membesar.',
+	'help.firstRun.head': 'Layar pertama',
+	'help.firstRun.body':
+		'Layar yang muncul saat Onsa pertama kali dibuka, berisi pemilihan folder musik, tema, dan daftar singkat hal yang mudah terlewat. Membukanya lagi tidak mengubah apa pun.',
+
+	'help.says.themeExample':
+		'Menyalin contoh berkas tema di atas ke papan klip, supaya bisa ditempel ke editor teks.',
+	'help.name.contentsLinks': 'Nama halaman di daftar',
+	'help.says.contentsLinks':
+		'Tiap nama di daftar itu bisa diklik: halamannya terbuka dan penjelasannya ikut terbuka di panel kanan. Yang bukan halaman — baris atas jendela, baris pemutar, panel kanan, hasil pencarian, dan halaman rincian seperti satu album — hanya membuka penjelasannya.',
+
+	'help.name.queueRow': 'Baris lagu di antrean',
+	'help.says.queueRow':
+		'Satu lagu yang menunggu giliran. Klik dua kali untuk melompat ke lagu itu sekarang; seret naik-turun untuk mengubah urutannya. Yang sedang diputar ditandai.'
 } as const;
 
 export type MessageKey = keyof typeof id;
@@ -1285,7 +1691,405 @@ const en: Record<MessageKey, string> = {
 	'error.no_output': 'No audio output can be opened.',
 	'error.dialog': 'The file dialog cannot be opened.',
 	'error.io': 'The file cannot be read or written.',
-	'error.auto_eq_empty': 'That file holds no usable EQ filter.'
+	'error.auto_eq_empty': 'That file holds no usable EQ filter.',
+
+	'nav.help': 'Help',
+	'help.open': 'Help for this page',
+	'help.close': 'Close the help',
+	'help.here': 'On this page',
+	'help.controls': 'The controls on this page',
+	'help.filesHead': 'Your own music files',
+	'help.limitsHead': 'Limits on this page',
+	'help.elsewhere':
+		'The controls that are always in the window — the player bar and the signal path below, the navigation on the left, the queue and lyrics panel on the right — are explained on the Help page.',
+	'help.toHelpPage': 'Open the Help page',
+	'help.firstRun': 'Show the first screen again',
+	'help.title.album': 'One album',
+	'help.title.artist': 'One artist',
+	'help.title.genre': 'One genre',
+	'help.title.folder': 'One folder',
+	'help.title.playlist': 'One playlist',
+	'help.title.search': 'Search results',
+	'help.title.header': 'The strip along the top',
+	'help.title.transport': 'The player bar and the signal path',
+	'help.title.panel': 'The right-hand panel: queue and lyrics',
+	'help.tracks.what':
+		'A list of every song Onsa found in your music folders. Onsa plays files that are already on your computer; there is no online catalogue here, and nothing is sent anywhere. Double-click a row to play it.',
+	'help.tracks.limit':
+		'What you see here is the result of the last look through your folders. A file you add with another program usually appears by itself within seconds; if it does not, there is a "Rescan" button — which looks through your folders again from the start — in Settings → Library.',
+	'help.albums.what':
+		'Every album in your library, drawn with its cover. Covers come from inside the song files or from an image in the same folder. Onsa fetches nothing from the internet unless you switch that on yourself in Settings → Metadata, the page that decides what may be asked about your songs online.',
+	'help.album.what': 'One album: its cover, its artist, and its songs in album order.',
+	'help.artists.what':
+		'Every artist in your library, with how many songs each has. Click one to see those songs.',
+	'help.artist.what': 'Every song by one artist, gathered from all their albums.',
+	'help.genres.what':
+		'A genre is the kind of music written inside the song file itself — "Rock" or "Jazz", say. This page gathers your songs by that.',
+	'help.genres.limit':
+		'A song with no genre written inside it does not appear here. You can fill that in yourself with "Edit tags…" from a right-click on a song — the window for changing the details stored inside that file — or on the Tidy up page.',
+	'help.genre.what': 'Every song of one genre.',
+	'help.folders.what':
+		'Your songs by the folder the files actually live in on your computer, rather than by what is written inside them.',
+	'help.folder.what': 'Every song inside one folder, as it is on your computer.',
+	'help.playlists.what':
+		'A playlist is a list of songs you put together. There are two kinds: the one you fill song by song, and the smart one, whose contents follow rules you set — "everything from the 1990s I have played", say — and change by themselves as your library changes.',
+	'help.playlists.files':
+		'Playlists live inside Onsa only. Making, changing or deleting one does not touch your music files at all. "Import M3U8" only reads the list file; it moves nothing.',
+	'help.playlist.what':
+		'What is in one playlist, in the order you put it. Songs can be dragged up and down to change that order.',
+	'help.playlist.files':
+		'Removing a song from a playlist only takes it off this list. The file stays on your computer and stays in the library.',
+	'help.search.what':
+		'The results from the search box above: artists, albums and songs whose names match what you typed. This search looks only inside your own library.',
+	'help.search.limit':
+		'It searches titles, artists, albums and genres. Lyrics and file names are not searched.',
+	'help.tidy.what':
+		'The page for cleaning up song details in bulk. Those details — title, artist, album, year, genre — are stored inside the song files themselves; everybody calls them "tags". Every job on this page is shown as a summary before it runs, and everything that has run can be undone from the History list below.',
+	'help.tidy.files':
+		'Two jobs here touch your own files: "Write to the files" writes the details into them, and "Rename by pattern" renames files and moves them between folders. The rest is kept inside Onsa only — your files do not change until you press "Write to the files". Both still go through the summary first and both are in the History, and undoing puts back the file names as well as the details.',
+	'help.tidy.limit':
+		'One run does at most the number in "Per run" — the rest waits for the next run, so a mistake cannot reach the whole library at once.',
+	'help.downloads.what':
+		'Fetches audio from a web address (a URL) and puts it in your music folder, one address at a time. The fetching is not done by Onsa itself but by yt-dlp, a separate program Onsa downloads only after you press the button that agrees to it. The rights to whatever you download are your responsibility.',
+	'help.downloads.files':
+		'What is fetched is written as a new file inside your library folder, in a "Downloads" subfolder, and then appears in the library by itself. The music files you already have are not touched.',
+	'help.downloads.limitOpus':
+		'A source that offers audio only as Opus is refused up front, with a message, because Onsa cannot play that format yet.',
+	'help.downloads.limitOne':
+		'One download runs at a time. Several at once comes in a later version.',
+	'help.nowPlaying.what':
+		'A full screen for the song that is playing: a large cover, the words if there are any, and the technical detail of what is happening to the sound.',
+	'help.output.what':
+		'Where the sound goes, and how carefully Onsa works on it before sending it there. Everything on this page changes only the sound coming out now; none of it changes your music files.',
+	'help.dsp.what':
+		'The sound shaping that happens before the sound leaves: the EQ (tone control, lifting or lowering the high and low parts), the preamp (a volume control before the shaping), and the limiter (a guard that keeps the sound from going over the edge and breaking up). Nothing on this page changes your music files.',
+	'help.library.what':
+		'Which folders Onsa treats as where your music lives. Onsa reads what is in them and remembers it; it does not move, rename or change anything in them.',
+	'help.library.files':
+		'Adding a folder and looking through it again only read. No file is written, moved or deleted from this page.',
+	'help.metadata.what':
+		'Whether Onsa may ask the internet about your songs, and with what. All of it is off to begin with: while it is off, not one request is sent. Switched on, what is sent is an acoustic fingerprint (a number worked out from the sound, not the file) along with title, artist and album, to ask AcoustID and MusicBrainz. What comes back is always a suggestion you have to accept.',
+	'help.lyricsSettings.what':
+		'Where the words to your songs may come from, and whether words from the internet are kept beside the song. Both are off to begin with.',
+	'help.lyricsSettings.files':
+		'With the second switch on, Onsa writes a small text file ending in .lrc beside the song file. The song file itself is not touched.',
+	'help.appearance.what':
+		'How the window looks: the theme (a set of colours), the colour that moves with the sound, and the language. Nothing on this page touches your music or your files.',
+	'help.about.what':
+		'Which version of Onsa is running, the record of what happened (the log) to send if something goes wrong, and what happens when the window is closed.',
+	'help.header.what': 'The strip above the page, present on every page.',
+	'help.transport.what':
+		'The two strips along the bottom of the window, present on every page: the playback controls, and under them the signal path — the chain showing everything the sound passes through on its way from the file to the output device.',
+	'help.panel.what':
+		'The panel on the right of the window with two tabs: the Queue, which is what will play after the song that is playing, and the Lyrics. In a narrow window it is hidden and opens from a button in the top strip.',
+	'help.panel.files':
+		'The "Save .lrc" button on the Lyrics tab writes a small text file beside the song file. Nothing else here touches a file.',
+	'help.help.what':
+		'This page: a list of every page in Onsa, plus the things that do not belong to any one page.',
+
+	'help.name.columns': 'Title · Artist · Album · Year · Length',
+	'help.says.columns':
+		'The column names, above the list. Click one to sort the list by it; click it again to turn the order round. The small arrow shows which column the order follows.',
+	'help.name.resize': 'The line between two column names',
+	'help.says.resize':
+		'Drag it to make the column on its left wider or narrower; the width is remembered. With the keyboard: press Tab until the line is selected, then use the left and right arrows.',
+	'help.says.chooseColumns':
+		'Opens a list to tick: which columns are shown and which are hidden, with one entry to put everything back the way it came.',
+	'help.name.row': 'A song row',
+	'help.says.row':
+		'One row is one song. Double-click it to play it now. Click once to select it; Ctrl+click adds another to the selection and Shift+click takes a run of them. A row whose file is no longer on your computer is marked "missing". Rows can be dragged onto a playlist in the navigation on the left.',
+	'help.name.rowMenu': 'Right-click on a song row',
+	'help.says.rowMenu':
+		"Opens a small menu: \"Play next\" puts that song straight after the one playing, \"Add to the queue\" puts it at the end of what is waiting, \"Add to playlist\" puts it on one of your lists, and \"Edit tags…\" opens a window for changing that song's details — title, artist, album and so on — which are stored inside the file.",
+	'help.name.albumCard': 'An album card',
+	'help.says.albumCard':
+		'A cover with the album name and its artist. Click it to open that album.',
+	'help.says.albumBack': 'Back to the page with all the albums.',
+	'help.says.albumPlay': 'Plays this album from its first song, replacing whatever was waiting.',
+	'help.says.addTo':
+		'Puts every song on this page onto one of your playlists. No file moves anywhere; only the list grows.',
+	'help.name.artistRow': 'An artist row',
+	'help.says.artistRow':
+		"An artist's name and how many of their songs you have. Click it to see them.",
+	'help.name.genreRow': 'A genre row',
+	'help.says.genreRow':
+		'A genre and how many songs carry it inside their files. Click it to see them.',
+	'help.name.folderRow': 'A folder row',
+	'help.says.folderRow':
+		'A folder name with its full path on your computer. Click it to see the songs inside.',
+	'help.name.browseBack': 'The back button, top left',
+	'help.says.browseBack':
+		'Back to the list you came from: all artists, all genres or all folders.',
+	'help.says.browsePlay': 'Plays every song on this page, starting at the first.',
+	'help.says.playlistNew':
+		'Makes an empty playlist for you to fill yourself. Onsa asks for a name first.',
+	'help.says.playlistNewSmart':
+		'Makes a playlist whose contents follow rules rather than one-by-one choices. You set the rules — year, artist, genre, how often it was played — and the contents keep up with your library by themselves.',
+	'help.says.playlistImport':
+		'Reads a song-list file made by another program (ending in .m3u8) and makes a playlist from it. Songs you do not have are skipped and their number is named.',
+	'help.name.playlistCard': 'A playlist card',
+	'help.says.playlistCard':
+		"A playlist's name, which kind it is (ordinary or smart), and how many songs are on it. Click it to open it.",
+	'help.name.playlistBack': 'The back button, top left',
+	'help.says.playlistBack': 'Back to the page with all your playlists.',
+	'help.says.playlistPlay': 'Plays this playlist from its first song.',
+	'help.says.playlistQueue':
+		'Puts everything on this playlist at the end of what is waiting, without stopping what is playing.',
+	'help.says.playlistMore':
+		'Opens a menu: rename, duplicate, export as an .m3u8 file, and delete the playlist. Deleting a playlist deletes no music file.',
+	'help.says.playlistRules':
+		'Only on a smart playlist: opens its rules, so you can change what lands on this list.',
+	'help.name.playlistRow': 'A song row on a playlist',
+	'help.says.playlistRow':
+		'The same as a song row anywhere else, plus two things: it can be dragged up and down to change the order, and it has a button to take it off this playlist. Taking a song off deletes nothing.',
+	'help.name.searchArtist': 'An artist among the results',
+	'help.says.searchArtist':
+		'An artist whose name matches what you typed. Click to open their page.',
+	'help.name.searchAlbum': 'An album among the results',
+	'help.says.searchAlbum': 'An album whose name matches what you typed. Click to open it.',
+
+	'help.name.tidyScope': 'What is in range',
+	'help.says.tidyScope':
+		'The line at the top of the page saying which songs a job here would reach. With no folder set, that is your whole library; with one set, only the songs inside that folder.',
+	'help.says.tidyPick':
+		'Picks one folder as a boundary, so nothing on this page can reach a song outside it. The safest way to try something for the first time.',
+	'help.says.tidyClear': 'Takes the boundary folder away, so the whole library is in range again.',
+	'help.says.tidyLimit':
+		'How many songs one run may touch at most. The rest waits for the next run. It is there so one mistake cannot reach the whole library at once.',
+	'help.says.tidyEdit':
+		'Sets one detail — the album artist, say — for every song in range, meaning the ones named in the line at the top of this page. That is kept inside Onsa; your song files do not change until you run "Write to the files".',
+	'help.says.tidyWrite':
+		'Writes the details kept inside Onsa into the song files themselves. This is the one button here that changes what is inside your files.',
+	'help.says.tidyRename':
+		'Rebuilds file and folder names from a pattern you write — "artist/album/number title", say. The files really are renamed and moved on your computer, always after you have seen the summary first.',
+	'help.says.tidyAuto':
+		'Fixes small things without the internet: extra spaces, capitals gone wrong, track numbers written "3/12". What it suggests still goes through the summary before it runs.',
+	'help.says.tidyMatch':
+		'Asks the internet what a song is, by working out a fingerprint from the sound and asking AcoustID and MusicBrainz. It only runs if you switched that on in Settings → Metadata, the page that decides what may be asked online. What comes back is a suggestion you tick yourself, not a change.',
+	'help.says.tidyField':
+		'Which detail "Edit in bulk" will set: artist, album, album artist, genre or year.',
+	'help.says.tidyValue':
+		'The value that detail will be given. Left empty, it clears the edit kept in Onsa and lets the value inside the file stand again.',
+	'help.says.tidyPattern':
+		"The name pattern for \"Rename by pattern\". Anything in curly brackets is replaced by the song's own details, such as {artist} and {title}; a slash means a folder.",
+	'help.says.tidyRoot':
+		'The folder the renamed files are put in. Left empty, they stay where they are.',
+	'help.says.tidyLook':
+		'Works out what would happen and shows it — how many songs are touched, how many files written, what is skipped and why — without changing anything.',
+	'help.says.tidyApply':
+		'Runs what the summary just showed. Only after this button is pressed does anything actually change.',
+	'help.says.tidyUndo':
+		'Undoes one run from the History list, including what was written into files and file names that were changed.',
+	'help.says.useSystem':
+		'If yt-dlp or ffmpeg are already on your computer, Onsa uses those and downloads nothing. Switched off, Onsa uses only the programs in its own folder.',
+	'help.name.programRow': 'A program row',
+	'help.says.programRow':
+		'One row for each program this page needs, saying whether it is there, where it came from and which version it is. yt-dlp is required: without it nothing can be fetched. ffmpeg is not: without it downloads still work, but with no song details or cover put inside, and with no change of format.',
+	'help.says.agree':
+		'Downloads that program from its official release page and checks it against the fingerprint that release published, before keeping it. Nothing is downloaded until this button is pressed.',
+	'help.says.update': 'Fetches the newest version of that program, with the same check.',
+	'help.says.urlField': 'Where you paste the web address whose audio you want.',
+	'help.says.look':
+		'Asks yt-dlp what is at that address — one track or a list — and shows the titles. Nothing is downloaded at this stage.',
+	'help.says.format':
+		"The shape of file you want. \"As it comes\" means the file is taken as it is. MP3 and FLAC change its shape, and that is ffmpeg's work — without ffmpeg neither can be chosen.",
+	'help.says.fetch': 'Starts fetching what was found into your music folder.',
+	'help.says.stop': 'Stops one download that is running. A half-finished file is thrown away.',
+	'help.says.stopAll': 'Stops everything that is running and everything still waiting.',
+	'help.says.nowPlayingClose': 'Closes this screen and goes back to the list of songs.',
+	'help.says.seek':
+		'The long bar holding the position in the song. Click or drag it to jump elsewhere. The left and right arrow keys step back and forward five seconds.',
+	'help.name.nowPlayingLyrics': 'The words on this screen',
+	'help.says.nowPlayingLyrics':
+		'If the song has words, the lines appear here in large type and the line being sung lights up. Click a line to jump to that part of the song.',
+
+	'help.says.device':
+		'Where the sound goes out: speakers, headphones, or another device your computer knows. "System default" means Onsa follows wherever Windows or Linux sends sound, including when you plug headphones in.',
+	'help.says.sampleRate':
+		'How many times a second the sound is handed to that device. "Follow the device" uses the number the device itself prefers and is nearly always the right answer.',
+	'help.says.matchSource':
+		'Switched on, Onsa tries to use the same number as the song file, so the sound needs no re-reckoning. If the device will not have it, Onsa re-reckons anyway.',
+	'help.says.quality':
+		"How carefully that re-reckoning is done when the song's number and the device's number differ. The three choices are \"Fast\", \"Balanced\" and \"Best\". More careful means more work for the processor; \"Balanced\" is enough for nearly everyone.",
+	'help.says.buffer':
+		'How much sound is made ready before it is handed over, with three choices: "Low", "Normal" and "Large". Low means Onsa answers faster; large means it copes better with a busy computer. If the sound breaks up, make it larger.',
+	'help.says.dither':
+		'Adds a very fine hiss when the sound is brought down to 16 bits, so the quietest parts do not turn coarse. It only applies to devices that really are 16-bit.',
+	'help.says.powerSave':
+		'Does less drawing work — the meters and the spectrum — while the window is out of sight, so a battery lasts longer.',
+	'help.says.crossfade':
+		'How long the old song and the new one overlap when one follows the other. Zero means no overlap at all.',
+	'help.says.curve':
+		'The shape of that crossing. "Equal power" keeps the loudness steady through the middle of it; "Linear" simply falls and rises in a straight line.',
+	'help.says.albumGapless':
+		'Many albums are made so that one track runs straight into the next with no gap at all. With this on, two neighbouring tracks from the same album are joined exactly that way, with no overlap, and the crossfade is used only elsewhere.',
+	'help.says.skipFade':
+		'A short crossing when you press the next-track button yourself, so it does not sound cut off.',
+	'help.says.rgMode':
+		'ReplayGain is a loudness figure already stored inside many song files by other programs. The four choices: "Off" ignores it, "Track" uses the per-song figure, "Album" uses the per-album one — which keeps the loud and quiet parts of one album in proportion — and "Automatic" uses the album figure when an album is what is playing.',
+	'help.says.rgPreamp':
+		'Lifts or lowers the whole result of that levelling, if you find it too quiet or too loud.',
+	'help.says.rgFallback':
+		'How loud a song with no loudness figure inside it is played, so it does not jump out among the songs that have one.',
+	'help.says.rgClip':
+		'Uses the peak figure stored alongside the loudness one to bring the volume down a little when needed, so the sound cannot go over the edge and break up.',
+	'help.says.eqOn':
+		'Turns the tone control on or off. Off means the sound passes through untouched.',
+	'help.says.eqGraphic':
+		'The simple shape: ten sliders, each for one band of the range from the lowest sounds to the highest.',
+	'help.says.eqParametric':
+		'The advanced shape: you set where each filter sits, how wide it is and what kind it is. For people following a ready-made setting from the internet.',
+	'help.name.eqBand':
+		'The tone sliders: 31 Hz, 62 Hz, 125 Hz, 250 Hz, 500 Hz, 1 kHz, 2 kHz, 4 kHz, 8 kHz, 16 kHz',
+	'help.says.eqBand':
+		'Ten sliders, one for each band. The small numbers on the left are low sounds like bass; the large ones on the right are high sounds like cymbals. Raising a slider makes that band louder, lowering it makes it quieter.',
+	'help.says.eqFlat': 'Puts every slider back to zero, which is no tone change at all.',
+	'help.says.eqImport':
+		'Reads an EQ settings file made by AutoEQ — a ready-made setting for a particular model of headphone — and uses it.',
+	'help.says.eqExport':
+		'Saves your current EQ as a text file in that same shape, so it can be used elsewhere.',
+	'help.says.eqAdd': 'On the parametric shape only: adds one more filter.',
+	'help.says.eqRemove': 'On the parametric shape only: takes that filter away.',
+	'help.says.preampAuto':
+		'Brings the volume down before the tone control, by just enough that a raised slider cannot push the sound over the edge.',
+	'help.says.preampManual':
+		'Sets that reduction yourself, if you would rather Onsa did not work it out.',
+	'help.says.limiterOn':
+		'The last guard before the sound leaves: it holds back peaks that are still too high, so they cannot break up.',
+	'help.says.limiterRelease':
+		'How quickly that guard lets go again after a peak has passed. Too fast sounds wobbly, too slow sounds squashed.',
+	'help.says.addFolder':
+		'Adds another folder as a place your music lives. Onsa reads what is in it straight away.',
+	'help.says.rescan':
+		'Tells Onsa to look through those folders again from the start. Useful when a file does not appear by itself, for instance after a folder was moved from another computer.',
+	'help.name.folderList': 'The list of folders',
+	'help.says.folderList': 'The folders you have added, with how many songs are in each.',
+	'help.says.metaOnline':
+		'The main switch for every question to the internet on the Tidy up page. While it is off, Onsa sends nothing anywhere.',
+	'help.says.metaKey':
+		'AcoustID asks every program that questions it for an application key. The key is free and you fetch it from the AcoustID site yourself; Onsa carries no key of its own.',
+	'help.says.metaKeySave': 'Keeps that key on your computer only, to use for the next question.',
+	'help.says.metaKeyClear': 'Deletes the key that was kept.',
+	'help.says.metaKeyTry': 'Sends one small question to be sure the key is accepted.',
+	'help.says.metaChoose':
+		'Points Onsa at the fpcalc file on your computer yourself. fpcalc is a small program that works out a fingerprint from the sound of a song; without it, "Look it up online" has nothing to ask with.',
+	'help.says.metaForget': 'Forgets the place you pointed at.',
+	'help.says.metaRefresh':
+		'Looks again for whether the program is there now, after you have installed it for instance.',
+	'help.says.lyricsOnline':
+		'Whether Onsa may ask LRCLIB — an open lyrics service — about a song whose words are not on your computer. What is sent is the title, artist, album and length, and nothing else.',
+	'help.says.lyricsBeside':
+		'Switched on, words that came from the internet are kept as a small text file ending in .lrc beside the song file, so they are still there later without the internet.',
+	'help.says.themePick':
+		'A set of colours for the whole window. Six come with Onsa: "Smoked Glass", "Glass Cockpit", "Night Deck", "Blue Cubicle", "Millennium Shine" and "Northern Winter"; themes you make yourself appear in the same row. The window changes as you choose; there is nothing to save.',
+	'help.says.tone':
+		"How strongly the window's colour moves with the sound that is playing, with four choices: \"Off\", \"Gentle\", \"Middling\" and \"Strong\". Off means the colour stays still.",
+	'help.says.themeFolder':
+		"Opens the folder Onsa reads home-made themes from, in your computer's file browser.",
+	'help.says.themeCopy':
+		'Copies the theme you are using into that folder as a file whose colours you can change. An existing file is never written over.',
+	'help.says.language':
+		'The language of every word in the window, including this help: "Indonesian" or "English".',
+	'help.says.debug':
+		'Turns on a far more detailed record of what happened. Use it when something is wrong and you want to report it; turn it off afterwards, because the record grows quickly.',
+	'help.says.openLogs': 'Opens the folder those records are kept in, so you can send the file.',
+	'help.says.closeToTray':
+		'Switched on, closing the window does not stop Onsa: it hides itself near the clock and the music keeps going.',
+
+	'help.says.search': 'Searches your library as you type. Ctrl+F jumps here from anywhere.',
+	'help.says.searchClear': 'Empties the search box and brings back the page you were on.',
+	'help.says.queueButton':
+		'Only there when the window is narrow: opens and closes the queue and lyrics panel.',
+	'help.name.menuButton': 'The three-line button',
+	'help.says.menuButton':
+		'Only there when the window is too narrow for the navigation on the left: opens the list of pages as a drawer.',
+	'help.says.helpButton':
+		'This button: it opens the explanation of the page you are on. It sits in the same place on every page, and the panel can be closed at any time without getting in the way of what you are doing.',
+	'help.says.previous':
+		'Back to the song before. If the song is more than a few seconds in, this starts it again from the beginning first.',
+	'help.says.playPause':
+		'Plays, and pauses if it is already playing. The space bar does the same.',
+	'help.says.next': 'Jumps to the next song in the queue.',
+	'help.says.volume':
+		'How loud Onsa itself is, apart from the system volume. Ctrl and the up and down arrows raise and lower it.',
+	'help.says.openNowPlaying':
+		'Opens the full screen for the song that is playing. The button is dead while nothing is playing.',
+	'help.name.sleep': 'Sleep timer',
+	'help.says.sleep':
+		'Tells Onsa to stop by itself after a time you choose, or when the song that is playing ends.',
+	'help.says.mini':
+		'Shrinks the window to one thin strip that fits in a corner of the screen. The same button brings it back.',
+	'help.name.signal': 'The signal path',
+	'help.says.signal':
+		'The bottom strip: the chain showing everything the sound passes through on its way out. The stages, left to right: the shape of the file, "Resample" (re-reckoning the rate so it fits the device), "ReplayGain" (levelling the loudness between songs), "EQ" (the tone control), "Limiter" (the guard that keeps the sound from breaking up), and at the right end the name of the output device and how it is connected. A lit stage is working, a dim one is off. Click a stage to switch it off or on; right-click to open its settings.',
+	'help.says.queueTab':
+		'What will play after the song that is playing. Songs can be dragged up and down to change that order.',
+	'help.says.lyricsTab':
+		'The words of the song that is playing, if there are any. The line being sung lights up, and clicking a line jumps to that part of the song.',
+	'help.says.shuffle': 'Shuffles the order of the queue. Whatever is playing keeps playing.',
+	'help.says.repeat': 'Steps round: off, repeat the whole queue, or repeat one song.',
+	'help.says.clearQueue': 'Empties what is waiting. No file is deleted.',
+	'help.says.saveQueue': 'Keeps what is in the queue now as a new playlist.',
+	'help.says.removeFromQueue': 'Takes one song off what is waiting.',
+	'help.says.lyricsEarlier':
+		'Shifts the words a quarter of a second earlier, when they feel late against the singing. The shift is kept for that song alone and is still there next time.',
+	'help.says.lyricsLater':
+		'Shifts the words a quarter of a second later, when they run ahead of the singing. Also kept per song.',
+	'help.says.lyricsReset': "Puts that song's shift back to nothing.",
+	'help.says.lyricsSave':
+		'Keeps the words you can see as a small text file beside the song file, so they are yours and stay there without the internet.',
+	'help.says.lyricsAgain':
+		'Asks the lyrics service about this song once more. Only possible if you switched the internet search for lyrics on.',
+	'help.name.contents': 'The list of pages',
+	'help.says.contents': 'Every page in Onsa. Click one to open it with its explanation beside it.',
+	'help.says.firstRunAgain':
+		'Shows the first screen again, the one that appears when Onsa is newly installed, including the list of things that are easy to miss. Opening it changes nothing.',
+
+	'help.page.intro':
+		'Onsa plays music files that are already on your computer. This page explains each part of it. Every page has a question-mark button in its top right corner that opens the explanation of that page alone.',
+	'help.page.contents': 'The pages in Onsa',
+	'help.page.things': 'Things that need explaining on their own',
+	'help.lyrics.head': 'Words: where they come from',
+	'help.lyrics.body':
+		'Onsa looks for words in four places, in order, and the first one that has them wins. First, words you edited yourself inside Onsa. Second, a small text file ending in .lrc sitting beside the song file, with the same name. Third, words stored inside the song file itself. Fourth, the LRCLIB lyrics service on the internet — and only if you switched that on in Settings → Lyrics.',
+	'help.lyrics.offset':
+		'If the words are right but the timing is off, two buttons in the lyrics panel shift them a quarter of a second earlier or later. That shift is kept for that one song, not for all of them, and it is still there when you play the song again tomorrow. Changing or forgetting the words does not clear it.',
+	'help.theme.head': 'Making your own theme',
+	'help.theme.body':
+		"A theme is one text file ending in .json in Onsa's theme folder. The easiest way to make one: open Settings → Appearance, press \"Copy the theme in use\", then open the resulting file in any text editor and change the colours. Open Onsa again and your theme is in the list. Colours are written as six-figure codes like #3fb950. The \"role\" part is colour by meaning: label for fixed wording, adjustable for values you can set, active for what is switched on, position for the playing position, caution for nearing a limit, clip for going over it. A wrong or missing value is replaced by the default, so a mistaken theme breaks nothing; a file that cannot be read at all is named on the Appearance page, with the reason.",
+	'help.theme.example': 'What a theme file looks like',
+	'help.theme.copy': 'Copy the example',
+	'help.theme.copied': 'Copied.',
+	'help.write.head': '"Not written to the file yet": when Onsa touches your files',
+	'help.write.body':
+		"A song's details — title, artist, album, year, genre, words — are stored inside the song file itself. When you change one in Onsa, the change is kept inside Onsa first, and the file is not touched at all. That is what \"Not written to the file yet\" means. What you see everywhere in Onsa is your changed value, while the file still holds the old one. The file changes only when you press \"Write to the file\" in the single-song editor, or run \"Write to the files\" on the Tidy up page. Both can be undone from the History.",
+	'help.write.never':
+		'What never touches your files: playing, playlists, the queue, searching, every sound setting, and themes. Only four things can: writing details into a file, renaming files by pattern, keeping words as a small text file ending in .lrc beside a song, and a download written as a new file.',
+	'help.programs.head': 'yt-dlp and ffmpeg',
+	'help.programs.body':
+		'Both are separate programs, not part of Onsa, and are used only on the Downloads page. yt-dlp is required: it is what fetches audio from a web address. ffmpeg is not: without it downloads still work, but what arrives is the file as it comes — with no title and artist inside it, no cover picture, and no way to turn it into MP3 or FLAC. Onsa does not download either behind your back: each has a button that agrees to it, the file is taken from its official release page, and it is checked against the fingerprint that release published before it is kept. If you already have them, switch on "use the programs already on this system" and Onsa downloads nothing.',
+	'help.limits.head': 'What this version cannot do',
+	'help.limits.opus':
+		'A web address whose audio comes only as Opus is refused up front, with a message, because Onsa has no way to play that format yet. Better refused at the start than downloaded and never playable.',
+	'help.limits.folder':
+		'A library folder cannot be removed from inside Onsa yet; there is only adding and looking again. A song whose file is gone is marked "missing" and is not played.',
+	'help.limits.lastfm': 'There is no scrobbling to Last.fm yet.',
+	'help.log.head': 'If something goes wrong',
+	'help.log.body':
+		'Onsa keeps a record of what happens on your computer. To report something: open Settings → About, switch on "Debug log", close Onsa and open it again, do the thing that went wrong once more, then press "Open log folder". Send the file for that day. The record holds file paths and song names from your library, so read it before sending it to anybody. Switch "Debug log" off again afterwards, because the record grows quickly.',
+	'help.firstRun.head': 'The first screen',
+	'help.firstRun.body':
+		'The screen that appears the first time Onsa is opened, with the choice of music folder, the theme, and a short list of things that are easy to miss. Opening it again changes nothing.',
+
+	'help.says.themeExample':
+		'Copies the example theme file above to the clipboard, ready to paste into a text editor.',
+	'help.name.contentsLinks': 'A page name in the list',
+	'help.says.contentsLinks':
+		'Every name on that list can be clicked: the page opens and its explanation opens beside it. The ones that are not pages — the top strip, the player bar, the right-hand panel, the search results, and detail pages such as one album — only open their explanation.',
+
+	'help.name.queueRow': 'A song row in the queue',
+	'help.says.queueRow':
+		'One song waiting its turn. Double-click it to jump to it now; drag it up and down to change the order. The one playing is marked.'
 };
 
 export const dictionaries: Record<Locale, Record<MessageKey, string>> = { id, en };

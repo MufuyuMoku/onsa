@@ -15,7 +15,9 @@ export const STEPS = {
 	/** At or above this, the sidebar shows its words. */
 	sidebar: 1040,
 	/** At or above this, the sidebar is a strip of icons; below, it hides. */
-	sidebarIcons: 880
+	sidebarIcons: 880,
+	/** At or above this, the help panel stands beside the page. */
+	help: 900
 } as const;
 
 /** How the sidebar is showing. */
@@ -27,6 +29,8 @@ export type PanelTab = 'queue' | 'lyrics';
 let width = $state(1180);
 let queueOpen = $state(false);
 let menuOpen = $state(false);
+let helpOpen = $state(false);
+let helpTopic = $state<string | null>(null);
 let panelTab = $state<PanelTab>('queue');
 
 export const layout = {
@@ -57,6 +61,26 @@ export const layout = {
 	/** Which of the panel's two tabs is showing. */
 	get panelTab(): PanelTab {
 		return panelTab;
+	},
+	/** Whether the help for this page is open. */
+	get helpOpen() {
+		return helpOpen;
+	},
+	/**
+	 * A help entry asked for by name rather than by where the window is —
+	 * the contents on the help page can point at the window's own furniture,
+	 * which is nowhere to navigate to.
+	 */
+	get helpTopic() {
+		return helpTopic;
+	},
+	/**
+	 * Whether the help has room of its own beside the page. Below that
+	 * width it lies over the page instead — still without a scrim, because
+	 * help that stops the page being used is not help.
+	 */
+	get helpDocked() {
+		return width >= STEPS.help;
 	}
 };
 
@@ -64,6 +88,28 @@ export const layout = {
 export function showInPanel(tab: PanelTab): void {
 	panelTab = tab;
 	if (!layout.queueDocked) queueOpen = true;
+}
+
+/** Opens or closes the help for the page being shown. */
+export function toggleHelp(): void {
+	helpOpen = !helpOpen;
+}
+
+/** Opens the help, for somebody arriving from the help page's contents. */
+export function openHelp(id?: string): void {
+	helpTopic = id ?? null;
+	helpOpen = true;
+}
+
+/** Back to the help of wherever the window is. Called when it moves. */
+export function forgetHelpTopic(): void {
+	helpTopic = null;
+}
+
+/** Puts the help away. */
+export function closeHelp(): void {
+	helpOpen = false;
+	helpTopic = null;
 }
 
 /** Opens or closes the queue panel. */

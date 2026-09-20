@@ -26,7 +26,7 @@
 	type Entry = {
 		view: View;
 		label: MessageKey;
-		icon: 'note' | 'disc' | 'artist' | 'genre' | 'folder' | 'playlist' | 'pencil' | 'download' | 'sliders' | 'eq' | 'shelf' | 'palette' | 'info';
+		icon: 'note' | 'disc' | 'artist' | 'genre' | 'folder' | 'playlist' | 'pencil' | 'download' | 'sliders' | 'eq' | 'shelf' | 'palette' | 'info' | 'help';
 		/** Views that count as this entry being the one in use. */
 		kinds: View['kind'][];
 		section?: SettingsSection;
@@ -70,6 +70,14 @@
 		kinds: ['settings'],
 		section
 	}));
+
+	/** The help page is its own thing: not a setting, and not a library page. */
+	const helpPage: Entry = {
+		view: { kind: 'help' },
+		label: 'nav.help',
+		icon: 'help',
+		kinds: ['help']
+	};
 
 	const view = $derived(app.view);
 
@@ -167,7 +175,7 @@
 		{/if}
 	{/if}
 
-	{@render group('nav.settings', settingsPages)}
+	{@render group('nav.settings', [...settingsPages, helpPage])}
 
 	{#if library.scan.running}
 		{#if mode === 'full'}

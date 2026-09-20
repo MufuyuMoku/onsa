@@ -18,6 +18,7 @@ import {
 	type StartupTrouble
 } from '$lib/backend';
 import { detectLocale, isLocale, setLocale, t, type Locale } from '$lib/i18n/index.svelte';
+import { forgetHelpTopic } from '$lib/layout.svelte';
 import type { MessageKey } from '$lib/i18n/dictionary';
 import { initLibrary } from '$lib/library.svelte';
 import { initPlayer } from '$lib/player.svelte';
@@ -50,6 +51,7 @@ export type View =
 	| { kind: 'playlists' }
 	| { kind: 'playlist'; id: number }
 	| { kind: 'nowPlaying' }
+	| { kind: 'help' }
 	| { kind: 'settings'; section: SettingsSection };
 
 let info = $state<AppInfo | null>(null);
@@ -180,6 +182,8 @@ export async function setMiniPlayer(next: boolean): Promise<void> {
 /** Moves the main area. */
 export function navigate(next: View): void {
 	view = next;
+	// Help asked for by name belongs to where it was asked from.
+	forgetHelpTopic();
 }
 
 /** Leaves the first screen for the library, or for a page it pointed at. */

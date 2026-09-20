@@ -8,7 +8,14 @@
 	import { followTone } from '$lib/analysis.svelte';
 	import { app, navigate, setMiniPlayer } from '$lib/app.svelte';
 	import { carry } from '$lib/carry.svelte';
-	import { closeOverlays, followWidth, layout, toggleMenu, toggleQueue } from '$lib/layout.svelte';
+	import {
+		closeOverlays,
+		followWidth,
+		layout,
+		toggleHelp,
+		toggleMenu,
+		toggleQueue
+	} from '$lib/layout.svelte';
 	import { t } from '$lib/i18n/index.svelte';
 	import { library, setQuery } from '$lib/library.svelte';
 	import { followLyrics } from '$lib/lyrics.svelte';
@@ -19,6 +26,8 @@
 	import AlbumView from '$lib/components/AlbumView.svelte';
 	import BrowseView from '$lib/components/BrowseView.svelte';
 	import FirstRun from '$lib/components/FirstRun.svelte';
+	import HelpPanel from '$lib/components/HelpPanel.svelte';
+	import HelpView from '$lib/components/HelpView.svelte';
 	import MiniPlayer from '$lib/components/MiniPlayer.svelte';
 	import NowPlaying from '$lib/components/NowPlaying.svelte';
 	import Icon from '$lib/components/Icon.svelte';
@@ -133,7 +142,11 @@
 		{#if layout.sidebar !== 'hidden'}
 			<Sidebar mode={layout.sidebar} />
 		{/if}
-		<main class="content">
+		<main
+			class="content"
+			class:with-help={layout.helpOpen}
+			class:help-aside={layout.helpOpen && layout.helpDocked}
+		>
 			<header class="head">
 				{#if layout.sidebar === 'hidden'}
 					<button
@@ -172,6 +185,13 @@
 						onclick={toggleQueue}><Icon name="queue" /></button
 					>
 				{/if}
+				<button
+					type="button"
+					class="icon-btn"
+					aria-label={t('help.open')}
+					aria-expanded={layout.helpOpen}
+					onclick={toggleHelp}><Icon name="help" /></button
+				>
 			</header>
 			<div class="body">
 				{#if library.query.trim()}
@@ -204,10 +224,15 @@
 					<PlaylistView id={view.id} />
 				{:else if view.kind === 'nowPlaying'}
 					<NowPlaying />
+				{:else if view.kind === 'help'}
+					<HelpView />
 				{:else}
 					<SettingsView section={view.section} />
 				{/if}
 			</div>
+			{#if layout.helpOpen}
+				<HelpPanel />
+			{/if}
 			{#if layout.queueFloating || layout.menuFloating}
 				<!-- Tapping what is left of the content puts the panel away.
 				     Only the content is covered: the transport stays within
@@ -336,11 +361,37 @@
 		position: relative;
 		grid-area: content;
 		display: grid;
+		grid-template-columns: minmax(0, 1fr);
 		grid-template-rows: auto minmax(0, 1fr);
 		min-width: 0;
 		min-height: 0;
 		overflow: hidden;
 		background: var(--onsa-surface-app);
+	}
+
+	/* Wide enough, the help has a column of its own and the page simply
+	   has less room. Narrower, it shares the page's cell and lies over it
+	   — with no scrim, so the page underneath still answers the pointer,
+	   and never over the strip that holds the button which opened it. */
+	.content.help-aside {
+		grid-template-columns: minmax(0, 1fr) 320px;
+	}
+
+	.content > :global(.help) {
+		grid-row: 2;
+		grid-column: 2;
+	}
+
+	.content .head {
+		grid-column: 1 / -1;
+	}
+
+	.content.with-help:not(.help-aside) > :global(.help) {
+		grid-column: 1;
+		justify-self: end;
+		z-index: 30;
+		width: min(320px, 100%);
+		box-shadow: -12px 0 24px rgb(0 0 0 / 0.35);
 	}
 
 	.shell > :global(.side) {
