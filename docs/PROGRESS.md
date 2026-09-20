@@ -905,3 +905,45 @@ Tiap perbaikan diuji dengan cara yang sama persis seperti waktu ditemukan, pada 
 ### Perilaku yang belum diketahui
 
 - **Disk penuh saat mengunduh atau saat menulis tag** belum bisa diuji di mesin ini, jadi belum diketahui apa yang dikatakan Onsa. Penanganannya tidak dikarang tanpa bisa diuji; dicatat di sini sampai ada cara mengujinya.
+
+## v1.1 — Onsa menjelaskan dirinya (2026-09-20)
+
+Tidak ada kemampuan baru. Tujuannya satu: orang yang baru pertama membuka Onsa bisa memakainya tanpa bertanya kepada pemiliknya dan tanpa membaca README.
+
+### 1. Layar pertama menyebutkan apa saja yang ada
+
+Sesudah scan selesai, layar pertama menambahkan satu langkah penutup, **"Selebihnya"**: tiga baris, masing-masing satu kalimat, dengan nama halamannya bisa diklik — Rapikan, Unduhan, dan Lirik. Bukan tur berlangkah banyak: satu layar, bisa dilewati lewat tombol "Buka library" tepat di bawahnya, dan bisa dibuka lagi dari halaman Bantuan. Layar itu kini tahu kalau ia dibuka ulang: langkah penutupnya langsung terlihat, kalimat pembukanya berganti, dan tombolnya jadi "Tutup".
+
+**Cara verifikasi**: dijalankan dari keadaan benar-benar baru — tanpa database, tanpa pengaturan, tanpa folder library. Layar demi layar: layar pertama (Inggris), bahasa diganti dari layar itu juga, dialog folder Windows yang sungguhan dijawab dengan jalur folder musik, scan, lalu langkah penutupnya muncul. Mengklik "Rapikan" benar-benar membuka halaman Rapikan, bukan sekadar menutup layar pertama. Diulang di jendela terkecil (686×483): tidak ada gulir ke samping dan tombol terakhirnya tetap terjangkau.
+
+### 2. Bantuan dua lapis
+
+**Lapis 1**: tombol tanda tanya di sudut yang sama di semua halaman, membuka panel berisi halaman itu saja — satu paragraf "untuk apa", tiap kontrol dengan kalimatnya sendiri, apa yang terjadi pada berkas asli bila halaman itu bisa menyentuhnya, dan batasan yang berlaku di sana. Panelnya berdiri di kolom sendiri bila jendelanya ≥900 px dan menumpuk di atas halaman bila tidak, tanpa scrim dan tanpa jebakan fokus. Nama kontrol di bantuan memakai kunci kamus yang dipakai kontrol itu sendiri, jadi bantuannya selalu menyebut kata yang benar-benar ada di layar.
+
+**Lapis 2**: halaman Bantuan di navigasi. Daftar isi 25 entri (tiap halaman, halaman rincian, hasil pencarian, dan tiga perabot tetap jendela); mengklik satu membuka halamannya sekaligus penjelasannya. Di bawahnya hal-hal yang tidak menempel di satu halaman: urutan empat sumber lirik dan geseran per lagu, isi berkas tema `.json` dengan contoh yang bisa disalin, arti "belum ditulis ke berkas" beserta daftar empat hal yang bisa menyentuh berkas, yt-dlp dan ffmpeg, batasan versi ini, cara menyalakan log debug dan mengirimnya, dan tombol membuka layar pertama lagi.
+
+**Cara verifikasi**: tiap halaman dibuka satu per satu dengan **library kosong dan library terisi**, panelnya dibuka, isinya dibaca apa adanya. Lalu pemeriksaan yang lebih keras: tiap kontrol di layar didaftar dan dicocokkan dengan isi panelnya — 206 kontrol di 25 halaman (library terisi) dan 142 kontrol di 20 halaman (library kosong), **nol yang belum disebut**. Kontrol yang namanya data (judul lagu, nama album, nama artis, nama halaman di daftar isi) diwakili satu entri umum, dan aturan perwakilan itu tertulis di pemeriksanya serta ikut tercetak per kontrol. Pemeriksaan itu menemukan 54 kontrol yang tidak tersebut; semuanya diperbaiki, bukan ditambal: tiap pilihan di dalam sebuah setelan kini disebut namanya, tiap tahap jalur sinyal disebut, dan tiga entri baru ditambahkan.
+
+**Tidak menghalangi halaman**: di jendela 686×483 dengan panel menutupi sebagian baris lagu (352 dari 657 px yang terlihat), lagu itu diklik dua kali lewat bagian yang tersisa dan benar-benar diputar, sementara panelnya tetap terbuka. Di empat lebar (1400, 1000, 880, 686): tidak ada gulir ke samping, panel tidak pernah menutupi baris atas, tombol tutupnya bekerja.
+
+**Istilah**: seluruh teks bantuan disisir untuk kata yang harus dijelaskan dulu. *offset*, *sidecar*, *transcode*, dan *gapless* tidak dipakai sama sekali; *tag*, *scan*, *cakupan*, *genre*, dan *.lrc* selalu dijelaskan di kalimat yang sama.
+
+### 3. Dua sisa audit
+
+- **Alasan gagal unduh** kini punya sembilan sebab berkalimat manusia, dan **kalimat asli yt-dlp disimpan di balik "Lihat detail"**. Berlaku juga di pemeriksaan URL ("Lihat isinya"), tempat orang pertama kali bertemu penolakan — dulu semuanya dijawab satu kalimat umum dan kalimat yt-dlp dibuang ke log.
+- **Baris ffmpeg** tidak lagi berkata "dari sistem" saat saklar program sistem dimatikan. Sekarang: "ada di sistem, dipakai yt-dlp sendiri", dengan kalimat yang menjelaskan bahwa saklar itu hanya mengatur program yang dijalankan Onsa, sementara yt-dlp mencari ffmpeg atas namanya sendiri.
+
+**Cara verifikasi**: lima alamat yang benar-benar gagal pada aplikasi yang berjalan — bukan alamat sama sekali (0,5 dtk), situs tak dikenal yt-dlp (4,6 dtk), alamat tanpa yang menjawab (3,6 dtk), alamat yang menjawab 404 (1,5 dtk), dan alamat yang menjawab 500 (1,5 dtk) — masing-masing dengan kalimatnya di layar dan kalimat yt-dlp di balik "Lihat detail". Lalu saklar program sistem dimatikan dan dinyalakan lagi sambil membaca baris yt-dlp dan ffmpeg.
+
+**Yang belum bisa dibuktikan**: empat sebab lain (butuh masuk akun, ditolak karena negara, ditolak situs 403, terlalu banyak permintaan 429) hanya diuji lewat pola terhadap kalimat yt-dlp yang sudah dikenal bentuknya, karena membuktikannya berarti menyentuh situs berhak cipta. Dicatat untuk dibuktikan di v1.2.
+
+### 4. Folder library yang hilang
+
+Halaman Library menanyakan ke disk tiap folder — saat daftarnya dibaca, dan **setiap empat detik selama halaman itu terbuka**, karena sebuah drive bisa dicabut sementara halamannya di layar. Folder yang tidak ada ditandai di daftar, dengan kalimat tentang sebabnya dan apa yang bisa dilakukan. **Tidak ada data yang dihapus**: foldernya tetap terdaftar, lagunya tetap di library.
+
+**Cara verifikasi**: sebuah drive dibuat dengan `subst`, ditambahkan sebagai folder library, lalu dicabut sungguhan selagi halaman Library terbuka — tanpa menyentuh apa pun, halamannya berkata "tidak ada di tempatnya" dalam **2,6 detik**. Sesudah itu diperiksa dari luar: foldernya masih terdaftar, lagunya masih ada, statusnya masih `ok`. Drive dicolokkan lagi, "Scan ulang" ditekan seperti yang disuruh kalimat di layar, dan halamannya kembali normal.
+
+### Belum dikerjakan
+
+- Tur berlangkah banyak: memang tidak dibuat, atas permintaan pemilik proyek.
+- Paket untuk tester (installer Windows, berkas untuk tester, dan pembuktian tiap jalur internet terhadap layanan sungguhan) adalah v1.2.
