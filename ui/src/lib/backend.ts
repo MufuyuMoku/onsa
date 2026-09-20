@@ -480,7 +480,15 @@ export const pickFolder = (title: string) => call<string | null>('pick_folder', 
 export const addFolder = (path: string) => call<void>('library_add_folder', { path });
 export const rescan = () => call<void>('library_rescan');
 export const scanStatus = () => call<ScanStatus>('library_scan_status');
-export const libraryFolders = () => call<NameCount[]>('library_folders');
+/** One library folder, and whether it is still where it was put. */
+export interface LibraryFolder {
+	name: string;
+	trackCount: number;
+	/** Whether that folder is on the disk right now. */
+	present: boolean;
+}
+
+export const libraryFolders = () => call<LibraryFolder[]>('library_folders');
 export const trackCount = () => call<number>('library_track_count');
 export const tracksPage = (sort: SortKey, descending: boolean, offset: number, limit: number) =>
 	call<Track[]>('library_tracks', { sort, descending, offset, limit });

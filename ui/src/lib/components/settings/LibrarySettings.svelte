@@ -1,19 +1,46 @@
-<!-- Library folders: add one, rescan, see the last scan. -->
+<!--
+	Library folders: add one, rescan, see the last scan — and say so when a
+	folder is not where it was put any more.
+-->
 <script lang="ts">
-	import { addFolder, failureKey, libraryFolders, pickFolder, rescan, type NameCount } from '$lib/backend';
+	import {
+		addFolder,
+		failureKey,
+		libraryFolders,
+		pickFolder,
+		rescan,
+		type LibraryFolder
+	} from '$lib/backend';
 	import { t } from '$lib/i18n/index.svelte';
 	import type { MessageKey } from '$lib/i18n/dictionary';
 	import { library, scanSummary } from '$lib/library.svelte';
 
-	let folders = $state<NameCount[]>([]);
+	let folders = $state<LibraryFolder[]>([]);
 	let failure = $state<MessageKey | null>(null);
 
-	$effect(() => {
-		void library.version;
+	/** How often the disk is asked again while this page is open. */
+	const AGAIN = 4000;
+
+	function read(): void {
 		libraryFolders()
 			.then((list) => (folders = list))
 			.catch((error) => (failure = failureKey(error)));
+	}
+
+	$effect(() => {
+		void library.version;
+		read();
 	});
+
+	// A drive can be pulled out while this page is on screen, and nothing
+	// in the library changes when it happens — so the disk is asked again
+	// every few seconds for as long as somebody is looking at this page.
+	$effect(() => {
+		const timer = setInterval(read, AGAIN);
+		return () => clearInterval(timer);
+	});
+
+	const gone = $derived(folders.filter((one) => !one.present));
 
 	async function add(): Promise<void> {
 		try {
@@ -31,12 +58,21 @@
 		<h2 class="label">{t('librarySettings.folders')}</h2>
 		<ul>
 			{#each folders as folder (folder.name)}
-				<li>
+				<li class:gone={!folder.present}>
 					<span class="ellipsis numeric">{folder.name}</span>
-					<span class="muted numeric">{t('library.tracks', { n: folder.trackCount })}</span>
+					{#if folder.present}
+						<span class="muted numeric">{t('library.tracks', { n: folder.trackCount })}</span>
+					{:else}
+						<span class="caution-text numeric">{t('librarySettings.folderGone')}</span>
+					{/if}
 				</li>
 			{/each}
 		</ul>
+
+		{#if gone.length > 0}
+			<p class="note caution-text">{t('librarySettings.goneWhat', { n: gone.length })}</p>
+			<p class="note muted">{t('librarySettings.goneNothingLost')}</p>
+		{/if}
 		<div class="actions">
 			<button type="button" class="btn" disabled={library.scan.running} onclick={add}>
 				{t('librarySettings.add')}
@@ -72,5 +108,13 @@
 		grid-template-columns: minmax(0, 1fr) auto;
 		gap: 12px;
 		font-size: 13px;
+	}
+
+	li.gone .numeric:first-child {
+		color: var(--onsa-role-caution);
+	}
+
+	.caution-text {
+		color: var(--onsa-role-caution);
 	}
 </style>

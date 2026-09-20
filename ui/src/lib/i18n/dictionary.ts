@@ -919,7 +919,8 @@ const id = {
 	'help.says.rescan':
 		'Menyuruh Onsa melihat lagi seluruh folder itu dari awal. Berguna kalau ada berkas yang tidak muncul sendiri, misalnya setelah folder dipindah dari komputer lain.',
 	'help.name.folderList': 'Daftar folder',
-	'help.says.folderList': 'Folder yang sudah kamu tambahkan, dengan jumlah lagu di masing-masing.',
+	'help.says.folderList':
+		'Folder yang sudah kamu tambahkan, dengan jumlah lagu di masing-masing. Folder yang tidak ada di tempatnya lagi — drive-nya dicabut, atau foldernya dipindah lewat program lain — ditandai di daftar ini beserta keterangannya. Onsa tidak menghapus apa pun karena itu.',
 	'help.says.metaOnline':
 		'Saklar utama untuk semua pertanyaan ke internet di halaman Rapikan. Selama mati, Onsa tidak mengirim apa pun ke mana pun.',
 	'help.says.metaKey':
@@ -1074,7 +1075,13 @@ const id = {
 		'Saklar di bawah hanya mengatur program mana yang dijalankan Onsa. yt-dlp mencari ffmpeg di sistem atas namanya sendiri, jadi ffmpeg ini tetap dipakainya meski saklar itu mati — dan karena itu konversi tetap tersedia.',
 
 	'downloads.siteBroken':
-		'Situsnya menjawab, tapi sedang bermasalah di sisi mereka. Coba lagi nanti.'
+		'Situsnya menjawab, tapi sedang bermasalah di sisi mereka. Coba lagi nanti.',
+
+	'librarySettings.folderGone': 'tidak ada di tempatnya',
+	'librarySettings.goneWhat':
+		'{n} folder tidak ada di tempatnya lagi. Biasanya karena drive-nya dicabut, atau foldernya dipindah atau diganti nama lewat program lain.',
+	'librarySettings.goneNothingLost':
+		'Onsa tidak menghapus apa pun karena ini. Lagu dari folder itu tetap ada di library; yang berkasnya tidak bisa dibuka ditandai hilang. Colokkan lagi drive-nya lalu tekan "Scan ulang", atau tambahkan tempat barunya kalau foldernya kamu pindah.'
 } as const;
 
 export type MessageKey = keyof typeof id;
@@ -1986,7 +1993,8 @@ const en: Record<MessageKey, string> = {
 	'help.says.rescan':
 		'Tells Onsa to look through those folders again from the start. Useful when a file does not appear by itself, for instance after a folder was moved from another computer.',
 	'help.name.folderList': 'The list of folders',
-	'help.says.folderList': 'The folders you have added, with how many songs are in each.',
+	'help.says.folderList':
+		'The folders you have added, with how many songs are in each. A folder that is no longer where it was — an unplugged drive, or one moved with another program — is marked in this list, with a word about what it means. Onsa deletes nothing over it.',
 	'help.says.metaOnline':
 		'The main switch for every question to the internet on the Tidy up page. While it is off, Onsa sends nothing anywhere.',
 	'help.says.metaKey':
@@ -2135,7 +2143,13 @@ const en: Record<MessageKey, string> = {
 		'The switch below only decides which programs Onsa runs. yt-dlp looks for ffmpeg on the system on its own account, so it will use this one even with that switch off — which is why converting is still available.',
 
 	'downloads.siteBroken':
-		'The site answered, but something is wrong at their end. Try again later.'
+		'The site answered, but something is wrong at their end. Try again later.',
+
+	'librarySettings.folderGone': 'not where it was',
+	'librarySettings.goneWhat':
+		'{n} of these folders is not where it was. Usually that means a drive was unplugged, or the folder was moved or renamed with another program.',
+	'librarySettings.goneNothingLost':
+		'Onsa deletes nothing over this. The songs from that folder stay in the library; the ones whose files cannot be opened are marked missing. Plug the drive back in and press "Rescan", or add the new place if you moved the folder.'
 };
 
 export const dictionaries: Record<Locale, Record<MessageKey, string>> = { id, en };

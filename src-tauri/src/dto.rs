@@ -127,6 +127,23 @@ impl From<&NameCount> for NameCountDto {
     }
 }
 
+/// One library folder, and whether it is still where it was put.
+///
+/// A folder can leave without telling anybody: a drive is unplugged, a
+/// folder is moved or renamed from somewhere else. Onsa deletes nothing
+/// over it — the songs stay in the library — but a window that says
+/// nothing leaves the listener to work it out from an empty list.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LibraryFolderDto {
+    /// The path, as it was added.
+    pub name: String,
+    /// Tracks that are not missing.
+    pub track_count: u32,
+    /// Whether that path is there right now.
+    pub present: bool,
+}
+
 /// Search results, grouped.
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]

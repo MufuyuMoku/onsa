@@ -16,8 +16,8 @@ use tauri_plugin_dialog::{DialogExt, FilePath};
 use tauri_plugin_opener::OpenerExt;
 
 use crate::dto::{
-    AlbumDto, AutoEqDto, CurveDto, DeviceDto, ImportDto, NameCountDto, PlayContext, PlaylistDto,
-    QueueEntryDto, QueuePlace, SearchDto, SortKey, TrackDto,
+    AlbumDto, AutoEqDto, CurveDto, DeviceDto, ImportDto, LibraryFolderDto, NameCountDto,
+    PlayContext, PlaylistDto, QueueEntryDto, QueuePlace, SearchDto, SortKey, TrackDto,
 };
 pub use crate::error::ErrorCode;
 use crate::keys::{self, KeyStatus};
@@ -292,10 +292,25 @@ pub fn library_scan_status(library: State<'_, LibraryService>) -> ScanStatus {
     library.status()
 }
 
-/// The library folders with their track counts.
+/// The library folders, their track counts, and whether each is still there.
+///
+/// The disk is asked about each one: a handful of paths, once per reading,
+/// which is nothing next to being unable to say that a folder has gone.
 #[tauri::command]
-pub fn library_folders(library: State<'_, LibraryService>) -> Result<Vec<NameCountDto>, ErrorCode> {
-    library.read(|library| Ok(library.folders()?.iter().map(NameCountDto::from).collect()))
+pub fn library_folders(
+    library: State<'_, LibraryService>,
+) -> Result<Vec<LibraryFolderDto>, ErrorCode> {
+    library.read(|library| {
+        Ok(library
+            .folders()?
+            .iter()
+            .map(|row| LibraryFolderDto {
+                name: row.name.clone(),
+                track_count: row.track_count,
+                present: std::path::Path::new(&row.name).is_dir(),
+            })
+            .collect())
+    })
 }
 
 /// Number of tracks.
