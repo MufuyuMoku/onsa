@@ -106,9 +106,9 @@ pub fn is_a_url(text: &str) -> bool {
 }
 
 /// Asks what is at a URL, without fetching any of it.
-pub fn probe(programs: &Programs, url: &str) -> Result<Probe, String> {
+pub fn probe(programs: &Programs, url: &str) -> Result<Probe, Trouble> {
     if !is_a_url(url) {
-        return Err("notAUrl".to_string());
+        return Err(Trouble::of("notAUrl"));
     }
     let args = vec!["-J", "--flat-playlist", "--no-warnings", url];
     let ran = programs
@@ -119,7 +119,7 @@ pub fn probe(programs: &Programs, url: &str) -> Result<Probe, String> {
         )
         .map_err(|error| {
             tracing::warn!("yt-dlp could not be asked about a URL: {error}");
-            "cannotRun".to_string()
+            Trouble::of("cannotRun")
         })?;
     if !ran.ok {
         let said = ran
@@ -131,9 +131,11 @@ pub fn probe(programs: &Programs, url: &str) -> Result<Probe, String> {
             .unwrap_or_default()
             .to_string();
         tracing::info!("yt-dlp refused a URL: {said}");
-        return Err("refused".to_string());
+        // The same reading as a download that failed: this is where most
+        // people meet a refusal, so it is where the sentence matters most.
+        return Err(why_of(&said));
     }
-    read_probe(&ran.out, url).ok_or_else(|| "unreadable".to_string())
+    read_probe(&ran.out, url).ok_or_else(|| Trouble::of("unreadable"))
 }
 
 /// Reads what `yt-dlp -J --flat-playlist` printed.
@@ -259,16 +261,16 @@ pub fn download(
     into: &Path,
     stop: Arc<AtomicBool>,
     mut watching: impl FnMut(Step),
-) -> Result<Vec<PathBuf>, String> {
+) -> Result<Vec<PathBuf>, Trouble> {
     if !is_a_url(url) {
-        return Err("notAUrl".to_string());
+        return Err(Trouble::of("notAUrl"));
     }
     let found = programs
         .find(Program::YtDlp)
-        .ok_or_else(|| "noYtDlp".to_string())?;
+        .ok_or_else(|| Trouble::of("noYtDlp"))?;
     std::fs::create_dir_all(into).map_err(|error| {
         tracing::warn!("the download folder cannot be made: {error}");
-        "cannotWrite".to_string()
+        Trouble::of("cannotWrite")
     })?;
 
     // What yt-dlp will find for itself, not what Onsa would choose: it
@@ -289,11 +291,11 @@ pub fn download(
         })
         .map_err(|error| {
             tracing::warn!("yt-dlp could not be run: {error}");
-            "cannotRun".to_string()
+            Trouble::of("cannotRun")
         })?;
 
     if finished.stopped {
-        return Err("stopped".to_string());
+        return Err(Trouble::of("stopped"));
     }
     if !finished.ok {
         let said = finished.reason();
@@ -303,22 +305,129 @@ pub fn download(
     Ok(files)
 }
 
-/// What a complaint from yt-dlp means, in a word the interface can say in
-/// the listener's own language.
+/// Why a download ended badly: a word the interface can say in the
+/// listener's own language, and the program's own sentence when there was
+/// one.
 ///
-/// Two of these are worth telling apart, because the listener can do
-/// something about each: a machine with no ffmpeg, and a site that has the
-/// song only in a format Onsa cannot play yet. Anything else keeps the
-/// program's own sentence, which is more use than "it failed".
-fn why_of(said: &str) -> String {
+/// Both are kept. The word is what a listener reads; the sentence is what
+/// somebody looking into it needs afterwards, and throwing it away to tidy
+/// the screen would throw away the only account of what happened.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Trouble {
+    /// A fixed word the dictionaries translate.
+    pub code: String,
+    /// What yt-dlp itself said, when it said anything.
+    pub said: Option<String>,
+}
+
+impl Trouble {
+    /// A trouble Onsa found on its own, with nothing quoted.
+    fn of(code: &str) -> Self {
+        Self {
+            code: code.to_string(),
+            said: None,
+        }
+    }
+}
+
+/// The complaints worth telling apart, and the word for each.
+///
+/// A listener can act on every one of these: install ffmpeg, choose another
+/// source, open the page somewhere they are signed in, wait a while, check
+/// the address. A complaint that matches none of them is `other`, and then
+/// yt-dlp's own sentence is all there is — which still says more than
+/// "it failed".
+const KNOWN: &[(&str, &[&str])] = &[
+    (
+        "noFfmpeg",
+        &["ffmpeg not found", "ffprobe and ffmpeg not found"],
+    ),
+    (
+        "noPlayableFormat",
+        &["requested format is not available", "requested format not"],
+    ),
+    (
+        "unsupportedSite",
+        &["unsupported url", "no suitable extractor"],
+    ),
+    (
+        "needsSignIn",
+        &[
+            "sign in to confirm",
+            "private video",
+            "login required",
+            "requires authentication",
+            "members-only",
+            "available to this channel",
+            "use --cookies",
+        ],
+    ),
+    (
+        "geoBlocked",
+        &[
+            "available in your country",
+            "geo restricted",
+            "geo-restricted",
+            "blocked it in your country",
+            "available from your location",
+        ],
+    ),
+    (
+        "gone",
+        &[
+            "video unavailable",
+            "has been removed",
+            "has been terminated",
+            "no longer available",
+            "http error 404",
+            "404: not found",
+        ],
+    ),
+    (
+        "tooManyAsks",
+        &["http error 429", "too many requests", "rate-limit"],
+    ),
+    (
+        "siteRefused",
+        &["http error 403", "http error 401", "forbidden", "not a bot"],
+    ),
+    (
+        "siteBroken",
+        &[
+            "http error 500",
+            "http error 502",
+            "http error 503",
+            "http error 504",
+        ],
+    ),
+    (
+        "cannotReach",
+        &[
+            "unable to download webpage",
+            "unable to download api page",
+            "urlopen error",
+            "temporary failure in name resolution",
+            "failed to resolve",
+            "connection refused",
+            "connection reset",
+            "timed out",
+            "network is unreachable",
+        ],
+    ),
+];
+
+/// What a complaint from yt-dlp means.
+fn why_of(said: &str) -> Trouble {
     let lowered = said.to_lowercase();
-    if lowered.contains("ffmpeg not found") || lowered.contains("ffprobe and ffmpeg not found") {
-        return "noFfmpeg".to_string();
+    let code = KNOWN
+        .iter()
+        .find(|(_, marks)| marks.iter().any(|mark| lowered.contains(mark)))
+        .map(|(code, _)| *code)
+        .unwrap_or("other");
+    Trouble {
+        code: code.to_string(),
+        said: Some(said.to_string()),
     }
-    if lowered.contains("requested format is not available") {
-        return "noPlayableFormat".to_string();
-    }
-    said.to_string()
 }
 
 /// What one line of yt-dlp's output turned out to be.
@@ -563,22 +672,64 @@ mod tests {
 
     #[test]
     fn a_complaint_becomes_something_the_window_can_say() {
+        let cases = [
+            (
+                "ERROR: Postprocessing: ffmpeg not found. Please install",
+                "noFfmpeg",
+            ),
+            (
+                "ERROR: ffprobe and ffmpeg not found. Please install",
+                "noFfmpeg",
+            ),
+            (
+                "ERROR: [youtube] abc: Requested format is not available",
+                "noPlayableFormat",
+            ),
+            (
+                "ERROR: Unsupported URL: https://example.com/",
+                "unsupportedSite",
+            ),
+            (
+                "ERROR: [youtube] abc: Sign in to confirm your age",
+                "needsSignIn",
+            ),
+            (
+                "ERROR: [youtube] abc: Private video. Sign in if you have been granted access",
+                "needsSignIn",
+            ),
+            (
+                "ERROR: [youtube] abc: The uploader has not made this video available in your country",
+                "geoBlocked",
+            ),
+            ("ERROR: [youtube] abc: Video unavailable", "gone"),
+            (
+                "ERROR: unable to download webpage: HTTP Error 404: Not Found",
+                "gone",
+            ),
+            ("ERROR: HTTP Error 429: Too Many Requests", "tooManyAsks"),
+            (
+                "ERROR: [generic] Unable to download webpage: HTTP Error 503: Service Unavailable",
+                "siteBroken",
+            ),
+            ("ERROR: HTTP Error 403: Forbidden", "siteRefused"),
+            (
+                "ERROR: unable to download webpage: <urlopen error [Errno 111] Connection refused>",
+                "cannotReach",
+            ),
+        ];
+        for (said, code) in cases {
+            let trouble = why_of(said);
+            assert_eq!(trouble.code, code, "for: {said}");
+            // Whatever the word, the program's own sentence is kept.
+            assert_eq!(trouble.said.as_deref(), Some(said));
+        }
+
+        // A complaint nothing recognises still carries its own sentence.
+        let strange = why_of("ERROR: something nobody has seen before");
+        assert_eq!(strange.code, "other");
         assert_eq!(
-            why_of("ERROR: Postprocessing: ffmpeg not found. Please install"),
-            "noFfmpeg"
-        );
-        assert_eq!(
-            why_of("ERROR: ffprobe and ffmpeg not found. Please install"),
-            "noFfmpeg"
-        );
-        assert_eq!(
-            why_of("ERROR: [youtube] abc: Requested format is not available"),
-            "noPlayableFormat"
-        );
-        // Anything else keeps its own words, which say more than "failed".
-        assert_eq!(
-            why_of("ERROR: unable to download webpage"),
-            "ERROR: unable to download webpage"
+            strange.said.as_deref(),
+            Some("ERROR: something nobody has seen before")
         );
     }
 

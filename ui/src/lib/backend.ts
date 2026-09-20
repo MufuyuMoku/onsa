@@ -411,8 +411,6 @@ export function hasBackend(): boolean {
 
 /** The error codes the backend can send, mapped to dictionary keys. */
 const ERROR_KEYS: Record<string, MessageKey> = {
-	not_a_url: 'downloads.notAUrl',
-	url_refused: 'downloads.refused',
 	theme_not_found: 'error.theme_not_found',
 	library: 'error.library',
 	engine: 'error.engine',
@@ -732,7 +730,12 @@ export const programPick = (title: string) => call<string | null>('program_pick'
 export interface BinaryStatus {
 	key: string;
 	present: boolean;
-	from: 'managed' | 'chosen' | 'system' | null;
+	/**
+	 * Where the copy in use came from. `systemAnyway` is the one worth a
+	 * word of its own: ffmpeg found on the system although Onsa was told
+	 * not to use the system's programs, because yt-dlp looks for it itself.
+	 */
+	from: 'managed' | 'chosen' | 'system' | 'systemAnyway' | null;
 	path: string | null;
 	version: string | null;
 	installable: boolean;
@@ -791,6 +794,8 @@ export interface QueueItem {
 	eta: number | null;
 	file: string | null;
 	failed: string | null;
+	/** What yt-dlp itself said, kept behind "see the detail". */
+	said: string | null;
 }
 
 /** The queue as it stands. */
@@ -804,6 +809,22 @@ export interface DownloadQueue {
 export type DownloadFormat = 'original' | 'mp3' | 'flac';
 
 export const downloadProbe = (url: string) => call<Probe>('download_probe', { url });
+
+/** Why a URL could not be looked at, with yt-dlp's own sentence. */
+export interface UrlTrouble {
+	code: string;
+	said: string | null;
+}
+
+/** Reads the trouble a refused URL came back with, when that is what it is. */
+export function urlTroubleOf(error: unknown): UrlTrouble | null {
+	const cause = error instanceof BackendError ? error.cause : error;
+	if (typeof cause !== 'object' || cause === null) return null;
+	const code = (cause as { code?: unknown }).code;
+	if (typeof code !== 'string') return null;
+	const said = (cause as { said?: unknown }).said;
+	return { code, said: typeof said === 'string' ? said : null };
+}
 export const downloadQueue = () => call<DownloadQueue>('download_queue');
 export const downloadStart = (items: { url: string; title: string }[], format: DownloadFormat) =>
 	call<DownloadQueue>('download_start', { items, format });

@@ -146,11 +146,22 @@ pub async fn binaries_status(app: AppHandle) -> Result<BinariesDto, ErrorCode> {
                 } else {
                     programs.find(program)
                 };
+                // The same copy, found by a question Onsa was not allowed
+                // to ask. Saying only "from the system" while the switch
+                // below is off reads like a switch that does nothing, so
+                // the row says whose copy it really is.
+                let despite_switch = program == Program::Ffmpeg
+                    && !use_system
+                    && found.is_some()
+                    && programs.find(program).is_none();
                 let release = install::release_for(program);
                 BinaryDto {
                     key: program.key().to_string(),
                     present: found.is_some(),
                     from: found.as_ref().map(|found| {
+                        if despite_switch {
+                            return "systemAnyway".to_string();
+                        }
                         match found.from {
                             Where::Managed => "managed",
                             Where::Chosen => "chosen",
@@ -335,6 +346,8 @@ pub struct ItemDto {
     pub file: Option<String>,
     /// Why it failed, as a fixed word the interface translates.
     pub failed: Option<String>,
+    /// What yt-dlp itself said about it, kept for whoever looks into it.
+    pub said: Option<String>,
 }
 
 /// The queue as it stands.
@@ -361,6 +374,7 @@ struct Item {
     eta: Option<f64>,
     file: Option<String>,
     failed: Option<String>,
+    said: Option<String>,
 }
 
 impl Item {
@@ -375,6 +389,7 @@ impl Item {
             eta: self.eta,
             file: self.file.clone(),
             failed: self.failed.clone(),
+            said: self.said.clone(),
         }
     }
 }
@@ -425,22 +440,38 @@ fn output_folder(app: &AppHandle) -> Result<PathBuf, ErrorCode> {
 
 /// Asks what is at a URL, without fetching any of it (SPEC §7.2).
 #[tauri::command]
-pub async fn download_probe(app: AppHandle, url: String) -> Result<ytdlp::Probe, ErrorCode> {
+pub async fn download_probe(app: AppHandle, url: String) -> Result<ytdlp::Probe, ProbeTrouble> {
     tauri::async_runtime::spawn_blocking(move || {
-        let programs = online::programs(&app)?;
+        let programs = online::programs(&app).map_err(|_| ProbeTrouble {
+            code: "cannotRun".to_string(),
+            said: None,
+        })?;
         ytdlp::probe(&programs, &url).map_err(|why| {
-            tracing::info!(why, "a URL could not be looked at");
-            // Two answers the listener can act on, rather than one that
-            // talks about installing a program: what they pasted is not an
-            // address at all, or it is one yt-dlp can make nothing of.
-            match why.as_str() {
-                "notAUrl" => ErrorCode::NotAUrl,
-                _ => ErrorCode::UrlRefused,
+            tracing::info!(code = why.code, "a URL could not be looked at");
+            ProbeTrouble {
+                code: why.code,
+                said: why.said,
             }
         })
     })
     .await
-    .map_err(|_| ErrorCode::Library)?
+    .map_err(|_| ProbeTrouble {
+        code: "cannotRun".to_string(),
+        said: None,
+    })?
+}
+
+/// Why a URL could not be looked at, on its way to the window.
+///
+/// An error of its own rather than an [`ErrorCode`], because two things
+/// have to arrive: the word the window says, and the sentence yt-dlp said
+/// under it. The field is named `code` so the interface reads it the same
+/// way it reads every other failure.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProbeTrouble {
+    pub code: String,
+    pub said: Option<String>,
 }
 
 /// The queue as it stands.
@@ -480,6 +511,7 @@ pub fn download_start(
                 eta: None,
                 file: None,
                 failed: None,
+                said: None,
             });
         }
     }
@@ -561,7 +593,15 @@ fn work_through(app: &AppHandle, queue: &Queue, format: ytdlp::Format, into: &Pa
         let programs = match online::programs(app) {
             Ok(programs) => programs,
             Err(_) => {
-                finish(app, queue, id, "failed", None, Some("cannotRun".into()));
+                finish(
+                    app,
+                    queue,
+                    id,
+                    "failed",
+                    None,
+                    Some("cannotRun".into()),
+                    None,
+                );
                 continue;
             }
         };
@@ -588,15 +628,15 @@ fn work_through(app: &AppHandle, queue: &Queue, format: ytdlp::Format, into: &Pa
                 if let Some(path) = files.first() {
                     hand_to_library(app, path);
                 }
-                finish(app, queue, id, "done", file, None);
+                finish(app, queue, id, "done", file, None, None);
             }
             Err(why) => {
-                let state = if why == "stopped" {
+                let state = if why.code == "stopped" {
                     "stopped"
                 } else {
                     "failed"
                 };
-                finish(app, queue, id, state, None, Some(why));
+                finish(app, queue, id, state, None, Some(why.code), why.said);
             }
         }
     }
@@ -610,6 +650,7 @@ fn finish(
     state: &'static str,
     file: Option<String>,
     failed: Option<String>,
+    said: Option<String>,
 ) {
     {
         let mut items = queue.items.lock().unwrap_or_else(|e| e.into_inner());
@@ -617,6 +658,7 @@ fn finish(
             item.state = state;
             item.file = file;
             item.failed = failed;
+            item.said = said;
             item.fraction = if state == "done" {
                 Some(1.0)
             } else {

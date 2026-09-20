@@ -836,10 +836,10 @@ const id = {
 	'help.says.tidyUndo':
 		'Membatalkan satu jalan yang ada di daftar Riwayat, termasuk yang sudah ditulis ke berkas dan nama berkas yang sudah diganti.',
 	'help.says.useSystem':
-		'Kalau yt-dlp atau ffmpeg sudah ada di komputermu, Onsa memakai yang itu dan tidak perlu mengunduh apa pun. Kalau dimatikan, Onsa hanya memakai program yang ada di foldernya sendiri.',
+		'Kalau yt-dlp atau ffmpeg sudah ada di komputermu, Onsa memakai yang itu dan tidak perlu mengunduh apa pun. Kalau dimatikan, Onsa hanya menjalankan program yang ada di foldernya sendiri — tapi yt-dlp tetap mencari ffmpeg sendiri di komputermu, karena itu urusannya, bukan urusan Onsa.',
 	'help.name.programRow': 'Baris program',
 	'help.says.programRow':
-		'Satu baris untuk tiap program yang dibutuhkan halaman ini, dengan keterangan apakah ia sudah ada, dari mana asalnya, dan versinya. yt-dlp wajib: tanpa dia tidak ada yang bisa diunduh. ffmpeg tidak wajib: tanpa dia unduhan tetap jalan, tapi tanpa keterangan lagu dan sampul yang tertanam, dan tanpa mengubah format.',
+		'Satu baris untuk tiap program yang dibutuhkan halaman ini, dengan keterangan apakah ia sudah ada, dari mana asalnya, dan versinya. yt-dlp wajib: tanpa dia tidak ada yang bisa diunduh. ffmpeg tidak wajib: tanpa dia unduhan tetap jalan, tapi tanpa keterangan lagu dan sampul yang tertanam, dan tanpa mengubah format. Baris ffmpeg bisa berkata "ada di sistem, dipakai yt-dlp sendiri": itu berarti ffmpeg-nya ada di komputermu dan yt-dlp memakainya atas namanya sendiri, di luar saklar di bawah.',
 	'help.says.agree':
 		'Mengunduh program itu dari halaman rilis resminya, dan mencocokkannya dengan sidik berkas yang diterbitkan rilis itu sebelum menyimpannya. Tidak ada yang diunduh sebelum tombol ini ditekan.',
 	'help.says.update': 'Mengambil versi terbaru program itu, dengan pemeriksaan yang sama.',
@@ -1051,7 +1051,30 @@ const id = {
 
 	'help.name.queueRow': 'Baris lagu di antrean',
 	'help.says.queueRow':
-		'Satu lagu yang menunggu giliran. Klik dua kali untuk melompat ke lagu itu sekarang; seret naik-turun untuk mengubah urutannya. Yang sedang diputar ditandai.'
+		'Satu lagu yang menunggu giliran. Klik dua kali untuk melompat ke lagu itu sekarang; seret naik-turun untuk mengubah urutannya. Yang sedang diputar ditandai.',
+
+	'downloads.seeDetail': 'Lihat detail',
+	'downloads.otherTrouble':
+		'yt-dlp berhenti dengan keluhan yang belum dikenali Onsa. Kalimat aslinya ada di bawah.',
+	'downloads.unsupportedSite':
+		'yt-dlp tidak mengenali situs itu, jadi tidak ada yang bisa diambil dari sana.',
+	'downloads.needsSignIn':
+		'Isi itu hanya bisa diambil oleh orang yang sudah masuk ke akunnya di situs itu. Onsa tidak masuk ke akun mana pun.',
+	'downloads.geoBlocked': 'Situsnya tidak mengizinkan isi itu diambil dari negara ini.',
+	'downloads.gone':
+		'Isinya sudah tidak ada di alamat itu — dihapus, dipindah, atau alamatnya salah ketik.',
+	'downloads.tooManyAsks':
+		'Situsnya menolak karena terlalu banyak permintaan dalam waktu singkat. Coba lagi beberapa menit kemudian.',
+	'downloads.siteRefused':
+		'Situsnya menolak permintaan Onsa. Biasanya karena isinya memang tidak dibuka untuk umum.',
+	'downloads.cannotReach':
+		'Situsnya tidak bisa dihubungi. Periksa sambungan internetmu, lalu coba lagi.',
+	'programs.fromSystemAnyway': 'ada di sistem, dipakai yt-dlp sendiri',
+	'programs.systemAnywayWhat':
+		'Saklar di bawah hanya mengatur program mana yang dijalankan Onsa. yt-dlp mencari ffmpeg di sistem atas namanya sendiri, jadi ffmpeg ini tetap dipakainya meski saklar itu mati — dan karena itu konversi tetap tersedia.',
+
+	'downloads.siteBroken':
+		'Situsnya menjawab, tapi sedang bermasalah di sisi mereka. Coba lagi nanti.'
 } as const;
 
 export type MessageKey = keyof typeof id;
@@ -1881,10 +1904,10 @@ const en: Record<MessageKey, string> = {
 	'help.says.tidyUndo':
 		'Undoes one run from the History list, including what was written into files and file names that were changed.',
 	'help.says.useSystem':
-		'If yt-dlp or ffmpeg are already on your computer, Onsa uses those and downloads nothing. Switched off, Onsa uses only the programs in its own folder.',
+		"If yt-dlp or ffmpeg are already on your computer, Onsa uses those and downloads nothing. Switched off, Onsa runs only the programs in its own folder — but yt-dlp still looks for ffmpeg itself, because that is its business and not Onsa's.",
 	'help.name.programRow': 'A program row',
 	'help.says.programRow':
-		'One row for each program this page needs, saying whether it is there, where it came from and which version it is. yt-dlp is required: without it nothing can be fetched. ffmpeg is not: without it downloads still work, but with no song details or cover put inside, and with no change of format.',
+		'One row for each program this page needs, saying whether it is there, where it came from and which version it is. yt-dlp is required: without it nothing can be fetched. ffmpeg is not: without it downloads still work, but with no song details or cover put inside, and with no change of format. The ffmpeg row can say "on the system, used by yt-dlp itself": that means the copy is on your computer and yt-dlp uses it on its own account, outside the switch below.',
 	'help.says.agree':
 		'Downloads that program from its official release page and checks it against the fingerprint that release published, before keeping it. Nothing is downloaded until this button is pressed.',
 	'help.says.update': 'Fetches the newest version of that program, with the same check.',
@@ -2089,7 +2112,30 @@ const en: Record<MessageKey, string> = {
 
 	'help.name.queueRow': 'A song row in the queue',
 	'help.says.queueRow':
-		'One song waiting its turn. Double-click it to jump to it now; drag it up and down to change the order. The one playing is marked.'
+		'One song waiting its turn. Double-click it to jump to it now; drag it up and down to change the order. The one playing is marked.',
+
+	'downloads.seeDetail': 'See the detail',
+	'downloads.otherTrouble':
+		'yt-dlp stopped with a complaint Onsa does not recognise. Its own sentence is below.',
+	'downloads.unsupportedSite':
+		'yt-dlp does not know that site, so there is nothing it can take from it.',
+	'downloads.needsSignIn':
+		'That is only available to somebody signed in to that site. Onsa signs in to nothing.',
+	'downloads.geoBlocked': 'The site will not hand that over from this country.',
+	'downloads.gone':
+		'There is nothing at that address any more — taken down, moved, or the address was mistyped.',
+	'downloads.tooManyAsks':
+		'The site refused because it was asked too often in a short time. Try again in a few minutes.',
+	'downloads.siteRefused':
+		'The site refused the request. Usually that means the content is not open to everybody.',
+	'downloads.cannotReach':
+		'The site could not be reached. Check your internet connection and try again.',
+	'programs.fromSystemAnyway': 'on the system, used by yt-dlp itself',
+	'programs.systemAnywayWhat':
+		'The switch below only decides which programs Onsa runs. yt-dlp looks for ffmpeg on the system on its own account, so it will use this one even with that switch off — which is why converting is still available.',
+
+	'downloads.siteBroken':
+		'The site answered, but something is wrong at their end. Try again later.'
 };
 
 export const dictionaries: Record<Locale, Record<MessageKey, string>> = { id, en };

@@ -19,13 +19,15 @@
 		EVENTS,
 		failureKey,
 		on,
+		urlTroubleOf,
 		type Binaries,
 		type BinaryStatus,
 		type DownloadFormat,
 		type DownloadQueue,
 		type FetchProgress,
 		type Probe,
-		type QueueItem
+		type QueueItem,
+		type UrlTrouble
 	} from '$lib/backend';
 	import { clock } from '$lib/format';
 	import { t } from '$lib/i18n/index.svelte';
@@ -50,7 +52,7 @@
 	 * those reads cleared the shared one — so the answer to a bad URL was
 	 * wiped a moment after it appeared, and nothing was ever seen.
 	 */
-	let urlTrouble = $state<MessageKey | null>(null);
+	let urlTrouble = $state<UrlTrouble | null>(null);
 	let picked = $state<Record<string, boolean>>({});
 	let format = $state<DownloadFormat>('original');
 	let queue = $state<DownloadQueue | null>(null);
@@ -86,7 +88,7 @@
 			probe = found;
 			picked = Object.fromEntries(found.entries.map((one) => [one.url, true]));
 		} catch (error) {
-			urlTrouble = failureKey(error);
+			urlTrouble = urlTroubleOf(error) ?? { code: 'other', said: null };
 		} finally {
 			looking = false;
 		}
@@ -177,7 +179,8 @@
 	const WHERE: Record<string, MessageKey> = {
 		managed: 'programs.fromManaged',
 		chosen: 'programs.fromChosen',
-		system: 'programs.fromSystem'
+		system: 'programs.fromSystem',
+		systemAnyway: 'programs.fromSystemAnyway'
 	};
 
 	const WHY: Record<string, MessageKey> = {
@@ -187,6 +190,15 @@
 		failed: 'downloads.failed',
 		noFfmpeg: 'downloads.noFfmpeg',
 		noPlayableFormat: 'downloads.noPlayableFormat',
+		unsupportedSite: 'downloads.unsupportedSite',
+		needsSignIn: 'downloads.needsSignIn',
+		geoBlocked: 'downloads.geoBlocked',
+		gone: 'downloads.gone',
+		tooManyAsks: 'downloads.tooManyAsks',
+		siteRefused: 'downloads.siteRefused',
+		cannotReach: 'downloads.cannotReach',
+		siteBroken: 'downloads.siteBroken',
+		other: 'downloads.otherTrouble',
 		cannotRun: 'downloads.cannotRun',
 		stopped: 'downloads.stopped',
 		unreachable: 'downloads.unreachable',
@@ -236,6 +248,9 @@
 							{t(WHERE[program.from ?? 'system'] ?? 'programs.fromSystem')}
 							{#if program.version}· <span class="numeric">{program.version}</span>{/if}
 						</span>
+						{#if program.from === 'systemAnyway'}
+							<p class="muted note anyway">{t('programs.systemAnywayWhat')}</p>
+						{/if}
 					{:else}
 						<span class="state" class:fault-text={program.required}>
 							{t('programs.missing')}
@@ -335,7 +350,13 @@
 			</div>
 
 			{#if urlTrouble}
-				<p class="fault-text note">{t(urlTrouble)}</p>
+				<p class="fault-text note">{t(WHY[urlTrouble.code] ?? 'downloads.otherTrouble')}</p>
+				{#if urlTrouble.said}
+					<details class="detail">
+						<summary>{t('downloads.seeDetail')}</summary>
+						<p class="numeric said">{urlTrouble.said}</p>
+					</details>
+				{/if}
 			{/if}
 
 			{#if probe}
@@ -402,13 +423,17 @@
 									{item.eta ? `· ${clock(item.eta)}` : ''}
 								</span>
 							{:else if item.failed}
-								<!-- A reason Onsa knows is said in the listener's own
-								     language; one it does not is yt-dlp's own sentence,
-								     which says more than "it failed" ever could. -->
-								{#if WHY[item.failed]}
-									<span class="fault-text state">{t(WHY[item.failed])}</span>
-								{:else}
-									<span class="fault-text said">{item.failed}</span>
+								<!-- The reason in the listener's own language, and
+								     yt-dlp's own sentence kept under it for whoever
+								     looks into it. Neither is worth losing. -->
+								<span class="fault-text state">
+									{t(WHY[item.failed] ?? 'downloads.otherTrouble')}
+								</span>
+								{#if item.said}
+									<details class="detail">
+										<summary>{t('downloads.seeDetail')}</summary>
+										<p class="numeric said">{item.said}</p>
+									</details>
 								{/if}
 							{/if}
 						</li>
@@ -580,6 +605,27 @@
 	}
 
 	/* A program's own sentence, which is longer than a word. */
+	.detail {
+		grid-column: 1 / -1;
+		font-size: 12px;
+	}
+
+	.detail summary {
+		color: var(--onsa-role-adjustable);
+		cursor: pointer;
+	}
+
+	.detail p {
+		margin: 4px 0 0;
+		color: var(--onsa-text-secondary);
+		overflow-wrap: anywhere;
+	}
+
+	.anyway {
+		grid-column: 1 / -1;
+		margin: 2px 0 0;
+	}
+
 	.said {
 		grid-column: 1 / -1;
 		font-size: 11.5px;
