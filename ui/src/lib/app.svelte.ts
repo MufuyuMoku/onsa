@@ -58,6 +58,8 @@ let failure = $state<MessageKey | null>(null);
 let trouble = $state<StartupTrouble | null>(null);
 let ready = $state(false);
 let firstRun = $state(false);
+let revisit = $state(false);
+let before = $state<View | null>(null);
 let mini = $state(false);
 let view = $state<View>({ kind: 'tracks' });
 
@@ -91,6 +93,14 @@ export const app = {
 	/** Whether the first screen shows (no library folder yet). */
 	get firstRun() {
 		return firstRun;
+	},
+	/**
+	 * Whether the first screen was asked for again from the help page,
+	 * rather than shown because there is no library yet. The steps are the
+	 * same; what differs is that nothing here is owed any more.
+	 */
+	get revisit() {
+		return revisit;
 	},
 	/** What the main area shows. */
 	get view() {
@@ -172,8 +182,18 @@ export function navigate(next: View): void {
 	view = next;
 }
 
-/** Leaves the first screen for the library. */
-export function finishFirstRun(): void {
+/** Leaves the first screen for the library, or for a page it pointed at. */
+export function finishFirstRun(next?: View): void {
 	firstRun = false;
-	view = { kind: 'tracks' };
+	// Somebody who opened it from the help page is put back where they were.
+	view = next ?? (revisit && before ? before : { kind: 'tracks' });
+	revisit = false;
+	before = null;
+}
+
+/** Shows the first screen again, from the help page (SPEC section 9.2). */
+export function showFirstRun(): void {
+	before = view;
+	revisit = true;
+	firstRun = true;
 }

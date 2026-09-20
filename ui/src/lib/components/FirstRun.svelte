@@ -1,10 +1,12 @@
 <!--
 	The first screen (SPEC section 9.2): choose the music folder, choose a
-	theme with a live preview, then scan with visible progress.
+	theme with a live preview, then scan with visible progress — and, when
+	that is done, one closing step naming the three pages nobody would find
+	on their own. It can be asked for again from the help page.
 -->
 <script lang="ts">
 	import { addFolder, failureKey, pickFolder } from '$lib/backend';
-	import { chooseLocale, finishFirstRun } from '$lib/app.svelte';
+	import { app, chooseLocale, finishFirstRun, type View } from '$lib/app.svelte';
 	import { currentLocale, LOCALES, t, type Locale } from '$lib/i18n/index.svelte';
 	import type { MessageKey } from '$lib/i18n/dictionary';
 	import { library, scanSummary } from '$lib/library.svelte';
@@ -16,6 +18,22 @@
 	let failure = $state<MessageKey | null>(null);
 
 	const languageKeys: Record<Locale, MessageKey> = { id: 'language.id', en: 'language.en' };
+
+	/** What the closing step names, one sentence each. */
+	const elsewhere: { view: View; label: MessageKey; says: MessageKey }[] = [
+		{ view: { kind: 'tidy' }, label: 'nav.tidy', says: 'firstRun.moreTidy' },
+		{ view: { kind: 'downloads' }, label: 'nav.downloads', says: 'firstRun.moreDownloads' },
+		{
+			view: { kind: 'settings', section: 'lyrics' },
+			label: 'settings.lyrics',
+			says: 'firstRun.moreLyrics'
+		}
+	];
+
+	// Asked for again from the help page, rather than shown because there is
+	// no library yet: the closing step is the point of the visit, so it is
+	// there from the start.
+	const revisit = $derived(app.revisit);
 
 	async function choose(): Promise<void> {
 		try {
@@ -49,7 +67,7 @@
 	<section class="panel">
 		<header>
 			<h1>{t('firstRun.welcome')}</h1>
-			<p class="muted">{t('firstRun.intro')}</p>
+			<p class="muted">{revisit ? t('firstRun.again') : t('firstRun.intro')}</p>
 		</header>
 
 		<div class="step">
@@ -101,6 +119,7 @@
 		<div class="step">
 			<h2 class="label">{t('firstRun.scanStep')}</h2>
 			{#if phase === 'setup'}
+				{#if revisit}<p class="muted">{t('firstRun.againScan')}</p>{/if}
 				<button type="button" class="btn primary" disabled={!folder} onclick={begin}>
 					{t('firstRun.start')}
 				</button>
@@ -109,13 +128,29 @@
 					<p class="numeric">{scanSummary()}</p>
 					<div class="bar" class:running={phase === 'scanning'}><i></i></div>
 				</div>
-				{#if phase === 'done'}
-					<button type="button" class="btn primary" onclick={finishFirstRun}>
-						{t('firstRun.open')}
-					</button>
-				{/if}
 			{/if}
 		</div>
+
+		{#if phase === 'done' || revisit}
+			<div class="step">
+				<h2 class="label">{t('firstRun.moreStep')}</h2>
+				<p class="muted">{t('firstRun.moreHint')}</p>
+				<ul class="more">
+					{#each elsewhere as item (item.label)}
+						<li>
+							<button type="button" class="go" onclick={() => finishFirstRun(item.view)}>
+								{t(item.label)}
+							</button>
+							<span class="muted">{t(item.says)}</span>
+						</li>
+					{/each}
+				</ul>
+			</div>
+
+			<button type="button" class="btn primary" onclick={() => finishFirstRun()}>
+				{phase === 'done' ? t('firstRun.open') : t('firstRun.close')}
+			</button>
+		{/if}
 
 		{#if failure}<p class="fault-text">{t(failure)}</p>{/if}
 	</section>
@@ -210,6 +245,37 @@
 
 	.swatches i {
 		flex: 1;
+	}
+
+	.more {
+		display: grid;
+		gap: 8px;
+		margin: 2px 0 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.more li {
+		display: grid;
+		grid-template-columns: minmax(0, 8em) minmax(0, 1fr);
+		gap: 10px;
+		align-items: baseline;
+	}
+
+	.go {
+		padding: 0;
+		border: 0;
+		background: none;
+		color: var(--onsa-role-adjustable);
+		font: inherit;
+		text-align: left;
+		text-decoration: underline;
+		text-underline-offset: 3px;
+		cursor: pointer;
+	}
+
+	.go:hover {
+		color: var(--onsa-role-active);
 	}
 
 	.progress {

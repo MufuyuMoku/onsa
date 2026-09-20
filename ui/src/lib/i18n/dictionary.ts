@@ -186,6 +186,19 @@ const id = {
 	'firstRun.scanStep': '3 · Scan',
 	'firstRun.start': 'Mulai scan',
 	'firstRun.open': 'Buka library',
+	'firstRun.moreStep': 'Selebihnya',
+	'firstRun.moreHint':
+		'Tiga hal yang mudah terlewat. Klik namanya untuk langsung ke sana; semuanya juga ada di navigasi kiri.',
+	'firstRun.moreTidy':
+		'Merapikan tag: ganti nama berpola dengan pratinjau, perbaikan otomatis tanpa jaringan, dan — bila kamu nyalakan — usulan dari internet yang tetap harus kamu setujui.',
+	'firstRun.moreDownloads':
+		'Mengambil audio dari sebuah URL lewat yt-dlp, satu per satu, setelah kamu menyetujui program yang diunduh Onsa untuk itu.',
+	'firstRun.moreLyrics':
+		'Lirik dari berkas .lrc di sebelah lagu, dari tag di dalamnya, atau dari LRCLIB bila kamu menyalakannya; baris yang sedang dinyanyikan menyala di panel kanan.',
+	'firstRun.again': 'Layar pertama, dibuka lagi. Tidak ada yang harus kamu lakukan di sini.',
+	'firstRun.againScan':
+		'Library-mu sudah ada. Pilih folder di atas hanya kalau kamu ingin menambah satu lagi.',
+	'firstRun.close': 'Tutup',
 
 	'scan.running': 'Memindai… {seen} file, {read} dibaca',
 	'scan.done': '{seen} file dalam {seconds} detik',
@@ -813,6 +826,19 @@ const en: Record<MessageKey, string> = {
 	'firstRun.scanStep': '3 · Scan',
 	'firstRun.start': 'Start scan',
 	'firstRun.open': 'Open library',
+	'firstRun.moreStep': 'What else is here',
+	'firstRun.moreHint':
+		'Three things that are easy to miss. Click a name to go straight there; they are all in the navigation on the left as well.',
+	'firstRun.moreTidy':
+		'Tidying tags: renaming by pattern with a preview, automatic fixes that need no network, and — if you turn it on — suggestions from the internet that still wait for your yes.',
+	'firstRun.moreDownloads':
+		'Fetching audio from a URL with yt-dlp, one at a time, once you have approved the programs Onsa downloads for it.',
+	'firstRun.moreLyrics':
+		'Lyrics from an .lrc file beside the song, from the tags inside it, or from LRCLIB if you turn that on; the line being sung lights up in the right-hand panel.',
+	'firstRun.again': 'The first screen, opened again. There is nothing you have to do here.',
+	'firstRun.againScan':
+		'You already have a library. Choose a folder above only if you want to add another one.',
+	'firstRun.close': 'Close',
 
 	'scan.running': 'Scanning… {seen} files, {read} read',
 	'scan.done': '{seen} files in {seconds} s',
