@@ -37,6 +37,24 @@ pub enum NetError {
     Stopped,
 }
 
+/// A fetch that did not finish: what kind of trouble, and what was said.
+///
+/// The kind is what the window translates; the sentence is what whoever
+/// looks into it needs. Keeping only the kind is how "it did not work"
+/// becomes the whole account of an afternoon.
+#[derive(Debug)]
+pub struct FetchTrouble {
+    pub kind: NetError,
+    pub said: Option<String>,
+}
+
+impl FetchTrouble {
+    /// A trouble with nothing more to say than its kind.
+    pub fn of(kind: NetError) -> Self {
+        Self { kind, said: None }
+    }
+}
+
 impl std::fmt::Display for NetError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -358,19 +376,32 @@ pub fn fetch(
     url: &str,
     limit: u64,
     mut watching: impl FnMut(u64, Option<u64>) -> bool,
-) -> Result<Vec<u8>, NetError> {
-    let client = client().ok_or(NetError::Unreachable)?;
+) -> Result<Vec<u8>, FetchTrouble> {
+    let client = client().ok_or_else(|| FetchTrouble::of(NetError::Unreachable))?;
     let response = client.get(url).send().map_err(|error| {
-        tracing::debug!("a program could not be fetched: {}", tidy(&error));
-        NetError::Unreachable
+        let said = tidy(&error);
+        tracing::debug!("a program could not be fetched: {said}");
+        FetchTrouble {
+            kind: NetError::Unreachable,
+            said: Some(said),
+        }
     })?;
     if !response.status().is_success() {
-        tracing::debug!(status = response.status().as_u16(), "the release refused");
-        return Err(NetError::Unreachable);
+        let status = response.status();
+        tracing::debug!(status = status.as_u16(), "the release refused");
+        return Err(FetchTrouble {
+            kind: NetError::Unreachable,
+            said: Some(format!("the release answered {status}")),
+        });
     }
     let expected = response.content_length().filter(|size| *size > 0);
-    if expected.is_some_and(|size| size > limit) {
-        return Err(NetError::TooLarge);
+    if let Some(size) = expected.filter(|size| *size > limit) {
+        return Err(FetchTrouble {
+            kind: NetError::TooLarge,
+            said: Some(format!(
+                "it says it is {size} bytes, past the {limit} allowed"
+            )),
+        });
     }
 
     let mut body = Vec::with_capacity(expected.unwrap_or(1024 * 1024).min(limit) as usize);
@@ -379,17 +410,23 @@ pub fn fetch(
     loop {
         let read = reader.read(&mut piece).map_err(|error| {
             tracing::debug!("the fetch stopped part way: {error}");
-            NetError::Unreachable
+            FetchTrouble {
+                kind: NetError::Unreachable,
+                said: Some(format!("the fetch stopped part way: {error}")),
+            }
         })?;
         if read == 0 {
             break;
         }
         if body.len() as u64 + read as u64 > limit {
-            return Err(NetError::TooLarge);
+            return Err(FetchTrouble {
+                kind: NetError::TooLarge,
+                said: Some(format!("it went past the {limit} bytes allowed")),
+            });
         }
         body.extend_from_slice(&piece[..read]);
         if !watching(body.len() as u64, expected) {
-            return Err(NetError::Stopped);
+            return Err(FetchTrouble::of(NetError::Stopped));
         }
     }
     Ok(body)

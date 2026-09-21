@@ -90,6 +90,8 @@ pub struct FetchProgress {
     pub finished: bool,
     /// What went wrong, as a fixed word the interface translates.
     pub failed: Option<String>,
+    /// What the release or the client itself said about it.
+    pub said: Option<String>,
 }
 
 /// One fetch at a time, and a way to stop it.
@@ -214,7 +216,11 @@ pub async fn binary_install(app: AppHandle, program: String) -> Result<BinaryDto
     // One handle for the worker, one kept here to clear the flag afterwards.
     let mine = state.clone();
     let outcome = tauri::async_runtime::spawn_blocking(move || {
-        let say = |done: u64, total: Option<u64>, finished: bool, failed: Option<String>| {
+        let say = |done: u64,
+                   total: Option<u64>,
+                   finished: bool,
+                   failed: Option<String>,
+                   said: Option<String>| {
             let _ = handle.emit(
                 BINARY_EVENT,
                 FetchProgress {
@@ -223,43 +229,60 @@ pub async fn binary_install(app: AppHandle, program: String) -> Result<BinaryDto
                     total,
                     finished,
                     failed,
+                    said,
                 },
             );
         };
 
         // The list first: fetching the file only to find there is nothing to
         // check it against would be a download spent for nothing.
-        let sums = net::fetch(release.sums_url, MAX_SUMS, |_, _| true).map_err(why)?;
-        let sums = String::from_utf8(sums).map_err(|_| "unreadable".to_string())?;
-        let expected = install::checksum_for(&sums, release.listed_as)
-            .ok_or_else(|| "noChecksum".to_string())?;
+        let sums = net::fetch(release.sums_url, MAX_SUMS, |_, _| true).map_err(trouble)?;
+        let sums = String::from_utf8(sums).map_err(|error| {
+            (
+                "unreadable".to_string(),
+                Some(format!("the list of checksums is not text: {error}")),
+            )
+        })?;
+        let expected = install::checksum_for(&sums, release.listed_as).ok_or_else(|| {
+            (
+                "noChecksum".to_string(),
+                Some(format!("no line in the list names {}", release.listed_as)),
+            )
+        })?;
 
         let bytes = net::fetch(release.url, MAX_BINARY, |done, total| {
-            say(done, total, false, None);
+            say(done, total, false, None, None);
             !mine.stop.load(Ordering::SeqCst)
         })
-        .map_err(why)?;
+        .map_err(trouble)?;
 
         install::install(&bin_dir, program, &bytes, &expected).map_err(|error| {
             tracing::warn!("{} was not installed: {error}", program.key());
+            let said = Some(error.to_string());
             match error {
-                onsa_downloader::Error::ChecksumMismatch(_) => "checksum".to_string(),
-                _ => "cannotWrite".to_string(),
+                onsa_downloader::Error::ChecksumMismatch(_) => ("checksum".to_string(), said),
+                _ => ("cannotWrite".to_string(), said),
             }
         })?;
-        say(bytes.len() as u64, Some(bytes.len() as u64), true, None);
+        say(
+            bytes.len() as u64,
+            Some(bytes.len() as u64),
+            true,
+            None,
+            None,
+        );
         tracing::info!(
             program = program.key(),
             "installed from its official release"
         );
-        Ok::<(), String>(())
+        Ok::<(), (String, Option<String>)>(())
     })
     .await;
 
     state.busy.store(false, Ordering::SeqCst);
     match outcome {
         Ok(Ok(())) => {}
-        Ok(Err(why)) => {
+        Ok(Err((code, said))) => {
             let _ = app.emit(
                 BINARY_EVENT,
                 FetchProgress {
@@ -267,7 +290,8 @@ pub async fn binary_install(app: AppHandle, program: String) -> Result<BinaryDto
                     done: 0,
                     total: None,
                     finished: true,
-                    failed: Some(why),
+                    failed: Some(code),
+                    said,
                 },
             );
             return Err(ErrorCode::Download);
@@ -308,6 +332,12 @@ pub async fn binaries_use_system(app: AppHandle, allowed: bool) -> Result<Binari
     }
     tracing::info!(allowed, "using the system's own programs");
     binaries_status(app).await
+}
+
+/// A fixed word for what went wrong on the way, and the sentence that came
+/// with it.
+fn trouble(fetch: net::FetchTrouble) -> (String, Option<String>) {
+    (why(fetch.kind), fetch.said)
 }
 
 /// A fixed word for what went wrong on the way.

@@ -53,6 +53,14 @@
 	 * wiped a moment after it appeared, and nothing was ever seen.
 	 */
 	let urlTrouble = $state<UrlTrouble | null>(null);
+	/**
+	 * Why fetching a program ended badly.
+	 *
+	 * Kept apart from `progress`, which is cleared the moment the fetch
+	 * stops: the reason has to outlive the thing that failed, or the only
+	 * account of it is a line in a log nobody opens.
+	 */
+	let installTrouble = $state<{ code: string; said: string | null } | null>(null);
 	let picked = $state<Record<string, boolean>>({});
 	let format = $state<DownloadFormat>('original');
 	let queue = $state<DownloadQueue | null>(null);
@@ -60,7 +68,14 @@
 	$effect(() => {
 		void look();
 		void readQueue();
-		const fetching = on<FetchProgress>(EVENTS.binary, (next) => (progress = next));
+		const fetching = on<FetchProgress>(EVENTS.binary, (next) => {
+			progress = next;
+			// The reason outlives the fetch: `progress` is cleared as soon
+			// as it stops, and the reason is what somebody needs afterwards.
+			if (next.finished && next.failed) {
+				installTrouble = { code: next.failed, said: next.said };
+			}
+		});
 		// The queue says only that it changed; what it changed to is asked
 		// for, so a burst of progress lines is one read rather than many.
 		const going = on(EVENTS.downloads, () => void readQueue());
@@ -150,14 +165,17 @@
 
 	async function install(key: string): Promise<void> {
 		busy = true;
-		progress = { key, done: 0, total: null, finished: false, failed: null };
+		installTrouble = null;
+		progress = { key, done: 0, total: null, finished: false, failed: null, said: null };
 		try {
 			const after = await binaryInstall(key);
 			asked += 1;
 			programs = programs.map((one) => (one.key === after.key ? after : one));
 			failure = null;
 		} catch (error) {
-			failure = failureKey(error);
+			// The event that came with it says more than the code thrown
+			// here; only when there was no event is this all there is.
+			if (!installTrouble) failure = failureKey(error);
 		} finally {
 			busy = false;
 			progress = null;
@@ -319,8 +337,16 @@
 		</label>
 		<p class="muted note">{t('downloads.useSystemWhat')}</p>
 
-		{#if progress?.failed}
-			<p class="fault-text note">{t(WHY[progress.failed] ?? 'downloads.unreachable')}</p>
+		{#if installTrouble}
+			<p class="fault-text note">
+				{t(WHY[installTrouble.code] ?? 'downloads.unreachable')}
+			</p>
+			{#if installTrouble.said}
+				<details class="detail">
+					<summary>{t('downloads.seeDetail')}</summary>
+					<p class="numeric said">{installTrouble.said}</p>
+				</details>
+			{/if}
 		{/if}
 		{#if failure}<p class="fault-text note">{t(failure)}</p>{/if}
 	</section>

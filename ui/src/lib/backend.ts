@@ -759,6 +759,8 @@ export interface FetchProgress {
 	total: number | null;
 	finished: boolean;
 	failed: string | null;
+	/** What the release or the client said, kept behind "see the detail". */
+	said: string | null;
 }
 
 /** The programs, and whether a copy already on the system may be used. */
