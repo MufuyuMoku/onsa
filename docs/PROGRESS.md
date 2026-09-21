@@ -1015,3 +1015,15 @@ Yang membuktikan tidak ada kunci di dalamnya ada tiga lapis, saling bebas:
 3. **Langkah di workflow** yang memeriksa lingkungannya sendiri sebelum apa pun dibangun, dan berhenti kalau salah satu variabel kunci berisi sesuatu.
 
 Versi dinaikkan ke **1.2.0**, karena berkas pemasang bernama 1.1.0 padahal isinya sudah lewat tag v1.1.0.
+
+### Rilis v1.2.0
+
+Tag `v1.2.0` memicu `release-build.yml`, yang membangun berkas pemasang Windows dan mengunggahnya sendiri ke Rilis GitHub: <https://github.com/MufuyuMoku/onsa/releases/tag/v1.2.0>
+
+`Onsa_1.2.0_x64-setup.exe`, **12.141.112 bita (11,58 MB)**, sha256 `8604ab5032b6a1a41f560d0266253bd5b84e0c2035b65eac017f3b60436902d5`.
+
+Diperiksa sesudah terbit, bukan sebelum:
+
+- Berkas yang diunduh dari halaman rilis **sama persis** dengan yang dibangun CI — sha256 keduanya cocok, jadi tidak ada yang melewati mesin siapa pun di tengah jalan.
+- Di log CI: ketiga variabel kunci kosong sebelum apa pun dibangun, dan tes `a_keyless_build_has_no_key_built_in` lulus pada build rilis itu sendiri.
+- Berkas pemasang itu dipasang, dan salinan hasilnya — dijalankan tanpa kunci apa pun di lingkungannya — berkata `{"acoustid":{"present":false,"source":"none"}}`. Di daftar program: Onsa 1.2.0, penerbit MufuyuMoku. Pencopotannya bersih.
