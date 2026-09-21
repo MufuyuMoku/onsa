@@ -4,17 +4,28 @@ Status tiap milestone dari `SPEC.md` §15. Diperbarui di akhir setiap milestone.
 
 ---
 
-## Garis rilis (keputusan pemilik proyek, 2026-09-19)
+## Garis rilis
 
-**v1**: pemutar lengkap, unduhan satu per satu, tanpa Opus. Isinya M0–M8 dan M10a.
-Sesudah M8 tidak ada fitur baru yang masuk v1 — yang tersisa hanya penyiapan rilis.
+Yang benar-benar ditandai:
 
-**v1.1**: M7b (hapus/ekspor sampul, menanam sampul ke berkas beserta aturan 1200 px,
-"(beragam)", dan tiga field yang belum bisa di-override), M10b (Deno dan ffmpeg, antrean
-paralel, antrean yang disimpan, tombol update yt-dlp), M11 (Opus dan kualitas lanjutan),
-dan M12 (paket rilis).
+| Tag | Commit | Tanggal | Isi |
+|---|---|---|---|
+| `v1.0.0` | `533a2b0` | 2026-09-19 | Pemutar lengkap, unduhan satu per satu, tanpa Opus: M0–M8 dan M10a. Sesudah M8 tidak ada fitur baru yang masuk v1. |
+| `v1.0.1` | `c21e923` | 2026-09-19 | Enam perbaikan dari sesi audit. Tidak ada fitur baru. |
+| `v1.1.0` | `4af6879` | 2026-09-20 | Bantuan di dalam aplikasi. Tidak ada kemampuan baru. |
+| `v1.2.0` | `26132f9` | 2026-09-21 | Paket untuk tester: tiap jalur internet dibuktikan terhadap layanan sungguhan, dan berkas pemasang Windows dibangun CI. Tidak ada fitur baru. |
+
+**Belum masuk rilis mana pun**: M7b (hapus/ekspor sampul, menanam sampul ke berkas
+beserta aturan 1200 px, "(beragam)", dan tiga field yang belum bisa di-override), M10b
+(Deno dan ffmpeg, antrean paralel, antrean yang disimpan, tombol update yt-dlp), M11
+(Opus dan kualitas lanjutan), dan M12 (paket rilis). Berkas pemasang Windows di v1.2.0
+dibuat untuk tester dan belum menutup M12.
 
 M9 (scrobble) tetap dilewati dan belum punya tanggal.
+
+Garis rilis yang diputuskan pemilik proyek pada 2026-09-19 menempatkan M7b, M10b, M11,
+dan M12 di v1.1. Yang ditandai sebagai v1.1.0 adalah bantuan di dalam aplikasi, jadi
+keempatnya belum punya versi.
 
 ---
 

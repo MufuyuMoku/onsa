@@ -22,7 +22,7 @@ Onsa (音叉, garpu tala) adalah pemutar musik desktop untuk Windows dan Linux, 
 - **Sumber yang hanya menyediakan Opus ditolak**, dengan pesan, karena Onsa belum punya decoder Opus. Lebih baik ditolak di muka daripada berkasnya mendarat lalu tidak pernah muncul di library.
 - **Folder library belum bisa dihapus** dari Pengaturan; yang ada baru menambah dan memindai ulang.
 - **Belum ada scrobble Last.fm.**
-- Yang menyusul di v1.1: sisa pekerjaan sampul, pengambil Deno dan ffmpeg beserta antrean paralel, decoder Opus dan kualitas lanjutan, lalu paket pemasangan (M7b, M10b, M11, M12 di [`docs/SPEC.md`](docs/SPEC.md) §15).
+- **Belum masuk rilis mana pun**: sisa pekerjaan sampul, pengambil Deno dan ffmpeg beserta antrean paralel, decoder Opus dan kualitas lanjutan, dan paket rilis (M7b, M10b, M11, M12 di [`docs/SPEC.md`](docs/SPEC.md) §15). Rilis sesudah v1.0.0 tidak menambah fitur: v1.0.1 memperbaiki temuan audit, v1.1.0 menambahkan bantuan di dalam aplikasi, dan v1.2.0 adalah paket untuk tester, dengan berkas pemasang Windows yang dibangun CI. Berkas pemasang itu belum menutup M12.
 
 ## Membangun dan menjalankan
 
