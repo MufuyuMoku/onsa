@@ -108,7 +108,7 @@ jobs:
       # The guard is read at compile time; this is the same thing said by
       # something that runs, on the same build environment.
       - name: Prove it at run time too
-        run: cargo test --release -p onsa keys:: -- --nocapture
+        run: 'cargo test --release -p onsa keys:: -- --nocapture'
 
       # What the binary asks of the system it lands on. Nothing here should
       # be a compiler, a runtime Onsa ships without, or anything that only
