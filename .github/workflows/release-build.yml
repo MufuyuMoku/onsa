@@ -122,6 +122,10 @@ jobs:
 
       - name: Build the Windows installer
         if: runner.os == 'Windows'
+        # Through bash, because the Tauri CLI has to be started from the
+        # folder whose subfolder holds tauri.conf.json, and the shell
+        # script in .bin is the one that does that on every platform.
+        shell: bash
         run: ./ui/node_modules/.bin/tauri build --bundles nsis
 
       - name: What the installer is
