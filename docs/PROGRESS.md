@@ -947,3 +947,59 @@ Halaman Library menanyakan ke disk tiap folder — saat daftarnya dibaca, dan **
 
 - Tur berlangkah banyak: memang tidak dibuat, atas permintaan pemilik proyek.
 - Paket untuk tester (installer Windows, berkas untuk tester, dan pembuktian tiap jalur internet terhadap layanan sungguhan) adalah v1.2.
+
+## v1.2 — paket untuk tester (2026-09-21)
+
+Tidak ada fitur baru. Tiga hal: membuktikan tiap jalur internet terhadap layanan aslinya, membuat berkas pemasang untuk Windows, dan menulis berkas untuk relawan tester.
+
+### A. Tiap jalur internet, terhadap layanan sungguhan
+
+Selama ini semuanya diuji terhadap layanan tiruan di 127.0.0.1 — itu tetap dipertahankan untuk CI, karena CI tidak boleh bergantung pada internet. Sebelum diserahkan, tiap jalur dibuktikan sekali terhadap layanan aslinya, di mesin uji tanpa satu pun pengalihan `ONSA_*_URL`.
+
+| Jalur | Hasil | Lama |
+|---|---|---|
+| Pengambil binary | yt-dlp 2026.08.19 dari rilis resminya, di mesin yang belum punya apa-apa | 2,5 detik |
+| yt-dlp | satu lagu dari Internet Archive sampai muncul di library dan diputar | 3,6 dtk membaca isi + 61,8 dtk mengunduh |
+| MusicBrainz | dua lagu dikenali; release-group id yang dijawabnya sama dengan yang tertulis di halaman sumbernya | 9,1 dtk untuk 4 lagu |
+| Cover Art Archive | sampul 500×500 diambil dan ditawarkan sebagai usulan | bagian dari 9,1 dtk itu |
+| AcoustID | kunci diterima layanannya (`works`); **lagu tidak dikenali** — lihat "yang tidak terbukti" | 0,6 dtk |
+| LRCLIB | 21 baris bersinkron, baris pertama 5,06 dtk, terakhir 113,3 dtk, baris yang dinyanyikan menyala | 1,0 dtk |
+
+**Checksum diperiksa dari luar Onsa**: SHA-256 berkas yang ditulis Onsa sama persis dengan yang diterbitkan `SHA2-256SUMS` rilis yt-dlp itu.
+
+**Sumber unduhan**: [HAZE 077] Faustino Goyena — *De Neatins* (HAZE netlabel, 2009) di Internet Archive, halamannya menyatakan lisensi **Creative Commons Attribution-Noncommercial-No Derivative Works 3.0**. Rilis netlabel, bukan situs berbagi video, dan bukan karya yang diambil tanpa izin.
+
+**Kalau layanannya lambat atau menolak** (dibuktikan lewat layanan tiruan yang menjawab 403, 429, 503, dan yang menjawab sangat lambat): unduhan menyerah di 23 dtk, lirik di 21 dtk, "Cari data online" di 61 dtk untuk satu lagu, "Coba kunci" di 30 dtk. Semuanya berakhir dengan kalimat yang bisa ditindaklanjuti, tidak ada yang menggantung. 403 dan 429 — dua sebab yang di v1.1 baru berupa pola — kini terbukti diterjemahkan dengan benar.
+
+### Tiga cacat yang ditemukan pengujian ini
+
+1. **"Coba kunci" menjawab "AcoustID menerima kunci ini" kepada layanan yang sedang tumbang.** Status HTTP-nya tidak dilihat sama sekali. Sekarang hanya 2xx dan 400 (cara AcoustID menolak permintaan) yang dibaca sebagai jawaban tentang kunci; sisanya "tidak bisa dihubungi".
+2. **Panel lirik berkata "Tidak ada lirik untuk lagu ini" ketika layanannya tidak bisa dihubungi.** Yang tercatat di database sudah benar sejak M8 — kegagalan tidak pernah diingat — tapi jendelanya tidak punya cara tahu. Sekarang: "Layanan liriknya tidak bisa dihubungi. Lagunya mungkin punya lirik; coba lagi nanti."
+3. **Kegagalan mengunduh program luar berakhir sebagai "Detailnya ada di log".** Sebabnya sudah diketahui dan dibuang di tengah jalan. Sekarang sama seperti kegagalan mengunduh lagu: kalimat yang menyebut sebab dan menyuruh coba lagi, dengan kalimat asli di balik "Lihat detail".
+
+### Yang tidak bisa dibuktikan jujur
+
+- **AcoustID mengenali satu lagu dari bunyinya.** fpcalc dipasang (Chromaprint 1.6.1 resmi), sidik jari dihitung, permintaan terkirim dan dijawab — tapi dua rekaman yang boleh dipakai (lagu netlabel itu dan nada uji buatan sendiri) memang tidak ada di basis data AcoustID. Jalurnya terbukti sampai "layanan menjawab"; "lagu dikenali" tidak, karena membuktikannya berarti memegang rekaman komersial orang.
+- **Ditolak karena butuh masuk akun, dan ditolak karena negara.** Keduanya sengaja tidak dipaksakan: mengujinya berarti sengaja mencari sumber yang diproteksi. Keduanya tetap berupa pola yang belum terbukti.
+
+### B. Berkas pemasang Windows
+
+`Onsa_1.1.0_x64-setup.exe`, **11,6 MB**, dari build rilis. Dipasang per pengguna ke `%LOCALAPPDATA%\Onsa` — **tidak butuh hak administrator**, tidak menyentuh Program Files, dan pemasangannya selesai dalam 5 detik.
+
+- **Tidak butuh toolchain apa pun.** Binernya meminta 27 DLL, semuanya milik Windows; **tidak ada satu pun runtime Visual C++** (`vcruntime*`, `msvcp*`), hanya penerus UCRT yang memang bagian dari Windows 10 dan 11.
+- **Dijalankan dari keadaan benar-benar baru** — data folder kosong, dan PATH hanya `C:\Windows\system32;C:\Windows`, jadi tidak ada yt-dlp dan tidak ada ffmpeg: layar pertama muncul, folder dipilih, 5 lagu terbaca, lagu diputar, dan strip jalur sinyal menunjukkan rantai yang sebenarnya. Halaman Unduhan menyebut keduanya "belum ada" dan menjelaskan cara memasang masing-masing.
+- **Nama benar di tiga tempat**: jendela pemasang "Onsa Setup", pintasan Start Menu "Onsa", judul jendela aplikasinya "Onsa", dan di daftar program: Onsa 1.1.0.
+- **Dua hal diperbaiki setelah diperiksa**: berkas pemasangnya semula memakai ikon bawaan NSIS (gambar globe Nullsoft), sekarang memakai ikon Onsa; dan di daftar program ia semula tercatat dengan penerbit "github" (dari bagian tengah identifier), sekarang "MufuyuMoku".
+- **Pencopotan bersih**: sesudah uninstaller dijalankan, folder pemasangan, pintasan Start Menu, dan entri di daftar program ketiganya hilang.
+
+**SmartScreen**: berkasnya **tidak ditandatangani** (`NotSigned`) — menandatanganinya butuh sertifikat berbayar. Ditandai sebagai berkas yang diunduh dari internet (Mark of the Web) lalu dijalankan, di mesin ini **tidak muncul peringatan SmartScreen**; proses SmartScreen memang berjalan, jadi berkasnya dinilai dan dibiarkan lewat. Itu tidak bisa dijadikan janji: keputusan SmartScreen bergantung pada reputasi berkas itu di layanan Microsoft, setelan Windows di mesin yang memakainya, dan berkas ini sudah beberapa kali dijalankan di mesin ini. Berkas tak bertanda tangan yang baru biasanya memang dihadang. Karena itu `docs/UNTUK-TESTER.md` tetap menjelaskan peringatan itu beserta apa yang harus diklik.
+
+**Sebersih apa lingkungan ujinya**: Windows Sandbox tidak ada di Windows 11 Home, dan membuat akun pengguna baru butuh hak administrator — jadi pemasangannya diuji di mesin pengembang ini sendiri, dengan data folder baru dan PATH yang dibersihkan. Yang membuktikan "tidak butuh toolchain" bukan lingkungan itu melainkan daftar DLL yang diminta binernya.
+
+### Kunci AcoustID di dalam build rilis
+
+**Build rilis di mesin ini membawa kunci AcoustID pemiliknya ke dalam binernya.** `keys.rs` memakai `option_env!`, yang dibaca saat kompilasi: variabel `ONSA_ACOUSTID_API_KEY` yang ada di lingkungan mesin ini ikut tertanam. Diperiksa tiga kali: kunci itu ada di dalam `onsa.exe` hasil build, ada di dalam salinan yang dipasang berkas pemasang, dan salinan yang dipasang itu — dijalankan tanpa kunci apa pun di lingkungannya — berkata `source: "build"`, yaitu "Memakai kunci yang dipasang saat build".
+
+Artinya: berkas pemasang yang dibangun sambil variabel itu ada akan memberi tiap tester kunci pribadi pemiliknya, yang bisa dibaca siapa pun dari binernya. Build kedua dibuat dengan variabel itu dikosongkan, dan di situ kuncinya tidak ada di mana pun: halaman Metadata berkata "Belum ada kunci. Pengenalan lewat AcoustID tidak akan berjalan."
+
+**Apa yang dilihat tester tanpa kunci dan tanpa fpcalc**: halaman Metadata menyebut keduanya belum ada, menjelaskan kuncinya gratis beserta tempat mengambilnya, dan menyebut fpcalc ada di paket Chromaprint. Halaman Rapikan menampilkan dua kalimat sebelum apa pun dijalankan: "Belum ada API key AcoustID. Tanpa itu, pencocokan lewat suara tidak bisa jalan." dan "fpcalc belum terpasang. Tanpa itu, hanya lagu yang sudah bertag yang bisa dicari." Tombol "Mulai cari" tetap hidup, dan menjalankannya tetap berguna: dari lima lagu uji, empat mendapat usulan dari MusicBrainz lewat keterangan lagunya; hanya yang memang perlu dikenali dari bunyinya yang kembali dengan sebab `noKey`.

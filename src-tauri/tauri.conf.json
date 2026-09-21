@@ -49,6 +49,14 @@
       "icons/icon.png"
     ],
     "category": "Music",
+    "publisher": "MufuyuMoku",
+    "windows": {
+      "nsis": {
+        "installerIcon": "icons/icon.ico",
+        "installMode": "currentUser",
+        "languages": ["English", "Indonesian"]
+      }
+    },
     "fileAssociations": [
       {
         "ext": [
