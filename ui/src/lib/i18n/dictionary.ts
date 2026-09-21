@@ -1081,7 +1081,10 @@ const id = {
 	'librarySettings.goneWhat':
 		'{n} folder tidak ada di tempatnya lagi. Biasanya karena drive-nya dicabut, atau foldernya dipindah atau diganti nama lewat program lain.',
 	'librarySettings.goneNothingLost':
-		'Onsa tidak menghapus apa pun karena ini. Lagu dari folder itu tetap ada di library; yang berkasnya tidak bisa dibuka ditandai hilang. Colokkan lagi drive-nya lalu tekan "Scan ulang", atau tambahkan tempat barunya kalau foldernya kamu pindah.'
+		'Onsa tidak menghapus apa pun karena ini. Lagu dari folder itu tetap ada di library; yang berkasnya tidak bisa dibuka ditandai hilang. Colokkan lagi drive-nya lalu tekan "Scan ulang", atau tambahkan tempat barunya kalau foldernya kamu pindah.',
+
+	'lyrics.unreachable':
+		'Layanan liriknya tidak bisa dihubungi. Lagunya mungkin punya lirik; coba lagi nanti.'
 } as const;
 
 export type MessageKey = keyof typeof id;
@@ -2149,7 +2152,10 @@ const en: Record<MessageKey, string> = {
 	'librarySettings.goneWhat':
 		'{n} of these folders is not where it was. Usually that means a drive was unplugged, or the folder was moved or renamed with another program.',
 	'librarySettings.goneNothingLost':
-		'Onsa deletes nothing over this. The songs from that folder stay in the library; the ones whose files cannot be opened are marked missing. Plug the drive back in and press "Rescan", or add the new place if you moved the folder.'
+		'Onsa deletes nothing over this. The songs from that folder stay in the library; the ones whose files cannot be opened are marked missing. Plug the drive back in and press "Rescan", or add the new place if you moved the folder.',
+
+	'lyrics.unreachable':
+		'The lyrics service could not be reached. The song may well have words; try again later.'
 };
 
 export const dictionaries: Record<Locale, Record<MessageKey, string>> = { id, en };

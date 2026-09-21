@@ -22,7 +22,8 @@ function words(lines: [number | null, string][], offsetMs = 0): Lyrics {
 		looking: false,
 		online: false,
 		canAsk: false,
-		beside: true
+		beside: true,
+	unreachable: false
 	};
 }
 

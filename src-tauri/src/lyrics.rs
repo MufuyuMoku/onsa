@@ -77,6 +77,12 @@ pub struct LyricsDto {
     pub can_ask: bool,
     /// Whether there is already a `.lrc` beside the song.
     pub beside: bool,
+    /// Whether the last look for this song could not reach the service.
+    ///
+    /// Kept apart from "there are none": a song with no words is a fact
+    /// worth remembering, while a service that was down is worth nothing
+    /// except saying so, so that nobody concludes the song has no words.
+    pub unreachable: bool,
 }
 
 impl LyricsDto {
@@ -92,6 +98,7 @@ impl LyricsDto {
             online: false,
             can_ask: false,
             beside: false,
+            unreachable: false,
         }
     }
 }
@@ -105,6 +112,10 @@ impl LyricsDto {
 #[derive(Default)]
 pub struct Lookups {
     going: Mutex<HashSet<i64>>,
+    /// Songs whose last look could not reach the service. Nothing is
+    /// written to the library about them; this lives only as long as Onsa
+    /// is running, and clears the moment an answer arrives.
+    unreachable: Mutex<HashSet<i64>>,
     era: AtomicU64,
 }
 
@@ -126,6 +137,21 @@ impl Lookups {
         lock(&self.going).contains(&track_id)
     }
 
+    /// Remembers that the service could not be reached about this song.
+    fn note_unreachable(&self, track_id: i64) {
+        lock(&self.unreachable).insert(track_id);
+    }
+
+    /// Forgets that, because something was heard back.
+    fn heard_back(&self, track_id: i64) {
+        lock(&self.unreachable).remove(&track_id);
+    }
+
+    /// Whether the last look for this song ended without an answer.
+    fn was_unreachable(&self, track_id: i64) -> bool {
+        lock(&self.unreachable).contains(&track_id)
+    }
+
     /// The era a lookup belongs to.
     fn era(&self) -> u64 {
         self.era.load(Ordering::SeqCst)
@@ -135,6 +161,7 @@ impl Lookups {
     pub fn abandon(&self) {
         self.era.fetch_add(1, Ordering::SeqCst);
         lock(&self.going).clear();
+        lock(&self.unreachable).clear();
     }
 }
 
@@ -215,6 +242,7 @@ fn assemble(app: &AppHandle, track_id: i64, start_looking: bool) -> Result<Lyric
         return Ok(LyricsDto::nothing(track_id));
     };
     let prefs = prefs(&library)?;
+    let lookups = app.state::<Arc<Lookups>>();
     let kept = library.read(|library| library.lyrics(track_id))?;
     let offset_ms = kept.as_ref().map(|kept| kept.offset_ms).unwrap_or(0);
     let asked = kept.as_ref().is_some_and(|kept| kept.was_asked());
@@ -259,6 +287,7 @@ fn assemble(app: &AppHandle, track_id: i64, start_looking: bool) -> Result<Lyric
         online: prefs.online,
         can_ask: found.text.is_none() && song.ask.is_enough(),
         beside: beside::beside_exists(&song.path),
+        unreachable: found.text.is_none() && lookups.was_unreachable(track_id),
     })
 }
 
@@ -284,6 +313,7 @@ fn ask_away(app: AppHandle, track_id: i64, ask: lrclib::Ask) {
     }
     let era = lookups.era();
     let giving_back = lookups.clone();
+    let unstarted = lookups.clone();
     let spawned = std::thread::Builder::new()
         .name("onsa-lyrics".into())
         .spawn(move || {
@@ -304,13 +334,17 @@ fn ask_away(app: AppHandle, track_id: i64, ask: lrclib::Ask) {
             let said = match answer {
                 Answer::Said(said) => said,
                 Answer::Unreachable => {
-                    // Nothing is remembered, so the song can be asked about
-                    // again once the service is back.
+                    // Nothing is written down about the song itself, so it
+                    // can be asked about again once the service is back —
+                    // but the window is told, so it does not say the song
+                    // has no words.
                     tracing::info!(track_id, "a lyrics service could not be reached");
+                    giving_back.note_unreachable(track_id);
                     let _ = app.emit(LYRICS_EVENT, track_id);
                     return;
                 }
             };
+            giving_back.heard_back(track_id);
             let (text, synced) = match &said {
                 Some(found) => (found.best().map(str::to_string), found.synced.is_some()),
                 None => (None, false),
@@ -329,7 +363,7 @@ fn ask_away(app: AppHandle, track_id: i64, ask: lrclib::Ask) {
         });
     if let Err(error) = spawned {
         tracing::warn!("a lyrics lookup could not be started: {error}");
-        giving_back.give_back(track_id);
+        unstarted.give_back(track_id);
     }
 }
 

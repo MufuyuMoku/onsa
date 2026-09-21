@@ -938,6 +938,8 @@ export interface Lyrics {
 	online: boolean;
 	canAsk: boolean;
 	beside: boolean;
+	/** Whether the last look could not reach the service at all. */
+	unreachable: boolean;
 }
 
 /** What Onsa may do about a song's words. */

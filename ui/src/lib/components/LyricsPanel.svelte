@@ -51,6 +51,10 @@
 	const nothing = $derived.by(() => {
 		if (!playing) return 'lyrics.nothingPlaying';
 		if (words?.looking) return 'lyrics.looking';
+		// A service that could not be reached has said nothing about this
+		// song, and saying it has no words would send the listener looking
+		// for the fault in their own file.
+		if (words?.unreachable) return 'lyrics.unreachable';
 		return 'lyrics.none';
 	});
 

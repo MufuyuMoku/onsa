@@ -429,11 +429,30 @@ pub fn acoustid_accepts(key: &str) -> crate::commands::KeyTest {
             return KeyTest::Unreachable;
         }
     };
+    let status = response.status().as_u16();
     // A refusal carries the reason in its body, so it is read either way.
     let Ok(body) = read_capped(response, MAX_ANSWER) else {
         return KeyTest::Unreachable;
     };
-    let Ok(answer) = serde_json::from_slice::<serde_json::Value>(&body) else {
+    read_key_answer(status, &body)
+}
+
+/// What one answer from AcoustID says about the key.
+///
+/// The status comes first. A service that is down, or busy, or refusing
+/// everybody, has said nothing about the key at all, and telling somebody
+/// their key works on the strength of a 503 would send them looking for the
+/// fault everywhere except where it is.
+fn read_key_answer(status: u16, body: &[u8]) -> crate::commands::KeyTest {
+    use crate::commands::KeyTest;
+    // 400 is how AcoustID says the request was wrong, and a key it does not
+    // know is one of the ways a request can be wrong; anything else outside
+    // the 200s is the service, not the key.
+    if !(200..300).contains(&status) && status != 400 {
+        tracing::debug!(status, "AcoustID could not answer about the key");
+        return KeyTest::Unreachable;
+    }
+    let Ok(answer) = serde_json::from_slice::<serde_json::Value>(body) else {
         return KeyTest::Unreachable;
     };
     if answer.get("status").and_then(|status| status.as_str()) == Some("ok") {
@@ -458,6 +477,31 @@ pub fn acoustid_accepts(key: &str) -> crate::commands::KeyTest {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_service_that_cannot_answer_says_nothing_about_the_key() {
+        use crate::commands::KeyTest;
+        // The shape AcoustID answers with when the key went through.
+        let ok = br#"{"status":"ok","results":[]}"#;
+        assert!(matches!(read_key_answer(200, ok), KeyTest::Works));
+
+        // A key it does not know: a 400 whose error names the key.
+        let refused = br#"{"status":"error","error":{"message":"invalid API key"}}"#;
+        assert!(matches!(read_key_answer(400, refused), KeyTest::Refused));
+
+        // A 400 about something else: the key itself got through.
+        let other = br#"{"status":"error","error":{"message":"invalid musicbrainz recording id"}}"#;
+        assert!(matches!(read_key_answer(400, other), KeyTest::Works));
+
+        // A service that is down, busy, or refusing everybody has said
+        // nothing about the key, whatever its body happens to contain.
+        for status in [401, 403, 429, 500, 502, 503] {
+            assert!(
+                matches!(read_key_answer(status, ok), KeyTest::Unreachable),
+                "status {status} should not count as an answer about the key"
+            );
+        }
+    }
 
     #[test]
     fn the_user_agent_says_who_is_calling() {
