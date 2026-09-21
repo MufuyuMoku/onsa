@@ -8,7 +8,7 @@ Onsa adalah pemutar musik untuk Windows. Ia memutar berkas musik yang sudah ada 
 
 ## Memasang
 
-1. Jalankan berkas pemasangnya.
+1. Jalankan berkas pemasangnya (`Onsa_1.2.0_x64-setup.exe`).
 2. Windows kemungkinan besar menampilkan layar biru bertuliskan **"Windows melindungi PC Anda"** (*Windows protected your PC*). Itu bukan tanda ada yang salah dengan berkasnya: Windows menampilkan itu untuk setiap program yang belum ditandatangani secara digital, dan menandatanganinya butuh sertifikat berbayar yang belum kubeli. Klik **"Info selengkapnya"** (*More info*), lalu **"Tetap jalankan"** (*Run anyway*).
 3. Setelah terpasang, Onsa ada di Start Menu dengan nama **Onsa**.
 

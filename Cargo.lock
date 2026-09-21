@@ -3450,7 +3450,7 @@ checksum = "384b8ab6d37215f3c5301a95a4accb5d64aa607f1fcb26a11b5303878451b4fe"
 
 [[package]]
 name = "onsa"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "anyhow",
  "onsa-audio",
@@ -3473,7 +3473,7 @@ dependencies = [
 
 [[package]]
 name = "onsa-audio"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "cpal",
  "realfft",
@@ -3486,7 +3486,7 @@ dependencies = [
 
 [[package]]
 name = "onsa-cli"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -3497,7 +3497,7 @@ dependencies = [
 
 [[package]]
 name = "onsa-downloader"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "libc",
  "sha2",
@@ -3508,7 +3508,7 @@ dependencies = [
 
 [[package]]
 name = "onsa-library"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "image",
  "lofty",
@@ -3524,7 +3524,7 @@ dependencies = [
 
 [[package]]
 name = "onsa-lyrics"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "lofty",
  "serde_json",
@@ -3534,7 +3534,7 @@ dependencies = [
 
 [[package]]
 name = "onsa-scrobble"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "thiserror 2.0.20",
 ]

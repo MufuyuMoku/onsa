@@ -1003,3 +1003,15 @@ Selama ini semuanya diuji terhadap layanan tiruan di 127.0.0.1 — itu tetap dip
 Artinya: berkas pemasang yang dibangun sambil variabel itu ada akan memberi tiap tester kunci pribadi pemiliknya, yang bisa dibaca siapa pun dari binernya. Build kedua dibuat dengan variabel itu dikosongkan, dan di situ kuncinya tidak ada di mana pun: halaman Metadata berkata "Belum ada kunci. Pengenalan lewat AcoustID tidak akan berjalan."
 
 **Apa yang dilihat tester tanpa kunci dan tanpa fpcalc**: halaman Metadata menyebut keduanya belum ada, menjelaskan kuncinya gratis beserta tempat mengambilnya, dan menyebut fpcalc ada di paket Chromaprint. Halaman Rapikan menampilkan dua kalimat sebelum apa pun dijalankan: "Belum ada API key AcoustID. Tanpa itu, pencocokan lewat suara tidak bisa jalan." dan "fpcalc belum terpasang. Tanpa itu, hanya lagu yang sudah bertag yang bisa dicari." Tombol "Mulai cari" tetap hidup, dan menjalankannya tetap berguna: dari lima lagu uji, empat mendapat usulan dari MusicBrainz lewat keterangan lagunya; hanya yang memang perlu dikenali dari bunyinya yang kembali dengan sebab `noKey`.
+
+### Berkas pemasang datang dari CI, bukan dari mesin pemilik
+
+Karena build lokal membawa kunci pemiliknya, berkas pemasang untuk orang lain tidak lagi dibuat di mesin itu. `release-build.yml` sekarang juga berjalan pada tag versi, membangun berkas pemasang Windows, dan mengunggahnya sendiri ke Rilis GitHub — jadi berkas yang sampai ke tester adalah berkas yang dibangun CI, tanpa melewati mesin siapa pun.
+
+Yang membuktikan tidak ada kunci di dalamnya ada tiga lapis, saling bebas:
+
+1. **Penjaga saat kompilasi** di `keys.rs`: dengan `ONSA_KEYLESS` disetel, kompilasi **gagal** kalau ada kunci yang akan ikut tertanam. Diuji dua arah di mesin pengembang — dengan kunci di lingkungan, `cargo build` berhenti dengan pesan "this build was told to carry no keys, but an AcoustID key was in the build environment"; tanpa kunci, build jalan seperti biasa.
+2. **Satu tes biasa** yang mengatakan hal yang sama saat dijalankan, dijalankan CI sesudah build.
+3. **Langkah di workflow** yang memeriksa lingkungannya sendiri sebelum apa pun dibangun, dan berhenti kalau salah satu variabel kunci berisi sesuatu.
+
+Versi dinaikkan ke **1.2.0**, karena berkas pemasang bernama 1.1.0 padahal isinya sudah lewat tag v1.1.0.

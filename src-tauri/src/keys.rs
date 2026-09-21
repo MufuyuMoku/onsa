@@ -16,6 +16,45 @@ use serde::Serialize;
 /// The environment variable holding an AcoustID application key.
 pub const ACOUSTID_ENV: &str = "ONSA_ACOUSTID_API_KEY";
 
+/// Whether a build-time variable holds nothing worth calling a key.
+///
+/// An unset variable and an empty one mean the same thing here, so a build
+/// that clears a variable rather than removing it counts as keyless.
+// Its callers are the guard below and the tests: both are read at compile
+// time, which dead-code analysis does not count as use.
+#[allow(dead_code)]
+const fn absent(value: Option<&str>) -> bool {
+    match value {
+        None => true,
+        Some(value) => value.is_empty(),
+    }
+}
+
+/// A build meant for somebody else carries nobody's key.
+///
+/// Setting `ONSA_KEYLESS` at build time makes this refuse to compile if any
+/// key would be baked in. The evidence is then the binary's own existence:
+/// it could not have been built with a key in it, rather than merely having
+/// been built on a machine where the variable happened to be unset.
+///
+/// Builds for the author's own use set nothing and keep working as before.
+const _KEYLESS_BUILD_CARRIES_NO_KEY: () = {
+    if !absent(option_env!("ONSA_KEYLESS")) {
+        assert!(
+            absent(option_env!("ONSA_ACOUSTID_API_KEY")),
+            "this build was told to carry no keys, but an AcoustID key was in the build environment"
+        );
+        assert!(
+            absent(option_env!("ONSA_LASTFM_API_KEY")),
+            "this build was told to carry no keys, but a Last.fm key was in the build environment"
+        );
+        assert!(
+            absent(option_env!("ONSA_LASTFM_API_SECRET")),
+            "this build was told to carry no keys, but a Last.fm secret was in the build environment"
+        );
+    }
+};
+
 /// Where a key came from. This, and not the key, is what gets reported.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -106,6 +145,26 @@ pub fn acoustid(stored: Option<&str>) -> Option<Key> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn nothing_and_an_empty_string_both_count_as_no_key() {
+        assert!(absent(None));
+        assert!(absent(Some("")));
+        assert!(!absent(Some("a-key")));
+    }
+
+    /// The same thing the build-time guard says, said by something that
+    /// runs: on a build told to carry no keys, none of them is there.
+    #[test]
+    fn a_keyless_build_has_no_key_built_in() {
+        if absent(option_env!("ONSA_KEYLESS")) {
+            // An ordinary build, which may carry the author's own key.
+            return;
+        }
+        assert!(absent(option_env!("ONSA_ACOUSTID_API_KEY")));
+        assert!(absent(option_env!("ONSA_LASTFM_API_KEY")));
+        assert!(absent(option_env!("ONSA_LASTFM_API_SECRET")));
+    }
 
     /// A name no real environment would have, so the tests do not depend on
     /// what happens to be set on the machine running them.
