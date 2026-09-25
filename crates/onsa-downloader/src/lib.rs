@@ -20,7 +20,7 @@ pub mod programs;
 pub mod runner;
 
 pub use install::Release;
-pub use programs::{Found, Program, Programs, Ran, Where};
+pub use programs::{identify, Found, NotThatProgram, Program, Programs, Ran, Where};
 pub use runner::Finished;
 
 use thiserror::Error;

@@ -97,6 +97,23 @@ impl Program {
             Self::Ffmpeg | Self::Ffprobe => &["-version"],
         }
     }
+
+    /// The word a program puts in its own version line, when it puts one
+    /// there at all.
+    ///
+    /// This is what tells a file that really is this program from a file
+    /// that merely runs. yt-dlp answers with a date and nothing else, so
+    /// for it there is no word to look for and running at all is as much as
+    /// can be asked.
+    fn version_says(self) -> Option<&'static str> {
+        match self {
+            Self::Fpcalc => Some("fpcalc"),
+            Self::Ffmpeg => Some("ffmpeg"),
+            Self::Ffprobe => Some("ffprobe"),
+            Self::Deno => Some("deno"),
+            Self::YtDlp => None,
+        }
+    }
 }
 
 /// Where a program was found, which is what the interface reports.
@@ -156,6 +173,84 @@ impl Ran {
             said,
         })
     }
+}
+
+/// Why a file is not the program it was picked to be.
+///
+/// Told apart because the three are different mistakes: a file that is not
+/// a program at all, a program that never answers, and a program that is
+/// simply a different one.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum NotThatProgram {
+    /// It could not be started: a song, a picture, a text file, or
+    /// something this system will not run.
+    WontStart(String),
+    /// It started and was still going when the time ran out.
+    TooSlow,
+    /// It ran, and what it said is not what this program says.
+    SaidSomethingElse,
+}
+
+impl std::fmt::Display for NotThatProgram {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::WontStart(said) => write!(f, "it could not be started: {said}"),
+            Self::TooSlow => write!(f, "it never answered"),
+            Self::SaidSomethingElse => write!(f, "it is a different program"),
+        }
+    }
+}
+
+/// Asks a file whether it is the program it was picked for.
+///
+/// This is the only thing standing between a listener pointing at a song
+/// file and every fingerprint afterwards failing for a reason that reads
+/// like the song's fault. The file is run with its version flag and has to
+/// answer as itself; anything else is refused here, where the mistake is
+/// still one click old.
+///
+/// Running a file to see what it is means running it, which is why it is
+/// only ever done to a file somebody chose by hand, with a deadline, an
+/// argument array and no shell, like every other run in this module.
+pub fn identify(program: Program, path: &Path) -> std::result::Result<String, NotThatProgram> {
+    let ran = run_at(path, program.version_args(), VERSION_TIMEOUT).map_err(not_that)?;
+    said_by(program, &ran).ok_or(NotThatProgram::SaidSomethingElse)
+}
+
+/// What a failed run means about the file that was picked.
+fn not_that(error: Error) -> NotThatProgram {
+    match error {
+        Error::TooSlow { .. } => NotThatProgram::TooSlow,
+        other => NotThatProgram::WontStart(other.to_string()),
+    }
+}
+
+/// The version line in an answer that is this program's own, if it is.
+///
+/// Kept apart from the running so what counts as an answer can be tested
+/// against what these programs actually print, without any of them being
+/// installed on the machine running the tests.
+fn said_by(program: Program, ran: &Ran) -> Option<String> {
+    if !ran.ok {
+        return None;
+    }
+    // Some of them print their version to standard error, so both are read.
+    let said = [ran.out.as_str(), ran.err.as_str()].join("\n");
+    let line = said
+        .lines()
+        .map(str::trim)
+        .find(|line| !line.is_empty())?
+        .to_string();
+    if let Some(word) = program.version_says() {
+        // The name has to be how the line opens, not merely somewhere in
+        // it: fpcalc names ffmpeg in its own version line, and either of
+        // the two taken for the other would be a check that lets the wrong
+        // program through.
+        if !line.to_lowercase().starts_with(word) {
+            return None;
+        }
+    }
+    Some(line)
 }
 
 /// Where Onsa looks for the programs it runs, and how it runs them.
@@ -577,6 +672,120 @@ mod tests {
             "it refused rather than waiting"
         );
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// What these programs actually print when asked their version, so the
+    /// check can be tested on a machine where none of them is installed.
+    fn answered(out: &str) -> Ran {
+        Ran {
+            code: Some(0),
+            ok: true,
+            out: out.to_string(),
+            err: String::new(),
+        }
+    }
+
+    #[test]
+    fn a_program_is_recognised_by_what_it_calls_itself() {
+        // What fpcalc really prints: its own name, its version, and then
+        // the ffmpeg it was built against (chromaprint, src/cmd/fpcalc.cpp).
+        assert_eq!(
+            said_by(
+                Program::Fpcalc,
+                &answered("fpcalc version 1.5.1 (FFmpeg lavc 60.31.102)\n")
+            ),
+            Some("fpcalc version 1.5.1 (FFmpeg lavc 60.31.102)".to_string())
+        );
+        // ffmpeg says its name on the first line too, and then a page of
+        // build flags that is none of Onsa's business.
+        assert!(said_by(
+            Program::Ffmpeg,
+            &answered("ffmpeg version 7.0.2 Copyright (c)\n  built with gcc\n")
+        )
+        .is_some_and(|line| line.starts_with("ffmpeg version")));
+        // yt-dlp answers with a date and never its name, so running at all
+        // is as much as can be asked of it.
+        assert_eq!(
+            said_by(Program::YtDlp, &answered("2025.01.26\n")),
+            Some("2025.01.26".to_string())
+        );
+    }
+
+    #[test]
+    fn something_that_is_not_the_program_is_not_taken_for_it() {
+        // A different program that answers happily to -version.
+        assert_eq!(
+            said_by(Program::Fpcalc, &answered("ffmpeg version 7.0.2")),
+            None
+        );
+        // And the other way round, which is why the name has to be how the
+        // line opens: fpcalc names ffmpeg in its own version line.
+        assert_eq!(
+            said_by(
+                Program::Ffmpeg,
+                &answered("fpcalc version 1.5.1 (FFmpeg lavc 60.31.102)")
+            ),
+            None
+        );
+        // A program that ran but refused the flag.
+        let refused = Ran {
+            code: Some(1),
+            ok: false,
+            out: String::new(),
+            err: "fpcalc: unknown option -version".to_string(),
+        };
+        assert_eq!(said_by(Program::Fpcalc, &refused), None);
+        // An answer with nothing in it is not a version.
+        assert_eq!(said_by(Program::YtDlp, &answered("   \n")), None);
+    }
+
+    #[test]
+    fn a_song_file_is_not_accepted_as_a_program() {
+        // The mistake this whole check exists for: a listener pointing the
+        // fingerprinter at one of their own songs. It is refused here, not
+        // blamed on the song a hundred tracks later.
+        let dir = temp_dir("not a program");
+        let song = dir.join("Lampu Kota.mp3");
+        // Enough of a file to exist; nothing that any system will run.
+        std::fs::write(&song, b"ID3 and then some audio, which is not a program").unwrap();
+        let refused = identify(Program::Fpcalc, &song).expect_err("a song is not fpcalc");
+        assert!(
+            matches!(refused, NotThatProgram::WontStart(_)),
+            "{refused:?}"
+        );
+        assert!(!refused.to_string().is_empty());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn another_program_entirely_is_refused_as_well() {
+        // This one does start, and does print something; it simply is not
+        // fpcalc. A file that runs is not a file that fingerprints.
+        let (name, _) = quick();
+        let path = on_path(&platform::executable(name)).expect("a program to run");
+        assert_eq!(
+            identify(Program::Fpcalc, &path),
+            Err(NotThatProgram::SaidSomethingElse)
+        );
+    }
+
+    #[test]
+    fn a_program_that_never_answers_is_told_apart_from_one_that_will_not_run() {
+        // Asking a file what it is has a deadline like every other run
+        // here, and running out of it is its own answer rather than a file
+        // that would not start.
+        assert_eq!(
+            not_that(Error::TooSlow {
+                program: "fpcalc".into(),
+                seconds: 10
+            }),
+            NotThatProgram::TooSlow
+        );
+        let refused = not_that(Error::Process(std::io::Error::new(
+            std::io::ErrorKind::InvalidData,
+            "%1 is not a valid Win32 application",
+        )));
+        assert!(matches!(refused, NotThatProgram::WontStart(said) if said.contains("Win32")));
     }
 
     #[test]
