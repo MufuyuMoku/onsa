@@ -226,6 +226,10 @@ fn work(app: &AppHandle, state: &Matching, orders: Orders) {
     // share it: a folder of one album asks once, not forty times.
     let mut covers: HashMap<String, Option<CoverOffer>> = HashMap::new();
     let mut years: HashMap<String, Option<i32>> = HashMap::new();
+    // Whether the fingerprinter is usable at all, asked once and then
+    // remembered: a folder of fifty untagged tracks asks fpcalc what it is
+    // once, not fifty times.
+    let mut fingerprinter: Option<Result<(), Failure>> = None;
 
     for track in tracks {
         if state.cancel.load(Ordering::SeqCst) {
@@ -239,6 +243,7 @@ fn work(app: &AppHandle, state: &Matching, orders: Orders) {
             &covers_dir,
             &mut covers,
             &mut years,
+            &mut fingerprinter,
         );
         let mut run = state.run.lock().unwrap_or_else(|e| e.into_inner());
         run.done += 1;
@@ -267,6 +272,7 @@ fn note_trouble(state: &Matching, why: &str) {
 }
 
 /// Everything Onsa can find out about one track.
+#[allow(clippy::too_many_arguments)]
 fn look_at(
     track: &TrackRow,
     key: Option<&str>,
@@ -274,6 +280,7 @@ fn look_at(
     covers_dir: &Path,
     covers: &mut HashMap<String, Option<CoverOffer>>,
     years: &mut HashMap<String, Option<i32>>,
+    fingerprinter: &mut Option<Result<(), Failure>>,
 ) -> TrackMatch {
     let path = Path::new(&track.path);
     let stem = path
@@ -297,7 +304,7 @@ fn look_at(
 
     if candidates.is_empty() {
         // The main way for a track that says nothing: the sound itself.
-        match fingerprint_match(track, path, key, programs, years) {
+        match fingerprint_match(track, path, key, programs, years, fingerprinter) {
             Ok(found) => candidates.extend(found),
             Err(failure) => trouble = Some(failure),
         }
@@ -372,6 +379,22 @@ fn has_tags(track: &TrackRow) -> bool {
     said(&track.title) && said(&track.artist)
 }
 
+/// Whether the fingerprinter is fpcalc, asked before any track is.
+///
+/// A file that is not fpcalc, asked about a song, complains — and its
+/// complaint reads exactly like the song's fault. So the question is put to
+/// the program itself first, with nobody's music in it: if what is there
+/// does not answer as fpcalc, every track in the run is told that the
+/// fingerprinter is the trouble, and none of them is blamed.
+fn fingerprinter(programs: &Programs) -> Result<(), Failure> {
+    let Some(found) = programs.find(Program::Fpcalc) else {
+        return Err(Failure::NoFingerprinter);
+    };
+    onsa_downloader::identify(Program::Fpcalc, &found.path)
+        .map(|_| ())
+        .map_err(|why| Failure::BadFingerprinter(why.to_string()))
+}
+
 /// Recognising a track by its sound.
 fn fingerprint_match(
     track: &TrackRow,
@@ -379,10 +402,11 @@ fn fingerprint_match(
     key: Option<&str>,
     programs: &Programs,
     years: &mut HashMap<String, Option<i32>>,
+    checked: &mut Option<Result<(), Failure>>,
 ) -> Result<Vec<Proposal>, Failure> {
     let key = key.ok_or(Failure::NoKey)?;
-    if !programs.have(Program::Fpcalc) {
-        return Err(Failure::NoFingerprinter);
+    if let Err(failure) = checked.get_or_insert_with(|| fingerprinter(programs)) {
+        return Err(failure.clone());
     }
     let print = acoustid::fingerprint(programs, path)?;
     let found = acoustid::lookup(key, &print)?;
@@ -567,6 +591,73 @@ mod tests {
             artist: artist.map(str::to_string),
             ..TrackRow::default()
         }
+    }
+
+    /// A folder with nothing runnable in it, and no system copy allowed.
+    fn nothing_installed(name: &str) -> (PathBuf, Programs) {
+        let dir = std::env::temp_dir().join(format!("onsa matching {} {name}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).expect("a folder to work in");
+        let programs = Programs::new(&dir).use_system(false);
+        (dir, programs)
+    }
+
+    #[test]
+    fn a_fingerprinter_that_is_not_there_is_not_a_fingerprinter_that_is_wrong() {
+        let (dir, programs) = nothing_installed("none");
+        assert_eq!(fingerprinter(&programs), Err(Failure::NoFingerprinter));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_file_that_is_not_fpcalc_is_the_fingerprinters_fault_and_not_a_tracks() {
+        // The whole point of asking first: what is sitting where fpcalc
+        // should be is not fpcalc, and the run says so about fpcalc rather
+        // than about the first song it was pointed at.
+        let (dir, programs) = nothing_installed("wrong");
+        std::fs::write(
+            dir.join(Program::Fpcalc.file_name()),
+            b"not a program at all",
+        )
+        .expect("a file to find");
+        let verdict = fingerprinter(&programs);
+        assert!(
+            matches!(verdict, Err(Failure::BadFingerprinter(_))),
+            "{verdict:?}"
+        );
+        assert_eq!(
+            verdict.unwrap_err().name(),
+            "badFingerprinter",
+            "a word of its own, so the interface can say something else"
+        );
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn the_fingerprinter_is_asked_what_it_is_once_for_the_whole_run() {
+        // Remembered rather than asked again: fifty untagged tracks must
+        // not mean fifty runs of a program that has already answered.
+        let (dir, programs) = nothing_installed("once");
+        std::fs::write(
+            dir.join(Program::Fpcalc.file_name()),
+            b"not a program at all",
+        )
+        .expect("a file to find");
+        let mut checked: Option<Result<(), Failure>> = None;
+        let mut years = HashMap::new();
+        for _ in 0..3 {
+            let outcome = fingerprint_match(
+                &a_track(None, None),
+                Path::new("C:/music/nothing.flac"),
+                Some("a-key"),
+                &programs,
+                &mut years,
+                &mut checked,
+            );
+            assert!(matches!(outcome, Err(Failure::BadFingerprinter(_))));
+        }
+        assert!(checked.is_some(), "the answer was kept");
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]

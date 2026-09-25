@@ -43,10 +43,17 @@ pub struct Fingerprint {
 }
 
 /// What went wrong, in terms a list of tracks can show.
+///
+/// The first two are deliberately not the same failure. One of them is
+/// about `fpcalc` and one is about this track, and saying the wrong one
+/// sends somebody looking at a song file that was never the problem.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Failure {
     /// `fpcalc` is not installed, so nothing can be fingerprinted.
     NoFingerprinter,
+    /// There is a file where `fpcalc` should be, but it is not usable:
+    /// it will not start, or it is some other program entirely.
+    BadFingerprinter(String),
     /// The file could not be fingerprinted.
     Unreadable(String),
     /// There is no AcoustID key.
@@ -61,6 +68,7 @@ impl std::fmt::Display for Failure {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::NoFingerprinter => write!(f, "fpcalc is not installed"),
+            Self::BadFingerprinter(why) => write!(f, "fpcalc cannot be used: {why}"),
             Self::Unreadable(why) => write!(f, "the file could not be fingerprinted: {why}"),
             Self::NoKey => write!(f, "there is no AcoustID key"),
             Self::Offline => write!(f, "AcoustID could not be reached"),
@@ -74,6 +82,7 @@ impl Failure {
     pub fn name(&self) -> &'static str {
         match self {
             Self::NoFingerprinter => "noFingerprinter",
+            Self::BadFingerprinter(_) => "badFingerprinter",
             Self::Unreadable(_) => "unreadable",
             Self::NoKey => "noKey",
             Self::Offline => "offline",
@@ -115,19 +124,39 @@ pub fn fingerprint(programs: &Programs, path: &Path) -> Result<Fingerprint, Fail
         "120".into(),
         path.as_os_str().to_os_string(),
     ];
-    let unreadable = |error: onsa_downloader::Error| Failure::Unreadable(error.to_string());
     let ran = programs
         .run(Program::Fpcalc, &args, FINGERPRINT_TIMEOUT)
-        .map_err(unreadable)?
+        .map_err(blame)?
         .ok(Program::Fpcalc)
-        .map_err(unreadable)?;
+        .map_err(blame)?;
     read_fingerprint(&ran)
+}
+
+/// Whose fault a failed run was: the fingerprinter's, or this track's.
+///
+/// A program that will not start is not a file that cannot be read, and the
+/// two are never worth confusing. `fpcalc` complaining about a track, and
+/// `fpcalc` taking longer than it is given, are about the track; everything
+/// else is about the program that was supposed to be `fpcalc`.
+fn blame(error: onsa_downloader::Error) -> Failure {
+    use onsa_downloader::Error;
+    match error {
+        Error::MissingProgram(_) => Failure::NoFingerprinter,
+        Error::ProgramFailed { said, .. } => Failure::Unreadable(said),
+        Error::TooSlow { seconds, .. } => {
+            Failure::Unreadable(format!("fpcalc was still going after {seconds}s"))
+        }
+        other => Failure::BadFingerprinter(other.to_string()),
+    }
 }
 
 /// Reads what `fpcalc -json` printed.
 fn read_fingerprint(printed: &str) -> Result<Fingerprint, Failure> {
-    let answer: serde_json::Value = serde_json::from_str(printed)
-        .map_err(|_| Failure::Unreadable("fpcalc said something unreadable".into()))?;
+    // Nothing that is not fpcalc's own answer says anything about the
+    // track: it says the program that was run is not fpcalc.
+    let answer: serde_json::Value = serde_json::from_str(printed).map_err(|_| {
+        Failure::BadFingerprinter("what it printed is not what fpcalc prints".into())
+    })?;
     let value = answer
         .get("fingerprint")
         .and_then(|value| value.as_str())
@@ -329,9 +358,53 @@ mod tests {
             read_fingerprint(r#"{"duration":0,"fingerprint":"AQAD"}"#),
             Err(Failure::Unreadable(_))
         ));
+    }
+
+    #[test]
+    fn something_that_is_not_fpcalc_is_not_the_tracks_fault() {
+        // A program that is not fpcalc prints something that is not
+        // fpcalc's answer. Reading that as "this song could not be read"
+        // is how somebody ends up looking at a song file that was fine.
         assert!(matches!(
             read_fingerprint("not json at all"),
-            Err(Failure::Unreadable(_))
+            Err(Failure::BadFingerprinter(_))
+        ));
+        assert!(matches!(
+            read_fingerprint("Usage: ffmpeg [options]"),
+            Err(Failure::BadFingerprinter(_))
+        ));
+    }
+
+    #[test]
+    fn a_failed_run_is_blamed_on_whichever_of_the_two_it_was() {
+        use onsa_downloader::Error;
+        assert_eq!(
+            blame(Error::MissingProgram("fpcalc".into())),
+            Failure::NoFingerprinter
+        );
+        // fpcalc ran and complained about the file: that one is the file.
+        assert!(matches!(
+            blame(Error::ProgramFailed {
+                program: "fpcalc".into(),
+                code: Some(2),
+                said: "ERROR: unable to read file".into()
+            }),
+            Failure::Unreadable(said) if said.contains("unable to read")
+        ));
+        assert!(matches!(
+            blame(Error::TooSlow {
+                program: "fpcalc".into(),
+                seconds: 30
+            }),
+            Failure::Unreadable(_)
+        ));
+        // It never started, so it never saw the file.
+        assert!(matches!(
+            blame(Error::CannotRun {
+                program: "fpcalc".into(),
+                said: "%1 is not a valid Win32 application".into()
+            }),
+            Failure::BadFingerprinter(_)
         ));
     }
 
@@ -399,6 +472,7 @@ mod tests {
     fn every_failure_has_a_word_of_its_own_and_something_to_say() {
         let all = [
             Failure::NoFingerprinter,
+            Failure::BadFingerprinter("x".into()),
             Failure::Unreadable("x".into()),
             Failure::NoKey,
             Failure::Offline,
