@@ -42,6 +42,7 @@ const control = (name: MessageKey, says: MessageKey): HelpControl => ({ name, sa
 /** The song list, which six pages draw in the same shape. */
 const trackList: HelpControl[] = [
 	control('help.name.columns', 'help.says.columns'),
+	control('column.toPlaying', 'help.says.toPlaying'),
 	control('help.name.resize', 'help.says.resize'),
 	control('column.choose', 'help.says.chooseColumns'),
 	control('help.name.row', 'help.says.row'),

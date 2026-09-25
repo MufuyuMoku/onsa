@@ -337,6 +337,21 @@ pub fn library_tracks(
     })
 }
 
+/// Which row a track sits on, in the ordering the list is showing.
+///
+/// A track list is paged, so the interface never has the whole library to
+/// search through. Scrolling to the track that is playing means asking the
+/// database where it is; nothing, when the library has no such track.
+#[tauri::command]
+pub fn library_track_place(
+    library: State<'_, LibraryService>,
+    sort: SortKey,
+    descending: bool,
+    track_id: i64,
+) -> Result<Option<u64>, ErrorCode> {
+    library.read(|library| library.track_place(sort.into(), descending, track_id))
+}
+
 /// Number of albums.
 #[tauri::command]
 pub fn library_album_count(library: State<'_, LibraryService>) -> Result<u64, ErrorCode> {

@@ -18,6 +18,7 @@
 	} from '$lib/layout.svelte';
 	import { t } from '$lib/i18n/index.svelte';
 	import { library, setQuery } from '$lib/library.svelte';
+	import { showPlaying } from '$lib/places.svelte';
 	import { followLyrics } from '$lib/lyrics.svelte';
 	import { player } from '$lib/player.svelte';
 	import { settings, updateDsp } from '$lib/settings.svelte';
@@ -85,6 +86,12 @@
 		if (ctrl && event.key.toLowerCase() === 'm') {
 			event.preventDefault();
 			void setMiniPlayer(!app.mini);
+			return;
+		}
+		if (ctrl && event.key.toLowerCase() === 'j') {
+			// To whatever is playing, wherever the list has been scrolled.
+			event.preventDefault();
+			showPlaying();
 			return;
 		}
 		if (ctrl && event.key.toLowerCase() === 'n') {

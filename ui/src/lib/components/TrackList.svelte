@@ -6,6 +6,7 @@
 <script lang="ts">
 	import {
 		trackCount,
+		trackPlace,
 		tracksPage,
 		type PlayContext,
 		type QueuePlace,
@@ -24,6 +25,14 @@
 	import { t } from '$lib/i18n/index.svelte';
 	import { measure } from '$lib/layout.svelte';
 	import { library, sortBy } from '$lib/library.svelte';
+	import {
+		askedToShowPlaying,
+		placeApplies,
+		placeFor,
+		rememberPlace
+	} from '$lib/places.svelte';
+	import { settings } from '$lib/settings.svelte';
+	import { untrack } from 'svelte';
 	import { addToQueue, player, playContext } from '$lib/player.svelte';
 	import { addToPlaylist, playlists } from '$lib/playlists.svelte';
 	import { startCarry } from '$lib/carry.svelte';
@@ -48,6 +57,115 @@
 
 	const ROW = 32;
 	const sortable = $derived(source.kind === 'library');
+
+	/**
+	 * A list with an order of its own — an album, a playlist — cannot be
+	 * re-sorted, so its position does not belong to any ordering.
+	 */
+	const fixedOrder = untrack(() => source.kind !== 'library');
+
+	function moved(top: number): void {
+		rememberPlace(view, {
+			top,
+			sort: fixedOrder ? 'fixed' : library.sort,
+			descending: fixedOrder ? false : library.descending
+		});
+	}
+
+	/** The list itself, for scrolling it from outside the rows. */
+	let list = $state<ReturnType<typeof VirtualList> | undefined>();
+	/** A row to point at for a moment, after jumping to it. */
+	let marked = $state<number | null>(null);
+	let marking: ReturnType<typeof setTimeout> | null = null;
+
+	/** How long the row stays pointed at. Long enough to find, not to sit. */
+	const MARKED_FOR = 2200;
+
+	/**
+	 * Which row the playing track is on.
+	 *
+	 * The library list is paged, so the interface has no list to search:
+	 * only the database knows, and it is asked in the ordering on screen.
+	 * A list that carries its own tracks already holds the answer.
+	 */
+	async function playingRow(): Promise<number | null> {
+		const id = player.snapshot?.track?.id;
+		if (id === undefined || id === null || id < 0) return null;
+		if (source.kind === 'library') {
+			const at = await trackPlace(library.sort, library.descending, id).catch(() => null);
+			return at ?? null;
+		}
+		const at = source.tracks.findIndex((track) => track.id === id);
+		return at >= 0 ? at : null;
+	}
+
+	/** Scrolls to the playing track, and points at it when asked to. */
+	async function goToPlaying(point: boolean): Promise<void> {
+		const at = await playingRow();
+		if (at === null) return;
+		list?.reveal(at);
+		if (!point) return;
+		marked = at;
+		if (marking) clearTimeout(marking);
+		marking = setTimeout(() => (marked = null), MARKED_FOR);
+	}
+
+	// Asked from the window: the button up there and the shortcut both come
+	// through here, because the list that can scroll is this one.
+	let answered = askedToShowPlaying();
+	$effect(() => {
+		const asked = askedToShowPlaying();
+		if (asked === answered) return;
+		answered = asked;
+		void goToPlaying(true);
+	});
+
+	/**
+	 * Opening the list where it was left.
+	 *
+	 * Three things have to be true before this can be answered, and none of
+	 * them is true when the list is built: the settings have to have arrived
+	 * (when Onsa has just started they have not), the list has to have a
+	 * length, and the viewport has to be tall enough to be scrolled that far
+	 * — a browser clamps an offset past the end back to the top. So it is
+	 * tried until it takes, and then never again: after that the listener's
+	 * own scrolling is the truth.
+	 *
+	 * A position only means anything under the ordering it was taken in:
+	 * row four hundred by title is a different song from row four hundred by
+	 * year. A position from another ordering is left alone, and the list
+	 * opens on whatever is playing instead — the one row somebody is likely
+	 * to be looking for.
+	 */
+	let placed = false;
+	$effect(() => {
+		if (placed || !settings.value || count === 0) return;
+		const stored = placeFor(view);
+		if (
+			stored &&
+			placeApplies(stored, {
+				fixed: fixedOrder,
+				sort: library.sort,
+				descending: library.descending
+			})
+		) {
+			placed = list?.scrollTo(stored.top) ?? false;
+			return;
+		}
+		placed = true;
+		void goToPlaying(false);
+	});
+
+	// A list reordered under the listener's feet has no business staying
+	// where it was: row four hundred is a different song now.
+	let ordering = `${library.sort}:${library.descending}`;
+	$effect(() => {
+		const now = `${library.sort}:${library.descending}`;
+		if (fixedOrder || now === ordering) return;
+		ordering = now;
+		marked = null;
+		list?.scrollTo(0);
+	});
 
 	let total = $state(0);
 	$effect(() => {
@@ -244,6 +362,14 @@
 			<button
 				type="button"
 				class="chooser"
+				aria-label={t('column.toPlaying')}
+				title={t('column.toPlayingHint')}
+				disabled={!player.snapshot?.track}
+				onclick={() => goToPlaying(true)}><Icon name="target" /></button
+			>
+			<button
+				type="button"
+				class="chooser"
 				aria-label={t('column.choose')}
 				title={t('column.choose')}
 				aria-expanded={chooser}
@@ -284,12 +410,21 @@
 		{#if count === 0}
 			<p class="muted empty">{t('library.empty')}</p>
 		{:else}
-			<VirtualList {count} rowHeight={ROW} {load} version={library.version} label={t('nav.tracks')}>
+			<VirtualList
+				bind:this={list}
+				{count}
+				rowHeight={ROW}
+				{load}
+				version={library.version}
+				label={t('nav.tracks')}
+				onmoved={moved}
+			>
 				{#snippet row(track: Track | undefined, index: number)}
 					{#if track}
 						<div
 							class="row listrow"
 							class:alt={index % 2 === 1}
+							class:marked={marked === index}
 							class:playing={player.snapshot?.track?.id === track.id}
 							class:dim={track.status !== 'ok'}
 							role="button"
@@ -541,11 +676,18 @@
 		outline: none;
 	}
 
-	/* The strip at the right end: the menu in the head, empty in every row,
-	   so the head and the rows keep the same grid. */
+	/* The strip at the right end: the two buttons in the head, empty in
+	   every row, so the head and the rows keep the same grid. */
 	.menu-cell {
-		display: grid;
-		place-items: center;
+		display: flex;
+		align-items: center;
+		justify-content: flex-end;
+		gap: 2px;
+	}
+
+	.chooser:disabled {
+		opacity: 0.4;
+		cursor: default;
 	}
 
 	.chooser {
@@ -615,6 +757,14 @@
 	.row.playing .title,
 	.row.playing .num {
 		color: var(--onsa-role-position);
+	}
+
+	/* Just jumped to: pointed at for a moment, so the eye can find it
+	   among rows that all look alike. */
+	.row.marked {
+		outline: 1px solid var(--onsa-role-adjustable);
+		outline-offset: -1px;
+		background: var(--onsa-surface-raised);
 	}
 
 	.row.dim {

@@ -5,6 +5,7 @@
 
 import { EVENTS, on, scanStatus, type ScanStatus, type SortKey } from '$lib/backend';
 import { t } from '$lib/i18n/index.svelte';
+import { settings, updateDisplay } from '$lib/settings.svelte';
 
 /** While scanning, lists reload at most this often. */
 const RELOAD_WHILE_SCANNING_MS = 1500;
@@ -67,6 +68,21 @@ export function sortBy(key: SortKey): void {
 		sort = key;
 		descending = false;
 	}
+	void updateDisplay({ sort, sortDescending: descending });
+}
+
+/**
+ * Takes the ordering the settings came back with.
+ *
+ * Called once, when the settings have arrived. A list that opens in a
+ * different order from the one it was left in is a different list, and the
+ * position kept for it would point at the wrong song.
+ */
+export function adoptStoredSort(): void {
+	const display = settings.value?.display;
+	if (!display) return;
+	sort = display.sort ?? sort;
+	descending = display.sortDescending ?? descending;
 }
 
 /** Sets the search text. */

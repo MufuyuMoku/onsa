@@ -365,6 +365,18 @@ export interface DisplayPrefs {
 	toneColor: ToneStrength;
 	/** Column widths and choices, one entry per list already arranged. */
 	columns: Record<string, ColumnPrefs>;
+	/** Where each list was left, one entry per list that was scrolled. */
+	places: Record<string, StoredPlace>;
+	/** How the song list is ordered, kept between one start and the next. */
+	sort: SortKey;
+	sortDescending: boolean;
+}
+
+/** Where one list was left standing, and under which ordering. */
+export interface StoredPlace {
+	top: number;
+	sort: SortKey | 'fixed';
+	descending: boolean;
 }
 
 export interface Settings {
@@ -491,6 +503,9 @@ export interface LibraryFolder {
 
 export const libraryFolders = () => call<LibraryFolder[]>('library_folders');
 export const trackCount = () => call<number>('library_track_count');
+/** Which row a track sits on in that ordering, or nothing if it is gone. */
+export const trackPlace = (sort: SortKey, descending: boolean, trackId: number) =>
+	call<number | null>('library_track_place', { sort, descending, trackId });
 export const tracksPage = (sort: SortKey, descending: boolean, offset: number, limit: number) =>
 	call<Track[]>('library_tracks', { sort, descending, offset, limit });
 export const albumCount = () => call<number>('library_album_count');

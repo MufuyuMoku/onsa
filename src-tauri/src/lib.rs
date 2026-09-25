@@ -77,6 +77,7 @@ pub fn run() -> Result<()> {
             commands::library_folders,
             commands::library_track_count,
             commands::library_tracks,
+            commands::library_track_place,
             commands::library_album_count,
             commands::library_albums,
             commands::library_album_tracks,

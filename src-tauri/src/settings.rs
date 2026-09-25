@@ -417,7 +417,7 @@ impl Default for TidyPrefs {
 }
 
 /// What the interface shows beyond the theme itself.
-#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct DisplayPrefs {
     /// How far the colour follows the character of the sound. Power saving
@@ -426,6 +426,56 @@ pub struct DisplayPrefs {
     /// Column widths and choices, one entry per list the listener has
     /// arranged. Lists they never touched are not in here at all.
     pub columns: BTreeMap<String, ColumnPrefs>,
+    /// Where each list was left, so coming back to it does not start over.
+    /// Lists nobody has scrolled are not in here at all.
+    #[serde(default)]
+    pub places: BTreeMap<String, ListPlace>,
+    /// How the song list is ordered. Kept because a position only means
+    /// anything under the ordering it was taken in: without this, every
+    /// start would put the list back in its default order and every stored
+    /// position would be about a list that is no longer on screen.
+    #[serde(default = "default_sort")]
+    pub sort: String,
+    /// And which way round.
+    #[serde(default)]
+    pub sort_descending: bool,
+}
+
+/// What the song list is ordered by until somebody says otherwise. The
+/// interface starts on the same one.
+fn default_sort() -> String {
+    "artist".to_string()
+}
+
+/// Written out rather than derived: an ordering has to be an ordering, and
+/// a derived `String::default()` would be an empty one.
+impl Default for DisplayPrefs {
+    fn default() -> Self {
+        Self {
+            tone_color: ToneStrength::default(),
+            columns: BTreeMap::new(),
+            places: BTreeMap::new(),
+            sort: default_sort(),
+            sort_descending: false,
+        }
+    }
+}
+
+/// Where a list was left standing.
+///
+/// The ordering is kept with the position because the position only means
+/// anything under it: row four hundred by title is a different track from
+/// row four hundred by year, so a list reordered since then is opened at
+/// the top rather than at a number that no longer stands for anything.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListPlace {
+    /// How far down it was scrolled, in the interface's own pixels.
+    pub top: f64,
+    /// Which ordering that position belonged to.
+    pub sort: String,
+    /// And which way round.
+    pub descending: bool,
 }
 
 /// One parametric band.

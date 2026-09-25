@@ -15,9 +15,11 @@
 		row: Snippet<[T | undefined, number]>;
 		label: string;
 		version?: unknown;
+		/** Called as the list is scrolled, with how far down it now is. */
+		onmoved?: (top: number) => void;
 	}
 
-	let { count, rowHeight, load, row, label, version }: Props = $props();
+	let { count, rowHeight, load, row, label, version, onmoved }: Props = $props();
 
 	const PAGE = 100;
 	/** Rows rendered beyond the visible ones, for smooth scrolling. */
@@ -62,13 +64,33 @@
 		return pages.get(Math.floor(index / PAGE))?.[index % PAGE];
 	}
 
-	/** Brings a row into view. */
+	/** Brings a row into view, putting it in the middle if it is not there. */
 	export function reveal(index: number): void {
 		if (!viewport) return;
 		const top = index * rowHeight;
 		if (top < viewport.scrollTop || top + rowHeight > viewport.scrollTop + viewport.clientHeight) {
-			viewport.scrollTop = Math.max(0, top - viewport.clientHeight / 2);
+			scrollTo(Math.max(0, top - viewport.clientHeight / 2));
 		}
+	}
+
+	/**
+	 * Puts the list at a given height, rows and all.
+	 *
+	 * A row that has never been drawn is still somewhere to scroll to: the
+	 * spacer is as tall as the whole list, and which rows to draw is worked
+	 * out from the offset rather than from what happens to exist.
+	 *
+	 * Says whether it took. A viewport whose content is not yet as tall as
+	 * the offset asked for is clamped back by the browser, and a caller
+	 * restoring a position needs to know that so it can try again rather
+	 * than believe the list is where it asked for.
+	 */
+	export function scrollTo(top: number): boolean {
+		if (!viewport) return false;
+		viewport.scrollTop = top;
+		scrollTop = viewport.scrollTop;
+		onmoved?.(scrollTop);
+		return Math.abs(scrollTop - top) < 1;
 	}
 </script>
 
@@ -78,7 +100,10 @@
 	aria-label={label}
 	bind:this={viewport}
 	bind:clientHeight={height}
-	onscroll={() => (scrollTop = viewport?.scrollTop ?? 0)}
+	onscroll={() => {
+		scrollTop = viewport?.scrollTop ?? 0;
+		onmoved?.(scrollTop);
+	}}
 >
 	<div class="spacer" style:height="{count * rowHeight}px">
 		{#each indices as index (index)}

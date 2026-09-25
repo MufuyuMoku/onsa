@@ -32,8 +32,8 @@ export interface Column {
 
 /** The number column, which is never one of the arrangeable ones. */
 export const NUMBER_WIDTH = 44;
-/** The strip at the right end that holds the column menu. */
-export const MENU_WIDTH = 22;
+/** The strip at the right end that holds the two head buttons. */
+export const MENU_WIDTH = 46;
 /** The gap between two cells of a row, matching the stylesheet. */
 export const GAP = 10;
 /** The padding at each end of a row, matching the stylesheet. */

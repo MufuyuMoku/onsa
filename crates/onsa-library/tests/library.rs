@@ -718,3 +718,49 @@ fn the_watcher_follows_added_moved_and_removed_files() {
     drop(library);
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+/// Scrolling to the track that is playing means asking where it is, and the
+/// answer has to agree with the page the list would draw at that row —
+/// otherwise the list scrolls to the wrong song, which is worse than not
+/// scrolling at all.
+#[test]
+fn where_a_track_sits_agrees_with_the_page_at_that_row() {
+    let dir = temp_dir("place");
+    let music = dir.join("音楽 folder");
+    fixture(&music);
+    let mut library = open(&dir);
+    library.add_folder(&music).unwrap();
+    library.scan(|_| {}).unwrap();
+
+    for sort in [TrackSort::Title, TrackSort::Artist, TrackSort::Duration] {
+        for descending in [false, true] {
+            let all = library.tracks_page(sort, descending, 0, 100).unwrap();
+            assert!(all.len() > 2, "something to look through");
+            for (row, track) in all.iter().enumerate() {
+                let place = library
+                    .track_place(sort, descending, track.id)
+                    .unwrap()
+                    .expect("a track in the library is somewhere in the list");
+                assert_eq!(
+                    place as usize, row,
+                    "{sort:?} descending={descending}: {:?}",
+                    track.title
+                );
+                // And the page starting there begins with that track, which
+                // is what the interface actually asks for when it scrolls.
+                let page = library.tracks_page(sort, descending, row, 1).unwrap();
+                assert_eq!(page.first().map(|one| one.id), Some(track.id));
+            }
+        }
+    }
+
+    // A track the library does not have is nowhere, not row zero.
+    assert_eq!(
+        library
+            .track_place(TrackSort::Title, false, 999_999)
+            .unwrap(),
+        None
+    );
+    drop(library);
+    let _ = std::fs::remove_dir_all(&dir);
+}

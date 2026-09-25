@@ -11,6 +11,7 @@ import {
 	COLUMNS,
 	MENU_WIDTH,
 	NUMBER_WIDTH,
+	column,
 	emptyPrefs,
 	shownColumns,
 	template,
@@ -89,12 +90,14 @@ test('the title takes the space left over, from its own width upwards', () => {
 test('a title floor wider than the room gives way rather than spilling', () => {
 	const prefs = { ...emptyPrefs(), widths: { title: 400 } };
 	const shown = ['title', 'duration'] as const;
-	// 300 wide, less the number, the menu, the length and the row's own
-	// padding and gaps, leaves this much for the title.
-	const left = 300 - NUMBER_WIDTH - MENU_WIDTH - overhead(shown.length) - 56;
-	assert.equal(titleFloor(300, [...shown], prefs), left);
+	// A width worked out from the parts rather than guessed, so that this
+	// stays a test about the title giving way and not about the numbers
+	// the strips at either end happen to have today.
+	const left = column('title').min + 16;
+	const room = NUMBER_WIDTH + MENU_WIDTH + overhead(shown.length) + column('duration').width + left;
+	assert.equal(titleFloor(room, [...shown], prefs), left);
 	assert.ok(
-		template(300, [...shown], prefs).includes(`minmax(${left}px, 1fr)`),
+		template(room, [...shown], prefs).includes(`minmax(${left}px, 1fr)`),
 		'the grid asks for no more than there is'
 	);
 	assert.equal(titleFloor(180, [...shown], prefs), 120, 'and never below its own minimum');

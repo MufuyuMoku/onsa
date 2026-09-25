@@ -57,6 +57,8 @@ const id = {
 	'column.resize': 'Atur lebar kolom {name}',
 	'column.resizeHint': 'Tarik, atau panah kiri/kanan',
 	'column.choose': 'Pilih kolom',
+	'column.toPlaying': 'Ke lagu yang diputar',
+	'column.toPlayingHint': 'Gulir ke baris lagu yang sedang diputar (Ctrl+J)',
 	'column.reset': 'Kembalikan ke bawaan',
 	'column.sortHint': 'Urutkan',
 
@@ -758,6 +760,8 @@ const id = {
 	'help.name.resize': 'Garis di antara dua nama kolom',
 	'help.says.resize':
 		'Tarik untuk melebarkan atau menyempitkan kolom di sebelah kirinya; lebarnya diingat. Dengan papan ketik: tekan Tab sampai garisnya terpilih, lalu pakai panah kiri dan kanan.',
+	'help.says.toPlaying':
+		'Menggulir daftar ini sampai baris lagu yang sedang diputar terlihat, lalu menandainya sebentar supaya mudah ditemukan. Pintasannya Ctrl+J. Kalau tidak ada yang diputar, tombolnya mati.',
 	'help.says.chooseColumns':
 		'Membuka daftar pilihan: kolom mana yang ditampilkan dan mana yang disembunyikan, dengan satu pilihan untuk mengembalikan semuanya ke bawaan.',
 	'help.name.row': 'Baris lagu',
@@ -1156,6 +1160,8 @@ const en: Record<MessageKey, string> = {
 	'column.resize': 'Resize the {name} column',
 	'column.resizeHint': 'Drag, or the left and right arrows',
 	'column.choose': 'Choose columns',
+	'column.toPlaying': 'Go to the playing track',
+	'column.toPlayingHint': 'Scrolls to the row of the song that is playing (Ctrl+J)',
 	'column.reset': 'Back to the defaults',
 	'column.sortHint': 'Sort',
 
@@ -1857,6 +1863,8 @@ const en: Record<MessageKey, string> = {
 	'help.name.resize': 'The line between two column names',
 	'help.says.resize':
 		'Drag it to make the column on its left wider or narrower; the width is remembered. With the keyboard: press Tab until the line is selected, then use the left and right arrows.',
+	'help.says.toPlaying':
+		'Scrolls this list until the row of the song that is playing is in view, then points at it for a moment so it is easy to find. The shortcut is Ctrl+J. With nothing playing, the button is off.',
 	'help.says.chooseColumns':
 		'Opens a list to tick: which columns are shown and which are hidden, with one entry to put everything back the way it came.',
 	'help.name.row': 'A song row',

@@ -274,6 +274,32 @@ impl Library {
         Ok(rows)
     }
 
+    /// Where one track sits in the list, counting from zero.
+    ///
+    /// The same ordering [`Self::tracks_page`] pages through, asked the
+    /// other way round: not "what is at row N" but "which row is this". A
+    /// list of a hundred thousand tracks is never held in the interface, so
+    /// the only way to scroll to a track is to ask the database where it is.
+    ///
+    /// Nothing, if the library has no such track.
+    pub fn track_place(
+        &self,
+        sort: TrackSort,
+        descending: bool,
+        track_id: i64,
+    ) -> Result<Option<u64>> {
+        let mut statement = self.conn.prepare_cached(&format!(
+            "SELECT place FROM (
+               SELECT id, ROW_NUMBER() OVER (ORDER BY {}) - 1 AS place FROM track_view
+             ) WHERE id = ?1",
+            sort.order_by(descending)
+        ))?;
+        let found = statement
+            .query_row(params![track_id], |row| row.get::<_, i64>(0))
+            .optional()?;
+        Ok(found.map(|place| place as u64))
+    }
+
     /// Number of albums with at least one track that is not missing.
     pub fn album_count(&self) -> Result<u64> {
         let count: i64 = self.conn.query_row(

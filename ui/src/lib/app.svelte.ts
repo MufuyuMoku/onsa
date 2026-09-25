@@ -20,7 +20,7 @@ import {
 import { detectLocale, isLocale, setLocale, t, type Locale } from '$lib/i18n/index.svelte';
 import { forgetHelpTopic } from '$lib/layout.svelte';
 import type { MessageKey } from '$lib/i18n/dictionary';
-import { initLibrary } from '$lib/library.svelte';
+import { adoptStoredSort, initLibrary } from '$lib/library.svelte';
 import { initPlayer } from '$lib/player.svelte';
 import { initPlaylists } from '$lib/playlists.svelte';
 import { loadSettings } from '$lib/settings.svelte';
@@ -135,6 +135,9 @@ export async function start(root: HTMLElement): Promise<void> {
 		// The window decides its own mode; the interface follows it.
 		await on<boolean>(EVENTS.windowMode, (next) => (mini = next));
 		await Promise.all([initPlayer(), initLibrary(), initPlaylists(), loadSettings()]);
+		// The song list opens in the order it was left in; the position
+		// kept for it only means anything under that order.
+		adoptStoredSort();
 		await refreshTray();
 		failure = null;
 		ready = true;
