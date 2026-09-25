@@ -59,6 +59,16 @@
 	/** The one M7 needs; the rest belong to the downloader in M10. */
 	const fingerprinter = $derived(programs.find((one) => one.key === 'fpcalc') ?? null);
 
+	/**
+	 * There is a file, and it really is fpcalc.
+	 *
+	 * The two are separate questions. A file that is there but answers as
+	 * something else — a song picked by mistake, a renamed copy of another
+	 * program — would otherwise read as "installed" here and then fail on
+	 * every track with something that sounds like the track's fault.
+	 */
+	const usable = $derived(fingerprinter?.present === true && fingerprinter.answers);
+
 	const WHERE: Record<string, MessageKey> = {
 		managed: 'programs.fromManaged',
 		chosen: 'programs.fromChosen',
@@ -67,18 +77,24 @@
 
 	async function chooseFpcalc(): Promise<void> {
 		try {
-			const picked = await programPick(t('programs.chooseTitle'));
+			const picked = await programPick(t('programs.chooseTitle'), 'fpcalc');
 			if (!picked) return;
 			await programChoose('fpcalc', picked);
+			failure = null;
 			await lookAgain();
 		} catch (error) {
-			failure = failureKey(error);
+			// A file that is not fpcalc is not a failure of the page, and
+			// saying so in the page's own words is the whole point: the
+			// choice was refused, and nothing was kept.
+			const key = failureKey(error);
+			failure = key === 'error.not_that_program' ? 'programs.notFpcalc' : key;
 		}
 	}
 
 	async function forgetFpcalc(): Promise<void> {
 		try {
 			await programChoose('fpcalc', null);
+			failure = null;
 			await lookAgain();
 		} catch (error) {
 			failure = failureKey(error);
@@ -210,22 +226,26 @@
 
 		<p class="note">
 			<span class="name">fpcalc</span>
-			{#if fingerprinter?.present}
+			{#if usable}
 				<span class="ok">{t('programs.installed')}</span>
-				{#if fingerprinter.from}
+				{#if fingerprinter?.from}
 					<span class="muted">· {t(WHERE[fingerprinter.from] ?? 'programs.fromSystem')}</span>
 				{/if}
-				{#if fingerprinter.version}
+				{#if fingerprinter?.version}
 					<span class="muted numeric">· {fingerprinter.version}</span>
 				{/if}
+			{:else if fingerprinter?.present}
+				<span class="fault-text">{t('programs.notFpcalcHere')}</span>
 			{:else}
 				<span class="fault-text">{t('programs.missing')}</span>
 			{/if}
 		</p>
 		{#if fingerprinter?.path}
 			<p class="note muted numeric where">{fingerprinter.path}</p>
-		{:else}
+		{/if}
+		{#if !usable}
 			<p class="note muted">{t('programs.fpcalcWhere')}</p>
+			<p class="note muted">{t('programs.fpcalcUsually')}</p>
 		{/if}
 
 		<div class="actions">

@@ -111,6 +111,13 @@
 		</article>
 
 		<article>
+			<h3>{t('help.fpcalc.head')}</h3>
+			<p>{t('help.fpcalc.body')}</p>
+			<p>{t('help.fpcalc.where')}</p>
+			<p>{t('help.fpcalc.check')}</p>
+		</article>
+
+		<article>
 			<h3>{t('help.programs.head')}</h3>
 			<p>{t('help.programs.body')}</p>
 		</article>

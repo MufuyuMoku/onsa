@@ -617,7 +617,9 @@ const id = {
 	'match.takeCover': 'Pakai sampul ini',
 	'match.coverAlt': 'Pratinjau sampul yang diusulkan',
 	'match.noFingerprinter': 'Tidak bisa dicari lewat suara: fpcalc belum terpasang.',
-	'match.unreadable': 'Berkasnya tidak bisa dibaca untuk diambil sidik suaranya.',
+	'match.badFingerprinter':
+		'Tidak bisa dicari lewat suara: berkas yang ditunjuk sebagai fpcalc tidak bisa dijalankan atau bukan fpcalc. Berkas lagu ini sendiri tidak apa-apa. Perbaiki pilihannya di Pengaturan, bagian Metadata.',
+	'match.unreadable': 'Berkas lagu ini tidak bisa dibaca fpcalc untuk diambil sidik suaranya.',
 	'match.noKey': 'Tidak bisa dicari lewat suara: belum ada API key AcoustID.',
 	'match.offline': 'Layanannya tidak terjangkau saat itu. Coba lagi nanti.',
 	'match.refused': 'API key AcoustID ditolak.',
@@ -630,11 +632,16 @@ const id = {
 	'programs.fromManaged': 'dari folder Onsa',
 	'programs.fromChosen': 'dari pilihanmu',
 	'programs.fromSystem': 'dari sistem',
-	'programs.choose': 'Pilih berkasnya',
-	'programs.chooseTitle': 'Pilih berkas program',
+	'programs.choose': 'Cari fpcalc…',
+	'programs.chooseTitle': 'Cari berkas fpcalc',
 	'programs.forget': 'Lupakan pilihan',
 	'programs.refresh': 'Periksa lagi',
 	'programs.fpcalcWhere': 'fpcalc ada di paket Chromaprint. Di Linux biasanya bernama libchromaprint-tools; di Windows unduh dari halaman rilis Chromaprint, lalu tunjukkan berkasnya di sini.',
+	'programs.fpcalcUsually':
+		'Letak yang biasa: di Windows, berkas bernama fpcalc.exe di dalam folder hasil membuka paket Chromaprint, biasanya masih di folder Unduhan. Di Linux, /usr/bin/fpcalc setelah paketnya dipasang; kalau sudah ada di sistem, Onsa menemukannya sendiri dan kamu tidak perlu mencarinya.',
+	'programs.notFpcalc':
+		'Berkas ini bukan fpcalc. Pilihannya tidak disimpan. Yang dicari adalah program fpcalc, bukan berkas lagu dan bukan program lain.',
+	'programs.notFpcalcHere': 'ada berkasnya, tapi bukan fpcalc',
 
 	'error.offline': 'Fitur internet sedang mati.',
 
@@ -644,6 +651,7 @@ const id = {
 	'error.engine': 'Mesin audio menolak perintah. Detailnya ada di log.',
 	'error.no_output': 'Tidak ada output audio yang bisa dibuka.',
 	'error.dialog': 'Jendela pemilih file tidak bisa dibuka.',
+	'error.not_that_program': 'Berkas itu bukan program yang dimaksud. Pilihannya tidak disimpan.',
 	'error.io': 'File tidak bisa dibaca atau ditulis.',
 	'error.auto_eq_empty': 'File itu tidak berisi filter EQ yang bisa dipakai.',
 
@@ -930,7 +938,7 @@ const id = {
 	'help.says.metaKeyClear': 'Menghapus kunci yang tersimpan.',
 	'help.says.metaKeyTry': 'Mengirim satu pertanyaan kecil untuk memastikan kuncinya diterima.',
 	'help.says.metaChoose':
-		'Menunjukkan sendiri letak berkas fpcalc di komputermu. fpcalc adalah program kecil yang menghitung sidik jari dari bunyi lagu; tanpa dia, "Cari data online" tidak bisa bertanya apa-apa.',
+		'Membuka jendela untuk menunjukkan sendiri letak berkas fpcalc di komputermu. fpcalc adalah program kecil yang menghitung sidik jari dari bunyi lagu; tanpa dia, "Cari data online" tidak bisa bertanya lewat suara. Berkas yang kamu tunjuk dijalankan sekali untuk memastikan itu benar fpcalc; kalau bukan, misalnya berkas lagu yang terpilih tanpa sengaja, pilihannya ditolak dan tidak disimpan.',
 	'help.says.metaForget': 'Melupakan letak yang tadi kamu tunjukkan.',
 	'help.says.metaRefresh':
 		'Memeriksa lagi apakah programnya sekarang ada, misalnya sesudah kamu memasangnya.',
@@ -1028,6 +1036,13 @@ const id = {
 		'Keterangan lagu — judul, artis, album, tahun, genre, lirik — tersimpan di dalam berkas lagunya sendiri. Ketika kamu mengubahnya di Onsa, perubahan itu disimpan dulu di dalam Onsa saja, dan berkasnya sama sekali tidak disentuh. Itulah arti tanda "Belum ditulis ke berkas". Yang kamu lihat di seluruh Onsa adalah nilai yang sudah kamu ubah, sementara berkasnya masih berisi yang lama. Berkasnya baru berubah kalau kamu menekan "Tulis ke berkas" di editor satu lagu, atau menjalankan "Tulis ke file" di halaman Rapikan. Keduanya bisa dibatalkan lewat Riwayat.',
 	'help.write.never':
 		'Yang tidak pernah menyentuh berkasmu: memutar, playlist, antrean, pencarian, semua pengaturan suara, dan tema. Yang bisa menyentuh berkasmu hanya empat: menulis keterangan ke dalam berkas, mengganti nama berkas berpola, menyimpan lirik sebagai berkas teks kecil berakhiran .lrc di sebelah lagu, dan hasil unduhan yang ditulis sebagai berkas baru.',
+	'help.fpcalc.head': 'fpcalc, untuk mengenali lagu lewat suaranya',
+	'help.fpcalc.body':
+		'fpcalc adalah program kecil yang bukan bagian dari Onsa. Ia dipakai di satu tempat saja: tombol "Cari data online" di halaman Rapikan, untuk menghitung sidik jari dari bunyi sebuah lagu. Ia tidak wajib. Pencarian yang berangkat dari judul dan artis yang sudah tertulis di lagunya tetap jalan tanpa fpcalc; yang tidak bisa jalan hanyalah pengenalan untuk lagu yang tidak punya keterangan apa pun.',
+	'help.fpcalc.where':
+		'Kalau fpcalc sudah ada di sistemmu, Onsa memakainya sendiri tanpa kamu atur. Kalau belum, tekan "Cari fpcalc…" di Pengaturan, bagian Metadata, lalu tunjukkan berkasnya: di Windows namanya fpcalc.exe, ada di dalam folder hasil membuka paket Chromaprint; di Linux biasanya /usr/bin/fpcalc setelah paket libchromaprint-tools dipasang.',
+	'help.fpcalc.check':
+		'Berkas yang kamu tunjuk dijalankan sekali dan ditanya versinya. Kalau yang menjawab bukan fpcalc, misalnya berkas lagu, gambar, atau program lain, pilihannya ditolak di tempat itu juga dan tidak disimpan. Gunanya supaya kegagalan nanti tidak terbaca seolah-olah berkas lagumu yang bermasalah.',
 	'help.programs.head': 'yt-dlp dan ffmpeg',
 	'help.programs.body':
 		'Keduanya program terpisah yang bukan bagian dari Onsa, dan hanya dipakai di halaman Unduhan. yt-dlp wajib: dialah yang mengambil audio dari alamat web. ffmpeg tidak wajib: tanpa dia unduhan tetap berjalan, tapi berkas hasilnya datang apa adanya — tanpa judul dan artis yang tertanam di dalamnya, tanpa gambar sampul, dan tanpa bisa diubah ke MP3 atau FLAC. Onsa tidak mengunduh keduanya diam-diam: ada tombol persetujuan untuk masing-masing, berkasnya diambil dari halaman rilis resminya, dan dicocokkan dengan sidik berkas yang diterbitkan rilis itu sebelum disimpan. Kalau keduanya sudah ada di komputermu, nyalakan "pakai program yang sudah ada di sistem" dan Onsa tidak mengunduh apa pun.',
@@ -1696,6 +1711,8 @@ const en: Record<MessageKey, string> = {
 	'match.takeCover': 'Take this cover',
 	'match.coverAlt': 'The suggested cover',
 	'match.noFingerprinter': 'Cannot be matched by sound: fpcalc is not installed.',
+	'match.badFingerprinter':
+		'Cannot be matched by sound: the file pointed at as fpcalc will not run, or is not fpcalc. There is nothing wrong with this song file. Put the choice right in Settings, under Metadata.',
 	'match.unreadable': 'The file could not be read for a fingerprint.',
 	'match.offline': 'The service could not be reached. Try again later.',
 	'match.noKey': 'Cannot be matched by sound: there is no AcoustID key.',
@@ -1709,11 +1726,16 @@ const en: Record<MessageKey, string> = {
 	'programs.fromManaged': "from Onsa's own folder",
 	'programs.fromChosen': 'the one you chose',
 	'programs.fromSystem': 'from the system',
-	'programs.choose': 'Choose the file',
-	'programs.chooseTitle': 'Choose a program file',
+	'programs.choose': 'Find fpcalc…',
+	'programs.chooseTitle': 'Find the fpcalc file',
 	'programs.forget': 'Forget that choice',
 	'programs.refresh': 'Look again',
 	'programs.fpcalcWhere': 'fpcalc comes with Chromaprint. On Linux it is usually the libchromaprint-tools package; on Windows, download it from the Chromaprint releases page and point Onsa at the file here.',
+	'programs.fpcalcUsually':
+		'Where it usually is: on Windows, a file called fpcalc.exe inside the folder the Chromaprint package unpacked into, most often still in Downloads. On Linux, /usr/bin/fpcalc once the package is installed; if it is already on the system, Onsa finds it by itself and there is nothing to look for.',
+	'programs.notFpcalc':
+		'This file is not fpcalc. The choice was not kept. What is being looked for is the fpcalc program, not a song file and not another program.',
+	'programs.notFpcalcHere': 'there is a file, but it is not fpcalc',
 
 	'error.offline': 'Looking things up on the internet is switched off.',
 
@@ -1723,6 +1745,7 @@ const en: Record<MessageKey, string> = {
 	'error.engine': 'The audio engine refused. The log has the details.',
 	'error.no_output': 'No audio output can be opened.',
 	'error.dialog': 'The file dialog cannot be opened.',
+	'error.not_that_program': 'That file is not the program it was picked for. The choice was not kept.',
 	'error.io': 'The file cannot be read or written.',
 	'error.auto_eq_empty': 'That file holds no usable EQ filter.',
 
@@ -2006,7 +2029,7 @@ const en: Record<MessageKey, string> = {
 	'help.says.metaKeyClear': 'Deletes the key that was kept.',
 	'help.says.metaKeyTry': 'Sends one small question to be sure the key is accepted.',
 	'help.says.metaChoose':
-		'Points Onsa at the fpcalc file on your computer yourself. fpcalc is a small program that works out a fingerprint from the sound of a song; without it, "Look it up online" has nothing to ask with.',
+		'Opens a window to point Onsa at the fpcalc file on your computer yourself. fpcalc is a small program that works out a fingerprint from the sound of a song; without it, "Look it up online" has nothing to ask by sound. The file you point at is run once to be sure it really is fpcalc; if it is not, a song file picked by mistake for instance, the choice is refused and nothing is kept.',
 	'help.says.metaForget': 'Forgets the place you pointed at.',
 	'help.says.metaRefresh':
 		'Looks again for whether the program is there now, after you have installed it for instance.',
@@ -2099,6 +2122,13 @@ const en: Record<MessageKey, string> = {
 		"A song's details — title, artist, album, year, genre, words — are stored inside the song file itself. When you change one in Onsa, the change is kept inside Onsa first, and the file is not touched at all. That is what \"Not written to the file yet\" means. What you see everywhere in Onsa is your changed value, while the file still holds the old one. The file changes only when you press \"Write to the file\" in the single-song editor, or run \"Write to the files\" on the Tidy up page. Both can be undone from the History.",
 	'help.write.never':
 		'What never touches your files: playing, playlists, the queue, searching, every sound setting, and themes. Only four things can: writing details into a file, renaming files by pattern, keeping words as a small text file ending in .lrc beside a song, and a download written as a new file.',
+	'help.fpcalc.head': 'fpcalc, for recognising a song by its sound',
+	'help.fpcalc.body':
+		'fpcalc is a small program that is not part of Onsa. It is used in one place only: the "Look it up online" button on the Tidy up page, to work out a fingerprint from the sound of a song. It is not required. Looking a song up by the title and artist already written inside it works without fpcalc; what cannot work without it is recognising a song that says nothing about itself at all.',
+	'help.fpcalc.where':
+		'If fpcalc is already on your system, Onsa uses it by itself and there is nothing to set. If it is not, press "Find fpcalc…" in Settings, under Metadata, and point at the file: on Windows it is called fpcalc.exe, inside the folder the Chromaprint package unpacked into; on Linux it is usually /usr/bin/fpcalc once the libchromaprint-tools package is installed.',
+	'help.fpcalc.check':
+		'The file you point at is run once and asked its version. If what answers is not fpcalc, a song, a picture or some other program, the choice is refused there and then and nothing is kept. That is so a failure later cannot read as though there were something wrong with your song file.',
 	'help.programs.head': 'yt-dlp and ffmpeg',
 	'help.programs.body':
 		'Both are separate programs, not part of Onsa, and are used only on the Downloads page. yt-dlp is required: it is what fetches audio from a web address. ffmpeg is not: without it downloads still work, but what arrives is the file as it comes — with no title and artist inside it, no cover picture, and no way to turn it into MP3 or FLAC. Onsa does not download either behind your back: each has a button that agrees to it, the file is taken from its official release page, and it is checked against the fingerprint that release published before it is kept. If you already have them, switch on "use the programs already on this system" and Onsa downloads nothing.',

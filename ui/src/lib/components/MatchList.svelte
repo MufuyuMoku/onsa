@@ -32,6 +32,7 @@
 
 	const WHY: Record<string, MessageKey> = {
 		noFingerprinter: 'match.noFingerprinter',
+		badFingerprinter: 'match.badFingerprinter',
 		unreadable: 'match.unreadable',
 		noKey: 'match.noKey',
 		offline: 'match.offline',

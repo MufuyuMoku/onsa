@@ -421,7 +421,8 @@ const ERROR_KEYS: Record<string, MessageKey> = {
 	offline: 'error.offline',
 	busy: 'error.busy',
 	download: 'error.download',
-	no_folder: 'error.no_folder'
+	no_folder: 'error.no_folder',
+	not_that_program: 'error.not_that_program'
 };
 
 async function call<T>(command: string, args?: Record<string, unknown>): Promise<T> {
@@ -665,6 +666,8 @@ export interface ProgramStatus {
 	present: boolean;
 	from: 'managed' | 'chosen' | 'system' | null;
 	path: string | null;
+	/** Whether that file, run, answers as the program it is meant to be. */
+	answers: boolean;
 	version: string | null;
 }
 
@@ -730,7 +733,9 @@ export interface CoverPick {
 export const programStatus = () => call<ProgramStatus[]>('program_status');
 export const programChoose = (program: string, path: string | null) =>
 	call<void>('program_choose', { program, path });
-export const programPick = (title: string) => call<string | null>('program_pick', { title });
+/** Asks for a program's file, telling the dialog which program it is. */
+export const programPick = (title: string, program: string) =>
+	call<string | null>('program_pick', { title, program });
 
 // The downloader (SPEC section 7) ------------------------------------------
 
