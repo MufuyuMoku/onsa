@@ -112,6 +112,12 @@ pub fn system_package(_program: Program) -> Option<&'static str> {
     None
 }
 
+/// What the program is called in Debian and Ubuntu's own packages.
+///
+/// Only useful where a package manager is how software arrives, so it is
+/// only answered there. Onsa already looks along `PATH`, which means the
+/// shortest way to give it the program on those systems is to install the
+/// distribution's package and nothing else.
 #[cfg(not(windows))]
 pub fn system_package(program: Program) -> Option<&'static str> {
     match program {
