@@ -606,3 +606,32 @@ Sisiran seluruh antarmuka sebelum rilis, mencari hal yang mengarah ke fitur v1.1
 - **Hanya fpcalc yang sudah terbukti fpcalc yang boleh menyalahkan sebuah lagu.** Karena itu fpcalc ditanya lebih dulu — sekali untuk seluruh putaran, bukan sekali per lagu — dan kalau yang menjawab bukan fpcalc, semua lagu dalam putaran itu mendapat kalimat tentang fpcalc dan tidak ada satu pun yang disalahkan.
 - **Halaman Metadata memisahkan "ada berkasnya" dari "berkasnya benar".** Sebelumnya status hanya menanyakan apakah berkasnya ada, sehingga berkas yang salah — termasuk pilihan lama dari sebelum pemeriksaan ini ada — tetap terbaca "terpasang". Sekarang berkas yang ditemukan ikut ditanya siapa dirinya, dengan ongkos yang sama seperti menanyakan versinya seperti dulu.
 - **Nama tombol menyebut yang dicari.** "Pilih berkasnya" tidak mengatakan berkas apa; "Cari fpcalc…" mengatakan. Di bawahnya ada letak yang biasa di Windows dan di Linux, supaya orang tidak menebak-nebak lalu menunjuk berkas yang salah.
+
+## 2026-09-25 · v1.3-b: rencana, lisensi, dan jalan keluar ke halaman resmi
+
+**Rencana**
+
+- **Pekerjaan dikelompokkan per rilis, bukan per nomor milestone berurutan.** Sesudah v1 terbit, yang menentukan urutan bukan lagi nomor di SPEC melainkan apa yang pantas diserahkan sekaligus: v1.3 "Rapi", v1.4 "Unduhan penuh", v1.5 "Tampilan", v1.6 "Lirik & metadata", v1.7 "Video". Nomor milestone tetap dipakai sebagai nama isi, bukan sebagai antrean.
+- **Laporan tester bukan gerbang.** Menunggu laporan berarti menghentikan pekerjaan untuk sesuatu yang waktunya tidak bisa diatur. Laporan yang datang masuk ke rilis patch berikutnya (v1.x.y).
+- **Milestone baru ditulis dengan kriteria yang bisa dijalankan orang, di kedua OS.** "Selesai bila" tiap milestone baru menyebut hal yang bisa dicoba di aplikasi yang berjalan — berkas yang benar-benar ada di Recycle Bin, daftar yang ikut berubah saat yt-dlp diganti versi — bukan "tesnya lulus". Tes tetap ada, tapi bukan itu yang membuktikan sebuah milestone selesai.
+- **M16 tidak boleh dimulai dari kode.** Tiap tema butuh dokumen konsep yang disetujui pemilik proyek lebih dulu, dan preset layout adalah sumbu terpisah dari tema: tema mengatur rupa, preset mengatur susunan, tiap gabungan harus bisa dipakai.
+- **fpcalc masuk daftar sumber §7.1.** Rilis Chromaprint tidak menerbitkan daftar checksum, jadi untuk fpcalc Onsa menyimpan sidik SHA-256 versi yang sudah diperiksa di dalam kodenya dan menolak berkas yang tidak cocok. Tidak ada jalan ketiga: berkas yang diunduh tidak pernah dipasang tanpa dicocokkan dengan sesuatu yang sudah ada di dalam Onsa atau yang diterbitkan rilisnya sendiri.
+- **Lisensi proyek ditahan.** Repo sengaja tanpa berkas lisensi, supaya semua pilihan tetap terbuka termasuk versi tertutup. Tidak ada `LICENSE`, dan field `license` di `Cargo.toml` maupun `package.json` sengaja dibiarkan kosong.
+- **Ikon final dibuat pemilik proyek**, dan versi 16 serta 32 px diserahkan terpisah — ikon sekecil itu digambar ulang, bukan diperkecil dari gambar besar.
+
+**Lisensi dependensi**
+
+- **Yang menjaga pilihan lisensi tetap terbuka adalah pemeriksaan di CI, bukan ingatan.** Sebuah dependensi ber-GPL yang masuk diam-diam memutuskan untuk proyek ini apa yang boleh diterbitkan. `deny.toml` mengizinkan MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, Zlib, Unicode-3.0, dan MPL-2.0; GPL, LGPL, dan AGPL ditolak karena tidak ada di daftar itu.
+- **MPL-2.0 ikut diizinkan** karena ia copyleft per berkas: ia menjangkau berkas yang diubah, bukan aplikasi di sekitarnya. Symphonia — decoder audio Onsa — ada di bawahnya.
+- **Yang dijalankan hanya `check licenses`.** Pemeriksaan advisory butuh basis data keamanan dari jaringan, dan CI tidak boleh bergantung pada internet di luar mengambil dependensi (SPEC §12). Keamanan dependensi pertanyaan lain, dan tempatnya bukan di sini.
+- **Crate milik Onsa sendiri dihitung privat, bukan pelanggaran.** Semuanya `publish = false`, jadi tidak punya field lisensi adalah fakta tentang mereka, bukan yang hilang.
+- **Dua pengecualian ditulis di berkasnya, dikunci ke versi persis, dan menunggu keputusan pemilik proyek**: `notify` (CC0-1.0) dan `target-lexicon` (Apache-2.0 WITH LLVM-exception). Keduanya bukan copyleft dan keduanya sama permisifnya atau lebih; mereka ditulis sebagai pengecualian dan bukan dimasukkan ke daftar izin supaya terlihat, dan dikunci ke versi supaya kenaikan versi membawa pertanyaannya kembali.
+- **Action resmi cargo-deny dipakai di CI**, bukan `cargo install` yang memakan beberapa menit tiap jalan. Sumbernya sama dengan tool-nya sendiri, seperti `dtolnay/rust-toolchain` dan `Swatinem/rust-cache` yang sudah dipakai.
+
+**Tombol halaman unduhan resmi**
+
+- **Yang dikirim ke backend adalah nama program, bukan alamat.** Alamatnya tetap dan tertulis di `install::release_page`, bersebelahan dengan alamat berkas yang diunduh Onsa sendiri (SPEC §7.1). Dengan begitu tidak ada yang datang dari masukan pengguna atau dari jawaban layanan yang bisa memutuskan ke mana jendela browser dibuka.
+- **Halaman rilis dan berkas yang diunduh harus satu proyek**, dan itu diuji: pemilik dan nama repositori keduanya dibandingkan.
+- **Nama paket distro datang dari backend, bukan ditebak antarmuka.** Antarmuka tidak menebak OS dari user agent; backend menjawab nama paketnya hanya di sistem yang memang memakai paket, dan kalimat yang membungkusnya tetap di kamus i18n.
+- **Deno tidak diberi nama paket** karena tidak ada di Debian maupun Ubuntu. Menyebut paket yang tidak ada lebih buruk daripada tidak menyebut apa-apa.
+- **Kalimat tentang ffmpeg diperbaiki supaya menunjuk sumber yang sama dengan tombolnya.** Sebelumnya ia menyuruh mengunduh dari ffmpeg.org sementara §7.1 memakai build BtbN; satu halaman tidak boleh menyebut dua sumber berbeda untuk satu program.

@@ -247,6 +247,10 @@ Downloader punya bagian tersendiri di UI. yt-dlp dijalankan sebagai proses terpi
   - yt-dlp: rilis resmi (`yt-dlp.exe` untuk Windows, `yt-dlp_linux` untuk Linux). Verifikasi dengan `SHA2-256SUMS` yang disertakan di rilis.
   - Deno: rilis resmi (`deno-x86_64-pc-windows-msvc.zip` / `deno-x86_64-unknown-linux-gnu.zip`).
   - ffmpeg: build BtbN FFmpeg-Builds (win64 / linux64).
+  - fpcalc: rilis resmi Chromaprint (`chromaprint-fpcalc-<versi>-windows-x86_64.zip` / `chromaprint-fpcalc-<versi>-linux-x86_64.tar.gz`).
+- **Bila rilisnya tidak menerbitkan checksum**, Onsa menyimpan sidik SHA-256 versi yang sudah diperiksa di dalam kodenya dan menolak berkas yang tidak cocok. Rilis Chromaprint tidak menerbitkan daftar checksum, jadi fpcalc memakai cara ini. Tidak ada jalan ketiga: sebuah berkas yang diunduh tidak pernah dipasang tanpa dicocokkan dengan sesuatu yang sudah ada di dalam Onsa atau diterbitkan rilisnya sendiri.
+- Unduhan otomatis fpcalc dikerjakan di **M10b**, memakai pembongkar arsip yang sama dengan ffmpeg dan Deno. Aturan persetujuan di atas — nama, sumber, perkiraan ukuran, lalu tombol setuju — berlaku sama untuk fpcalc.
+- Di tempat sebuah program disebut belum ada, Onsa menyediakan tombol yang membuka **halaman rilis resmi** program itu di browser. URL-nya tetap dan tertulis di kode, tidak pernah berasal dari masukan pengguna atau dari jawaban layanan mana pun.
 - Opsi **"pakai program sistem"**: bila yt-dlp, ffmpeg, atau Deno sudah ada di PATH (umum di Linux), pengguna bisa memakai itu.
 - Ada tombol update untuk yt-dlp (`yt-dlp -U` atau unduh ulang) dan tampilan versi setiap binary.
 
@@ -486,7 +490,25 @@ Fitur khas Onsa: rona spektrum (dan elemen lain yang dipilih tema) bergeser meng
 
 Kerjakan berurutan. Milestone berikutnya dimulai setelah **kriteria selesai** milestone sebelumnya terpenuhi dan dilaporkan di `docs/PROGRESS.md`.
 
-Urutannya pernah diubah sekali, atas keputusan pemilik proyek (2026-09-18): sesudah M7a, yang dikerjakan adalah sebagian M10 (pengambil binary dan yt-dlp) lalu M8, dan M9 dilewati. Alasannya beserta utang yang timbul ada di `docs/DECISIONS.md`.
+Urutannya pernah diubah dua kali, atas keputusan pemilik proyek. Alasannya beserta utang yang timbul ada di `docs/DECISIONS.md`.
+
+**2026-09-18**: sesudah M7a, yang dikerjakan adalah sebagian M10 (pengambil binary dan yt-dlp) lalu M8, dan M9 dilewati.
+
+**2026-09-25**: sesudah v1 terbit, pekerjaannya dikelompokkan per rilis dan bukan lagi per nomor milestone berurutan. Garisnya:
+
+| Rilis | Isinya |
+|---|---|
+| v1.1 | Bantuan di dalam aplikasi (selesai) |
+| v1.2 | Paket untuk tester (selesai) |
+| v1.3 "Rapi" | v1.3-a pemilihan fpcalc (selesai), v1.3-b dokumen dan pemeriksaan lisensi (selesai), **M13**, **M14** |
+| v1.4 "Unduhan penuh" | **M10b** (termasuk unduhan otomatis fpcalc), **M15**, dan paket Linux (AppImage dan deb) yang dibangun CI — sebagian M12 |
+| v1.5 "Tampilan" | **M16** |
+| v1.6 "Lirik & metadata" | **M17** dan **M7b** |
+| v1.7 "Video" | **M11** (decoder Opus lebih dulu), lalu **M18** |
+
+M9 (scrobble) tetap dilewati dan belum punya tanggal. Sisa M12 — ikon final, halaman Tentang beserta daftar lisensi pihak ketiga, dan lisensi proyek — menunggu keputusan pemilik proyek (§16).
+
+Laporan dari tester tidak menjadi gerbang bagi rilis mana pun: laporan yang datang masuk ke rilis patch berikutnya (v1.x.y).
 
 ### M0. Kerangka proyek
 Workspace Cargo sesuai §2, Tauri 2 + SvelteKit berjalan di Windows dan Linux, CI sesuai §12, dan pemuat tema (stub) yang sudah membaca satu tema bawaan.
@@ -544,13 +566,69 @@ Decoder Opus (lalu ubah prioritas format downloader), exclusive mode WASAPI, dan
 Bundling installer (Windows: NSIS/MSI; Linux: AppImage dan deb), ikon final, halaman Tentang beserta daftar lisensi pihak ketiga, dan README.
 **Selesai bila:** installer terpasang dan berjalan di mesin bersih untuk kedua OS.
 
+Sebagian sudah jalan sejak v1.2: berkas pemasang Windows dibangun dan diterbitkan CI dari tag versi. Paket Linux (AppImage dan deb) menyusul di v1.4. Sisanya menunggu §16.
+
+### M13. Pengelolaan folder sumber
+Folder library bisa dilepas, dipindahkan, dan dipersempit; berkas di disk bisa dipindah dan dihapus dari dalam Onsa.
+
+- **"Berhenti memakai folder ini"**: foldernya keluar dari library beserta lagunya. Berkas di disk tidak disentuh sama sekali.
+- **"Folder ini pindah tempat"** (huruf drive berubah, folder dipindahkan, atau disk yang sama dipasang di jalur lain): lagunya dikenali sebagai lagu yang sama, dan riwayat putar, keanggotaan playlist, serta editan yang belum ditulis ke berkas ikut pindah bersamanya.
+- **Mengecualikan subfolder dari pemindaian**, untuk folder sampel, berkas kerja, atau apa pun yang bukan musik yang mau didengarkan.
+- **Memindah dan menghapus berkas sungguhan di disk.** Menghapus berarti ke Recycle Bin (Windows) atau Trash (Linux), **tidak pernah permanen**. Pemindahan melewati pratinjau, ringkasan, dan riwayat yang bisa dibatalkan, persis seperti penulisan tag (§8).
+
+**Selesai bila:** di kedua OS — sebuah folder dilepas dan lagunya hilang dari library sementara berkasnya masih ada di disk; folder yang sama dipasang kembali dari jalur yang berbeda dan jumlah putar, playlist, serta editan yang belum ditulis tetap menempel pada lagu yang sama, bukan menjadi lagu baru; subfolder yang dikecualikan tidak muncul lagi sesudah pindai ulang; satu berkas yang dihapus dari dalam Onsa benar-benar ada di Recycle Bin atau Trash dan bisa dikembalikan dari sana; dan satu pemindahan yang dibatalkan lewat Riwayat mengembalikan berkasnya ke tempat semula.
+
+### M14. Panel Sedang diputar
+Tiap panel di layar Sedang diputar — lirik, visualizer, dan panel lain yang ada di sana — bisa dinyalakan dan dimatikan sendiri-sendiri, dan pilihannya tersimpan.
+
+Aturan M5 tetap berlaku: tap analisis berhenti saat visualizer disembunyikan.
+
+**Selesai bila:** di kedua OS — tiap panel bisa dimatikan dan dinyalakan lagi, keadaannya sama sesudah Onsa ditutup dan dibuka kembali, dan dengan visualizer disembunyikan tap analisis berhenti (terverifikasi lewat log atau tes, seperti di M5).
+
+### M15. Daftar sumber unduhan di Bantuan
+Halaman Bantuan memuat daftar situs yang bisa diunduh, **diambil dari yt-dlp yang terpasang** (`--list-extractors`), bukan ditulis tangan.
+
+- Bisa dicari, dan sumber musik yang umum ditaruh di atas.
+- Kalimatnya jujur: ada di daftar tidak selalu berarti berhasil. Sebagian butuh masuk akun, sebagian sedang rusak, dan daftar ini hanya mengatakan yt-dlp mengenal namanya.
+- Bila yt-dlp belum terpasang, halaman itu mengatakannya dan menunjuk ke halaman Unduhan, bukan menampilkan daftar kosong.
+
+**Selesai bila:** di kedua OS — daftarnya terisi dari yt-dlp yang benar-benar terpasang (isinya ikut berubah bila yt-dlp diganti versi, karena tidak ada daftar tetap di dalam kode), pencarian menyaringnya, dan di mesin tanpa yt-dlp halaman itu mengatakannya serta menunjuk ke halaman Unduhan.
+
+### M16. Tampilan: skema tema baru, keenam tema dirombak, preset layout
+**Preset layout adalah sumbu terpisah dari tema**: tema mengatur rupa, preset layout mengatur susunan. Keduanya dipilih sendiri-sendiri dan tiap gabungan harus bisa dipakai.
+
+- Layout terinspirasi pola yang sudah dikenal dari aplikasi streaming (sidebar + grid sampul + bar pemutar; layar penuh sampul atau video + lirik), **tanpa meniru rupa aplikasi tertentu**.
+- Skema tema diperluas di luar warna: huruf (yang dibundel, §9), material permukaan, bingkai dan bevel, gaya meter dan visualizer, animasi, dan layout bawaan tema itu.
+- **Tiap tema butuh dokumen konsep yang disetujui pemilik proyek sebelum dikerjakan.**
+- Jumlah dan nama keenam tema bawaan tidak berubah — itu Keputusan terkunci (§1).
+
+**Selesai bila:** di kedua OS — tiap preset layout bisa dipakai bersama tiap tema dan sebaliknya, keenam tema bawaan tampil sesuai dokumen konsepnya yang sudah disetujui, dan berkas tema buatan pengguna dari skema lama tetap terbaca atau ditolak dengan alasan yang jelas di halaman Tampilan (§9.3).
+
+### M17. Lirik lanjutan
+- **Ambil dan simpan lirik massal** untuk satu album atau satu playlist sekaligus dari LRCLIB, disimpan ke berkas `.lrc` di sebelah lagunya atau ke dalam tag.
+- **Tempel teks lirik**, lalu dirapikan otomatis: label bagian (`[Verse 1]`, `[Chorus]`), baris iklan, nama kontributor, dan sampah sejenis dibuang.
+- **Editor ketuk-untuk-sinkron**: teks polos diubah menjadi lirik bersinkron dengan mengetuk mengikuti lagunya.
+- Tanpa Genius, dan **tanpa membongkar halaman web mana pun**.
+
+**Selesai bila:** di kedua OS — satu album diambil liriknya sekaligus dan tersimpan di tempat yang dipilih, teks yang ditempel keluar bersih dari label bagian dan baris iklan, dan satu lagu yang liriknya polos disinkronkan lewat editor ketuk lalu tampil bergerak mengikuti lagunya.
+
+### M18. Video
+Pemutaran video musik lokal dan unduhan video lewat yt-dlp.
+
+- **Audionya diputar mesin Onsa**, bukan webview: ia melewati jalur DSP dan muncul di strip jalur sinyal seperti audio lain.
+- Videonya dibisukan di webview, dan gambarnya disinkronkan ke jam mesin audio.
+- Format unduhan dipilih yang **terbukti bisa diputar webview di Windows dan Linux**. Codec yang tersedia di webkit2gtk bergantung pada plugin GStreamer yang terpasang; apa yang dibutuhkan ditulis di README.
+- Bergantung pada M10b (ffmpeg) dan M11 (Opus).
+
+**Selesai bila:** di kedua OS — satu berkas video musik lokal dan satu hasil unduhan video diputar dengan audionya lewat mesin Onsa (terlihat di strip jalur sinyal), gambar dan suaranya tetap sinkron sesudah seek dan jeda, tidak ada suara ganda dari webview, dan yang dibutuhkan Linux tertulis di README.
+
 ---
 
 ## 16. Hal yang belum diputuskan
 
 Hal-hal di bawah tidak menghalangi milestone M0–M11. Tanyakan ke pemilik proyek saat sampai di titik yang membutuhkannya.
 
-- Lisensi proyek (dibutuhkan paling lambat di M12).
-- Ikon final. Sampai saat itu, pakai placeholder `assets/icon.svg` (garpu tala sederhana).
+- **Lisensi proyek: ditahan** (keputusan pemilik proyek, 2026-09-25). Repo sengaja dibiarkan tanpa berkas lisensi, supaya semua pilihan tetap terbuka termasuk versi tertutup. **Jangan menambahkan `LICENSE`, dan jangan mengisi field `license` di `Cargo.toml` atau `package.json`.** Yang menjaga pilihan itu tetap terbuka adalah pemeriksaan lisensi dependensi di CI (`deny.toml`): hanya lisensi permisif dan MPL-2.0 yang diizinkan, GPL/LGPL/AGPL ditolak.
+- **Ikon final dibuat pemilik proyek** (keputusan pemilik proyek, 2026-09-25). Versi 16 dan 32 px diserahkan terpisah dan **tidak diturunkan dari gambar besar**, karena ikon sekecil itu digambar ulang, bukan diperkecil. Sampai diserahkan, pakai placeholder `assets/icon.svg` (garpu tala sederhana).
 - Distribusi tambahan: Flatpak/Flathub, AUR, winget.
 - Analisis loudness EBU R128 dan ListenBrainz.

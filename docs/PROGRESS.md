@@ -4,17 +4,33 @@ Status tiap milestone dari `SPEC.md` §15. Diperbarui di akhir setiap milestone.
 
 ---
 
-## Garis rilis (keputusan pemilik proyek, 2026-09-19)
+## Garis rilis (keputusan pemilik proyek, diperbarui 2026-09-25)
 
-**v1**: pemutar lengkap, unduhan satu per satu, tanpa Opus. Isinya M0–M8 dan M10a.
-Sesudah M8 tidak ada fitur baru yang masuk v1 — yang tersisa hanya penyiapan rilis.
+**v1**: pemutar lengkap, unduhan satu per satu, tanpa Opus. Isinya M0–M8 dan M10a. Terbit.
 
-**v1.1**: M7b (hapus/ekspor sampul, menanam sampul ke berkas beserta aturan 1200 px,
-"(beragam)", dan tiga field yang belum bisa di-override), M10b (Deno dan ffmpeg, antrean
-paralel, antrean yang disimpan, tombol update yt-dlp), M11 (Opus dan kualitas lanjutan),
-dan M12 (paket rilis).
+Yang sudah terbit sesudahnya, dan isinya ternyata bukan yang direncanakan pada 2026-09-19:
 
-M9 (scrobble) tetap dilewati dan belum punya tanggal.
+| Rilis | Isinya | Keadaan |
+|---|---|---|
+| **v1.1** | Bantuan di dalam aplikasi: layar pertama yang menyebutkan isi jendela, panel bantuan per halaman, halaman Bantuan, dan dua sisa audit | selesai, tag `v1.1.0` |
+| **v1.2** | Paket untuk tester: seluruh jalur internet dibuktikan terhadap layanan sungguhan, berkas pemasang Windows dari CI tanpa kunci siapa pun, dan `docs/UNTUK-TESTER.md` | selesai, rilis `v1.2.0` |
+
+Garis selanjutnya:
+
+| Rilis | Isinya |
+|---|---|
+| **v1.3 "Rapi"** | v1.3-a pemilihan fpcalc (selesai), v1.3-b dokumen dan pemeriksaan lisensi (selesai), **M13** pengelolaan folder sumber, **M14** panel Sedang diputar |
+| **v1.4 "Unduhan penuh"** | **M10b** (Deno, ffmpeg, antrean paralel, dan unduhan otomatis fpcalc), **M15** daftar sumber unduhan di Bantuan, dan paket Linux (AppImage dan deb) yang dibangun CI — sebagian M12 |
+| **v1.5 "Tampilan"** | **M16**: skema tema baru, keenam tema dirombak, preset layout sebagai sumbu terpisah |
+| **v1.6 "Lirik & metadata"** | **M17** lirik lanjutan, lalu **M7b** (sisa pekerjaan sampul) |
+| **v1.7 "Video"** | **M11** (decoder Opus lebih dulu), lalu **M18** video |
+
+M9 (scrobble) tetap dilewati dan belum punya tanggal. Sisa M12 — ikon final, halaman Tentang
+beserta daftar lisensi pihak ketiga, dan lisensi proyek — menunggu keputusan pemilik proyek
+(SPEC §16); lisensi proyek sendiri **ditahan** dengan sengaja.
+
+**Laporan tester bukan gerbang.** Tidak ada rilis di atas yang menunggu laporan tester;
+laporan yang datang masuk ke rilis patch berikutnya (v1.x.y).
 
 ---
 
@@ -1051,13 +1067,64 @@ Satu mesin uji tersendiri: data folder sendiri, folder musik berisi dua berkas y
 - **Program sungguhan yang memang benar**: ffmpeg yang asli ditunjuk sebagai ffmpeg — diterima, dan versinya ikut terbaca. Pemeriksaannya bukan "tolak semuanya".
 - **Berkas yang salah duduk di tempat fpcalc**: sebuah program lain disalin ke folder program milik Onsa dengan nama `fpcalc.exe` — jalan yang tidak lewat tombol mana pun. Halaman Metadata berkata "fpcalc ada berkasnya, tapi bukan fpcalc". Putaran "Cari data online" atas kedua lagu berakhir dengan kalimat yang sama untuk keduanya: "Tidak bisa dicari lewat suara: berkas yang ditunjuk sebagai fpcalc tidak bisa dijalankan atau bukan fpcalc. Berkas lagu ini sendiri tidak apa-apa." Tidak ada lagu yang disalahkan.
 
-### Yang belum terbukti, dan kenapa
+### fpcalc yang sungguhan: terbukti (2026-09-25)
 
-**fpcalc yang sungguhan tidak ada di mesin ini**, dan tidak diunduh: SPEC §7.1 hanya mengizinkan yt-dlp, ffmpeg dan deno dari halaman rilis resminya, dan fpcalc memang datang dari pengguna. Jadi "fpcalc asli diterima" belum pernah dijalankan sungguhan. Dua hal mendekatkannya:
+Saat v1.3-a ditutup, fpcalc yang asli tidak ada di mesin ini dan tidak diunduh — SPEC §7.1
+waktu itu hanya menyebut yt-dlp, ffmpeg dan Deno. Jalur "program asli diterima" waktu itu
+hanya dibuktikan dengan ffmpeg asli lewat kode yang persis sama, dan dengan kalimat versi
+fpcalc yang dibaca dari sumber Chromaprint sendiri (`src/cmd/fpcalc.cpp`):
+`fprintf(stdout, "fpcalc version %s (FFmpeg %s %s %s)\n", ...)`.
 
-- Jalur "program asli diterima" dibuktikan dengan ffmpeg asli lewat kode yang persis sama.
-- Kalimat versi fpcalc dibaca dari sumber Chromaprint sendiri (`src/cmd/fpcalc.cpp`): `fprintf(stdout, "fpcalc version %s (FFmpeg %s %s %s)\n", ...)`. Baris itu dibuka oleh kata `fpcalc`, jadi pemeriksaannya menerimanya.
+**Sekarang sudah dijalankan sungguhan.** Pemilik proyek memasang `fpcalc.exe` dari rilis
+resmi Chromaprint, memilihnya lewat tombol "Cari fpcalc…", dan menjalankan pengenalan lewat
+suara sampai berhasil. Pemeriksaan menerima fpcalc yang asli, seperti yang diharapkan.
 
-Kalau suatu hari Chromaprint mengubah kalimat itu, fpcalc yang sungguhan akan ditolak. Itu risiko yang diketahui, bukan yang terlewat.
+Yang tersisa sebagai risiko yang diketahui: kalau suatu hari Chromaprint mengubah kalimat
+versinya, fpcalc yang sungguhan akan ditolak.
 
 `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo test --workspace` dan `npm run check` bersih.
+
+## 2026-09-25 · v1.3-b: rencana di dokumen, lisensi dependensi, tombol halaman resmi
+
+### 1. Dokumen
+
+- **`SPEC.md` §15** mendapat garis rilis baru di paragraf pembukanya (perubahan urutan kedua, 2026-09-25) beserta enam milestone baru: **M13** pengelolaan folder sumber, **M14** panel Sedang diputar, **M15** daftar sumber unduhan di Bantuan, **M16** tampilan, **M17** lirik lanjutan, **M18** video. Tiap milestone menyebut isinya dan "Selesai bila" yang bisa dicoba orang di aplikasi yang berjalan, di kedua OS.
+- **`SPEC.md` §7.1** menambahkan fpcalc dari rilis resmi Chromaprint ke daftar sumber, beserta aturan untuk rilis yang tidak menerbitkan checksum (sidik SHA-256 tersimpan di kode, berkas yang tidak cocok ditolak), catatan bahwa unduhan otomatisnya masuk M10b memakai pembongkar arsip yang sama dengan ffmpeg dan Deno, dan aturan persetujuan yang sama.
+- **`SPEC.md` §16**: lisensi proyek **ditahan** dengan alasannya, dan ikon final dibuat pemilik proyek dengan versi 16 dan 32 px yang diserahkan terpisah.
+- **`PROGRESS.md`** dan **`README.md`**: garis rilis ditulis ulang sesuai kenyataan — v1.1 bantuan di dalam aplikasi, v1.2 paket tester — lalu v1.3 sampai v1.7.
+- **v1.3-a**: "fpcalc asli diterima" tidak lagi berstatus belum terbukti. Pemilik proyek memasang fpcalc.exe dari rilis resmi Chromaprint, memilihnya lewat "Cari fpcalc…", dan menjalankannya sampai berhasil.
+
+### 2. Pemeriksaan lisensi dependensi
+
+`deny.toml` baru dan satu job `licences` di CI yang menjalankan `cargo deny check licenses`.
+Izin: MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, Zlib, Unicode-3.0, MPL-2.0.
+
+**Hasil pemeriksaan pertama** (cargo-deny 0.20.2, atas Windows dan Linux sekaligus, semua fitur):
+
+- **Tidak ada GPL, LGPL, atau AGPL di mana pun di pohon dependensi.** Itu pertanyaan yang sebenarnya, dan jawabannya bersih.
+- Tujuh crate "tanpa lisensi" adalah crate Onsa sendiri. Semuanya `publish = false`, jadi dihitung privat.
+- **Dua crate ditolak**, keduanya bukan copyleft:
+  - **`notify` 8.2.0 — CC0-1.0.** Penyerahan ke domain publik; dalam praktiknya lebih permisif daripada MIT dan tidak meminta apa pun dari aplikasi di sekitarnya. Ia pengintai folder, dan kodenya memang ikut di dalam Onsa (`onsa-library`).
+  - **`target-lexicon` 0.12.16 — Apache-2.0 WITH LLVM-exception.** Apache-2.0 dengan pengecualian yang **menambah** izin, dan ia **dependensi build saja**: masuk lewat `system-deps` di bawah binding GTK di Linux, jadi kodenya tidak pernah sampai ke biner yang dijalankan orang.
+
+Tidak ada dependensi yang diganti. Keduanya ditulis sebagai pengecualian di `deny.toml`, dikunci ke versi persis dan diberi alasannya, sambil menunggu keputusan pemilik proyek; kenaikan versi salah satunya akan membuat pemeriksaan berhenti lagi dan menanyakan ulang.
+
+### 3. Tombol "Buka halaman unduhan resmi"
+
+Di tiga tempat: halaman Pengaturan → Metadata (saat fpcalc belum ada atau bukan fpcalc), halaman Rapikan (di sebelah kalimat "fpcalc belum terpasang"), dan halaman Unduhan (di baris program yang belum bisa diunduh Onsa sendiri, hari ini ffmpeg).
+
+Yang dikirim ke backend adalah nama program; alamatnya tetap di `install::release_page`. Di Linux, nama paket distronya ikut ditampilkan di bawah tombol (fpcalc: `libchromaprint-tools`), karena Onsa sudah mencari program di PATH.
+
+**Diperiksa pada aplikasi yang berjalan**, dengan menekan tombolnya dan melihat jendela apa yang muncul:
+
+| Ditekan dari | Jendela browser yang terbuka |
+|---|---|
+| Pengaturan → Metadata | "Releases · acoustid/chromaprint — Google Chrome" |
+| Rapikan | "Releases · acoustid/chromaprint — Google Chrome" |
+| Unduhan, baris ffmpeg | "Releases · BtbN/FFmpeg-Builds — Google Chrome" |
+
+Alamatnya juga tertulis di layar di bawah tombolnya, jadi bisa dibaca sebelum ditekan.
+
+**Pemeriksaan bantuan v1.1 tetap nol yang terlewat**: seluruh halaman dijalani ulang dengan library terisi — 0 kontrol yang belum disebut di panel bantuannya. Tombol baru ini ada di topik bantuan ketiga halaman itu, dan bagian fpcalc di halaman Bantuan menyebutnya.
+
+`cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo test --workspace`, `npm run check`, tes UI, dan `cargo deny check licenses` semuanya bersih.
