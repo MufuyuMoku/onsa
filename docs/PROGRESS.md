@@ -1027,3 +1027,37 @@ Diperiksa sesudah terbit, bukan sebelum:
 - Berkas yang diunduh dari halaman rilis **sama persis** dengan yang dibangun CI — sha256 keduanya cocok, jadi tidak ada yang melewati mesin siapa pun di tengah jalan.
 - Di log CI: ketiga variabel kunci kosong sebelum apa pun dibangun, dan tes `a_keyless_build_has_no_key_built_in` lulus pada build rilis itu sendiri.
 - Berkas pemasang itu dipasang, dan salinan hasilnya — dijalankan tanpa kunci apa pun di lingkungannya — berkata `{"acoustid":{"present":false,"source":"none"}}`. Di daftar program: Onsa 1.2.0, penerbit MufuyuMoku. Pencopotannya bersih.
+
+## 2026-09-25 · v1.3-a: memperbaiki pemilihan fpcalc
+
+Tombol "Pilih berkasnya" dulu menerima berkas apa pun, termasuk berkas lagu. Sesudah itu tiap kegagalan sidik suara terbaca seolah-olah berkas lagunya yang bermasalah. Lima hal diperbaiki, dan semuanya diperiksa pada aplikasi yang benar-benar berjalan, bukan hanya lewat tes.
+
+**1. Berkas yang dipilih diperiksa dengan menjalankannya.** `onsa_downloader::identify` menjalankan berkas itu dengan tanda versinya, dengan tenggat sepuluh detik, array argumen, dan tanpa shell seperti semua proses luar lainnya. Jawabannya harus dibuka oleh nama programnya sendiri. Kalau gagal, pilihannya ditolak dan tidak disimpan.
+
+**2. Jendela pemilih berkas menyebut yang dicari.** Di Windows nama berkasnya sudah terisi `fpcalc.exe` dan saringannya `fpcalc.exe (*.exe)` — dibaca langsung dari kontrol jendelanya: `Edit [1148]: fpcalc.exe`, `ComboBox [1136]: fpcalc.exe (*.exe)`. Di Linux tidak ada ekstensi yang bisa disaring, jadi di sana penjaganya hanya nomor 1.
+
+**3. Kegagalan fpcalc dan kegagalan berkas lagu dipisah.** `Failure::BadFingerprinter` baru, dengan kalimatnya sendiri yang menyebut fpcalc dan mengatakan berkas lagunya tidak apa-apa. fpcalc ditanya sekali di awal tiap putaran; kalau yang di tempatnya bukan fpcalc, tidak ada lagu yang disalahkan.
+
+**4. Tombolnya bernama "Cari fpcalc…"**, dengan letak yang biasa di Windows dan di Linux tertulis di bawahnya.
+
+**5. Panduannya diperbarui**: panel bantuan halaman Metadata menyebut pemeriksaan itu, dan halaman Bantuan mendapat bagian sendiri untuk fpcalc — apa dia, dia tidak wajib, di mana mencarinya, dan kenapa berkas yang salah ditolak di tempat.
+
+### Apa yang benar-benar dicoba pada aplikasi yang berjalan
+
+Satu mesin uji tersendiri: data folder sendiri, folder musik berisi dua berkas yang dibuat saat itu juga dengan ffmpeg (satu bertuliskan keterangan, satu tanpa keterangan apa pun), dan `PATH` yang dibersihkan sehingga tidak ada fpcalc di mana pun.
+
+- **Berkas lagu ditunjuk sebagai fpcalc** — lewat jendela pemilih berkas yang sungguhan, dijawab dengan jalur berkas `nada uji.flac`. Yang muncul di layar: "Berkas ini bukan fpcalc. Pilihannya tidak disimpan. Yang dicari adalah program fpcalc, bukan berkas lagu dan bukan program lain." Dan sesudahnya backend tetap berkata fpcalc belum ada — pilihannya memang tidak tersimpan.
+- **Program sungguhan tapi bukan yang ini**: ffmpeg yang asli ditunjuk sebagai fpcalc — ditolak.
+- **Program sungguhan yang memang benar**: ffmpeg yang asli ditunjuk sebagai ffmpeg — diterima, dan versinya ikut terbaca. Pemeriksaannya bukan "tolak semuanya".
+- **Berkas yang salah duduk di tempat fpcalc**: sebuah program lain disalin ke folder program milik Onsa dengan nama `fpcalc.exe` — jalan yang tidak lewat tombol mana pun. Halaman Metadata berkata "fpcalc ada berkasnya, tapi bukan fpcalc". Putaran "Cari data online" atas kedua lagu berakhir dengan kalimat yang sama untuk keduanya: "Tidak bisa dicari lewat suara: berkas yang ditunjuk sebagai fpcalc tidak bisa dijalankan atau bukan fpcalc. Berkas lagu ini sendiri tidak apa-apa." Tidak ada lagu yang disalahkan.
+
+### Yang belum terbukti, dan kenapa
+
+**fpcalc yang sungguhan tidak ada di mesin ini**, dan tidak diunduh: SPEC §7.1 hanya mengizinkan yt-dlp, ffmpeg dan deno dari halaman rilis resminya, dan fpcalc memang datang dari pengguna. Jadi "fpcalc asli diterima" belum pernah dijalankan sungguhan. Dua hal mendekatkannya:
+
+- Jalur "program asli diterima" dibuktikan dengan ffmpeg asli lewat kode yang persis sama.
+- Kalimat versi fpcalc dibaca dari sumber Chromaprint sendiri (`src/cmd/fpcalc.cpp`): `fprintf(stdout, "fpcalc version %s (FFmpeg %s %s %s)\n", ...)`. Baris itu dibuka oleh kata `fpcalc`, jadi pemeriksaannya menerimanya.
+
+Kalau suatu hari Chromaprint mengubah kalimat itu, fpcalc yang sungguhan akan ditolak. Itu risiko yang diketahui, bukan yang terlewat.
+
+`cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo test --workspace` dan `npm run check` bersih.
