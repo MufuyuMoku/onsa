@@ -1,0 +1,80 @@
+# Which licences Onsa's dependencies may carry (cargo-deny).
+#
+# The point is not tidiness. Every licence in a dependency tree is a promise
+# the finished application has to keep, and a copyleft one — GPL, LGPL, AGPL
+# — decides for the project what it may be released as. Onsa has not decided
+# that yet (SPEC §16), so nothing in the tree is allowed to decide it first.
+# Keeping the list to permissive licences, plus MPL-2.0 which is per-file and
+# does not reach the application around it, leaves every choice open,
+# including a closed one.
+#
+# Onsa's own crates carry no licence on purpose. They are `publish = false`,
+# so cargo-deny counts them as private rather than as a violation.
+#
+# Run it the same way CI does:
+#     cargo deny check licenses
+
+[graph]
+# Both systems Onsa is built for. A dependency that only appears on one of
+# them is still a dependency.
+targets = [
+    "x86_64-pc-windows-msvc",
+    "x86_64-unknown-linux-gnu",
+]
+all-features = true
+
+[licenses]
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Zlib",
+    "Unicode-3.0",
+    "MPL-2.0",
+]
+# Anything not on that list stops the check, which includes every GPL, LGPL
+# and AGPL: they are refused by not being allowed, not by being listed.
+confidence-threshold = 0.9
+
+[licenses.private]
+# Onsa's own crates are not published anywhere, so having no licence field
+# is a fact about them rather than a missing one.
+ignore = true
+
+# Two crates the first run turned up. Neither is copyleft — nothing in the
+# tree is — and both are at least as permissive as the list above; they are
+# simply not on it. They are written down here rather than folded into the
+# allow list, pinned to the exact version, so the project owner sees them
+# and so a version bump brings the question back rather than passing
+# quietly. Both are provisional until the owner decides.
+
+# A public-domain dedication. More permissive than MIT in effect, and it
+# asks nothing of the application around it. notify is the folder watcher,
+# and its code does ship inside Onsa.
+[[licenses.exceptions]]
+name = "notify"
+version = "=8.2.0"
+allow = ["CC0-1.0"]
+
+# Apache-2.0 with an exception that *grants* more than Apache-2.0 alone, and
+# a build-time dependency only: it comes in through system-deps under the
+# GTK bindings on Linux, so none of its code reaches the binary people run.
+[[licenses.exceptions]]
+name = "target-lexicon"
+version = "=0.12.16"
+allow = ["Apache-2.0 WITH LLVM-exception"]
+
+[bans]
+multiple-versions = "allow"
+
+[advisories]
+# Security advisories are a separate question from licences and need the
+# advisory database from the network. CI must not depend on the internet
+# beyond fetching dependencies (SPEC §12), so this file's job stops here.
+yanked = "allow"
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"

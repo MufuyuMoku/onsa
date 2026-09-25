@@ -22,6 +22,25 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  # What the dependencies are licensed under, which is a question about the
+  # finished application rather than about either system it is built for.
+  # Onsa has not chosen its own licence (SPEC section 16), so nothing in the
+  # tree is allowed to choose it first: no GPL, LGPL or AGPL. The list, the
+  # two written-down exceptions, and the reasoning are in deny.toml.
+  #
+  # Only the licence check runs. The advisories check would need the
+  # advisory database from the network, and CI does not depend on the
+  # internet beyond fetching dependencies (SPEC section 12).
+  licences:
+    name: licences
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          command: check licenses
+
   check:
     name: check (${{ matrix.os }})
     strategy:
