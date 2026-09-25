@@ -18,6 +18,7 @@ use onsa_downloader::{Program, Programs, Where};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager, State};
 use tauri_plugin_dialog::DialogExt;
+use tauri_plugin_opener::OpenerExt;
 
 use crate::error::ErrorCode;
 use crate::keys;
@@ -52,6 +53,13 @@ pub struct ProgramDto {
     /// mistake, a renamed copy of something else. The page says so here
     /// rather than leaving it to be discovered one failed track at a time.
     pub answers: bool,
+    /// Its official release page, for showing beside the button that opens
+    /// it. Fixed in the code (SPEC §7.1); never from anything typed or
+    /// fetched.
+    pub page: String,
+    /// What the distribution calls it, where distributions are how software
+    /// arrives. Nothing on Windows.
+    pub system_package: Option<String>,
     /// What it says its version is.
     pub version: Option<String>,
 }
@@ -156,6 +164,8 @@ pub async fn program_status(app: AppHandle) -> Result<Vec<ProgramDto>, ErrorCode
                     }),
                     path: found.as_ref().map(|found| found.path.display().to_string()),
                     answers: said.as_ref().is_some_and(Result::is_ok),
+                    page: onsa_downloader::release_page(program).to_string(),
+                    system_package: onsa_downloader::system_package(program).map(str::to_string),
                     version: said.and_then(Result::ok),
                 }
             })
@@ -246,6 +256,25 @@ pub async fn program_pick(
     Ok(picked
         .and_then(|file| file.into_path().ok())
         .map(|path| path.display().to_string()))
+}
+
+/// Opens a program's official release page in the listener's browser.
+///
+/// What is passed in is a program's name, never a URL: the address itself
+/// is fixed in the code beside the one Onsa fetches from (SPEC §7.1), so
+/// nothing that arrived from a person or from a service can decide where
+/// this window goes.
+#[tauri::command]
+pub fn program_open_page(app: AppHandle, program: String) -> Result<(), ErrorCode> {
+    let Some(program) = Program::from_key(&program) else {
+        return Err(ErrorCode::Library);
+    };
+    let page = onsa_downloader::release_page(program);
+    tracing::info!(program = program.key(), "opening a release page");
+    app.opener().open_url(page, None::<&str>).map_err(|error| {
+        tracing::warn!("the release page cannot be opened: {error}");
+        ErrorCode::Io
+    })
 }
 
 /// How a matching run stands, and everything it has found.

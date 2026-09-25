@@ -668,6 +668,10 @@ export interface ProgramStatus {
 	path: string | null;
 	/** Whether that file, run, answers as the program it is meant to be. */
 	answers: boolean;
+	/** Its official release page, fixed in the backend (SPEC section 7.1). */
+	page: string;
+	/** What the distribution calls it, on systems that have one. */
+	systemPackage: string | null;
 	version: string | null;
 }
 
@@ -736,6 +740,14 @@ export const programChoose = (program: string, path: string | null) =>
 /** Asks for a program's file, telling the dialog which program it is. */
 export const programPick = (title: string, program: string) =>
 	call<string | null>('program_pick', { title, program });
+/**
+ * Opens a program's official release page in the browser.
+ *
+ * What travels is the program's name, never an address: the backend holds
+ * the URL, so nothing on this side can send the window somewhere else.
+ */
+export const programOpenPage = (program: string) =>
+	call<void>('program_open_page', { program });
 
 // The downloader (SPEC section 7) ------------------------------------------
 
@@ -754,6 +766,10 @@ export interface BinaryStatus {
 	installable: boolean;
 	url: string | null;
 	aboutBytes: number | null;
+	/** Its official release page, fixed in the backend (SPEC section 7.1). */
+	page: string;
+	/** What the distribution calls it, on systems that have one. */
+	systemPackage: string | null;
 	required: boolean;
 }
 

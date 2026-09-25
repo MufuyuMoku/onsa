@@ -19,6 +19,7 @@
 		EVENTS,
 		failureKey,
 		on,
+		programOpenPage,
 		urlTroubleOf,
 		type Binaries,
 		type BinaryStatus,
@@ -302,6 +303,25 @@
 
 					{#if !program.installable && !program.present}
 						<span class="source muted">{t('downloads.ffmpegWhere')}</span>
+						<!-- Onsa cannot fetch this one yet, so the next thing
+						     needed is the page it comes from. -->
+						<span class="action">
+							<button
+								type="button"
+								class="btn"
+								onclick={() => programOpenPage(program.key)}
+							>
+								{t('programs.openPage')}
+							</button>
+						</span>
+						<span class="source numeric muted ellipsis" title={program.page}>
+							{program.page}
+						</span>
+						{#if program.systemPackage}
+							<span class="source muted">
+								{t('programs.distroPackage', { name: program.systemPackage })}
+							</span>
+						{/if}
 					{/if}
 
 					{#if progress && progress.key === program.key && !progress.finished}

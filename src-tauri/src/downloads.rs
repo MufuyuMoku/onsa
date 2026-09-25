@@ -51,6 +51,12 @@ pub struct BinaryDto {
     pub url: Option<String>,
     /// Roughly how large that is, in bytes.
     pub about_bytes: Option<u64>,
+    /// Its official release page, for the listener who has to fetch it
+    /// themselves. Fixed in the code (SPEC §7.1).
+    pub page: String,
+    /// What the distribution calls it, where distributions are how software
+    /// arrives. Nothing on Windows.
+    pub system_package: Option<String>,
     /// Whether this program is needed before anything can be downloaded.
     pub required: bool,
 }
@@ -176,6 +182,8 @@ pub async fn binaries_status(app: AppHandle) -> Result<BinariesDto, ErrorCode> {
                     installable: release.is_some(),
                     url: release.as_ref().map(|one| one.url.to_string()),
                     about_bytes: release.as_ref().map(|one| one.about_bytes),
+                    page: install::release_page(program).to_string(),
+                    system_package: install::system_package(program).map(str::to_string),
                     required: program == Program::YtDlp,
                 }
             })

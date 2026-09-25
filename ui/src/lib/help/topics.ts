@@ -186,6 +186,7 @@ export const TOPICS: HelpTopic[] = [
 			control('tidy.jobRename', 'help.says.tidyRename'),
 			control('tidy.jobAuto', 'help.says.tidyAuto'),
 			control('tidy.jobMatch', 'help.says.tidyMatch'),
+			control('programs.openPage', 'help.says.openPage'),
 			control('rules.field', 'help.says.tidyField'),
 			control('tidy.valueEmpty', 'help.says.tidyValue'),
 			control('tidy.pattern', 'help.says.tidyPattern'),
@@ -206,6 +207,7 @@ export const TOPICS: HelpTopic[] = [
 			control('help.name.programRow', 'help.says.programRow'),
 			control('downloads.agree', 'help.says.agree'),
 			control('downloads.update', 'help.says.update'),
+			control('programs.openPage', 'help.says.openPage'),
 			control('downloads.urlPlaceholder', 'help.says.urlField'),
 			control('downloads.look', 'help.says.look'),
 			control('downloads.format', 'help.says.format'),
@@ -293,6 +295,7 @@ export const TOPICS: HelpTopic[] = [
 			control('metadata.keySave', 'help.says.metaKeySave'),
 			control('metadata.keyClear', 'help.says.metaKeyClear'),
 			control('metadata.keyTry', 'help.says.metaKeyTry'),
+			control('programs.openPage', 'help.says.openPage'),
 			control('programs.choose', 'help.says.metaChoose'),
 			control('programs.forget', 'help.says.metaForget'),
 			control('programs.refresh', 'help.says.metaRefresh')

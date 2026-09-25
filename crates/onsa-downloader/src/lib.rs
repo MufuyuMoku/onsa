@@ -19,7 +19,7 @@ pub mod platform;
 pub mod programs;
 pub mod runner;
 
-pub use install::Release;
+pub use install::{release_page, system_package, Release};
 pub use programs::{identify, Found, NotThatProgram, Program, Programs, Ran, Where};
 pub use runner::Finished;
 

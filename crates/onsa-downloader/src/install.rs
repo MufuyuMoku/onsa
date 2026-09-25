@@ -83,6 +83,47 @@ pub fn release_for(program: Program) -> Option<Release> {
     catalogue().into_iter().find(|one| one.program == program)
 }
 
+/// The page a person is sent to when they fetch a program themselves.
+///
+/// The same sources as the catalogue above (SPEC §7.1), as pages rather
+/// than as files — including the ones Onsa cannot install for itself yet,
+/// which is exactly when somebody has to go and get it.
+///
+/// Fixed here, like every other URL in this module. Nothing about where a
+/// program comes from is ever taken from what somebody typed or from what a
+/// service answered (SPEC §14).
+pub fn release_page(program: Program) -> &'static str {
+    match program {
+        Program::Fpcalc => "https://github.com/acoustid/chromaprint/releases",
+        Program::YtDlp => "https://github.com/yt-dlp/yt-dlp/releases",
+        Program::Ffmpeg | Program::Ffprobe => "https://github.com/BtbN/FFmpeg-Builds/releases",
+        Program::Deno => "https://github.com/denoland/deno/releases",
+    }
+}
+
+/// What the program is called in Debian and Ubuntu's own packages.
+///
+/// Only useful where a package manager is how software arrives, so it is
+/// only answered there. Onsa already looks along `PATH`, which means the
+/// shortest way to give it the program on those systems is to install the
+/// distribution's package and nothing else.
+#[cfg(windows)]
+pub fn system_package(_program: Program) -> Option<&'static str> {
+    None
+}
+
+#[cfg(not(windows))]
+pub fn system_package(program: Program) -> Option<&'static str> {
+    match program {
+        Program::Fpcalc => Some("libchromaprint-tools"),
+        Program::Ffmpeg | Program::Ffprobe => Some("ffmpeg"),
+        Program::YtDlp => Some("yt-dlp"),
+        // Deno is not in Debian or Ubuntu; saying a package name that is
+        // not there would be worse than saying nothing.
+        Program::Deno => None,
+    }
+}
+
 /// The SHA-256 of some bytes, as lower-case hex.
 pub fn sha256_hex(bytes: &[u8]) -> String {
     Sha256::digest(bytes)
@@ -303,5 +344,42 @@ not a checksum line at all
         // The ones that come as archives are not offered yet.
         assert_eq!(release_for(Program::Ffmpeg), None);
         assert_eq!(release_for(Program::Deno), None);
+    }
+
+    #[test]
+    fn every_program_has_a_page_a_person_can_be_sent_to() {
+        // Including the ones Onsa cannot install for itself, which is
+        // exactly when somebody has to go and fetch one by hand.
+        for program in Program::ALL {
+            let page = release_page(program);
+            assert!(
+                page.starts_with("https://github.com/"),
+                "{}: {page}",
+                program.key()
+            );
+            assert!(!page.contains("/download/"), "a page, not a file: {page}");
+        }
+        // The page and the file Onsa fetches are the same project.
+        for release in catalogue() {
+            let page = release_page(release.program);
+            let owner_and_repo =
+                |url: &str| url.split('/').skip(3).take(2).collect::<Vec<_>>().join("/");
+            assert_eq!(owner_and_repo(page), owner_and_repo(release.url));
+        }
+    }
+
+    #[test]
+    fn a_package_name_is_only_given_where_packages_are_how_software_arrives() {
+        // fpcalc is the one worth saying out loud: Onsa looks along PATH,
+        // so installing the distribution's package is the whole job there.
+        if cfg!(windows) {
+            assert_eq!(system_package(Program::Fpcalc), None);
+        } else {
+            assert_eq!(
+                system_package(Program::Fpcalc),
+                Some("libchromaprint-tools")
+            );
+            assert_eq!(system_package(Program::Deno), None, "not in Debian");
+        }
     }
 }

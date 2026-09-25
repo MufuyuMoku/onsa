@@ -542,7 +542,7 @@ const id = {
 	'downloads.fromRelease': 'dari rilis resmi',
 	'downloads.installYourself': 'dipasang sendiri',
 	'downloads.ffmpegWhere':
-		'ffmpeg dipasang sendiri karena rilisnya berbentuk arsip. Di Linux biasanya sudah ada, atau lewat paket ffmpeg. Di Windows: unduh dari ffmpeg.org, lalu taruh foldernya di PATH — atau centang "pakai program yang sudah ada di sistem" di bawah.',
+		'ffmpeg dipasang sendiri karena rilisnya berbentuk arsip, dan Onsa belum bisa membongkar arsip. Di Linux biasanya sudah ada, atau lewat paket ffmpeg. Di Windows: buka halaman di bawah, unduh berkasnya, buka arsipnya, lalu taruh folder bin-nya di PATH — atau centang "pakai program yang sudah ada di sistem" di bawah.',
 	'downloads.withoutFfmpeg':
 		'Tanpa ffmpeg, unduhan tetap jalan: berkasnya diambil apa adanya, tanpa tag dan tanpa sampul tertanam, dan konversi tidak tersedia.',
 	'downloads.noFfmpeg': 'Butuh ffmpeg, dan tidak ada yang ditemukan.',
@@ -642,6 +642,9 @@ const id = {
 	'programs.notFpcalc':
 		'Berkas ini bukan fpcalc. Pilihannya tidak disimpan. Yang dicari adalah program fpcalc, bukan berkas lagu dan bukan program lain.',
 	'programs.notFpcalcHere': 'ada berkasnya, tapi bukan fpcalc',
+	'programs.openPage': 'Buka halaman unduhan resmi',
+	'programs.distroPackage':
+		'Di Debian dan Ubuntu, paketnya bernama {name}. Pasang lewat pengelola paket distromu, lalu tekan "Periksa lagi": Onsa mencari program di PATH, jadi tidak ada berkas yang perlu ditunjukkan.',
 
 	'error.offline': 'Fitur internet sedang mati.',
 
@@ -939,6 +942,8 @@ const id = {
 	'help.says.metaKeyTry': 'Mengirim satu pertanyaan kecil untuk memastikan kuncinya diterima.',
 	'help.says.metaChoose':
 		'Membuka jendela untuk menunjukkan sendiri letak berkas fpcalc di komputermu. fpcalc adalah program kecil yang menghitung sidik jari dari bunyi lagu; tanpa dia, "Cari data online" tidak bisa bertanya lewat suara. Berkas yang kamu tunjuk dijalankan sekali untuk memastikan itu benar fpcalc; kalau bukan, misalnya berkas lagu yang terpilih tanpa sengaja, pilihannya ditolak dan tidak disimpan.',
+	'help.says.openPage':
+		'Membuka halaman rilis resmi program itu di browser bawaanmu. Alamatnya sudah tertulis di dalam Onsa dan selalu sama — sumber yang sama yang dipakai Onsa sendiri kalau ia mengunduh program itu.',
 	'help.says.metaForget': 'Melupakan letak yang tadi kamu tunjukkan.',
 	'help.says.metaRefresh':
 		'Memeriksa lagi apakah programnya sekarang ada, misalnya sesudah kamu memasangnya.',
@@ -1040,7 +1045,7 @@ const id = {
 	'help.fpcalc.body':
 		'fpcalc adalah program kecil yang bukan bagian dari Onsa. Ia dipakai di satu tempat saja: tombol "Cari data online" di halaman Rapikan, untuk menghitung sidik jari dari bunyi sebuah lagu. Ia tidak wajib. Pencarian yang berangkat dari judul dan artis yang sudah tertulis di lagunya tetap jalan tanpa fpcalc; yang tidak bisa jalan hanyalah pengenalan untuk lagu yang tidak punya keterangan apa pun.',
 	'help.fpcalc.where':
-		'Kalau fpcalc sudah ada di sistemmu, Onsa memakainya sendiri tanpa kamu atur. Kalau belum, tekan "Cari fpcalc…" di Pengaturan, bagian Metadata, lalu tunjukkan berkasnya: di Windows namanya fpcalc.exe, ada di dalam folder hasil membuka paket Chromaprint; di Linux biasanya /usr/bin/fpcalc setelah paket libchromaprint-tools dipasang.',
+		'Kalau fpcalc sudah ada di sistemmu, Onsa memakainya sendiri tanpa kamu atur. Kalau belum, tombol "Buka halaman unduhan resmi" di Pengaturan, bagian Metadata, membuka halaman rilis Chromaprint di browsermu. Sesudah berkasnya ada, tekan "Cari fpcalc…" dan tunjukkan: di Windows namanya fpcalc.exe, ada di dalam folder hasil membuka paket itu; di Linux biasanya /usr/bin/fpcalc setelah paket libchromaprint-tools dipasang, dan di sana Onsa menemukannya sendiri.',
 	'help.fpcalc.check':
 		'Berkas yang kamu tunjuk dijalankan sekali dan ditanya versinya. Kalau yang menjawab bukan fpcalc, misalnya berkas lagu, gambar, atau program lain, pilihannya ditolak di tempat itu juga dan tidak disimpan. Gunanya supaya kegagalan nanti tidak terbaca seolah-olah berkas lagumu yang bermasalah.',
 	'help.programs.head': 'yt-dlp dan ffmpeg',
@@ -1636,7 +1641,7 @@ const en: Record<MessageKey, string> = {
 	'downloads.fromRelease': 'from the official release',
 	'downloads.installYourself': 'installed by you',
 	'downloads.ffmpegWhere':
-		'ffmpeg is installed by you, because its release comes as an archive. On Linux it is usually there already, or in the ffmpeg package. On Windows: download it from ffmpeg.org and put its folder on PATH \u2014 or tick "use the programs already on this system" below.',
+		'ffmpeg is installed by you, because its release comes as an archive and Onsa cannot unpack archives yet. On Linux it is usually there already, or in the ffmpeg package. On Windows: open the page below, download the file, unpack it and put its bin folder on PATH \u2014 or tick "use the programs already on this system" below.',
 	'downloads.withoutFfmpeg':
 		'Without ffmpeg a download still works: the audio comes as it is, with no tags and no cover written into it, and converting is unavailable.',
 	'downloads.noFfmpeg': 'This needs ffmpeg, and none was found.',
@@ -1736,6 +1741,9 @@ const en: Record<MessageKey, string> = {
 	'programs.notFpcalc':
 		'This file is not fpcalc. The choice was not kept. What is being looked for is the fpcalc program, not a song file and not another program.',
 	'programs.notFpcalcHere': 'there is a file, but it is not fpcalc',
+	'programs.openPage': 'Open the official download page',
+	'programs.distroPackage':
+		'On Debian and Ubuntu the package is called {name}. Install it with your distribution\'s package manager and press "Look again": Onsa searches PATH, so there is no file to point at.',
 
 	'error.offline': 'Looking things up on the internet is switched off.',
 
@@ -2030,6 +2038,8 @@ const en: Record<MessageKey, string> = {
 	'help.says.metaKeyTry': 'Sends one small question to be sure the key is accepted.',
 	'help.says.metaChoose':
 		'Opens a window to point Onsa at the fpcalc file on your computer yourself. fpcalc is a small program that works out a fingerprint from the sound of a song; without it, "Look it up online" has nothing to ask by sound. The file you point at is run once to be sure it really is fpcalc; if it is not, a song file picked by mistake for instance, the choice is refused and nothing is kept.',
+	'help.says.openPage':
+		"Opens that program's official release page in your usual browser. The address is written inside Onsa and never changes — the same source Onsa itself fetches that program from.",
 	'help.says.metaForget': 'Forgets the place you pointed at.',
 	'help.says.metaRefresh':
 		'Looks again for whether the program is there now, after you have installed it for instance.',
@@ -2126,7 +2136,7 @@ const en: Record<MessageKey, string> = {
 	'help.fpcalc.body':
 		'fpcalc is a small program that is not part of Onsa. It is used in one place only: the "Look it up online" button on the Tidy up page, to work out a fingerprint from the sound of a song. It is not required. Looking a song up by the title and artist already written inside it works without fpcalc; what cannot work without it is recognising a song that says nothing about itself at all.',
 	'help.fpcalc.where':
-		'If fpcalc is already on your system, Onsa uses it by itself and there is nothing to set. If it is not, press "Find fpcalc…" in Settings, under Metadata, and point at the file: on Windows it is called fpcalc.exe, inside the folder the Chromaprint package unpacked into; on Linux it is usually /usr/bin/fpcalc once the libchromaprint-tools package is installed.',
+		'If fpcalc is already on your system, Onsa uses it by itself and there is nothing to set. If it is not, the "Open the official download page" button in Settings, under Metadata, opens the Chromaprint release page in your browser. Once you have the file, press "Find fpcalc…" and point at it: on Windows it is called fpcalc.exe, inside the folder that package unpacked into; on Linux it is usually /usr/bin/fpcalc once the libchromaprint-tools package is installed, and there Onsa finds it by itself.',
 	'help.fpcalc.check':
 		'The file you point at is run once and asked its version. If what answers is not fpcalc, a song, a picture or some other program, the choice is refused there and then and nothing is kept. That is so a failure later cannot read as though there were something wrong with your song file.',
 	'help.programs.head': 'yt-dlp and ffmpeg',

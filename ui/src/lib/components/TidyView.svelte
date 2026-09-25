@@ -7,6 +7,7 @@
 -->
 <script lang="ts">
 	import {
+		programOpenPage,
 		tidyAuto,
 		type EditBatch,
 		type RenamePlan,
@@ -301,6 +302,11 @@
 				{/if}
 				{#if !matching.state.fingerprinter}
 					<p class="fault-text note">{t('match.fpcalcMissing')}</p>
+					<!-- The page it comes from, from the page that needs it:
+					     otherwise the next step is a search engine. -->
+					<button type="button" class="btn" onclick={() => programOpenPage('fpcalc')}>
+						{t('programs.openPage')}
+					</button>
 				{/if}
 			{/if}
 

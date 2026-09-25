@@ -12,6 +12,7 @@
 		failureKey,
 		metadataGet,
 		programChoose,
+		programOpenPage,
 		programPick,
 		programStatus,
 		setMetadata,
@@ -88,6 +89,15 @@
 			// choice was refused, and nothing was kept.
 			const key = failureKey(error);
 			failure = key === 'error.not_that_program' ? 'programs.notFpcalc' : key;
+		}
+	}
+
+	async function openFpcalcPage(): Promise<void> {
+		try {
+			await programOpenPage('fpcalc');
+			failure = null;
+		} catch (error) {
+			failure = failureKey(error);
 		}
 	}
 
@@ -249,6 +259,11 @@
 		{/if}
 
 		<div class="actions">
+			{#if !usable}
+				<button type="button" class="btn" onclick={openFpcalcPage}>
+					{t('programs.openPage')}
+				</button>
+			{/if}
 			<button type="button" class="btn" onclick={chooseFpcalc}>{t('programs.choose')}</button>
 			<button
 				type="button"
@@ -260,6 +275,14 @@
 				>{t('programs.refresh')}</button
 			>
 		</div>
+		{#if !usable}
+			<p class="note muted numeric where">{fingerprinter?.page ?? ''}</p>
+			{#if fingerprinter?.systemPackage}
+				<p class="note muted">
+					{t('programs.distroPackage', { name: fingerprinter.systemPackage })}
+				</p>
+			{/if}
+		{/if}
 		{#if failure}<p class="note fault-text">{t(failure)}</p>{/if}
 	</section>
 </div>

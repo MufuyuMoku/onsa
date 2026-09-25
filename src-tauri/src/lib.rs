@@ -155,6 +155,7 @@ pub fn run() -> Result<()> {
             online::program_status,
             online::program_choose,
             online::program_pick,
+            online::program_open_page,
             online::match_state,
             online::match_start,
             online::match_stop,
