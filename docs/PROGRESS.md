@@ -4,18 +4,23 @@ Status tiap milestone dari `SPEC.md` §15. Diperbarui di akhir setiap milestone.
 
 ---
 
-## Garis rilis (keputusan pemilik proyek, diperbarui 2026-09-25)
+## Garis rilis (diperbarui 2026-09-25)
 
-**v1**: pemutar lengkap, unduhan satu per satu, tanpa Opus. Isinya M0–M8 dan M10a. Terbit.
+Yang benar-benar ditandai:
 
-Yang sudah terbit sesudahnya, dan isinya ternyata bukan yang direncanakan pada 2026-09-19:
+| Tag | Commit | Tanggal | Isi |
+|---|---|---|---|
+| `v1.0.0` | `533a2b0` | 2026-09-19 | Pemutar lengkap, unduhan satu per satu, tanpa Opus: M0–M8 dan M10a. Sesudah M8 tidak ada fitur baru yang masuk v1. |
+| `v1.0.1` | `c21e923` | 2026-09-19 | Enam perbaikan dari sesi audit. Tidak ada fitur baru. |
+| `v1.1.0` | `4af6879` | 2026-09-20 | Bantuan di dalam aplikasi. Tidak ada kemampuan baru. |
+| `v1.2.0` | `26132f9` | 2026-09-21 | Paket untuk tester: tiap jalur internet dibuktikan terhadap layanan sungguhan, dan berkas pemasang Windows dibangun CI. Tidak ada fitur baru. |
 
-| Rilis | Isinya | Keadaan |
-|---|---|---|
-| **v1.1** | Bantuan di dalam aplikasi: layar pertama yang menyebutkan isi jendela, panel bantuan per halaman, halaman Bantuan, dan dua sisa audit | selesai, tag `v1.1.0` |
-| **v1.2** | Paket untuk tester: seluruh jalur internet dibuktikan terhadap layanan sungguhan, berkas pemasang Windows dari CI tanpa kunci siapa pun, dan `docs/UNTUK-TESTER.md` | selesai, rilis `v1.2.0` |
+Garis rilis yang diputuskan pada 2026-09-19 menempatkan M7b, M10b, M11, dan M12 di v1.1.
+Bukan itu yang terjadi: yang ditandai v1.1.0 adalah bantuan di dalam aplikasi, dan v1.2.0
+paket untuk tester. Berkas pemasang Windows di v1.2.0 dibuat untuk tester dan belum
+menutup M12.
 
-Garis selanjutnya:
+Garis selanjutnya, keputusan pemilik proyek 2026-09-25:
 
 | Rilis | Isinya |
 |---|---|

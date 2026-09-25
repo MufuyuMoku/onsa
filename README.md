@@ -24,12 +24,13 @@ Onsa (音叉, garpu tala) adalah pemutar musik desktop untuk Windows dan Linux, 
 - **fpcalc dipasang sendiri.** Pengenalan lagu lewat suaranya butuh fpcalc dari Chromaprint, dan Onsa belum bisa mengunduhnya sendiri: ada tombol yang membuka halaman rilis resminya, dan sesudah dipasang, tunjukkan berkasnya lewat "Cari fpcalc…" di Pengaturan → Metadata. Pencarian lewat judul dan artis tetap jalan tanpa fpcalc.
 - **Belum ada scrobble Last.fm.**
 
-Yang sudah terbit sesudah v1: **v1.1** bantuan di dalam aplikasi, dan **v1.2** paket untuk
-tester beserta berkas pemasang Windows yang dibangun CI. Garis berikutnya ada di
-[`docs/SPEC.md`](docs/SPEC.md) §15 dan [`docs/PROGRESS.md`](docs/PROGRESS.md): v1.3 "Rapi"
-(pengelolaan folder sumber, panel Sedang diputar), v1.4 "Unduhan penuh" (Deno dan ffmpeg,
-antrean paralel, unduhan otomatis fpcalc, paket Linux), v1.5 "Tampilan", v1.6
-"Lirik & metadata", v1.7 "Video".
+Rilis sesudah v1.0.0 tidak menambah fitur: **v1.0.1** memperbaiki temuan audit, **v1.1.0**
+menambahkan bantuan di dalam aplikasi, dan **v1.2.0** adalah paket untuk tester beserta
+berkas pemasang Windows yang dibangun CI — yang belum menutup pekerjaan rilis. Garis
+berikutnya ada di [`docs/SPEC.md`](docs/SPEC.md) §15 dan
+[`docs/PROGRESS.md`](docs/PROGRESS.md): v1.3 "Rapi" (pengelolaan folder sumber, panel
+Sedang diputar), v1.4 "Unduhan penuh" (Deno dan ffmpeg, antrean paralel, unduhan otomatis
+fpcalc, paket Linux), v1.5 "Tampilan", v1.6 "Lirik & metadata", v1.7 "Video".
 
 ## Membangun dan menjalankan
 
