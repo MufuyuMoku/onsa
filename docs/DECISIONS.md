@@ -635,3 +635,13 @@ Sisiran seluruh antarmuka sebelum rilis, mencari hal yang mengarah ke fitur v1.1
 - **Nama paket distro datang dari backend, bukan ditebak antarmuka.** Antarmuka tidak menebak OS dari user agent; backend menjawab nama paketnya hanya di sistem yang memang memakai paket, dan kalimat yang membungkusnya tetap di kamus i18n.
 - **Deno tidak diberi nama paket** karena tidak ada di Debian maupun Ubuntu. Menyebut paket yang tidak ada lebih buruk daripada tidak menyebut apa-apa.
 - **Kalimat tentang ffmpeg diperbaiki supaya menunjuk sumber yang sama dengan tombolnya.** Sebelumnya ia menyuruh mengunduh dari ffmpeg.org sementara §7.1 memakai build BtbN; satu halaman tidak boleh menyebut dua sumber berbeda untuk satu program.
+
+## 2026-09-25 · v1.3-c: dua lisensi masuk daftar izin
+
+Keputusan pemilik proyek atas hasil pemeriksaan pertama cargo deny. Dua pengecualian yang dikunci versi dihapus; **CC0-1.0** dan **Apache-2.0 WITH LLVM-exception** masuk daftar izin.
+
+- **Keduanya permisif dan tidak membawa kewajiban copyleft**, jadi tidak satu pun dari keduanya menghalangi versi tertutup — yang memang alasan daftar ini ada.
+- **CC0-1.0 tidak memberi izin paten.** Itu perbedaan nyata dengan MIT dan Apache-2.0, dan risikonya diterima untuk `notify`.
+- **Apache-2.0 WITH LLVM-exception memberi lebih banyak izin daripada Apache-2.0 biasa.** Mengizinkan yang biasa lalu menolak yang ini berarti menolak yang lebih permisif dari keduanya.
+- **Pengecualian yang dikunci versi dihapus** karena pertanyaannya sudah dijawab: yang diputuskan adalah lisensinya, bukan versi satu crate. Kenaikan versi `notify` atau `target-lexicon` tidak perlu menanyakannya lagi.
+- **GPL, LGPL, dan AGPL tetap ditolak**, dengan cara yang sama seperti sebelumnya: tidak ada di daftar izin.
