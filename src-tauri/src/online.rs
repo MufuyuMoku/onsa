@@ -46,6 +46,12 @@ pub struct ProgramDto {
     pub from: Option<String>,
     /// The file, so the listener can see which copy is in use.
     pub path: Option<String>,
+    /// Whether that file, run, answers as the program it is meant to be.
+    ///
+    /// A file can be there and still be the wrong one — a song picked by
+    /// mistake, a renamed copy of something else. The page says so here
+    /// rather than leaving it to be discovered one failed track at a time.
+    pub answers: bool,
     /// What it says its version is.
     pub version: Option<String>,
 }
@@ -131,6 +137,12 @@ pub async fn program_status(app: AppHandle) -> Result<Vec<ProgramDto>, ErrorCode
             .into_iter()
             .map(|program| {
                 let found = programs.find(program);
+                // Asking what it is and asking its version are the same
+                // question asked once: the answer either names the program
+                // or says the file is a different one.
+                let said = found
+                    .as_ref()
+                    .map(|found| onsa_downloader::identify(program, &found.path));
                 ProgramDto {
                     key: program.key().to_string(),
                     present: found.is_some(),
@@ -143,7 +155,8 @@ pub async fn program_status(app: AppHandle) -> Result<Vec<ProgramDto>, ErrorCode
                         .to_string()
                     }),
                     path: found.as_ref().map(|found| found.path.display().to_string()),
-                    version: found.as_ref().and_then(|_| programs.version(program)),
+                    answers: said.as_ref().is_some_and(Result::is_ok),
+                    version: said.and_then(Result::ok),
                 }
             })
             .collect())
@@ -153,20 +166,47 @@ pub async fn program_status(app: AppHandle) -> Result<Vec<ProgramDto>, ErrorCode
 }
 
 /// Points one program at a file the listener chose, or forgets the choice.
+///
+/// A chosen file is run before it is believed. The dialog can only filter
+/// by extension, and on Linux a program has no extension at all, so the
+/// thing that keeps a song file out of the fingerprinter's place is this:
+/// the file is asked what it is, and a file that does not answer as the
+/// program is refused here rather than blamed on a track later.
 #[tauri::command]
-pub fn program_choose(
-    library: State<'_, LibraryService>,
+pub async fn program_choose(
+    app: AppHandle,
     program: String,
     path: Option<String>,
 ) -> Result<(), ErrorCode> {
-    if Program::from_key(&program).is_none() {
+    let Some(which) = Program::from_key(&program) else {
         return Err(ErrorCode::Library);
-    }
-    let mut prefs = program_prefs(&library)?;
-    match path
+    };
+    let wanted = path
         .map(|path| path.trim().to_string())
-        .filter(|p| !p.is_empty())
-    {
+        .filter(|path| !path.is_empty());
+
+    if let Some(path) = wanted.clone() {
+        // Running a file to see what it is is not work for the thread that
+        // answers the interface.
+        let answered = tauri::async_runtime::spawn_blocking(move || {
+            onsa_downloader::identify(which, std::path::Path::new(&path))
+        })
+        .await
+        .map_err(|_| ErrorCode::Library)?;
+        match answered {
+            Ok(version) => tracing::info!(program, version, "a chosen file answered as itself"),
+            Err(why) => {
+                // The path itself stays out of the log: what went wrong is
+                // the kind of file it was, not which of their files it is.
+                tracing::warn!(program, "a chosen file is not that program: {why}");
+                return Err(ErrorCode::NotThatProgram);
+            }
+        }
+    }
+
+    let library = app.state::<LibraryService>();
+    let mut prefs = program_prefs(&library)?;
+    match wanted {
         Some(path) => prefs.paths.insert(program.clone(), path),
         None => prefs.paths.remove(&program),
     };
@@ -176,10 +216,30 @@ pub fn program_choose(
 }
 
 /// Asks for the file a program lives in.
+///
+/// The dialog is pointed at the file being looked for as far as it can be:
+/// on Windows that is the name filled in and the extension filtered, which
+/// is as much as a file dialog can do. It cannot be relied on — the filter
+/// can be changed in the dialog, and on Linux there is no extension to
+/// filter — so what is picked is still run and asked what it is.
 #[tauri::command]
-pub async fn program_pick(app: AppHandle, title: String) -> Result<Option<String>, ErrorCode> {
+pub async fn program_pick(
+    app: AppHandle,
+    title: String,
+    program: Option<String>,
+) -> Result<Option<String>, ErrorCode> {
+    let looking_for = program.as_deref().and_then(Program::from_key);
     let picked = tauri::async_runtime::spawn_blocking(move || {
-        app.dialog().file().set_title(title).blocking_pick_file()
+        let mut dialog = app.dialog().file().set_title(title);
+        if let Some(program) = looking_for {
+            let file_name = program.file_name();
+            if cfg!(windows) {
+                dialog = dialog
+                    .add_filter(&file_name, &["exe"])
+                    .set_file_name(&file_name);
+            }
+        }
+        dialog.blocking_pick_file()
     })
     .await
     .map_err(|_| ErrorCode::Dialog)?;

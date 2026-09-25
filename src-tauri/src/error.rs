@@ -32,6 +32,8 @@ pub enum ErrorCode {
     Download,
     /// There is no library folder for a download to go into.
     NoFolder,
+    /// The file somebody picked is not the program they picked it for.
+    NotThatProgram,
 }
 
 impl From<onsa_library::Error> for ErrorCode {
