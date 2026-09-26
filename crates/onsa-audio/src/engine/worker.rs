@@ -1327,6 +1327,14 @@ impl Worker {
                         id: item.id,
                         path: path.clone(),
                         info: info.clone(),
+                        // The playhead belongs to the track it is inside.
+                        // A track further along the timeline has not been
+                        // reached yet, so it starts where tracks start.
+                        at: if index == at.queue_index {
+                            at.seconds()
+                        } else {
+                            0.0
+                        },
                     });
                 }
             }

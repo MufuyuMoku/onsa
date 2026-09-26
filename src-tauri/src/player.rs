@@ -809,13 +809,16 @@ impl Shared {
                 id,
                 info,
                 path,
+                at,
             } => {
-                tracing::debug!(index, path = %path.display(), "track started");
+                tracing::debug!(index, at, path = %path.display(), "track started");
                 {
                     let mut state = lock(&self.state);
-                    // The engine has the last word on what is playing.
+                    // The engine has the last word on what is playing, and
+                    // on where in it the playhead stands: a queue restored
+                    // part-way through a song starts there, not at nought.
                     state.queue.set_current(id);
-                    state.position = 0.0;
+                    state.position = at;
                     state.duration = info.duration_seconds().or_else(|| {
                         state
                             .queue

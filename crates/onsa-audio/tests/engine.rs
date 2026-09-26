@@ -802,3 +802,52 @@ fn reordering_the_queue_follows_the_playing_entry() {
     });
     assert_eq!(ended, Event::QueueEnded);
 }
+
+/// A queue set part-way through a song says so when the song starts.
+///
+/// Onsa restores the queue where it was left, paused. If the engine
+/// reported that track as starting at nought, everything downstream would
+/// believe it — the playhead on screen, and the position written down for
+/// next time, which would then really be nought.
+#[test]
+fn a_track_started_part_way_through_says_where_it_started() {
+    let fixtures = Fixtures::new("restored");
+    let seconds = 6;
+    let one = fixtures.wav(
+        "satu.wav",
+        RATE,
+        &sine(RATE as usize * seconds, RATE, 220.0, 0.4),
+    );
+    let two = fixtures.wav(
+        "dua.wav",
+        RATE,
+        &sine(RATE as usize * seconds, RATE, 330.0, 0.4),
+    );
+
+    let (engine, mut sink) = offline(PlaybackSettings::default());
+    let items = vec![QueueItem::new(&one), QueueItem::new(&two)];
+    // Where the listener left it: four seconds into the first track.
+    engine.set_queue(items, 0, 4.0, true).expect("queue");
+    assert!(sink.wait_for_audio(1024), "the engine never produced audio");
+
+    let mut rendered = Vec::new();
+    let event = wait_for(&engine, Some((&mut sink, &mut rendered)), |event| {
+        matches!(event, Event::TrackStarted { index: 0, .. })
+    });
+    let Event::TrackStarted { at, .. } = event else {
+        panic!("wrong event: {event:?}");
+    };
+    assert!(
+        (at - 4.0).abs() < 0.25,
+        "the track was set to start at 4 s and reported {at}"
+    );
+
+    // And the next one, which really does begin at its beginning.
+    let event = wait_for(&engine, Some((&mut sink, &mut rendered)), |event| {
+        matches!(event, Event::TrackStarted { index: 1, .. })
+    });
+    let Event::TrackStarted { at, .. } = event else {
+        panic!("wrong event: {event:?}");
+    };
+    assert!(at < 0.25, "a track that simply began reported {at}");
+}

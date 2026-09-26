@@ -191,6 +191,12 @@ pub enum Event {
         path: PathBuf,
         /// What the engine knows about it.
         info: TrackInfo,
+        /// Where the playhead stands in it, in seconds.
+        ///
+        /// Zero for a track that simply began, and the offset it was set to
+        /// for one the queue was restored at. Without this a listener whose
+        /// queue came back where they left it is told it starts at nought.
+        at: f64,
     },
     /// The playhead, at most ten times a second while playing.
     Position {
