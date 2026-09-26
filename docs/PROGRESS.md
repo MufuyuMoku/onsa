@@ -1263,3 +1263,96 @@ halamannya tidak pernah bisa digulir ke samping.
 
 `cargo fmt --check`, `clippy -D warnings`, `cargo test --workspace`, `npm run check`, tes UI,
 dan `cargo deny check licenses` semuanya bersih.
+
+## 2026-09-26 · v1.3-d: warna nada yang benar-benar terlihat di dua tema terang
+
+Laporan pemilik proyek atas build sesudah v1.3-c: di empat tema lain pergeserannya terlihat,
+di Kubikel biru dan Musim dingin utara tidak — walau tombolnya berfungsi.
+
+### Yang diperiksa lebih dulu: data tema, bukan analisis suara
+
+Dua lagu dengan karakter yang jauh berbeda dibuat saat itu juga — nada 200 Hz (berat) dan
+6 kHz (terang), tiga menit masing-masing — lalu warna yang benar-benar tergambar di batang
+spektrum dibaca dari layar, pada keempat kekuatan, di kedua tema.
+
+| | Kubikel biru | Musim dingin utara |
+|---|---|---|
+| Suara berat (200 Hz) | `31,95,169` → `169,102,10` | `53,100,143` → `140,79,36` |
+| Suara terang (6 kHz) | `31,95,169` → `23,64,122` | `53,100,143` → `42,78,122` |
+
+**Analisisnya tidak salah**: kedua arah dikenali, dan sisi hangatnya bergerak jauh di kedua
+tema. Yang tidak bergerak hanya sisi dinginnya, dan ia tidak bergerak karena **ujung dinginnya
+memang hampir sama dengan warna yang digeser** — biru yang sama, hanya lebih gelap. Jarak
+warnanya CIEDE2000 11,2 (Kubikel biru) dan 7,8 (Musim dingin), dengan beda rona 3° dan 8°.
+Angka pikselnya berubah; matanya tidak menangkapnya sebagai perubahan warna.
+
+Satu putaran pengukuran pertama harus dibuang: mesin audionya ternyata dibisukan (volume
+−90 dB di profil uji itu), jadi karakter suaranya berhenti diperbarui dan warna lama
+tertinggal di layar seolah-olah hasil pengukuran. Profil yang benar-benar baru dibuka untuk
+memastikan bawaan volumenya 0 dB — memang 0 dB, jadi itu hanya keadaan mesin uji, bukan
+cacat Onsa. Sejak itu tiap pembacaan membawa bukti bahwa ada bunyi yang dianalisis (band
+mana yang tertinggi dan berapa band yang terisi).
+
+### Yang diubah
+
+Hanya ujung dinginnya, dan hanya di dua tema itu:
+
+| Tema | cool lama | cool baru | |
+|---|---|---|---|
+| Kubikel biru | `#17407A` | **`#0E7C86`** | teal, rona 70° dari biru kantornya |
+| Musim dingin utara | `#2A4E7A` | **`#1C7A6B`** | teal cemara, rona 87° dari biru bajanya |
+
+Ujung hangatnya sudah berbeda rona sejak awal (`#A9660A` dan `#8C4F24`) dan tidak disentuh.
+Bagian yang tidak boleh ikut bergeser tetap tidak bergeser: keduanya hanya menyebut
+`spectrum`, dan meter tetap di luar (keputusan 2026-09-13).
+
+**Diukur ulang pada aplikasi yang berjalan**, dengan lagu dan cara yang sama:
+
+| Tema | Suara terang: Mati → Halus → Sedang → Kuat |
+|---|---|
+| Kubikel biru | `31,95,169` → `24,110,153` → `14,124,134` → `14,124,134` |
+| Musim dingin utara | `53,100,143` → `42,112,126` → `28,122,107` → `28,122,107` |
+
+Sisi hangatnya tidak berubah dari sebelumnya. Halus dan Sedang terlihat berjenjang di
+antaranya; pada suara yang berada di ujung rentang, Sedang memang sudah menyentuh warna
+ujungnya, jadi Kuat tidak bisa lebih jauh lagi — itu sifat bobotnya, bukan datanya.
+
+### Kriteria yang sekarang dijaga tes
+
+Tes keenam tema dari v1.3-c ditulis ulang dengan angka, bukan lagi "warnanya berbeda":
+
+- jarak CIEDE2000 antara ujung dingin dan hangat **minimal 20**;
+- jarak tiap ujung ke warna yang digeser **minimal 10**;
+- beda **rona** tiap ujung terhadap warna yang digeser **minimal 20°** — ini yang menangkap
+  "biru yang sama, hanya lebih gelap", yang lolos dari pemeriksaan sebelumnya;
+- kontras tiap ujung terhadap sumurnya sendiri **minimal 3:1** (WCAG untuk objek grafis);
+- ditambah aturan lama: harus ada yang digeser, dan meter tidak pernah ikut.
+
+Perhitungan CIEDE2000-nya diuji terhadap angka terbitan Sharma, Wu dan Dalal (lima pasang),
+supaya yang dipakai memang aritmetika yang dimaksud orang, bukan tafsiran sendiri.
+
+**Tes ini gagal pada data lama kedua tema**, masing-masing dengan kalimatnya sendiri —
+dibuktikan dengan mengembalikan nilainya satu per satu:
+
+```
+theme kubikel-biru: Spectrum and its cool end are 3° apart in hue, which is the same
+colour a little darker rather than another colour
+theme musim-dingin: Spectrum moves only 7.8 towards its cool end
+```
+
+**Keempat tema lain lolos kriteria baru ini tanpa diubah.** Angkanya:
+
+| Tema | cool: dE00 / rona | warm: dE00 / rona | ujung↔ujung | kontras cool / warm |
+|---|---|---|---|---|
+| Kaca asap | 38,3 / 97° | 48,1 / 106° | 51,4 | 8,0 / 10,0 |
+| Kokpit kaca | 35,5 / 72° | 43,7 / 77° | 49,6 | 10,8 / 10,8 |
+| Deck malam | 39,1 / 170° | 42,3 / 45° | 46,6 | 7,6 / 3,9 |
+| Kilau milenium | 29,3 / 73° | 58,8 / 120° | 27,1 | 4,9 / 3,5 |
+| **Kubikel biru** | **23,2 / 70°** | 48,8 / 150° | 41,6 | 4,9 / 4,6 |
+| **Musim dingin** | **25,4 / 87°** | 38,6 / 153° | 40,3 | 4,4 / 5,5 |
+
+Empat gambar spektrum — kedua tema di ujung dingin dan ujung hangat, pada Kuat — dikirim ke
+pemilik proyek untuk dinilai.
+
+`cargo fmt --check`, `clippy -D warnings`, `cargo test --workspace`, `npm run check`, tes UI,
+dan `cargo deny check licenses` semuanya bersih.

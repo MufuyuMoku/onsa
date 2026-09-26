@@ -656,3 +656,11 @@ Keputusan pemilik proyek atas hasil pemeriksaan pertama cargo deny. Dua pengecua
 - **`TrackStarted` menyebut dari detik ke berapa.** "Mesin yang punya kata terakhir soal apa yang sedang diputar" juga harus punya kata terakhir soal di mana playhead-nya, kalau tidak lapisan di atasnya akan menebak nol — dan menuliskan nol itu ke tempat penyimpanan.
 - **Lebar kolom: yang mengalah adalah kolom sesudahnya, bukan judul di sebelah kirinya.** Sisa ruang duduk di ujung kanan baris. Itulah satu-satunya susunan yang membuat pembatas yang dipegang bergerak mengikuti pointer tanpa baris yang bisa digulir ke samping.
 - **Seretan berhenti, bukan menjatuhkan kolom.** Aturan "kolom mengalah saat jendela sempit" tetap berlaku untuk jendela yang menyempit, bukan untuk tangan yang sedang menyeret.
+
+## 2026-09-26 · v1.3-d: ujung warna nada diukur, bukan ditaksir
+
+- **Beda rona ikut dijaga, bukan cuma jarak warna.** Ujung dingin Kubikel biru yang lama berjarak CIEDE2000 11,2 dari warna yang digeser — di atas ambang "minimal 10" — dan tetap tidak terlihat, karena ia biru yang sama hanya lebih gelap. Yang dibaca mata adalah rona; karena itu tesnya menuntut minimal 20° beda rona, dan dengan itu data lama kedua tema gagal.
+- **Aritmetikanya diuji terhadap angka terbitan.** CIEDE2000 mudah ditulis hampir benar; lima pasang dari data uji Sharma, Wu dan Dalal dipakai sebagai patokan. Satu di antaranya menangkap ingatanku sendiri yang keliru soal nilai yang benar.
+- **Yang diubah hanya ujung dinginnya.** Ujung hangat kedua tema sudah berbeda rona sejak awal dan bergerak jauh; menggantinya berarti mengubah rupa tema tanpa alasan.
+- **Ujung dingin diambil dari keluarga warna temanya sendiri**: teal untuk kantor, teal cemara untuk musim dingin utara. Keduanya lebih gelap daripada warna dasarnya di latar terang, jadi kontrasnya naik, bukan turun.
+- **Mesin uji yang bisu adalah pengukuran yang batal.** Saat volume di profil uji ternyata −90 dB, karakter suara berhenti diperbarui dan warna lama tertinggal di layar. Sejak itu tiap pembacaan membawa bukti bahwa ada bunyi yang dianalisis; tanpa itu, sebuah layar diam gampang terbaca sebagai hasil.
