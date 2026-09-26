@@ -85,9 +85,11 @@
     "ease": "standard"
   },
   "toneColor": {
-    "enabled": false,
-    "targets": [],
+    "enabled": true,
+    "targets": [
+      "spectrum"
+    ],
     "warm": "#A9660A",
-    "cool": "#1F5FA9"
+    "cool": "#17407A"
   }
 }

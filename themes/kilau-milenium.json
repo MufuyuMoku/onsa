@@ -86,10 +86,9 @@
   "toneColor": {
     "enabled": true,
     "targets": [
-      "spectrum",
-      "progress"
+      "spectrum"
     ],
     "warm": "#E03A93",
-    "cool": "#0090B0"
+    "cool": "#6A4CE0"
   }
 }

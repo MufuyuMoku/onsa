@@ -309,6 +309,8 @@ const id = {
 	'toneColor.subtle': 'Halus',
 	'toneColor.medium': 'Sedang',
 	'toneColor.strong': 'Kuat',
+	'toneColor.themeQuiet':
+		'Tema yang sedang dipakai tidak menggeser apa pun, jadi pilihan di atas belum terlihat sampai kamu memakai tema lain.',
 	'toneColor.hint':
 		'Warna bergeser mengikuti karakter suara: suara terang ke arah warna dingin tema, suara berat ke arah warna hangatnya. Setiap tema menentukan warna kedua ujungnya dan bagian mana yang ikut bergeser.',
 
@@ -1412,6 +1414,8 @@ const en: Record<MessageKey, string> = {
 	'toneColor.subtle': 'Subtle',
 	'toneColor.medium': 'Medium',
 	'toneColor.strong': 'Strong',
+	'toneColor.themeQuiet':
+		'The theme in use moves nothing with the tone, so the choice above cannot be seen until you use another theme.',
 	'toneColor.hint':
 		'The colour follows the character of the sound: bright sound leans towards the theme’s cool colour, heavy sound towards its warm one. Each theme names both ends and which parts follow them.',
 

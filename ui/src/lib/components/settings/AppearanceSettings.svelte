@@ -58,6 +58,12 @@
 			copying = false;
 		}
 	}
+
+	/** Whether the theme in use moves anything at all with the tone. */
+	const leans = $derived(
+		(activeTheme()?.toneColor.enabled ?? false) &&
+			(activeTheme()?.toneColor.targets.length ?? 0) > 0
+	);
 </script>
 
 <div class="page">
@@ -83,12 +89,19 @@
 					type="button"
 					class="chip"
 					aria-pressed={(settings.value?.display.toneColor ?? 'medium') === strength}
-					disabled={!settings.value || !(activeTheme()?.toneColor.enabled ?? false)}
+					disabled={!settings.value}
 					onclick={() => updateDisplay({ toneColor: strength })}>{t(label)}</button
 				>
 			{/each}
 		</div>
 		<p class="note muted">{t('toneColor.hint')}</p>
+		<!-- The theme chooses what follows the tone; switching the feature
+		     off is the listener's to do (SPEC section 9.5). A theme that
+		     moves nothing says so here rather than leaving four dead
+		     buttons and no reason. -->
+		{#if !leans}
+			<p class="note muted">{t('toneColor.themeQuiet')}</p>
+		{/if}
 	</section>
 	<section>
 		<h2 class="label">{t('theme.userFolder')}</h2>

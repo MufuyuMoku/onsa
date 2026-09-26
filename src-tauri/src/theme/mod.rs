@@ -267,6 +267,60 @@ mod tests {
         }
     }
 
+    /// A theme that says it leans has to be able to lean both ways.
+    ///
+    /// Three of the six said they used tone colour while naming a cool end
+    /// that was the very colour being leaned, so bright sound moved
+    /// nothing; one said it used the feature and then named nothing to move
+    /// at all. Both read, to somebody using them, as a feature that does not
+    /// work — and neither could be seen from the code, only from the data.
+    #[test]
+    fn a_theme_that_leans_can_lean_both_ways() {
+        use crate::theme::model::ToneTarget;
+        for theme in builtin_themes() {
+            let tone = &theme.tone_color;
+            if !tone.enabled {
+                continue;
+            }
+            assert!(
+                !tone.targets.is_empty(),
+                "theme {} says it uses tone colour and then moves nothing",
+                theme.id
+            );
+            assert!(
+                !tone.targets.contains(&ToneTarget::Meter),
+                "theme {}: a meter never follows the tone — its green, yellow                  and red mean how close the level is to the limit",
+                theme.id
+            );
+            for target in &tone.targets {
+                // The colour this target is drawn in, which is what the
+                // lean moves away from.
+                let base = match target {
+                    ToneTarget::Spectrum => &theme.color.lit.on,
+                    ToneTarget::Progress => &theme.color.role.position,
+                    ToneTarget::CoverGlow => &theme.color.lit.glow,
+                    ToneTarget::Meter => continue,
+                };
+                let same = |a: &str, b: &str| a.eq_ignore_ascii_case(b);
+                assert!(
+                    !same(base, &tone.warm),
+                    "theme {}: {target:?} is already the warm colour, so heavy sound moves nothing",
+                    theme.id
+                );
+                assert!(
+                    !same(base, &tone.cool),
+                    "theme {}: {target:?} is already the cool colour, so bright sound moves nothing",
+                    theme.id
+                );
+            }
+            assert!(
+                !tone.warm.eq_ignore_ascii_case(&tone.cool),
+                "theme {}: both ends are the same colour",
+                theme.id
+            );
+        }
+    }
+
     /// Roughly how light a `#rrggbb` colour is, from 0 to 1.
     fn lightness(hex: &str) -> f32 {
         let hex = hex.trim_start_matches('#');
