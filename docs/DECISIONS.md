@@ -645,3 +645,14 @@ Keputusan pemilik proyek atas hasil pemeriksaan pertama cargo deny. Dua pengecua
 - **Apache-2.0 WITH LLVM-exception memberi lebih banyak izin daripada Apache-2.0 biasa.** Mengizinkan yang biasa lalu menolak yang ini berarti menolak yang lebih permisif dari keduanya.
 - **Pengecualian yang dikunci versi dihapus** karena pertanyaannya sudah dijawab: yang diputuskan adalah lisensinya, bukan versi satu crate. Kenaikan versi `notify` atau `target-lexicon` tidak perlu menanyakannya lagi.
 - **GPL, LGPL, dan AGPL tetap ditolak**, dengan cara yang sama seperti sebelumnya: tidak ada di daftar izin.
+
+## 2026-09-26 · v1.3-c: empat bug
+
+- **Posisi gulir disimpan bersama urutannya, bukan sendirian.** Baris keempat ratus menurut judul adalah lagu yang lain daripada baris keempat ratus menurut tahun. Posisi dari urutan lain tidak dipaksakan; daftarnya dibuka di lagu yang sedang diputar.
+- **Urutan daftar ikut disimpan.** Tanpa itu, tiap kali Onsa dibuka daftarnya kembali ke urutan bawaan dan tiap posisi tersimpan berbicara tentang daftar yang sudah tidak ada di layar.
+- **Baris mana yang sedang diputar ditanyakan ke database.** Daftar lagunya dihalaman-halamankan; antarmuka tidak memegang seluruh library dan tidak boleh berpura-pura memegangnya.
+- **Tema memilih apa yang ikut bergeser; pengguna yang boleh mematikan fiturnya** (SPEC §9.5). Karena itu tombol kekuatan warna nada tidak lagi dimatikan oleh tema, dan tema yang tidak menggeser apa pun mengatakannya.
+- **Tema yang mengaku bergeser harus bisa bergeser ke dua arah**, dan itu dijaga tes: harus ada yang digeser, meter tidak pernah ikut, dan kedua ujungnya berbeda dari warna yang digeser. Tiga tema terang gagal aturan ini sejak ditambahkan; sekarang tidak.
+- **`TrackStarted` menyebut dari detik ke berapa.** "Mesin yang punya kata terakhir soal apa yang sedang diputar" juga harus punya kata terakhir soal di mana playhead-nya, kalau tidak lapisan di atasnya akan menebak nol — dan menuliskan nol itu ke tempat penyimpanan.
+- **Lebar kolom: yang mengalah adalah kolom sesudahnya, bukan judul di sebelah kirinya.** Sisa ruang duduk di ujung kanan baris. Itulah satu-satunya susunan yang membuat pembatas yang dipegang bergerak mengikuti pointer tanpa baris yang bisa digulir ke samping.
+- **Seretan berhenti, bukan menjatuhkan kolom.** Aturan "kolom mengalah saat jendela sempit" tetap berlaku untuk jendela yang menyempit, bukan untuk tangan yang sedang menyeret.

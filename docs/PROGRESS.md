@@ -1133,3 +1133,133 @@ Alamatnya juga tertulis di layar di bawah tombolnya, jadi bisa dibaca sebelum di
 **Pemeriksaan bantuan v1.1 tetap nol yang terlewat**: seluruh halaman dijalani ulang dengan library terisi — 0 kontrol yang belum disebut di panel bantuannya. Tombol baru ini ada di topik bantuan ketiga halaman itu, dan bagian fpcalc di halaman Bantuan menyebutnya.
 
 `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo test --workspace`, `npm run check`, tes UI, dan `cargo deny check licenses` semuanya bersih.
+
+## 2026-09-26 · v1.3-c: empat bug dari pengujian pemilik proyek
+
+Tidak ada fitur baru. Tiap bug direproduksi dulu pada aplikasi yang berjalan, diperbaiki di
+akarnya, diberi tes yang menangkapnya, lalu diperiksa ulang di jendela biasa (1400×950) dan
+di jendela terkecil yang diizinkan Onsa (820×600).
+
+Mesin ujinya: 125 lagu yang dibuat saat itu juga dari nada uji — 120 pendek supaya daftarnya
+harus digulir, 5 sepanjang empat menit untuk menguji posisi putar, ditambah satu nada 200 Hz
+dan satu 6 kHz untuk menguji warna nada dari kedua ujungnya.
+
+### 1. Halaman Lagu selalu mulai dari paling atas
+
+**Sebab akarnya**: tidak ada apa pun yang mengingat posisi gulir. Ia hidup di dalam keadaan
+komponen daftar virtualnya sendiri, dan ikut dibuang begitu halamannya ditinggalkan. Satu
+lagi di belakangnya: **urutan daftar juga tidak pernah disimpan**, jadi seandainya posisinya
+disimpan pun, sesudah Onsa dibuka lagi daftarnya kembali ke urutan bawaan dan baris ke-400
+menjadi lagu yang lain.
+
+**Yang dikerjakan**: posisi disimpan dua lapis — di memori (seketika, untuk pindah halaman)
+dan di pengaturan tampilan 0,7 detik sesudah gulirannya berhenti (untuk hidup lebih lama
+daripada aplikasinya). Urutan daftar ikut disimpan. Posisi selalu dibawa bersama urutan yang
+berlaku saat itu, dan posisi dari urutan lain tidak dipaksakan. Ada tombol "Ke lagu yang
+diputar" di kepala tiap daftar dengan pintasan **Ctrl+J**; baris yang dituju ditandai sebentar.
+Daftar yang belum punya posisi tersimpan dibuka pada lagu yang sedang diputar. Baris mana yang
+dituju ditanyakan ke database (`library_track_place`), karena daftarnya dihalaman-halamankan
+dan antarmukanya memang tidak memegang seluruh library.
+
+**Diperiksa**: digulir ke 1600 px, pindah ke Album, kembali — 1600 px, baris yang sama.
+Ditinggalkan di 2048 px lalu Onsa ditutup dan dibuka lagi — 2048 px, baris "053 Sunyi", urutan
+yang sama. Tombol dan Ctrl+J sama-sama menggulir ke "Panjang 3" dan menandainya. Urutan diganti
+ke Artis — posisi lama tidak dipaksakan, daftarnya kembali ke atas. Keduanya di 1400×950 dan
+820×600.
+
+### 2. Warna nada dan visualizer
+
+**Yang ternyata tidak rusak**: tombolnya. Tiap penekanan tersimpan (`off`, `subtle`, `medium`,
+`strong`) dan aria-pressed-nya ikut. Frame analisis juga sampai ke layar: spektrumnya bergerak,
+dan aturan M5 tetap berlaku — begitu visualizer disembunyikan, `spectrum=false` di log.
+
+**Sebab akarnya ada di data temanya**, dan ada tiga tema terang yang tidak pernah diselesaikan:
+
+| Tema | Apa yang salah |
+|---|---|
+| Kubikel biru | `toneColor.enabled: false` dan `targets: []` — fiturnya dimatikan oleh temanya, yang **ikut mematikan keempat tombol milik pengguna**. SPEC §9.5 mengatakan temanya memilih bagian mana yang bergeser; yang boleh mematikan fiturnya adalah pengguna. |
+| Kilau milenium | `cool` = `#0090B0`, persis warna yang digeser, jadi suara terang tidak menggeser apa pun. `progress`-nya pun sudah berwarna `warm`. |
+| Musim dingin utara | `cool` = `#35648F`, sama persis juga. Ia juga meminta **meter** ikut bergeser, padahal keputusan 2026-09-13 menyebut meter tidak pernah ikut: hijau, kuning, dan merahnya berarti "mendekati batas". |
+
+**Yang dikerjakan**: tiap tema diberi ujung dingin yang benar-benar dingin — Kilau milenium ke
+ungu listriknya sendiri `#6A4CE0`, Kubikel biru ke `#17407A`, Musim dingin ke `#2A4E7A` — meter
+dan progress yang tidak bisa bergeser dilepas dari daftar targetnya, dan tombol kekuatan tidak
+lagi dimatikan oleh tema (tema yang tidak menggeser apa pun mengatakannya, bukan meninggalkan
+empat tombol mati tanpa alasan). Satu tes atas keenam tema bawaan sekarang menolak keadaan
+seperti itu: tema yang mengaku bergeser harus menyebut sesuatu yang digeser, tidak boleh
+menyebut meter, dan kedua ujungnya harus berbeda dari warna yang digeser. Tes itu menangkap
+kasus keempat sewaktu ditulis.
+
+**Diperiksa dengan mengukur warna yang benar-benar tergambar** (`getComputedStyle` pada batang
+spektrum; varian "soft" menggambar dengan gradien, jadi yang dibaca `background-image`-nya),
+sambil memutar nada 200 Hz lalu 6 kHz:
+
+| Tema | Suara terang: mati → kuat | Sebelumnya |
+|---|---|---|
+| Kaca asap | `92,242,207` → `79,168,255` | sudah bekerja |
+| Kokpit kaca | `63,224,138` → `53,208,242` | sudah bekerja |
+| Deck malam | `#F3D9A4` → `127,166,200` | sudah bekerja |
+| Kubikel biru | `31,95,169` → `23,64,122` | **tombolnya mati** |
+| Kilau milenium | `#0090B0` → `106,76,224` | **tidak ada bedanya** |
+| Musim dingin | `53,100,143` → `42,78,122` | **tidak ada bedanya** |
+
+Karena ujung dinginnya lebih gelap, kontras batang spektrum terhadap sumurnya di ketiga tema
+terang itu ikut naik saat bergeser: 3,3 → 4,9 (Kilau milenium), 6,4 → 10,2 (Kubikel biru),
+5,3 → 7,3 (Musim dingin).
+
+**Yang tidak ditemukan**: "kontras visualizer" sebagai sebuah kontrol. Tidak ada pengatur
+kontras di mana pun di Onsa — bukan di Tampilan, bukan di Sedang diputar, dan tidak ada
+kuncinya di kamus. Yang bisa diukur adalah kontras batang terhadap latar sumurnya per tema,
+dan angkanya ada di atas. Bagian ini menunggu penjelasan pemilik proyek dan **belum dikerjakan**.
+
+### 3. Progres lagu kembali ke nol sesudah Onsa dibuka lagi
+
+**Sebab akarnya**: antrean memang dipulihkan pada posisi yang tersimpan, dan mesin audio memang
+menempatkan playhead-nya di sana — tetapi event `TrackStarted` tidak membawa posisi, dan
+`player.rs` menulis `state.position = 0.0` begitu menerimanya. Nol itu lalu **ditulis balik ke
+tempat penyimpanannya** lewat `remember_queue`, jadi posisinya bukan cuma salah tampil,
+melainkan hilang saat dibaca.
+
+**Yang dikerjakan**: `TrackStarted` sekarang menyebut `at` — di detik ke berapa playhead berada
+di dalam lagu yang ia sebut. Nol untuk lagu yang memang baru mulai, dan posisi yang dipulihkan
+untuk lagu yang antreannya dipulihkan di tengah. Tesnya ada di `crates/onsa-audio/tests/engine.rs`:
+antrean disetel pada detik ke-4, dan eventnya harus mengatakan 4.
+
+**Diperiksa**: ditinggalkan dijeda pada 1:36 dari 4:00, Onsa ditutup dan dibuka lagi — transport
+langsung menunjukkan "Panjang 4", 1:36 / 4:00, slider di 96,4 dari 240, tanpa menekan apa pun.
+Digeser ke 2:30 sebelum Play: ikut. Play ditekan: lanjut dari 2:32. Di 1400×950 dan 820×600.
+
+### 4. Pengatur lebar kolom
+
+**Yang salah saat direproduksi** (diukur dari `grid-template-columns` sebelum, selama, dan
+sesudah seretan):
+
+- Kolom **Judul tidak bisa diseret sama sekali**. Lebarnya hanya menjadi batas bawah dari
+  `minmax(lebar, 1fr)`, dan selama masih ada ruang ia tidak pernah tercapai.
+- Menyeret pembatas lain **tidak menggerakkan pembatas itu**: melebarkan Artis 120 px mengambil
+  120 px dari Judul di sebelah kirinya, sehingga tepi kanan Artis tidak bergeser satu piksel pun.
+- Menyeret terlalu jauh **menghilangkan dua kolom sekaligus** di tengah seretan, karena barisnya
+  kehabisan ruang dan aturan "kolom mengalah" ikut campur saat tangan masih memegang.
+- **Tidak ada klik ganda** untuk menyesuaikan lebar dengan isinya.
+- Yang sudah benar sejak awal: kursornya berubah, ada lebar minimum, dan menyeret tidak memicu
+  pengurutan.
+
+**Sebab akarnya**: judulnya adalah kolom yang menyerap seluruh sisa ruang (`1fr`), jadi setiap
+perubahan lebar diserap olehnya — dan judul berada di sebelah **kiri** pembatas yang dipegang.
+
+**Yang dikerjakan**: tiap kolom kini selebar yang diberikan, judul termasuk, dan sisa ruang
+jatuh ke strip di ujung kanan. Kolom yang melebar mengambil sisa ruang lebih dulu, lalu dari
+kolom-kolom **sesudahnya**, yang terdekat lebih dulu, masing-masing sampai batas terkecilnya,
+dan berhenti kalau tidak ada lagi yang bisa diambil — tidak ada kolom yang didorong keluar
+baris. Yang ada di sebelah kiri pembatas tidak pernah bergerak. Pegangannya menangkap pointer
+selama seretan, seretan dimulai dari lebar yang tampak di layar, dan klik ganda menyesuaikan
+lebar dengan isi baris-baris yang tergambar. Aturannya pindah ke `columns.ts` beserta lima tes.
+
+**Diperiksa** di 1400×950 dan 820×600: Artis +120 → Artis +120 tepat, Judul tidak bergerak,
+Album yang mengalah; Judul +120 → Judul +120, Artis yang mengalah; kolom yang sudah di batas
+terkecilnya tidak menyusut lagi; klik ganda pada pembatas Judul melebarkannya sesuai isi;
+pengurutan tidak pernah terpicu; lebarnya utuh sesudah Onsa ditutup dan dibuka lagi; dan
+halamannya tidak pernah bisa digulir ke samping.
+
+`cargo fmt --check`, `clippy -D warnings`, `cargo test --workspace`, `npm run check`, tes UI,
+dan `cargo deny check licenses` semuanya bersih.
