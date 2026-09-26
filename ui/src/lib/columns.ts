@@ -157,14 +157,14 @@ export function shownColumns(
 }
 
 /**
- * How wide the title column starts out, given what is left after the others.
+ * How wide the title column is drawn, given what is left after the others.
  *
- * The title takes the space nobody else wants, so its width is a floor
- * rather than a size. That floor is what the listener dragged it to, unless
- * there is less room than that, in which case it gives way — down to its own
- * minimum and no further.
+ * The width the listener chose, unless there is less room than that — in
+ * which case it gives way, down to its own minimum and no further, so that
+ * a narrow window never has to scroll sideways and columns never end up on
+ * top of each other.
  */
-export function titleFloor(available: number, shown: ColumnKey[], prefs: ColumnPrefs): number {
+export function titleWidth(available: number, shown: ColumnKey[], prefs: ColumnPrefs): number {
 	const others = shown
 		.filter((key) => key !== 'title')
 		.reduce((total, key) => total + widthOf(key, prefs), 0);
@@ -173,18 +173,84 @@ export function titleFloor(available: number, shown: ColumnKey[], prefs: ColumnP
 }
 
 /**
+ * The widths as they would be with one column dragged to `asked`.
+ *
+ * A row never scrolls sideways and columns are never laid on top of each
+ * other, so a column that grows has to take its room from somewhere. It
+ * takes the slack at the right end first, then from the columns after it,
+ * nearest first, each down to its own smallest — and stops when there is no
+ * more to take rather than pushing a column off the row.
+ *
+ * Everything before the column being dragged is left exactly as it is.
+ * Taking the room out of the title instead — which is what happened while
+ * the title absorbed all the slack — left the divider under the pointer
+ * standing perfectly still while a different one moved, which is the whole
+ * of what "the dividers do not work" was.
+ */
+export function spreadWidths(
+	available: number,
+	shown: ColumnKey[],
+	prefs: ColumnPrefs,
+	key: ColumnKey,
+	asked: number
+): Partial<Record<ColumnKey, number>> {
+	const drawn = new Map<ColumnKey, number>(
+		shown.map((one) => [
+			one,
+			one === 'title' ? titleWidth(available, shown, prefs) : widthOf(one, prefs)
+		])
+	);
+	const was = drawn.get(key) ?? column(key).min;
+	const wanted = Math.max(column(key).min, Math.round(asked));
+	let need = wanted - was;
+	if (need <= 0) {
+		// Giving room back needs no arranging: the title takes what it can
+		// and the rest falls to the strip at the end.
+		return { [key]: wanted };
+	}
+	const used = [...drawn.values()].reduce((total, one) => total + one, 0);
+	const slack = Math.max(
+		0,
+		available - NUMBER_WIDTH - MENU_WIDTH - overhead(shown.length) - used
+	);
+	const next: Partial<Record<ColumnKey, number>> = {};
+	need -= Math.min(need, slack);
+	for (const one of shown.slice(shown.indexOf(key) + 1)) {
+		if (need <= 0) break;
+		// Only a column that can be dragged may be asked to give way: one
+		// with no divider of its own could never be given back.
+		if (!column(one).sizable) continue;
+		const now = drawn.get(one) ?? 0;
+		const give = Math.min(need, now - column(one).min);
+		if (give <= 0) continue;
+		next[one] = now - give;
+		need -= give;
+	}
+	next[key] = wanted - Math.max(0, need);
+	return next;
+}
+
+/**
  * The CSS grid the head and every row share.
  *
- * The title takes what is left over, so a wide window is not left with a gap
- * on the right; the width the listener dragged it to is its smallest, as far
- * as the room allows.
+ * Every column is the width it was given, the title included. The room
+ * nobody claimed goes to the strip at the right end, which holds the two
+ * head buttons against the edge.
+ *
+ * It used to go to the title instead, and that is what made the dividers
+ * feel broken: widening a column took the space out of the title, so the
+ * divider being dragged stayed exactly where it was while a different one
+ * moved. A divider now moves with the pointer that is holding it, and
+ * nothing to its left shifts at all.
  */
 export function template(available: number, shown: ColumnKey[], prefs: ColumnPrefs): string {
-	const floor = titleFloor(available, shown, prefs);
+	const title = titleWidth(available, shown, prefs);
 	const parts = [`${NUMBER_WIDTH}px`];
 	for (const key of shown) {
-		parts.push(key === 'title' ? `minmax(${floor}px, 1fr)` : `${widthOf(key, prefs)}px`);
+		parts.push(key === 'title' ? `${title}px` : `${widthOf(key, prefs)}px`);
 	}
-	parts.push(`${MENU_WIDTH}px`);
+	// The slack lives here rather than in a cell of its own, so a row keeps
+	// the same shape it always had.
+	parts.push(`minmax(${MENU_WIDTH}px, 1fr)`);
 	return parts.join(' ');
 }

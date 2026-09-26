@@ -14,10 +14,12 @@ import {
 	column,
 	emptyPrefs,
 	shownColumns,
+	spreadWidths,
 	template,
 	overhead,
-	titleFloor,
-	widthOf
+	titleWidth,
+	widthOf,
+	type ColumnKey
 } from './columns.ts';
 
 const all = () => true;
@@ -79,15 +81,18 @@ test('a column widened past what fits pushes another one out', () => {
 	assert.ok(cramped.includes('title') && cramped.includes('duration'));
 });
 
-test('the title takes the space left over, from its own width upwards', () => {
+test('the title is the width it was given, and the slack goes to the end', () => {
+	// What makes a divider follow the pointer: the column being dragged is
+	// the one that changes, and the room nobody claimed sits at the right
+	// end rather than inside the title.
 	const prefs = { ...emptyPrefs(), widths: { title: 240 } };
 	assert.equal(
 		template(1200, ['title', 'duration'], prefs),
-		`${NUMBER_WIDTH}px minmax(240px, 1fr) 56px ${MENU_WIDTH}px`
+		`${NUMBER_WIDTH}px 240px 56px minmax(${MENU_WIDTH}px, 1fr)`
 	);
 });
 
-test('a title floor wider than the room gives way rather than spilling', () => {
+test('a title wider than the room gives way rather than spilling', () => {
 	const prefs = { ...emptyPrefs(), widths: { title: 400 } };
 	const shown = ['title', 'duration'] as const;
 	// A width worked out from the parts rather than guessed, so that this
@@ -95,12 +100,12 @@ test('a title floor wider than the room gives way rather than spilling', () => {
 	// the strips at either end happen to have today.
 	const left = column('title').min + 16;
 	const room = NUMBER_WIDTH + MENU_WIDTH + overhead(shown.length) + column('duration').width + left;
-	assert.equal(titleFloor(room, [...shown], prefs), left);
+	assert.equal(titleWidth(room, [...shown], prefs), left);
 	assert.ok(
-		template(room, [...shown], prefs).includes(`minmax(${left}px, 1fr)`),
+		template(room, [...shown], prefs).includes(`${left}px`),
 		'the grid asks for no more than there is'
 	);
-	assert.equal(titleFloor(180, [...shown], prefs), 120, 'and never below its own minimum');
+	assert.equal(titleWidth(180, [...shown], prefs), 120, 'and never below its own minimum');
 });
 
 test('the whole grid fits the width it was given', () => {
@@ -115,11 +120,77 @@ test('the whole grid fits the width it was given', () => {
 			MENU_WIDTH +
 			overhead(shown.length) +
 			fixed +
-			titleFloor(available, shown, prefs);
+			titleWidth(available, shown, prefs);
 		const floor = NUMBER_WIDTH + MENU_WIDTH + overhead(2) + 120 + 56;
 		assert.ok(
 			total <= Math.max(available, floor),
 			`${available}px holds ${shown.join(', ')} in ${total}px`
 		);
 	}
+});
+
+test('a column dragged wider takes its room from the ones after it', () => {
+	// The dividers were reported as not working: the one under the pointer
+	// stayed put because the title, to its left, absorbed everything.
+	const prefs = emptyPrefs();
+	const shown: ColumnKey[] = ['title', 'artist', 'album', 'year', 'duration'];
+	const available =
+		NUMBER_WIDTH +
+		MENU_WIDTH +
+		overhead(shown.length) +
+		shown.reduce((total, key) => total + column(key).width, 0);
+	const next = spreadWidths(available, shown, prefs, 'artist', column('artist').width + 60);
+
+	assert.equal(next.artist, column('artist').width + 60, 'it follows the pointer');
+	assert.equal(next.title, undefined, 'nothing before it moves');
+	assert.equal(next.album, column('album').width - 60, 'the one after it gives way');
+	assert.equal(next.year, undefined, 'and only as far as it had to');
+});
+
+test('a drag stops rather than pushing a column off the row', () => {
+	const prefs = emptyPrefs();
+	const shown: ColumnKey[] = ['title', 'artist', 'duration'];
+	const available =
+		NUMBER_WIDTH +
+		MENU_WIDTH +
+		overhead(shown.length) +
+		shown.reduce((total, key) => total + column(key).width, 0);
+	// Far more than the row can give. The only column after this one is
+	// the length, which has no divider and never gives way, and the title
+	// is before it — so there is nothing to take at all.
+	const next = spreadWidths(available, shown, prefs, 'artist', 2000);
+
+	assert.equal(next.artist, column('artist').width, 'it stopped where the room ran out');
+	assert.equal(next.title, undefined, 'the title is before it and does not move');
+	assert.equal(next.duration, undefined, 'a column with no divider never gives way');
+});
+
+test('the room nobody is using is spent before anything gives way', () => {
+	const prefs = emptyPrefs();
+	const shown: ColumnKey[] = ['title', 'artist', 'duration'];
+	const slack = 80;
+	const available =
+		NUMBER_WIDTH +
+		MENU_WIDTH +
+		overhead(shown.length) +
+		shown.reduce((total, key) => total + column(key).width, 0) +
+		slack;
+	const next = spreadWidths(available, shown, prefs, 'artist', column('artist').width + slack);
+
+	assert.equal(next.artist, column('artist').width + slack);
+	assert.deepEqual(Object.keys(next), ['artist'], 'nothing else had to move');
+});
+
+test('a column dragged narrower only changes itself', () => {
+	const prefs = emptyPrefs();
+	const shown: ColumnKey[] = ['title', 'artist', 'album', 'duration'];
+	const next = spreadWidths(1400, shown, prefs, 'album', column('album').width - 40);
+	assert.deepEqual(next, { album: column('album').width - 40 });
+});
+
+test('a column is never dragged below its own smallest', () => {
+	const prefs = emptyPrefs();
+	const shown: ColumnKey[] = ['title', 'artist', 'duration'];
+	const next = spreadWidths(1400, shown, prefs, 'artist', 10);
+	assert.equal(next.artist, column('artist').min);
 });

@@ -16,7 +16,9 @@
 		COLUMNS,
 		column,
 		shownColumns,
+		spreadWidths,
 		template,
+		titleWidth,
 		widthOf,
 		type ColumnKey
 	} from '$lib/columns';
@@ -277,29 +279,75 @@
 		if (event.button !== 0) return;
 		event.preventDefault();
 		event.stopPropagation();
-		sizing = { key, startX: event.clientX, startWidth: widthOf(key, prefs) };
-		window.addEventListener('pointermove', onSizing);
-		window.addEventListener('pointerup', endSizing);
-		window.addEventListener('pointercancel', endSizing);
+		// The grip keeps the pointer for the whole drag, so a hand that
+		// moves faster than the redraw — or leaves the window altogether —
+		// is still the hand holding this divider.
+		const grip = event.currentTarget as HTMLElement | null;
+		grip?.setPointerCapture?.(event.pointerId);
+		sizing = { key, startX: event.clientX, startWidth: drawnWidth(key) };
 	}
 
 	function onSizing(event: PointerEvent): void {
 		if (!sizing) return;
-		const wanted = sizing.startWidth + (event.clientX - sizing.startX);
-		live = { ...live, [sizing.key]: Math.max(column(sizing.key).min, Math.round(wanted)) };
+		const asked = sizing.startWidth + (event.clientX - sizing.startX);
+		live = spreadWidths(width, shown, prefs, sizing.key, asked);
 	}
 
 	function endSizing(): void {
-		window.removeEventListener('pointermove', onSizing);
-		window.removeEventListener('pointerup', endSizing);
-		window.removeEventListener('pointercancel', endSizing);
 		const done = sizing;
 		sizing = null;
 		if (!done) return;
-		const wanted = live[done.key];
+		const settled = live;
 		live = {};
-		// Only the width it was let go at is worth storing.
-		if (typeof wanted === 'number' && wanted !== done.startWidth) setWidth(view, done.key, wanted);
+		// Only what it was let go at is worth storing, and only what
+		// actually moved: the column dragged, and any that gave way to it.
+		for (const [key, wanted] of Object.entries(settled)) {
+			if (typeof wanted === 'number') setWidth(view, key as ColumnKey, wanted);
+		}
+	}
+
+	/**
+	 * The width a column is actually drawn at right now.
+	 *
+	 * A drag starts from what is on screen, not from what is stored: the
+	 * title may be narrower than its stored width when the window is too
+	 * small for it, and starting from the stored number would make the
+	 * first pixel of the drag jump.
+	 */
+	function drawnWidth(key: ColumnKey): number {
+		if (key !== 'title') return widthOf(key, prefs);
+		return titleWidth(width, shown, prefs);
+	}
+
+	/**
+	 * Double-click on a divider: the column takes the width of what is in
+	 * it, the way a file list does.
+	 *
+	 * What it measures is the rows that are drawn, which in a list of a
+	 * hundred thousand songs is the only honest answer — the others have
+	 * never been laid out and have no width to ask for.
+	 */
+	function fitToContents(key: ColumnKey): void {
+		const at = shown.indexOf(key);
+		if (at < 0) return;
+		// One past the number column at the front.
+		const nth = at + 2;
+		const cells = document.querySelectorAll<HTMLElement>(
+			`.tracklist .body .row > *:nth-child(${nth})`
+		);
+		let found = 0;
+		for (const cell of cells) found = Math.max(found, cell.scrollWidth);
+		const head = document.querySelector<HTMLElement>(
+			`.tracklist .head .cell:nth-of-type(${at + 1}) .sort, .tracklist .head .cell:nth-of-type(${at + 1}) > .ellipsis`
+		);
+		if (head) found = Math.max(found, head.scrollWidth + 18);
+		if (found <= 0) return;
+		// A little air, so the longest line does not sit against the next
+		// column's edge — and never wider than there is room for.
+		const wanted = Math.max(column(key).min, Math.round(found + 12));
+		for (const [one, wide] of Object.entries(spreadWidths(width, shown, prefs, key, wanted))) {
+			if (typeof wide === 'number') setWidth(view, one as ColumnKey, wide);
+		}
 	}
 
 	/** A divider moved by the keyboard, for those who do not drag. */
@@ -353,6 +401,10 @@
 						aria-label={t('column.resize', { name: t(entry.label) })}
 						title={t('column.resizeHint')}
 						onpointerdown={(event) => startSizing(event, key)}
+						onpointermove={onSizing}
+						onpointerup={endSizing}
+						onpointercancel={endSizing}
+						ondblclick={() => fitToContents(key)}
 						onkeydown={(event) => sizeByKey(event, key)}
 					></button>
 				{/if}
