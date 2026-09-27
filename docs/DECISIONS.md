@@ -688,6 +688,12 @@ Keputusan pemilik proyek atas hasil pemeriksaan pertama cargo deny. Dua pengecua
   dalam sebuah folder di Windows, dan sebuah share bisa dipetakan ke dalam folder di kedua
   sistem. Dua folder di bawah satu huruf drive belum tentu pertanyaan yang sama, dan salah di
   sini berarti berkas orang hilang untuk selamanya.
+- **Tes yang boleh mundur dengan sopan tidak boleh mundur diam-diam di CI.** `cargo test`
+  menyembunyikan keluaran tes yang lolos, jadi tes yang benar-benar membuktikan trash dan tes
+  yang menemukan alasan untuk tidak melihat terlihat sama persis dari luar: sama-sama hijau.
+  Karena itu di CI langkah mundurnya jadi kegagalan — dan langsung menjawab pertanyaannya:
+  ubuntu membuktikannya, Windows-nya tidak punya Recycle Bin sama sekali. Yang kedua bukan bug,
+  melainkan tempat penolakan yang sungguhan, dan sekarang dipakai sebagai tesnya.
 - **Berkas yang dihapus tetap jadi lagu, ditandai hilang.** Bukan dihapus dari library: kalau
   ia dikembalikan dari Recycle Bin, ia kembali sebagai lagu yang sama beserta riwayatnya. Itu
   yang membuat "Restore" milik sistem benar-benar berarti mengembalikan.

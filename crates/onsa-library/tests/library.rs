@@ -937,13 +937,24 @@ fn a_deleted_file_waits_in_the_recycle_bin_and_comes_back() {
         // saying so is better than pretending otherwise. What matters is
         // that the file is still there: nothing was deleted for good.
         assert!(song.is_file(), "{} was deleted anyway", path.display());
-        // On CI it is not a note but the answer to the question CI is being
-        // asked, so it is said out loud rather than into a captured stream:
-        // a green run has to mean the trash really was proven there.
-        assert!(
-            std::env::var_os("CI").is_none(),
-            "this machine cannot prove the trash here: {why}"
-        );
+        // The Linux runner on CI has a freedesktop trash, so there a step
+        // aside is not a note but a failure: a green run has to mean the
+        // trash really was proven, not that the test found a reason not to
+        // look. The Windows runner is the other case, and an interesting
+        // one — its service account has no Recycle Bin for that folder, so
+        // this is a real place where Windows would have deleted the file
+        // outright and Onsa refused to. That refusal is what is checked.
+        if std::env::var_os("CI").is_some() {
+            assert!(
+                cfg!(windows),
+                "this machine cannot prove the trash here: {why}"
+            );
+            assert_eq!(
+                why,
+                &onsa_library::Refusal::NoTrashHere,
+                "a place with no Recycle Bin says so plainly"
+            );
+        }
         eprintln!("this machine cannot prove the trash here: {why}");
         drop(library);
         let _ = std::fs::remove_dir_all(&dir);

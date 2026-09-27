@@ -1425,13 +1425,26 @@ Di Windows, pada mesin ini:
 4. Berkasnya kembali di tempat semula, dan pengintai membuatnya `ok` lagi sebagai **lagu yang
    sama** (id yang sama, bukan lagu baru).
 
-Hal yang **belum bisa dibuktikan di mesin ini**: drive jaringan dan drive USB yang tidak punya
-Recycle Bin. Tidak ada drive seperti itu di sini. Yang ada adalah penjagaannya: Onsa menyelidiki
-tempatnya dulu dan menolak kalau penyelidikannya tidak ketemu di tempat sampah (lihat DECISIONS).
+Tidak ada drive jaringan atau drive USB tanpa Recycle Bin di mesin ini, jadi kasus penolakannya
+tidak bisa dibuat-buat di sini.
 
-Linux: tesnya ikut jalan di CI (`a_deleted_file_waits_in_the_recycle_bin_and_comes_back`), lewat
-protokol trash freedesktop — bukan lewat jendela Trash yang dilihat orang. Pembuktian di layar
-Linux menunggu mesin Linux.
+**Tapi CI memberikannya.** Waktu tes hapus dibuat menuntut pembuktian sungguhan di CI, runner
+**Windows**-nya gagal dengan kalimat ini:
+
+```
+this machine cannot prove the trash here: this place has no Recycle Bin or Trash
+```
+
+Akun layanan yang menjalankan runner itu tidak punya Recycle Bin untuk folder sementaranya. Itu
+persis keadaan yang ditakutkan: tempat di mana `IFileOperation` akan menghapus berkasnya untuk
+selamanya tanpa sepatah kata. **Onsa tidak menghapusnya** — ia menyelidiki dulu, tidak menemukan
+penyelidiknya di tempat sampah, dan menolak. Tempat semacam itu sekarang ikut dijaga tes: di CI
+Windows, yang diperiksa justru penolakannya (`Refusal::NoTrashHere`) dan berkasnya yang tetap utuh.
+
+**Linux terbukti di CI.** Dengan tuntutan yang sama menyala, runner ubuntu **lolos**: berkasnya
+masuk trash freedesktop, ditemukan di sana, dikembalikan, lalu dipindai ulang sebagai lagu yang
+sama beserta jumlah putarnya. Yang belum ada adalah pembuktian lewat jendela Trash yang dilihat
+orang di layar Linux; itu menunggu mesin Linux.
 
 ### Diuji di aplikasi yang berjalan
 
