@@ -29,6 +29,8 @@ let failure = $state<MessageKey | null>(null);
 
 let dspBusy = false;
 let dspAgain = false;
+let displayBusy = false;
+let displayAgain = false;
 
 export const settings = {
 	/** The settings, once loaded. */
@@ -108,14 +110,37 @@ export async function updateOutput(patch: Partial<OutputPrefs>): Promise<void> {
 	}
 }
 
-/** Changes what the interface shows beyond the theme. */
+/**
+ * Changes what the interface shows beyond the theme.
+ *
+ * Coalesced the same way the DSP is, and for the same reason: several of
+ * these can be asked for in the time one takes to be written. Pressing
+ * three panel toggles in a second, or scrolling two lists at once, leaves
+ * three writes in flight, and whichever one lands last decides what is
+ * stored — which is how a panel that is showing can be remembered as
+ * hidden. One write at a time, and the newest value always wins.
+ */
 export async function updateDisplay(patch: Partial<DisplayPrefs>): Promise<void> {
 	if (!current) return;
 	current.display = { ...current.display, ...patch };
+	await sendDisplay();
+}
+
+async function sendDisplay(): Promise<void> {
+	if (displayBusy) {
+		displayAgain = true;
+		return;
+	}
+	displayBusy = true;
 	try {
-		await setDisplay($state.snapshot(current.display));
+		do {
+			displayAgain = false;
+			if (current) await setDisplay($state.snapshot(current.display));
+		} while (displayAgain);
 		failure = null;
 	} catch (error) {
 		failure = failureKey(error);
+	} finally {
+		displayBusy = false;
 	}
 }
