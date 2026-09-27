@@ -664,3 +664,39 @@ Keputusan pemilik proyek atas hasil pemeriksaan pertama cargo deny. Dua pengecua
 - **Yang diubah hanya ujung dinginnya.** Ujung hangat kedua tema sudah berbeda rona sejak awal dan bergerak jauh; menggantinya berarti mengubah rupa tema tanpa alasan.
 - **Ujung dingin diambil dari keluarga warna temanya sendiri**: teal untuk kantor, teal cemara untuk musim dingin utara. Keduanya lebih gelap daripada warna dasarnya di latar terang, jadi kontrasnya naik, bukan turun.
 - **Mesin uji yang bisu adalah pengukuran yang batal.** Saat volume di profil uji ternyata −90 dB, karakter suara berhenti diperbarui dan warna lama tertinggal di layar. Sejak itu tiap pembacaan membawa bukti bahwa ada bunyi yang dianalisis; tanpa itu, sebuah layar diam gampang terbaca sebagai hasil.
+
+## 2026-09-27 · M13: janji "hapus tidak pernah permanen" dijaga Onsa sendiri
+
+- **Crate `trash` dipakai (MIT), atas izin pemilik proyek.** Ia satu-satunya yang berbicara
+  dengan kedua protokol yang benar: `IFileOperation` di Windows dan trash freedesktop di Linux.
+  Memindahkan berkas ke suatu folder sendiri bukan "masuk Recycle Bin"; yang begitu tidak muncul
+  di jendela Recycle Bin dan tidak punya Restore.
+- **Tapi crate itu tidak bisa dipegang janjinya.** Di Windows ia memanggil `DeleteItem` dengan
+  `FOF_NO_UI | FOF_ALLOWUNDO | FOF_WANTNUKEWARNING`. `FOF_NO_UI` membawa `FOF_NOCONFIRMATION`,
+  yang menjawab "Yes to All" untuk setiap kotak dialog — termasuk peringatan "berkas ini tidak
+  bisa masuk Recycle Bin". Di drive jaringan dan sebagian drive USB, panggilannya berhasil dan
+  berkasnya hilang untuk selamanya, tanpa sepatah kata pun. Di Linux, mount lain bisa tidak punya
+  `.Trash-uid` sama sekali.
+- **Karena itu Onsa menyelidiki dulu, dengan berkas miliknya sendiri.** Sebelum penghapusan
+  pertama di sebuah tempat: tulis `.onsa-trash-check` di sana, buang ke tempat sampah, lalu cari
+  di tempat sampah. Ketemu — tempatnya menepati janji, penyelidiknya dimusnahkan supaya tidak
+  jadi sampah di Recycle Bin orang, dan penghapusan sungguhan boleh jalan. Tidak ketemu — tidak
+  ada satu berkas pun milik pendengar yang dihapus, dan layar mengatakan alasannya.
+  **Pertanyaan yang tidak bisa dijawab dihitung sebagai penolakan**, bukan sebagai izin.
+- **Jawabannya diingat per folder, bukan per huruf drive.** Menggabungkannya per drive akan
+  lebih murah — satu penyelidikan untuk seluruh `C:` — tetapi sebuah volume bisa dipasang ke
+  dalam sebuah folder di Windows, dan sebuah share bisa dipetakan ke dalam folder di kedua
+  sistem. Dua folder di bawah satu huruf drive belum tentu pertanyaan yang sama, dan salah di
+  sini berarti berkas orang hilang untuk selamanya.
+- **Berkas yang dihapus tetap jadi lagu, ditandai hilang.** Bukan dihapus dari library: kalau
+  ia dikembalikan dari Recycle Bin, ia kembali sebagai lagu yang sama beserta riwayatnya. Itu
+  yang membuat "Restore" milik sistem benar-benar berarti mengembalikan.
+- **Pemindahan berkas memakai mesin `RenamePlan` yang sudah ada, bukan mesin baru.** SPEC §15
+  memintanya "persis seperti penulisan tag": pratinjau, ringkasan, riwayat, dan pembatalan sudah
+  ada di sana; yang dibutuhkan hanya rencana yang mempertahankan nama berkasnya.
+- **`claim_moved` mempercayai disk, bukan database.** Sistem operasi boleh melaporkan
+  kedatangan sebuah berkas tanpa pernah melaporkan kepergiannya — Windows menyatukan kedua sisi
+  rename, dan di mesin sibuk itu benar-benar terjadi. Jadi yang ditanyakan bukan "apakah baris
+  ini sudah ditandai hilang", melainkan "apakah berkas lamanya masih ada di sana". Dua berkas
+  yang sama-sama cocok dibiarkan, tidak ditebak: riwayat dengar orang bukan bahan tebakan.
+

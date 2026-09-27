@@ -1356,3 +1356,108 @@ pemilik proyek untuk dinilai.
 
 `cargo fmt --check`, `clippy -D warnings`, `cargo test --workspace`, `npm run check`, tes UI,
 dan `cargo deny check licenses` semuanya bersih.
+
+## 2026-09-27 · M13: pengelolaan folder sumber
+
+Folder library bisa dilepas, diikuti ke tempat barunya, dan dipersempit; berkas di disk bisa
+dipindah dan dihapus dari dalam Onsa. Hapus berarti Recycle Bin atau Trash, tidak pernah permanen.
+
+### Di sisi library
+
+- **Migrasi V6**: tabel `folder_exclusions`, subfolder yang ditinggalkan pemindaian.
+- **`folders.rs`** (baru): `move_folder`, `exclude`, `include`, `exclusions`. Tidak satu pun dari
+  ketiganya menyentuh berkas di disk. `move_folder` menulis ulang jalur folder, jalur tiap lagu,
+  dan jalur kecualian di bawahnya lewat awalannya, jadi **id lagunya tidak berubah** — dan
+  bersamanya riwayat putar, keanggotaan playlist, serta editan yang belum ditulis ke berkas,
+  yang semuanya menggantung pada `tracks.id` dan bukan pada jalur.
+- **Pemindai dan pengintai sama-sama melewati subfolder yang dikecualikan.** Folder yang
+  dikecualikan dipangkas dari penelusuran, jadi tidak pernah dibaca sama sekali; dan
+  `folder_for` menjawab "bukan milik folder mana pun" untuk jalur di dalamnya, jadi peristiwa
+  dari pengintai pun diabaikan.
+- **`delete.rs`** (baru): menghapus berkas ke Recycle Bin/Trash, dengan janji yang dijaga Onsa
+  sendiri — lihat DECISIONS hari ini.
+- **`move_plan`**: memindahkan berkas ke satu folder dengan nama yang sudah ada, memakai
+  `RenamePlan`/`apply_rename` yang sudah ada, jadi pratinjau, ringkasan, riwayat, dan pembatalan
+  adalah mesin yang sama dengan penulisan tag (SPEC §8).
+
+### Bug yang ditemukan sambil jalan
+
+- **Pemindahan yang terbelah dua batch kehilangan identitas lagunya.** `pair_moves` hanya
+  memasangkan "hilang" dengan "datang" **di dalam satu batch**. Di mesin sibuk, dua sisi satu
+  rename bisa jatuh di dua sisi jendela debounce; kalau itu terjadi, lagunya jadi lagu baru dan
+  jumlah putarnya tertinggal di baris lama. Sekarang `claim_moved` mengurusnya.
+- **Lebih jauh lagi: kepergiannya bisa tidak pernah dilaporkan.** Pada satu dari lima puluh
+  jalan di bawah beban, batch yang tertangkap hanya `Changed(pindah.wav)` — Windows menyatukan
+  kedua sisi rename jadi satu pemberitahuan. Karena itu `claim_moved` tidak lagi menunggu baris
+  itu ditandai hilang: yang menentukan adalah **berkas lamanya benar-benar tidak ada lagi**,
+  dengan mtime dan ukuran yang sama, dan tepat satu calon. Disk yang punya kata terakhir, bukan
+  apa yang sempat diberitahukan ke database.
+- **Baris yang dipindah Onsa sendiri tidak lagi sempat terbaca "hilang".** `apply_rename` dan
+  pembatalannya sekarang ikut mengembalikan status: Onsa yang memindahkan berkasnya, jadi Onsa
+  tahu berkas itu ada di tempat yang baru ditulisnya.
+
+### Tes pengintai dibuat deterministik, lalu dibuktikan
+
+Tes `the_watcher_follows_added_moved_and_removed_files` dulu menunggu dengan jeda tetap.
+Sekarang:
+
+- setiap penantian punya batas waktu dan menunggu **peristiwa yang diharapkan**, bukan lamanya;
+- sebelum apa pun diuji, tesnya membuktikan pengintainya hidup dengan berkas penyelidik
+  (`watcher_is_awake`) — pendaftaran folder dan mulai mengalirnya peristiwa bukan momen yang sama;
+- langkah pemindahan menunggu **dua-duanya**: statusnya `ok` **dan** id lagunya masih id yang sama.
+
+**50 jalan berturut-turut dengan 24 proses pembeban di mesin ini: 0 gagal.** Sebelum perbaikan
+kedua, susunan yang sama gagal 1 dari 50.
+
+Tiga tes deterministik baru menjaga hal yang sama tanpa bergantung pada mesin yang sibuk:
+`a_move_split_across_two_batches_is_still_a_move`,
+`an_arrival_with_no_departure_is_still_a_move`,
+`two_files_that_match_each_other_are_left_where_they_are`.
+
+### Hapus berkas: dibuktikan di Recycle Bin yang sungguhan
+
+Di Windows, pada mesin ini:
+
+1. Onsa menghapus satu berkas lewat menu barisnya.
+2. Recycle Bin — ditanyakan lewat `Shell.Application`, yaitu isi jendela Recycle Bin yang sama
+   yang dilihat orang — memuat berkas itu, dengan folder asal yang benar.
+3. Berkasnya dikembalikan lewat **butir menu "R&estore" milik sistem**, bukan lewat Onsa.
+4. Berkasnya kembali di tempat semula, dan pengintai membuatnya `ok` lagi sebagai **lagu yang
+   sama** (id yang sama, bukan lagu baru).
+
+Hal yang **belum bisa dibuktikan di mesin ini**: drive jaringan dan drive USB yang tidak punya
+Recycle Bin. Tidak ada drive seperti itu di sini. Yang ada adalah penjagaannya: Onsa menyelidiki
+tempatnya dulu dan menolak kalau penyelidikannya tidak ketemu di tempat sampah (lihat DECISIONS).
+
+Linux: tesnya ikut jalan di CI (`a_deleted_file_waits_in_the_recycle_bin_and_comes_back`), lewat
+protokol trash freedesktop — bukan lewat jendela Trash yang dilihat orang. Pembuktian di layar
+Linux menunggu mesin Linux.
+
+### Diuji di aplikasi yang berjalan
+
+Seluruh alurnya dijalankan pada build rilis lewat port debug WebView2, memakai perintah Tauri
+yang sama dengan yang dipakai tombolnya:
+
+| yang diuji | hasilnya |
+|---|---|
+| subfolder dikecualikan | 2 lagu keluar, berkasnya tetap di disk, dan **tetap di luar sesudah pindai ulang** |
+| dilihat lagi | kelima lagunya kembali |
+| folder pindah tempat | 5 lagu ikut pindah; id 1 tetap id 1, statusnya `ok`, judul editan "Judul yang ditahan" tetap, dan lagunya masih di playlist |
+| hapus berkas | `files_delete_allowed` menjawab `ok`, berkasnya hilang dari disk, lagunya ditandai hilang, dan berkasnya ada di Recycle Bin |
+| berhenti memakai folder | library kosong, ketiga berkas masih utuh di disk |
+| pindahkan berkas | rencananya ditampilkan dulu (2 langkah, folder tujuan masih kosong), lalu dijalankan |
+| pembatalan lewat Riwayat | `{"restored":2}`; kedua berkas kembali ke folder asalnya, statusnya `ok` |
+
+### Antarmuka
+
+- **Pengaturan → Library**: tiap folder punya "Folder ini pindah…" dan "Berhenti memakai"
+  (yang kedua lewat konfirmasi), ditambah bagian baru "Subfolder yang tidak dipindai" dengan
+  "Kecualikan subfolder…" dan "Pindai lagi". Catatan lama "folder belum bisa dihapus" dihapus.
+- **Menu baris di daftar lagu**: "Hapus berkasnya…", yang menanyakan tempatnya dulu sebelum ada
+  tombol yang bisa ditekan, dan mengatakan ke mana berkasnya pergi.
+- **Rapikan** mendapat pekerjaan keenam, "Pindahkan berkas", persis di samping "Ganti nama
+  berpola" dan memakai ringkasan serta Riwayat yang sama.
+- Semua teks lewat kamus (`id`, `en`), dan keempat kendali baru punya kalimatnya di Bantuan.
+
+`cargo fmt --check`, `clippy -D warnings`, `cargo test --workspace`, `npm run check`, tes UI,
+dan `cargo deny check licenses` semuanya bersih.
