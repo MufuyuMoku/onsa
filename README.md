@@ -54,6 +54,14 @@ npx --prefix ui tauri dev                # jalankan
 npx --prefix ui tauri build --no-bundle  # satu berkas di target/release/
 ```
 
+Sebelum mendorong perubahan, nyalakan hook `pre-push` sekali:
+
+```sh
+git config core.hooksPath .githooks
+```
+
+Ia menjalankan `cargo fmt --check` dan `cargo clippy --workspace --all-targets -- -D warnings`, dan menggagalkan push bila salah satunya gagal — dua pemeriksaan yang sama yang akan menolak di CI, tapi ditemukan selagi masih murah diperbaiki. Tesnya sengaja tidak ikut: push tidak boleh menunggu suite penuh yang sebentar lagi dijalankan CI. Untuk push yang memang bermaksud melewatinya, pakai `git push --no-verify`.
+
 Berkas hasilnya berjalan tanpa dipasang dan tanpa toolchain apa pun di mesin itu. `ONSA_LOG=debug` menaikkan tingkat log. Mesin audionya juga bisa dijalankan tanpa antarmuka lewat `cargo run -p onsa-cli -- --help`.
 
 ## Cara kerja proyek ini

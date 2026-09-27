@@ -1,0 +1,24 @@
+#!/bin/sh
+# Refuses a push that CI would refuse anyway, while it is still cheap to fix.
+#
+# Only the two checks that are quick and that never depend on the machine
+# are here: formatting and lints. The tests are not, because a push should
+# not wait minutes on a green suite that CI is about to run in full.
+#
+# Enable it with:
+#     git config core.hooksPath .githooks
+# and skip it, for the rare push that means to, with `git push --no-verify`.
+set -e
+
+if ! command -v cargo >/dev/null 2>&1; then
+	echo "pre-push: cargo is not on PATH, so nothing was checked" >&2
+	exit 1
+fi
+
+echo "pre-push: cargo fmt --check"
+cargo fmt --all --check
+
+echo "pre-push: cargo clippy --workspace --all-targets -- -D warnings"
+cargo clippy --workspace --all-targets -- -D warnings
+
+echo "pre-push: ok"
