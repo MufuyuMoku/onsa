@@ -7,6 +7,7 @@
 -->
 <script lang="ts">
 	import {
+		pickAnyFolder,
 		programOpenPage,
 		tidyAuto,
 		type EditBatch,
@@ -32,9 +33,11 @@
 	} from '$lib/matching.svelte';
 	import {
 		applyEdits,
+		applyMove,
 		applyRename,
 		history,
 		loadTidy,
+		planMove,
 		planRename,
 		previewEdits,
 		previewWrites,
@@ -48,8 +51,8 @@
 	import ScopeBar from './ScopeBar.svelte';
 	import TidySummaryPanel from './TidySummary.svelte';
 
-	/** Which of the five jobs is open. */
-	type Job = 'edit' | 'write' | 'rename' | 'match' | 'auto';
+	/** Which of the six jobs is open. */
+	type Job = 'edit' | 'write' | 'rename' | 'move' | 'match' | 'auto';
 	let job = $state<Job>('edit');
 
 	/** What the library would tidy about itself, once it has been asked. */
@@ -92,6 +95,8 @@
 
 	let pattern = $state('{album_artist}/{album}/{track:02} {title}');
 	let root = $state('');
+	/** The folder a plain move would put the files into (SPEC section 15). */
+	let moveInto = $state('');
 
 	let summary = $state<TidySummary | null>(null);
 	let plan = $state<RenamePlan | null>(null);
@@ -164,6 +169,10 @@
 			const fields = await previewEdits(chosenChanges());
 			const pictures = await previewCovers();
 			summary = both(fields, pictures);
+		} else if (job === 'move') {
+			const made = await planMove(intoFolder, ids);
+			plan = made;
+			summary = made?.summary ?? null;
 		} else {
 			const made = await planRename(root.trim() || scope.value?.folder || '', pattern, ids);
 			plan = made;
@@ -211,6 +220,8 @@
 			report = await applyEdits(t('tidy.noteEdit', { field: t(`field.${field}` as never) }), changes());
 		} else if (job === 'write') {
 			report = await writeToFiles(t('tidy.noteWrite'), ids);
+		} else if (job === 'move') {
+			report = await applyMove(t('tidy.noteMove'), intoFolder, ids);
 		} else {
 			report = await applyRename(
 				t('tidy.noteRename'),
@@ -227,8 +238,21 @@
 		return new Date(stamp).toLocaleString();
 	}
 
-	/** The folder the rename would build under, as it is actually used. */
-	const intoFolder = $derived(root.trim() || scope.value?.folder || '');
+	/** The folder the run would build or move under, as it is actually used. */
+	const intoFolder = $derived(
+		(job === 'move' ? moveInto.trim() : root.trim()) || scope.value?.folder || ''
+	);
+
+	/** Asks for the folder a move would put the files into. */
+	async function chooseMoveFolder(): Promise<void> {
+		try {
+			const picked = await pickAnyFolder(t('tidy.moveDialog'));
+			if (picked) moveInto = picked;
+		} catch {
+			// A dialog that would not open leaves the box as it was, and the
+			// folder can still be typed.
+		}
+	}
 </script>
 
 <div class="tidy">
@@ -240,7 +264,7 @@
 	<ScopeBar />
 
 	<div class="jobs">
-		{#each [['edit', 'tidy.jobEdit'], ['write', 'tidy.jobWrite'], ['rename', 'tidy.jobRename'], ['auto', 'tidy.jobAuto'], ['match', 'tidy.jobMatch']] as [key, label] (key)}
+		{#each [['edit', 'tidy.jobEdit'], ['write', 'tidy.jobWrite'], ['rename', 'tidy.jobRename'], ['move', 'tidy.jobMove'], ['auto', 'tidy.jobAuto'], ['match', 'tidy.jobMatch']] as [key, label] (key)}
 			<button
 				type="button"
 				class="chip"
@@ -352,6 +376,22 @@
 			{/if}
 
 			<MatchList root={scope.value?.folder ?? ''} />
+		{:else if job === 'move'}
+			<p class="muted what">{t('tidy.moveWhat')}</p>
+			<div class="row">
+				<label class="inline grow">
+					<span class="label">{t('tidy.moveInto')}</span>
+					<input
+						class="field grow numeric"
+						type="text"
+						bind:value={moveInto}
+						placeholder={scope.value?.folder ?? ''}
+					/>
+				</label>
+				<button type="button" class="btn" onclick={chooseMoveFolder}>
+					{t('tidy.moveChoose')}
+				</button>
+			</div>
 		{:else}
 			<p class="muted what">{t('tidy.renameWhat')}</p>
 			<div class="row">

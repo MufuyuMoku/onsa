@@ -292,8 +292,22 @@ const id = {
 	'librarySettings.folders': 'Folder library',
 	'librarySettings.add': 'Tambah folder…',
 	'librarySettings.rescan': 'Scan ulang',
-	'librarySettings.cannotRemove':
-		'Folder belum bisa dihapus dari sini di versi ini. Folder yang berkasnya tidak ada lagi ditandai hilang saat scan ulang.',
+	'librarySettings.stopUsing': 'Berhenti memakai',
+	'librarySettings.stopTitle': 'Berhenti memakai folder ini?',
+	'librarySettings.stopWhat':
+		'Lagu dari {folder} keluar dari library. Berkasnya di disk tidak disentuh sama sekali.',
+	'librarySettings.stopConfirm': 'Berhenti memakai',
+	'librarySettings.moved': 'Folder ini pindah…',
+	'librarySettings.movedDialog': 'Di mana folder ini sekarang?',
+	'librarySettings.movedWhat':
+		'Kalau foldernya kamu pindah atau huruf drive-nya berubah, pakai "Folder ini pindah…". Jumlah putar, playlist, dan editan yang belum ditulis ikut pindah bersama lagunya.',
+	'librarySettings.excluded': 'Subfolder yang tidak dipindai',
+	'librarySettings.excludedWhat':
+		'Untuk folder sampel, berkas kerja, atau apa pun yang bukan musik yang mau didengarkan. Berkasnya tetap ada di disk; Onsa hanya berhenti melihat ke sana.',
+	'librarySettings.excludedNone': 'Belum ada.',
+	'librarySettings.excludeAdd': 'Kecualikan subfolder…',
+	'librarySettings.excludeDialog': 'Subfolder mana yang tidak usah dipindai?',
+	'librarySettings.lookAgain': 'Pindai lagi',
 
 	'about.version': 'Versi {version}',
 	'about.logs': 'Log',
@@ -501,6 +515,12 @@ const id = {
 	'tidy.jobEdit': 'Edit massal',
 	'tidy.jobWrite': 'Tulis ke file',
 	'tidy.jobRename': 'Ganti nama berpola',
+	'tidy.jobMove': 'Pindahkan berkas',
+	'tidy.moveWhat':
+		'Memindahkan berkasnya ke satu folder, dengan nama yang sudah ada. Selalu ditampilkan dulu, dan bisa dibatalkan lewat Riwayat.',
+	'tidy.moveInto': 'Pindahkan ke',
+	'tidy.moveChoose': 'Pilih folder…',
+	'tidy.moveDialog': 'Pindahkan berkasnya ke folder mana?',
 	'tidy.editWhat': 'Menyetel satu field untuk semua lagu di cakupan. Ini baru tersimpan di Onsa, belum menyentuh file.',
 	'tidy.writeWhat': 'Menulis editan yang masih tersimpan di Onsa ke dalam file itu sendiri.',
 	'tidy.renameWhat': 'Menyusun ulang nama dan folder file menurut pola. Selalu ditampilkan dulu sebelum dijalankan.',
@@ -531,6 +551,7 @@ const id = {
 	'tidy.noteEdit': 'Edit massal: {field}',
 	'tidy.noteWrite': 'Tulis ke file',
 	'tidy.noteRename': 'Ganti nama berpola',
+	'tidy.noteMove': 'Pindahkan berkas',
 
 	'tidy.jobMatch': 'Cari data online',
 	'tidy.matchWhat': 'Mencari tahu lagu apa ini lewat AcoustID dan MusicBrainz. Hasilnya usulan, bukan perubahan: yang kamu centang tetap lewat ringkasan, tombol terapkan, dan riwayat yang bisa dibatalkan.',
@@ -834,6 +855,8 @@ const id = {
 		'Menulis keterangan yang tersimpan di dalam Onsa ke dalam berkas lagunya sendiri. Inilah satu-satunya tombol di halaman ini yang mengubah isi berkasmu.',
 	'help.says.tidyRename':
 		'Menyusun ulang nama berkas dan folder menurut pola yang kamu tulis — misalnya "artis/album/nomor judul". Berkasnya benar-benar diganti nama dan dipindah di komputermu, selalu setelah kamu melihat ringkasannya dulu.',
+	'help.says.tidyMove':
+		'Memindahkan berkas lagu yang terpilih ke satu folder, dengan nama berkas yang sudah ada. Berkasnya benar-benar dipindah di komputermu, selalu setelah kamu melihat ringkasannya dulu, dan pemindahannya bisa dibatalkan lewat daftar Riwayat di bawah.',
 	'help.says.tidyAuto':
 		'Memperbaiki hal-hal kecil tanpa internet: spasi berlebih, huruf besar yang kacau, nomor trek yang ditulis "3/12". Yang diusulkannya tetap lewat ringkasan sebelum dijalankan.',
 	'help.says.tidyMatch':
@@ -846,6 +869,10 @@ const id = {
 		'Pola nama berkas untuk "Ganti nama berpola". Bagian dalam kurung kurawal diganti isi lagunya, misalnya {artist} dan {title}; garis miring berarti folder baru.',
 	'help.says.tidyRoot':
 		'Folder tempat hasil penggantian nama diletakkan. Kosong berarti tetap di tempatnya sekarang.',
+	'help.says.tidyMoveInto':
+		'Folder tujuan pemindahan. Kosong berarti folder yang tertulis di baris jangkauan di atas.',
+	'help.says.tidyMoveChoose':
+		'Membuka jendela pilih folder, supaya tujuannya tidak perlu diketik.',
 	'help.says.tidyLook':
 		'Menghitung apa yang akan terjadi dan menampilkannya — berapa lagu terkena, berapa berkas ditulis, apa yang dilewati dan kenapa — tanpa mengubah apa pun.',
 	'help.says.tidyApply':
@@ -938,6 +965,16 @@ const id = {
 	'help.name.folderList': 'Daftar folder',
 	'help.says.folderList':
 		'Folder yang sudah kamu tambahkan, dengan jumlah lagu di masing-masing. Folder yang tidak ada di tempatnya lagi — drive-nya dicabut, atau foldernya dipindah lewat program lain — ditandai di daftar ini beserta keterangannya. Onsa tidak menghapus apa pun karena itu.',
+	'help.says.folderMoved':
+		'Untuk folder yang pindah tempat atau huruf drive-nya berubah. Kamu tunjukkan tempatnya sekarang, dan lagunya dikenali sebagai lagu yang sama: jumlah putar, playlist, dan editan yang belum ditulis ke berkas ikut pindah. Tidak ada berkas yang disentuh.',
+	'help.says.folderStop':
+		'Mengeluarkan folder itu beserta lagunya dari library. Berkasnya di disk tidak disentuh sama sekali; kamu bisa menambahkannya lagi kapan saja.',
+	'help.says.folderExclude':
+		'Menyuruh Onsa berhenti melihat ke satu subfolder — folder sampel, berkas kerja, apa pun yang bukan musik yang mau didengarkan. Lagunya keluar dari library, berkasnya tetap di disk.',
+	'help.says.folderInclude':
+		'Melihat ke subfolder itu lagi. Isinya masuk kembali pada pemindaian berikutnya.',
+	'help.says.deleteFile':
+		'Menghapus berkas lagu itu dari disk. Berkasnya masuk ke Recycle Bin (Windows) atau Trash (Linux), tidak pernah dihapus permanen — dan kalau tempatnya tidak punya Recycle Bin, Onsa menolak dan mengatakan alasannya. Untuk mengembalikannya, pakai "Restore" milik sistem.',
 	'help.says.metaOnline':
 		'Saklar utama untuk semua pertanyaan ke internet di halaman Rapikan. Selama mati, Onsa tidak mengirim apa pun ke mana pun.',
 	'help.says.metaKey':
@@ -1110,7 +1147,24 @@ const id = {
 		'Onsa tidak menghapus apa pun karena ini. Lagu dari folder itu tetap ada di library; yang berkasnya tidak bisa dibuka ditandai hilang. Colokkan lagi drive-nya lalu tekan "Scan ulang", atau tambahkan tempat barunya kalau foldernya kamu pindah.',
 
 	'lyrics.unreachable':
-		'Layanan liriknya tidak bisa dihubungi. Lagunya mungkin punya lirik; coba lagi nanti.'
+		'Layanan liriknya tidak bisa dihubungi. Lagunya mungkin punya lirik; coba lagi nanti.',
+
+	'delete.open': 'Hapus berkasnya…',
+	'delete.title': 'Hapus berkas',
+	'delete.checking': 'Memastikan dulu tempatnya punya Recycle Bin…',
+	'delete.what': 'Hapus {name}?',
+	'delete.whereItGoes':
+		'Berkasnya masuk ke Recycle Bin (Windows) atau Trash (Linux), tidak dihapus permanen. Lagunya tetap ada di library dan ditandai hilang.',
+	'delete.confirm': 'Hapus',
+	'delete.done': '{name} sudah ada di Recycle Bin atau Trash.',
+	'delete.restoreHow':
+		'Untuk mengembalikannya, buka Recycle Bin atau Trash lalu pakai "Restore" milik sistem.',
+	'delete.noTrash':
+		'Tempat ini tidak punya Recycle Bin atau Trash, jadi menghapus di sini berarti permanen. Onsa tidak melakukannya.',
+	'delete.cannotTell':
+		'Onsa tidak bisa memastikan menghapus di sini tidak permanen, jadi berkasnya dibiarkan.',
+	'delete.notThere': 'Berkasnya sudah tidak ada di sana.',
+	'delete.neverForGood': 'Onsa tidak pernah menghapus permanen.'
 } as const;
 
 export type MessageKey = keyof typeof id;
@@ -1397,8 +1451,22 @@ const en: Record<MessageKey, string> = {
 	'librarySettings.folders': 'Library folders',
 	'librarySettings.add': 'Add folder…',
 	'librarySettings.rescan': 'Rescan',
-	'librarySettings.cannotRemove':
-		'A folder cannot be removed here in this version. A folder whose files are gone is marked missing on the next rescan.',
+	'librarySettings.stopUsing': 'Stop using',
+	'librarySettings.stopTitle': 'Stop using this folder?',
+	'librarySettings.stopWhat':
+		'The songs from {folder} leave the library. Nothing on disk is touched.',
+	'librarySettings.stopConfirm': 'Stop using',
+	'librarySettings.moved': 'This folder moved…',
+	'librarySettings.movedDialog': 'Where is this folder now?',
+	'librarySettings.movedWhat':
+		'If you moved the folder, or its drive letter changed, use "This folder moved…". Play counts, playlists and edits not yet written to the files all move with the songs.',
+	'librarySettings.excluded': 'Subfolders left out of scanning',
+	'librarySettings.excludedWhat':
+		'For sample folders, working files, or anything that is not music you want to listen to. The files stay on disk; Onsa simply stops looking there.',
+	'librarySettings.excludedNone': 'None yet.',
+	'librarySettings.excludeAdd': 'Leave a subfolder out…',
+	'librarySettings.excludeDialog': 'Which subfolder should be left out of scanning?',
+	'librarySettings.lookAgain': 'Look here again',
 
 	'about.version': 'Version {version}',
 	'about.logs': 'Logs',
@@ -1606,6 +1674,12 @@ const en: Record<MessageKey, string> = {
 	'tidy.jobEdit': 'Edit in bulk',
 	'tidy.jobWrite': 'Write to the files',
 	'tidy.jobRename': 'Rename by pattern',
+	'tidy.jobMove': 'Move files',
+	'tidy.moveWhat':
+		'Moves the files into one folder, keeping the names they have. Always listed first, and can be taken back from the history.',
+	'tidy.moveInto': 'Move into',
+	'tidy.moveChoose': 'Choose folder…',
+	'tidy.moveDialog': 'Which folder should the files move into?',
 	'tidy.editWhat': 'Sets one field on every track in scope. This stays inside Onsa; the files are not touched.',
 	'tidy.writeWhat': 'Writes the edits that are still only in Onsa into the files themselves.',
 	'tidy.renameWhat': 'Lays the files out by a pattern. Always listed before anything moves.',
@@ -1636,6 +1710,7 @@ const en: Record<MessageKey, string> = {
 	'tidy.noteEdit': 'Bulk edit: {field}',
 	'tidy.noteWrite': 'Write to the files',
 	'tidy.noteRename': 'Rename by pattern',
+	'tidy.noteMove': 'Move files',
 
 	'tidy.jobMatch': 'Look it up online',
 	'tidy.matchWhat': 'Finds out what these tracks are, through AcoustID and MusicBrainz. What comes back is a suggestion, not a change: whatever you tick still goes through the summary, the apply button, and a run you can take back.',
@@ -1938,6 +2013,8 @@ const en: Record<MessageKey, string> = {
 		'Writes the details kept inside Onsa into the song files themselves. This is the one button here that changes what is inside your files.',
 	'help.says.tidyRename':
 		'Rebuilds file and folder names from a pattern you write — "artist/album/number title", say. The files really are renamed and moved on your computer, always after you have seen the summary first.',
+	'help.says.tidyMove':
+		'Moves the chosen song files into one folder, keeping the file names they have. The files really are moved on your computer, always after you have seen the summary first, and the move can be taken back from the history below.',
 	'help.says.tidyAuto':
 		'Fixes small things without the internet: extra spaces, capitals gone wrong, track numbers written "3/12". What it suggests still goes through the summary before it runs.',
 	'help.says.tidyMatch':
@@ -1950,6 +2027,10 @@ const en: Record<MessageKey, string> = {
 		"The name pattern for \"Rename by pattern\". Anything in curly brackets is replaced by the song's own details, such as {artist} and {title}; a slash means a folder.",
 	'help.says.tidyRoot':
 		'The folder the renamed files are put in. Left empty, they stay where they are.',
+	'help.says.tidyMoveInto':
+		'The folder the files move into. Left empty, it is the folder named in the range line at the top.',
+	'help.says.tidyMoveChoose':
+		'Opens a folder chooser, so the destination need not be typed.',
 	'help.says.tidyLook':
 		'Works out what would happen and shows it — how many songs are touched, how many files written, what is skipped and why — without changing anything.',
 	'help.says.tidyApply':
@@ -2041,6 +2122,16 @@ const en: Record<MessageKey, string> = {
 	'help.name.folderList': 'The list of folders',
 	'help.says.folderList':
 		'The folders you have added, with how many songs are in each. A folder that is no longer where it was — an unplugged drive, or one moved with another program — is marked in this list, with a word about what it means. Onsa deletes nothing over it.',
+	'help.says.folderMoved':
+		'For a folder that moved, or whose drive letter changed. You show Onsa where it is now, and the songs are recognised as the same songs: play counts, playlists and edits not yet written to the files all come along. No file is touched.',
+	'help.says.folderStop':
+		'Takes that folder, and the songs in it, out of the library. Nothing on disk is touched; you can add it again whenever you like.',
+	'help.says.folderExclude':
+		'Tells Onsa to stop looking in one subfolder — a sample folder, working files, anything that is not music you want to listen to. Its songs leave the library and its files stay on disk.',
+	'help.says.folderInclude':
+		'Looks in that subfolder again. What is in it comes back on the next scan.',
+	'help.says.deleteFile':
+		'Deletes that song’s file from the disk. It goes to the Recycle Bin (Windows) or the Trash (Linux) and is never deleted for good — and where a place has no Recycle Bin, Onsa refuses and says so. To bring it back, use the system’s own "Restore".',
 	'help.says.metaOnline':
 		'The main switch for every question to the internet on the Tidy up page. While it is off, Onsa sends nothing anywhere.',
 	'help.says.metaKey':
@@ -2207,7 +2298,24 @@ const en: Record<MessageKey, string> = {
 		'Onsa deletes nothing over this. The songs from that folder stay in the library; the ones whose files cannot be opened are marked missing. Plug the drive back in and press "Rescan", or add the new place if you moved the folder.',
 
 	'lyrics.unreachable':
-		'The lyrics service could not be reached. The song may well have words; try again later.'
+		'The lyrics service could not be reached. The song may well have words; try again later.',
+
+	'delete.open': 'Delete the file…',
+	'delete.title': 'Delete file',
+	'delete.checking': 'Making sure this place has a Recycle Bin first…',
+	'delete.what': 'Delete {name}?',
+	'delete.whereItGoes':
+		'The file goes to the Recycle Bin (Windows) or the Trash (Linux); it is not deleted for good. The song stays in the library, marked missing.',
+	'delete.confirm': 'Delete',
+	'delete.done': '{name} is in the Recycle Bin or Trash now.',
+	'delete.restoreHow':
+		'To bring it back, open the Recycle Bin or Trash and use its own "Restore" command.',
+	'delete.noTrash':
+		'This place has no Recycle Bin or Trash, so deleting here would be permanent. Onsa will not do that.',
+	'delete.cannotTell':
+		'Onsa cannot make sure that deleting here is not permanent, so the file was left alone.',
+	'delete.notThere': 'There is no file there any more.',
+	'delete.neverForGood': 'Onsa never deletes for good.'
 };
 
 export const dictionaries: Record<Locale, Record<MessageKey, string>> = { id, en };

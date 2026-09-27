@@ -12,6 +12,8 @@ import {
 	editUndo,
 	failureKey,
 	tidyApplyEdits,
+	tidyMoveApply,
+	tidyMovePlan,
 	tidyPickFolder,
 	tidyPreviewEdits,
 	tidyPreviewWrites,
@@ -135,6 +137,19 @@ export async function applyRename(
 	ids: number[]
 ): Promise<TidyReport | null> {
 	const report = await guard(() => tidyRenameApply(note, root, pattern, ids));
+	if (report) await refresh();
+	return report;
+}
+
+export const planMove = (root: string, ids: number[]): Promise<RenamePlan | null> =>
+	guard(() => tidyMovePlan(root, ids));
+
+export async function applyMove(
+	note: string,
+	root: string,
+	ids: number[]
+): Promise<TidyReport | null> {
+	const report = await guard(() => tidyMoveApply(note, root, ids));
 	if (report) await refresh();
 	return report;
 }

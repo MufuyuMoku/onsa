@@ -46,7 +46,8 @@ const trackList: HelpControl[] = [
 	control('help.name.resize', 'help.says.resize'),
 	control('column.choose', 'help.says.chooseColumns'),
 	control('help.name.row', 'help.says.row'),
-	control('help.name.rowMenu', 'help.says.rowMenu')
+	control('help.name.rowMenu', 'help.says.rowMenu'),
+	control('delete.open', 'help.says.deleteFile')
 ];
 
 export const TOPICS: HelpTopic[] = [
@@ -185,6 +186,7 @@ export const TOPICS: HelpTopic[] = [
 			control('tidy.jobEdit', 'help.says.tidyEdit'),
 			control('tidy.jobWrite', 'help.says.tidyWrite'),
 			control('tidy.jobRename', 'help.says.tidyRename'),
+			control('tidy.jobMove', 'help.says.tidyMove'),
 			control('tidy.jobAuto', 'help.says.tidyAuto'),
 			control('tidy.jobMatch', 'help.says.tidyMatch'),
 			control('programs.openPage', 'help.says.openPage'),
@@ -192,6 +194,8 @@ export const TOPICS: HelpTopic[] = [
 			control('tidy.valueEmpty', 'help.says.tidyValue'),
 			control('tidy.pattern', 'help.says.tidyPattern'),
 			control('tidy.renameRoot', 'help.says.tidyRoot'),
+			control('tidy.moveInto', 'help.says.tidyMoveInto'),
+			control('tidy.moveChoose', 'help.says.tidyMoveChoose'),
 			control('tidy.look', 'help.says.tidyLook'),
 			control('tidy.apply', 'help.says.tidyApply'),
 			control('tidy.undo', 'help.says.tidyUndo')
@@ -281,10 +285,14 @@ export const TOPICS: HelpTopic[] = [
 		controls: [
 			control('librarySettings.add', 'help.says.addFolder'),
 			control('librarySettings.rescan', 'help.says.rescan'),
-			control('help.name.folderList', 'help.says.folderList')
+			control('help.name.folderList', 'help.says.folderList'),
+			control('librarySettings.moved', 'help.says.folderMoved'),
+			control('librarySettings.stopUsing', 'help.says.folderStop'),
+			control('librarySettings.excludeAdd', 'help.says.folderExclude'),
+			control('librarySettings.lookAgain', 'help.says.folderInclude')
 		],
 		files: 'help.library.files',
-		limits: ['librarySettings.cannotRemove']
+		limits: []
 	},
 	{
 		id: 'settings.metadata',

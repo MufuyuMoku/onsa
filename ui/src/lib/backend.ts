@@ -502,6 +502,45 @@ export interface LibraryFolder {
 }
 
 export const libraryFolders = () => call<LibraryFolder[]>('library_folders');
+
+/** Stops using a library folder. Nothing on disk is touched. */
+export const removeFolder = (path: string) => call<boolean>('library_remove_folder', { path });
+/** Follows a library folder to where it is now, keeping its songs. */
+export const moveFolder = (from: string, to: string) =>
+	call<number>('library_move_folder', { from, to });
+/** A subfolder left out of scanning, and whether it is still on disk. */
+export interface Exclusion {
+	path: string;
+	present: boolean;
+}
+
+export const exclusions = () => call<Exclusion[]>('library_exclusions');
+/** Leaves a subfolder out of scanning; answers how many songs left. */
+export const excludeFolder = (path: string) => call<number>('library_exclude', { path });
+/** Looks in a subfolder again. */
+export const includeFolder = (path: string) => call<boolean>('library_include', { path });
+export const pickAnyFolder = (title: string) => call<string | null>('folders_pick', { title });
+
+/** One file that was not deleted, and why. */
+export interface Kept {
+	path: string;
+	/** `no_trash`, `cannot_tell`, `not_there`, `failed` — or `ok` when asked
+	 *  ahead of time and the answer is yes. */
+	reason: string;
+	/** What the system said, when there is something to add. */
+	detail: string | null;
+}
+
+/** What came of a deletion. */
+export interface DeleteReport {
+	deleted: string[];
+	kept: Kept[];
+}
+
+/** Whether deleting in that folder would go to the Recycle Bin or Trash. */
+export const deleteAllowed = (folder: string) => call<Kept>('files_delete_allowed', { folder });
+/** Sends those files to the Recycle Bin or the Trash. */
+export const deleteFiles = (tracks: number[]) => call<DeleteReport>('files_delete', { tracks });
 export const trackCount = () => call<number>('library_track_count');
 /** Which row a track sits on in that ordering, or nothing if it is gone. */
 export const trackPlace = (sort: SortKey, descending: boolean, trackId: number) =>
@@ -670,6 +709,10 @@ export const tidyRenameApply = (
 	pattern: string,
 	tracks: number[]
 ) => call<TidyReport>('tidy_rename_apply', { note, root, pattern, tracks });
+export const tidyMovePlan = (root: string, tracks: number[]) =>
+	call<RenamePlan>('tidy_move_plan', { root, tracks });
+export const tidyMoveApply = (note: string, root: string, tracks: number[]) =>
+	call<TidyReport>('tidy_move_apply', { note, root, tracks });
 export const editHistory = (limit: number) => call<EditBatch[]>('edit_history', { limit });
 export const editUndo = (batch: number) => call<UndoReport>('edit_undo', { batch });
 

@@ -12,6 +12,7 @@ mod downloads;
 mod dto;
 mod editor;
 mod error;
+mod folders;
 mod keys;
 mod library;
 mod logging;
@@ -73,6 +74,16 @@ pub fn run() -> Result<()> {
             commands::pick_folder,
             commands::library_add_folder,
             commands::library_rescan,
+            folders::library_remove_folder,
+            folders::library_move_folder,
+            folders::library_exclusions,
+            folders::library_exclude,
+            folders::library_include,
+            folders::folders_pick,
+            folders::files_delete_allowed,
+            folders::files_delete,
+            tidy::tidy_move_plan,
+            tidy::tidy_move_apply,
             commands::library_scan_status,
             commands::library_folders,
             commands::library_track_count,

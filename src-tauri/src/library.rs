@@ -47,11 +47,17 @@ pub struct ScanStatus {
 enum Job {
     AddFolder(PathBuf),
     Rescan,
+    /// The set of folders itself changed: watch what there is now, and say
+    /// so, without walking the disk again (SPEC §15, M13).
+    Rewatch,
+    /// The same, and the folders have moved or grown, so walk them too.
+    Refresh,
     Changes(Vec<Change>),
 }
 
 /// The library service kept in the application state.
 pub struct LibraryService {
+    app: AppHandle,
     reader: Mutex<Library>,
     jobs: Sender<Job>,
     status: Arc<Mutex<ScanStatus>>,
@@ -74,7 +80,7 @@ impl LibraryService {
         let (jobs, receive) = mpsc::channel();
         let status = Arc::new(Mutex::new(ScanStatus::default()));
         let worker = Worker {
-            app,
+            app: app.clone(),
             library: writer,
             watcher: None,
             jobs: jobs.clone(),
@@ -87,6 +93,7 @@ impl LibraryService {
             let _ = jobs.send(Job::Rescan);
         }
         Ok(Self {
+            app,
             reader: Mutex::new(reader),
             jobs,
             status,
@@ -127,6 +134,24 @@ impl LibraryService {
         self.jobs.send(Job::Rescan).map_err(|_| ErrorCode::Library)
     }
 
+    /// Watches whatever the library folders are now, and tells the interface
+    /// the contents changed. Nothing is read from disk.
+    pub fn rewatch(&self) -> Result<(), ErrorCode> {
+        self.jobs.send(Job::Rewatch).map_err(|_| ErrorCode::Library)
+    }
+
+    /// The same, followed by a scan: for a folder that moved or a subfolder
+    /// that is being looked at again.
+    pub fn refresh(&self) -> Result<(), ErrorCode> {
+        self.jobs.send(Job::Refresh).map_err(|_| ErrorCode::Library)
+    }
+
+    /// Says the library contents changed, for a change made on the reader
+    /// connection that the library thread knows nothing about.
+    pub fn changed(&self) {
+        let _ = self.app.emit(CHANGED_EVENT, ());
+    }
+
     /// Where the current or last scan stands.
     pub fn status(&self) -> ScanStatus {
         *lock(&self.status)
@@ -149,6 +174,15 @@ impl Worker {
             let result = match job {
                 Job::AddFolder(path) => self.add_folder(&path),
                 Job::Rescan => self.scan(),
+                Job::Rewatch => {
+                    self.watch_folders();
+                    let _ = self.app.emit(CHANGED_EVENT, ());
+                    Ok(())
+                }
+                Job::Refresh => {
+                    self.watch_folders();
+                    self.scan()
+                }
                 Job::Changes(changes) => self.apply(&changes),
             };
             if let Err(error) = result {

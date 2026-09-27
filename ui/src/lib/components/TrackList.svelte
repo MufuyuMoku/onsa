@@ -38,6 +38,7 @@
 	import { addToQueue, player, playContext } from '$lib/player.svelte';
 	import { addToPlaylist, playlists } from '$lib/playlists.svelte';
 	import { startCarry } from '$lib/carry.svelte';
+	import DeleteFile from './DeleteFile.svelte';
 	import Icon from './Icon.svelte';
 	import TrackEditor from './TrackEditor.svelte';
 	import VirtualList from './VirtualList.svelte';
@@ -204,12 +205,12 @@
 	}
 
 	/** The right-click menu: one track, added where the listener asks. */
-	let menu = $state<{ x: number; y: number; id: number } | null>(null);
+	let menu = $state<{ x: number; y: number; id: number; path: string } | null>(null);
 
 	function openMenu(event: MouseEvent, track: Track): void {
 		event.preventDefault();
 		if (track.id < 0) return;
-		menu = { x: event.clientX, y: event.clientY, id: track.id };
+		menu = { x: event.clientX, y: event.clientY, id: track.id, path: track.path };
 	}
 
 	function addOne(place: QueuePlace): void {
@@ -234,6 +235,16 @@
 		const chosen = menu;
 		menu = null;
 		if (chosen) editing = chosen.id;
+	}
+
+	/** The song whose file is about to be deleted, if any (SPEC section 15). */
+	let deleting = $state<{ id: number; path: string } | null>(null);
+
+	function deleteOne(): void {
+		const chosen = menu;
+		menu = null;
+		if (!chosen) return;
+		deleting = { id: chosen.id, path: chosen.path };
 	}
 
 	/** Carrying a row out of the list, onto a playlist in the sidebar. */
@@ -535,6 +546,11 @@
 		<li>
 			<button type="button" onclick={() => editOne()}>{t('editor.open')}</button>
 		</li>
+		<li>
+			<button type="button" class="caution-item" onclick={() => deleteOne()}
+				>{t('delete.open')}</button
+			>
+		</li>
 		{#if manual.length > 0}
 			<li class="heading label" role="presentation">{t('playlist.addTo')}</li>
 			{#each manual as playlist (playlist.id)}
@@ -550,6 +566,14 @@
 
 {#if editing !== null}
 	<TrackEditor trackId={editing} onclose={() => (editing = null)} />
+{/if}
+
+{#if deleting}
+	<DeleteFile
+		trackId={deleting.id}
+		path={deleting.path}
+		onclose={() => (deleting = null)}
+	/>
 {/if}
 
 <svelte:window
@@ -604,6 +628,10 @@
 		text-align: left;
 		white-space: nowrap;
 		cursor: pointer;
+	}
+
+	.menu button.caution-item {
+		color: var(--onsa-role-caution);
 	}
 
 	.menu button:hover {

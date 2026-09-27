@@ -468,6 +468,57 @@ pub async fn tidy_rename_apply(
     Ok(outcome.into())
 }
 
+/// Where moving these files into a folder would put them, without moving
+/// anything (SPEC §15, M13).
+#[tauri::command]
+pub fn tidy_move_plan(
+    library: State<'_, LibraryService>,
+    root: String,
+    tracks: Vec<i64>,
+) -> Result<PlanDto, ErrorCode> {
+    let scope = scope_of(&prefs(&library)?);
+    let plan: RenamePlan =
+        library.read(|library| library.move_plan(std::path::Path::new(&root), &scope, &tracks))?;
+    Ok(PlanDto {
+        moves: plan
+            .moves
+            .iter()
+            .map(|one| MoveDto {
+                track_id: one.track_id,
+                from: one.from.display().to_string(),
+                to: one.to.display().to_string(),
+                clash: one.clash.clone(),
+            })
+            .collect(),
+        summary: plan.summary().into(),
+    })
+}
+
+/// Moves the files, as one run the history can take back.
+///
+/// As with a rename, the plan is worked out again here rather than taken
+/// from the interface: a name that has been claimed in the meantime is
+/// caught now, not trusted from a minute ago.
+#[tauri::command]
+pub async fn tidy_move_apply(
+    app: AppHandle,
+    note: String,
+    root: String,
+    tracks: Vec<i64>,
+) -> Result<ReportDto, ErrorCode> {
+    let outcome = tauri::async_runtime::spawn_blocking(move || {
+        let library = app.state::<LibraryService>();
+        let scope = scope_of(&prefs(&library)?);
+        library.write(|library| {
+            let plan = library.move_plan(std::path::Path::new(&root), &scope, &tracks)?;
+            library.apply_rename(&note, &scope, &plan)
+        })
+    })
+    .await
+    .map_err(|_| ErrorCode::Library)??;
+    Ok(outcome.into())
+}
+
 /// The runs Onsa has made, newest first.
 #[tauri::command]
 pub fn edit_history(
