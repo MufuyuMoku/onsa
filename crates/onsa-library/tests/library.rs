@@ -945,15 +945,15 @@ fn a_deleted_file_waits_in_the_recycle_bin_and_comes_back() {
         // this is a real place where Windows would have deleted the file
         // outright and Onsa refused to. That refusal is what is checked.
         if std::env::var_os("CI").is_some() {
-            assert!(
-                cfg!(windows),
-                "this machine cannot prove the trash here: {why}"
-            );
-            assert_eq!(
-                why,
-                &onsa_library::Refusal::NoTrashHere,
-                "a place with no Recycle Bin says so plainly"
-            );
+            if cfg!(windows) {
+                assert_eq!(
+                    why,
+                    &onsa_library::Refusal::NoTrashHere,
+                    "a place with no Recycle Bin says so plainly"
+                );
+            } else {
+                panic!("this machine cannot prove the trash here: {why}");
+            }
         }
         eprintln!("this machine cannot prove the trash here: {why}");
         drop(library);
