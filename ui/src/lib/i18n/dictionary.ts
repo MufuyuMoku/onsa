@@ -155,7 +155,7 @@ const id = {
 	'nowPlaying.output': 'Output',
 	'panel.title': 'Panel',
 	'panel.cover': 'Sampul',
-	'panel.details': 'Keterangan',
+	'panel.details': 'Rincian sinyal',
 	'panel.lyrics': 'Lirik',
 	'panel.visualizer': 'Visualizer',
 	'mini.open': 'Mini player',
@@ -910,7 +910,7 @@ const id = {
 	'help.says.panelCover':
 		'Menampilkan atau menyembunyikan sampul besar. Dengan sampulnya disembunyikan, keterangan lagunya memakai selebar layar.',
 	'help.says.panelDetails':
-		'Menampilkan atau menyembunyikan daftar keterangan teknis: format berkasnya, resample, ReplayGain, EQ, dan ke mana suaranya dikirim.',
+		'Menampilkan atau menyembunyikan rincian tentang suaranya: format berkasnya, resample, ReplayGain, EQ, dan ke mana suaranya dikirim.',
 	'help.says.panelLyrics':
 		'Menampilkan atau menyembunyikan panel lirik. Disembunyikan berarti tidak ada tempatnya di layar ini; pencarian lirik sendiri diatur di Pengaturan → Lirik.',
 	'help.says.panelVisualizer':
@@ -1327,7 +1327,7 @@ const en: Record<MessageKey, string> = {
 	'nowPlaying.output': 'Output',
 	'panel.title': 'Panels',
 	'panel.cover': 'Cover',
-	'panel.details': 'Details',
+	'panel.details': 'Signal details',
 	'panel.lyrics': 'Words',
 	'panel.visualizer': 'Visualizer',
 	'mini.open': 'Mini player',
@@ -2080,7 +2080,7 @@ const en: Record<MessageKey, string> = {
 	'help.says.panelCover':
 		'Shows or hides the large cover. With the cover away, the song details use the full width of the screen.',
 	'help.says.panelDetails':
-		'Shows or hides the list of technical detail: the file format, resampling, ReplayGain, the EQ, and where the sound is going.',
+		'Shows or hides the detail about the sound: the file format, resampling, ReplayGain, the EQ, and where the sound is going.',
 	'help.says.panelLyrics':
 		'Shows or hides the words panel. Hidden means it has no place on this screen; whether words are looked up at all is set in Settings → Words.',
 	'help.says.panelVisualizer':
