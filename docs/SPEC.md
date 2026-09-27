@@ -500,7 +500,7 @@ Urutannya pernah diubah dua kali, atas keputusan pemilik proyek. Alasannya beser
 |---|---|
 | v1.1 | Bantuan di dalam aplikasi (selesai) |
 | v1.2 | Paket untuk tester (selesai) |
-| v1.3 "Rapi" | v1.3-a pemilihan fpcalc (selesai), v1.3-b dokumen dan pemeriksaan lisensi (selesai), v1.3-c dan v1.3-d perbaikan dari pengujian (selesai), **M13** (selesai di Windows; sisi Linux lewat CI), **M14** |
+| v1.3 "Rapi" | v1.3-a pemilihan fpcalc (selesai), v1.3-b dokumen dan pemeriksaan lisensi (selesai), v1.3-c dan v1.3-d perbaikan dari pengujian (selesai), **M13** (selesai di Windows; sisi Linux lewat CI), **M14** (selesai di Windows; sisi Linux lewat CI) |
 | v1.4 "Unduhan penuh" | **M10b** (termasuk unduhan otomatis fpcalc), **M15**, dan paket Linux (AppImage dan deb) yang dibangun CI — sebagian M12 |
 | v1.5 "Tampilan" | **M16** |
 | v1.6 "Lirik & metadata" | **M17** dan **M7b** |

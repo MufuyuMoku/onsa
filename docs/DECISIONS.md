@@ -706,3 +706,43 @@ Keputusan pemilik proyek atas hasil pemeriksaan pertama cargo deny. Dua pengecua
   ini sudah ditandai hilang", melainkan "apakah berkas lamanya masih ada di sana". Dua berkas
   yang sama-sama cocok dibiarkan, tidak ditebak: riwayat dengar orang bukan bahan tebakan.
 
+## 2026-09-27 · M14: panel sebagai data, dan dua tambahan dari M13
+
+- **Panel mana yang tampil adalah data, bukan cabang di dalam komponen halaman.** Bentuknya peta
+  nama panel → tampil/tidak. M16 akan menambahkan preset layout, dan sebuah preset adalah peta
+  berbentuk sama, bukan cabang lain lagi di dalam `NowPlaying.svelte`. Pintunya sudah ada
+  (`setPanels`) meski belum dipakai, supaya preset nanti mengatur data yang sama.
+- **Aturannya dipisahkan dari state-nya.** `panels.ts` tidak tahu apa-apa soal penyimpanan dan
+  bisa diuji sendirian; `panels.svelte.ts` hanya lapisan tipis di atasnya. Pemisahan yang sama
+  seperti `places.ts` dan `places.svelte.ts`.
+- **Yang disimpan adalah keputusan, bukan salinan nilai bawaan.** Panel yang dikembalikan ke
+  keadaan semula keluar dari peta. Peta yang penuh berisi salinan nilai bawaan membuat perubahan
+  nilai bawaan di kemudian hari tidak sampai ke siapa pun — dan itulah yang membuat sebuah "nilai
+  bawaan" berhenti berarti apa-apa.
+- **Menyembunyikan visualizer harus benar-benar menghentikan analisisnya**, bukan menyembunyikan
+  gambarnya. Karena itu panelnya dipasang dengan `{#if}` dan bukan dengan CSS: komponennya keluar
+  dari halaman dan klaimnya atas tap analisis ikut dilepas. Aturan M5, dijaga dengan cara yang
+  sudah ada.
+- **Penulisan pengaturan tampilan digabungkan, seperti jalur DSP.** Beberapa penulisan yang
+  berjalan bersamaan tidak punya urutan yang dijamin, jadi yang mendarat terakhir belum tentu
+  yang terbaru — dan sebuah panel yang menyala bisa tersimpan sebagai tersembunyi. Satu penulisan
+  pada satu waktu, nilai terbaru selalu menang. Posisi gulir dan lebar kolom lewat pintu yang
+  sama, jadi ini memperbaiki lebih dari panelnya saja.
+- **Jawaban tentang tempat sampah diikat pada identitas volume, dan pada satu sesi.** Sebuah
+  folder bisa berpindah volume tanpa berpindah nama: drive dicabut dan diganti, share dipetakan
+  ulang, volume dipasang ke dalam folder. Jawaban "di sini aman" adalah jawaban tentang sebuah
+  disk, bukan tentang sebuah nama. Volume yang tidak bisa dinamai sistem tidak pernah dianggap
+  sama dengan yang sebelumnya: salah di arah itu berarti berkas orang hilang selamanya, sementara
+  salah di arah sebaliknya hanya berarti satu penyelidikan lagi.
+- **`windows-sys` dipakai untuk menanyakan nomor seri volume**, dengan `GetVolumePathNameW` lalu
+  `GetVolumeInformationW`. Ia sudah ada di pohon dependensi lewat tauri dan notify, jadi yang
+  ditambahkan adalah sebuah sisi, bukan sebuah build; lisensinya (MIT/Apache-2.0) sudah lolos
+  daftar izin yang ada. Pustaka standar tidak bisa menjawabnya: `MetadataExt::volume_serial_number`
+  masih di belakang fitur `windows_by_handle` yang belum stabil. Di Linux tidak ada yang
+  ditambahkan — `st_dev` ada di pustaka standar.
+- **Hook `pre-push` hanya berisi pemeriksaan yang cepat dan tidak bergantung pada mesin.**
+  Format dan lint berangkat bersama push; tes tidak, karena push tidak boleh menunggu menit-menit
+  untuk suite yang sebentar lagi dijalankan CI secara penuh. Hook ini tidak menyala sendiri dari
+  clone — Git memang tidak menjalankan hook dari repo tanpa diminta — jadi cara menyalakannya
+  ditulis di README, bukan diandalkan diam-diam.
+

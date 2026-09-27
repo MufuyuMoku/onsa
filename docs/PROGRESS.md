@@ -1474,3 +1474,88 @@ yang sama dengan yang dipakai tombolnya:
 
 `cargo fmt --check`, `clippy -D warnings`, `cargo test --workspace`, `npm run check`, tes UI,
 dan `cargo deny check licenses` semuanya bersih.
+
+## 2026-09-27 · M14: panel Sedang diputar
+
+Layar Sedang diputar punya empat panel — **Sampul**, **Keterangan**, **Lirik**, **Visualizer** —
+dan masing-masing bisa dimatikan sendiri-sendiri lewat deretan sakelar di baris atasnya.
+
+### Keadaannya data, bukan logika di dalam komponen
+
+Ini diminta tersendiri karena M16 akan menaruh preset layout di atas data yang sama.
+
+- **`ui/src/lib/panels.ts`**: aturannya saja — daftar panelnya, mana yang tampil bila belum ada
+  yang berpendapat, dan fungsi untuk memutuskan satu panel atau beberapa sekaligus. Tidak tahu
+  apa-apa soal state maupun penyimpanan, jadi bisa dibaca dan diuji sendirian. **Enam tes.**
+- **`ui/src/lib/panels.svelte.ts`**: lapisan tipis yang membacanya dari pengaturan tampilan dan
+  menulis perubahannya kembali. `setPanels` sudah ada dan belum dipakai siapa pun: itulah pintu
+  masuk preset layout M16, supaya preset mengatur data yang sama, bukan menumbuhkan cara kedua
+  untuk menyatakan apa yang ada di layar.
+- **`DisplayPrefs.panels`** di sisi Rust, sebuah peta nama panel → tampil/tidak.
+- **Yang disimpan hanya keputusan, bukan salinan nilai bawaan.** Panel yang dikembalikan ke
+  keadaan semula keluar lagi dari petanya. Kalau nanti nilai bawaannya berubah, perubahan itu
+  sampai ke semua orang yang memang tidak pernah berpendapat.
+
+### Aturan M5 tetap berlaku, dan terbukti
+
+Dengan visualizer disembunyikan, komponennya benar-benar keluar dari halaman dan ikut membawa
+klaimnya atas tap analisis. Log dari aplikasi yang berjalan, dari satu sesi yang sama:
+
+```
+analysis enabled=true spectrum=true  fps=60     <- visualizer tampil
+analysis enabled=true spectrum=false fps=30     <- visualizer disembunyikan
+analysis enabled=true spectrum=true  fps=60     <- ditampilkan lagi
+```
+
+FFT-nya berhenti dan frame-nya turun ke laju meter. `enabled` tetap `true` karena meter puncak
+di baris transport masih di layar dan meter memang butuh tap — itu perilaku M5 yang sudah ada,
+dan tesnya (`analysis_only_runs_for_what_is_on_screen`) menjaganya: tanpa satu pun dari keduanya
+di layar, `enabled` jadi `false`.
+
+### Diuji di aplikasi yang berjalan
+
+| yang diuji | hasilnya |
+|---|---|
+| tiap panel dimatikan | elemennya benar-benar hilang dari halaman, bukan disembunyikan dengan CSS |
+| sampul dimatikan | keterangan lagunya memakai selebar layar (`.now.wide`) |
+| ditutup lalu dibuka lagi | keempat sakelar dan isi layarnya persis sama |
+| semuanya dinyalakan lagi | yang tersimpan kembali jadi `{}` — catatan keputusan, bukan catatan nilai bawaan |
+| panel bantuan halaman ini | keempat sakelar punya kalimatnya sendiri; nol kontrol terlewat |
+
+### Bug yang ketahuan gara-gara empat sakelar berturut-turut
+
+Menekan beberapa sakelar dalam sedetik meninggalkan beberapa penulisan pengaturan tampilan
+sekaligus, dan yang mendarat terakhir yang menentukan isi simpanan — yang **bukan** selalu yang
+terbaru. Di layar visualizernya menyala, sementara yang tersimpan `{"visualizer":false}`; sesudah
+ditutup dan dibuka lagi, panelnya kembali tersembunyi.
+
+`updateDisplay` sekarang digabungkan persis seperti jalur DSP: satu penulisan pada satu waktu, dan
+nilai terbaru selalu yang menang. Sesudahnya, empat sakelar berturut-turut menyimpan
+`{"cover":false,"details":false,"lyrics":false}` — sama persis dengan yang di layar.
+
+Ini bukan hanya soal panel: posisi gulir tiap daftar dan lebar kolom lewat pintu yang sama.
+
+### Tambahan dari M13
+
+**1. Hasil penyelidikan tempat sampah tidak lagi berlaku selamanya.** Jawabannya sekarang
+diingat bersama identitas volume di bawah folder itu — nomor seri volume di Windows (ditanyakan
+tentang mount point foldernya sendiri, bukan huruf drive-nya, jadi volume yang dipasang ke dalam
+sebuah folder jadi jawabannya sendiri) dan device id di Linux. Kalau identitasnya berbeda dari
+saat jawaban itu dibuat, tempatnya diselidiki ulang. Volume yang tidak bisa dinamai sistem tidak
+pernah dianggap sama dengan yang sebelumnya. Ingatannya juga tidak pernah lebih panjang dari satu
+sesi Onsa: satu drive bisa dicabut dan diganti drive lain di huruf yang sama antara satu malam dan
+malam berikutnya.
+
+Dua tes: satu untuk aturannya (`same_ground`), satu yang menaruh jawaban palsu di ingatannya
+dengan volume yang bukan volume di sana, lalu memastikan Onsa **menyelidiki ulang** alih-alih
+langsung memakai jawaban lama — dan sebaliknya, dengan volume yang sama, memakai ingatannya.
+
+**2. Hook `pre-push`.** `.githooks/pre-push` menjalankan `cargo fmt --check` dan
+`cargo clippy --workspace --all-targets -- -D warnings`, dan menggagalkan push bila salah satunya
+gagal. Dinyalakan sekali dengan `git config core.hooksPath .githooks`, dan dicatat di README.
+Tesnya tidak ikut: push tidak boleh menunggu suite penuh yang sebentar lagi dijalankan CI.
+Alasannya langsung terbukti — push M13 yang lalu merah di CI karena satu lint clippy, persis
+jenis kesalahan yang hook ini tangkap sebelum berangkat.
+
+`cargo fmt --check`, `clippy -D warnings`, `cargo test --workspace`, `npm run check`, tes UI
+(49), dan `cargo deny check licenses` semuanya bersih.
