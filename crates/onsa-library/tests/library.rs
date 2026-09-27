@@ -937,6 +937,13 @@ fn a_deleted_file_waits_in_the_recycle_bin_and_comes_back() {
         // saying so is better than pretending otherwise. What matters is
         // that the file is still there: nothing was deleted for good.
         assert!(song.is_file(), "{} was deleted anyway", path.display());
+        // On CI it is not a note but the answer to the question CI is being
+        // asked, so it is said out loud rather than into a captured stream:
+        // a green run has to mean the trash really was proven there.
+        assert!(
+            std::env::var_os("CI").is_none(),
+            "this machine cannot prove the trash here: {why}"
+        );
         eprintln!("this machine cannot prove the trash here: {why}");
         drop(library);
         let _ = std::fs::remove_dir_all(&dir);
