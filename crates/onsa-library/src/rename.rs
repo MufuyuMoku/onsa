@@ -253,6 +253,60 @@ impl Library {
         Ok(plan)
     }
 
+    /// Works out what moving these tracks into one folder would do, without
+    /// moving anything (SPEC §15, M13).
+    ///
+    /// Unlike [`Library::rename_plan`] the names are not rewritten: a file
+    /// keeps the name it has and only changes folder. The plan it answers
+    /// with is the same kind of plan, so the preview, the summary, the
+    /// history and taking it back again are the ones already there (SPEC
+    /// §8).
+    pub fn move_plan(&self, root: &Path, scope: &Scope, tracks: &[i64]) -> Result<RenamePlan> {
+        let mut plan = RenamePlan::default();
+        let limit = scope.limit.clamp(1, MAX_BATCH);
+        let mut claimed: HashMap<String, i64> = HashMap::new();
+
+        for track_id in tracks {
+            let Some(track) = self.track(*track_id)? else {
+                plan.out_of_scope += 1;
+                continue;
+            };
+            let from = PathBuf::from(&track.path);
+            if !scope.allows(&from) {
+                plan.out_of_scope += 1;
+                continue;
+            }
+            if plan.moves.len() >= limit {
+                plan.over_limit += 1;
+                continue;
+            }
+            let Some(name) = from.file_name() else {
+                plan.out_of_scope += 1;
+                continue;
+            };
+            let to = root.join(name);
+
+            let key = key_of(&to);
+            let clash = if let Some(other) = claimed.get(&key) {
+                Some(format!("two tracks would both become this name ({other})"))
+            } else if to != from && to.exists() {
+                Some("a file is already there".to_string())
+            } else {
+                None
+            };
+            if clash.is_none() {
+                claimed.insert(key, *track_id);
+            }
+            plan.moves.push(Move {
+                track_id: *track_id,
+                from,
+                to,
+                clash,
+            });
+        }
+        Ok(plan)
+    }
+
     /// Carries out a plan, writing down every move so it can be taken back.
     ///
     /// Only the moves that are worth doing are done; the rest are counted.
@@ -299,8 +353,15 @@ impl Library {
             }
             match write::move_file(&one.from, &one.to) {
                 Ok(()) => {
+                    // Onsa moved this file itself, so it knows the file is
+                    // where the row now says. Without this, a watcher event
+                    // about the old place can leave the row reading
+                    // "missing" for a second over a move that worked.
                     self.conn.execute(
-                        "UPDATE tracks SET path = ?2 WHERE id = ?1",
+                        "UPDATE tracks
+                            SET path = ?2,
+                                status = CASE WHEN status = 'missing' THEN 'ok' ELSE status END
+                          WHERE id = ?1",
                         params![one.track_id, one.to.to_string_lossy()],
                     )?;
                     self.conn.execute(

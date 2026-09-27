@@ -68,7 +68,7 @@ pub fn is_supported(path: &Path) -> bool {
         })
 }
 
-fn now_ms() -> i64 {
+pub(crate) fn now_ms() -> i64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map_or(0, |since| since.as_millis() as i64)
@@ -89,7 +89,7 @@ pub(crate) fn path_text(path: &Path) -> Result<String> {
 }
 
 /// A LIKE pattern matching everything below `dir`.
-fn below(dir: &str) -> String {
+pub(crate) fn below(dir: &str) -> String {
     let mut pattern = String::with_capacity(dir.len() + 2);
     for c in dir.trim_end_matches(['/', '\\']).chars() {
         if matches!(c, '%' | '_' | '\\') {
@@ -109,9 +109,19 @@ fn below(dir: &str) -> String {
 /// Supported files under `dir`, sorted. Hidden and symlinked directories
 /// are skipped (a symlink loop must not hang a scan).
 fn audio_files(dir: &Path) -> Vec<PathBuf> {
+    audio_files_apart_from(dir, &[])
+}
+
+/// The same, with subfolders the listener asked Onsa to leave alone pruned
+/// from the walk (SPEC §15, M13). A pruned folder is never read at all, so
+/// a sample library of ten thousand one-second files costs nothing.
+fn audio_files_apart_from(dir: &Path, excluded: &[PathBuf]) -> Vec<PathBuf> {
     let mut found = Vec::new();
     let mut pending = vec![dir.to_path_buf()];
     while let Some(dir) = pending.pop() {
+        if excluded.iter().any(|one| dir.starts_with(one)) {
+            continue;
+        }
         let entries = match std::fs::read_dir(&dir) {
             Ok(entries) => entries,
             Err(error) => {
@@ -482,8 +492,9 @@ impl Library {
 
         // An unreachable folder (an unplugged drive) leaves everything in it
         // missing, never deleted.
+        let excluded = self.exclusions()?;
         let files = if root.is_dir() {
-            audio_files(root)
+            audio_files_apart_from(root, &excluded)
         } else {
             tracing::warn!(folder = %root.display(), "library folder is not reachable");
             Vec::new()
@@ -541,6 +552,12 @@ impl Library {
 
     /// The watched folder that holds `path`, as id and path.
     fn folder_for(&self, path: &Path) -> Result<Option<i64>> {
+        // A path inside a subfolder that is left out belongs to no library
+        // folder as far as everything downstream is concerned: the watcher
+        // ignores it, and nothing there is ever indexed.
+        if self.is_excluded(path)? {
+            return Ok(None);
+        }
         let mut best: Option<(usize, i64)> = None;
         let mut statement = self.conn.prepare_cached("SELECT id, path FROM folders")?;
         let rows = statement.query_map([], |row| {
@@ -641,12 +658,70 @@ impl Library {
                 .optional()?
                 .unwrap_or(false);
             if !same {
+                // A file Onsa has not seen at this path may still be one it
+                // knows: claiming it first means the row keeps its id, and
+                // with it the play count, the playlists it is on and the
+                // edits not yet written to it.
+                Self::claim_moved(&tx, folder_id, &text, mtime, size)?;
                 indexer.index(&tx, folder_id, &file, &text, mtime, size)?;
                 report.updated += 1;
             }
         }
         tx.commit()?;
         Ok(())
+    }
+
+    /// Re-points a track that went missing and has turned up here.
+    ///
+    /// Within one batch of watcher events a removal and an addition are
+    /// already paired into a move ([`Library::same_file_moved`]). Between
+    /// batches nothing paired them: the track was marked missing, and the
+    /// file arriving at its new place looked like a stranger. On a busy
+    /// machine that is simply a matter of which side of the debounce window
+    /// the two events fall, so a listener's play count survived a move or
+    /// did not by luck.
+    ///
+    /// The same rule decides it here as there: the same size and the same
+    /// modification time, and the old file really gone. Two files that match
+    /// each other are left alone rather than guessed between.
+    ///
+    /// The track need not have been marked missing first. A watcher can
+    /// report the arrival and never the departure — the operating system is
+    /// free to coalesce the two, and under load it does — so what counts is
+    /// not what the database was told, but whether the old file is still
+    /// there. Disk has the last word.
+    fn claim_moved(
+        tx: &Transaction<'_>,
+        folder_id: i64,
+        text: &str,
+        mtime: i64,
+        size: i64,
+    ) -> Result<bool> {
+        let mut statement = tx.prepare_cached(
+            "SELECT id, path FROM tracks WHERE path != ?3 AND mtime = ?1 AND size = ?2",
+        )?;
+        let candidates: Vec<(i64, String)> = statement
+            .query_map(params![mtime, size, text], |row| {
+                Ok((row.get(0)?, row.get(1)?))
+            })?
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+        let mut gone = candidates
+            .into_iter()
+            .filter(|(_, path)| !Path::new(path).exists());
+        let Some((id, _)) = gone.next() else {
+            return Ok(false);
+        };
+        if gone.next().is_some() {
+            // More than one track fits. Which one this is, is not something
+            // to guess at with somebody's listening history.
+            return Ok(false);
+        }
+        drop(statement);
+        tx.execute(
+            "UPDATE tracks SET path = ?2, folder_id = ?3, status = 'ok' WHERE id = ?1",
+            params![id, text, folder_id],
+        )?;
+        Ok(true)
     }
 
     /// Marks one track missing, by id.

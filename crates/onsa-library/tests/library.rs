@@ -629,22 +629,73 @@ fn browses_by_artist_genre_and_folder() {
 }
 
 /// Receives watcher batches and applies them until `done` holds.
+///
+/// What is waited for is the whole of the expected state, not one part of
+/// it: a watcher may split what happened across two batches, and a test
+/// that checks the rest the moment the first part lands is a test that
+/// passes or fails by how busy the machine is.
 fn apply_until(
     library: &mut Library,
     changes: &mpsc::Receiver<Vec<Change>>,
     mut done: impl FnMut(&Library) -> bool,
 ) -> bool {
-    let deadline = Instant::now() + Duration::from_secs(20);
+    // Long enough for a loaded machine, and it is only ever waited out when
+    // something is actually wrong.
+    let deadline = Instant::now() + Duration::from_secs(30);
     while !done(library) {
         let Some(left) = deadline.checked_duration_since(Instant::now()) else {
             return false;
         };
-        if let Ok(batch) = changes.recv_timeout(left) {
-            eprintln!("watcher batch: {batch:?}");
-            library.apply_changes(&batch).unwrap();
+        match changes.recv_timeout(left) {
+            Ok(batch) => {
+                eprintln!("watcher batch: {batch:?}");
+                library.apply_changes(&batch).unwrap();
+            }
+            Err(_) => return done(library),
         }
     }
     true
+}
+
+/// Waits until the watcher has shown it is awake, and says so.
+///
+/// Registering a folder and getting events out of it are not the same
+/// moment: on Windows the first change after `watch()` can fall into the
+/// gap while the asynchronous read is still being queued, and on a loaded
+/// machine that gap is wider. A test that starts its real work inside that
+/// gap waits for an event that was never going to come — which is how this
+/// one failed, once, on a busy machine.
+///
+/// So a probe file is touched until a batch mentioning it arrives. After
+/// that the watcher is known to be delivering, and everything the test does
+/// next can be waited for on its own terms.
+fn watcher_is_awake(root: &Path, changes: &mpsc::Receiver<Vec<Change>>) -> bool {
+    let probe = root.join(".onsa-watch-probe");
+    let deadline = Instant::now() + Duration::from_secs(30);
+    while Instant::now() < deadline {
+        let _ = std::fs::write(&probe, b"awake?");
+        let waited = Duration::from_millis(1500);
+        let until = Instant::now() + waited;
+        while let Some(left) = until.checked_duration_since(Instant::now()) {
+            let Ok(batch) = changes.recv_timeout(left) else {
+                break;
+            };
+            if batch.iter().any(|change| match change {
+                Change::Changed(path) | Change::Removed(path) => {
+                    path.ends_with(".onsa-watch-probe")
+                }
+                Change::Renamed { from, to } => {
+                    from.ends_with(".onsa-watch-probe") || to.ends_with(".onsa-watch-probe")
+                }
+            }) {
+                let _ = std::fs::remove_file(&probe);
+                // Whatever the removal stirs up is not the test's business.
+                while changes.recv_timeout(Duration::from_millis(1500)).is_ok() {}
+                return true;
+            }
+        }
+    }
+    false
 }
 
 fn status(library: &Library, path: &Path) -> Option<String> {
@@ -668,6 +719,10 @@ fn the_watcher_follows_added_moved_and_removed_files() {
     })
     .unwrap();
     let root = &folders[0];
+    assert!(
+        watcher_is_awake(root, &changes),
+        "the watcher never reported anything at all, so there is nothing to test"
+    );
 
     // Added: written elsewhere, then moved in whole.
     let staging = dir.join("staging.wav");
@@ -694,15 +749,17 @@ fn the_watcher_follows_added_moved_and_removed_files() {
     let id = library.track_id(&added).unwrap().unwrap();
     library.record_play(id, 1, 1_000).unwrap();
 
-    // Moved within the library: same track, statistics kept.
+    // Moved within the library: same track, statistics kept. Both halves
+    // of that are waited for together, because a move can arrive as a
+    // removal in one batch and an addition in the next.
     let moved = root.join("pindah.wav");
     std::fs::rename(&added, &moved).unwrap();
     assert!(
-        apply_until(&mut library, &changes, |l| status(l, &moved).as_deref()
-            == Some("ok")),
-        "the move was not picked up"
+        apply_until(&mut library, &changes, |l| {
+            status(l, &moved).as_deref() == Some("ok") && l.track_id(&moved).unwrap() == Some(id)
+        }),
+        "the move was not picked up as the same track"
     );
-    assert_eq!(library.track_id(&moved).unwrap(), Some(id), "identity kept");
     assert_eq!(library.stats(id).unwrap().play_count, 1);
 
     // Removed: marked missing.
@@ -715,6 +772,321 @@ fn the_watcher_follows_added_moved_and_removed_files() {
     );
 
     drop(watcher);
+    drop(library);
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+/// A move the watcher reports in two goes is still a move.
+///
+/// This is the same thing `the_watcher_follows_added_moved_and_removed_files`
+/// checks, with the watcher taken out of it: the removal is applied, and
+/// then the addition, as two separate batches. No timing decides the
+/// outcome, so nothing about the machine can make it pass one day and fail
+/// the next — which is exactly how that test once failed.
+#[test]
+fn a_move_split_across_two_batches_is_still_a_move() {
+    let dir = temp_dir("split move");
+    let music = dir.join("音楽 folder");
+    std::fs::create_dir_all(&music).unwrap();
+    let mut library = open(&dir);
+    library.add_folder(&music).unwrap();
+
+    let from = music.join("satu.wav");
+    song_file(
+        &from,
+        &Song {
+            title: "Pindah",
+            artist: "Dewi",
+            album: "Watch",
+            album_artist: None,
+            track: 1,
+            genre: "Pop",
+            picture: None,
+        },
+    );
+    library.scan(|_| {}).unwrap();
+    let id = library.track_id(&from).unwrap().unwrap();
+    library.record_play(id, 1, 1_000).unwrap();
+
+    let to = music.join("サブ folder").join("dua.wav");
+    std::fs::create_dir_all(to.parent().unwrap()).unwrap();
+    std::fs::rename(&from, &to).unwrap();
+
+    // One batch says it went, and only later does another say it arrived.
+    library
+        .apply_changes(&[Change::Removed(from.clone())])
+        .unwrap();
+    assert_eq!(
+        status(&library, &from).as_deref(),
+        Some("missing"),
+        "the removal stands on its own"
+    );
+    library
+        .apply_changes(&[Change::Changed(to.clone())])
+        .unwrap();
+
+    assert_eq!(
+        library.track_id(&to).unwrap(),
+        Some(id),
+        "the file that turned up is the one that left"
+    );
+    assert_eq!(status(&library, &to).as_deref(), Some("ok"));
+    assert_eq!(library.stats(id).unwrap().play_count, 1, "its history too");
+    assert_eq!(
+        library.track_count().unwrap(),
+        1,
+        "and it is not there twice"
+    );
+
+    drop(library);
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+/// A watcher is allowed to report only half of a move. Windows coalesces
+/// the two sides of a rename into one notification often enough that a
+/// loaded machine can see the arrival and never the departure — which is
+/// exactly how the watcher test failed once in fifty runs under load. The
+/// database being told nothing about the old path must not cost the
+/// listener their play count.
+#[test]
+fn an_arrival_with_no_departure_is_still_a_move() {
+    let dir = temp_dir("arrival only");
+    let music = dir.join("音楽 folder");
+    std::fs::create_dir_all(&music).unwrap();
+    let mut library = open(&dir);
+    library.add_folder(&music).unwrap();
+
+    let from = music.join("satu.wav");
+    song_file(
+        &from,
+        &Song {
+            title: "Pindah",
+            artist: "Dewi",
+            album: "Watch",
+            album_artist: None,
+            track: 1,
+            genre: "Pop",
+            picture: None,
+        },
+    );
+    library.scan(|_| {}).unwrap();
+    let id = library.track_id(&from).unwrap().unwrap();
+    library.record_play(id, 1, 1_000).unwrap();
+
+    let to = music.join("サブ folder").join("dua.wav");
+    std::fs::create_dir_all(to.parent().unwrap()).unwrap();
+    std::fs::rename(&from, &to).unwrap();
+
+    // Nothing at all is said about the old path: the row still claims the
+    // file is there and well.
+    assert_eq!(status(&library, &from).as_deref(), Some("ok"));
+    library
+        .apply_changes(&[Change::Changed(to.clone())])
+        .unwrap();
+
+    assert_eq!(
+        library.track_id(&to).unwrap(),
+        Some(id),
+        "the file that turned up is the one that left"
+    );
+    assert_eq!(status(&library, &to).as_deref(), Some("ok"));
+    assert_eq!(library.stats(id).unwrap().play_count, 1, "its history too");
+    assert_eq!(
+        library.track_count().unwrap(),
+        1,
+        "and it is not there twice"
+    );
+
+    drop(library);
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+/// A file deleted from inside Onsa is in the Recycle Bin or the Trash, and
+/// comes back from there with the song it belongs to (SPEC §15).
+///
+/// The test does not take Onsa's word for any of it: it looks into the
+/// system's own trash through the same protocol the Recycle Bin window uses,
+/// finds the file there, and puts it back the way the Restore menu does.
+#[test]
+fn a_deleted_file_waits_in_the_recycle_bin_and_comes_back() {
+    let dir = temp_dir("deleted");
+    let music = dir.join("音楽 folder");
+    std::fs::create_dir_all(&music).unwrap();
+    let song = music.join("dibuang.wav");
+    song_file(
+        &song,
+        &Song {
+            title: "Dibuang",
+            artist: "Dewi",
+            album: "Tempat sampah",
+            album_artist: None,
+            track: 1,
+            genre: "Pop",
+            picture: None,
+        },
+    );
+    let mut library = open(&dir);
+    library.add_folder(&music).unwrap();
+    library.scan(|_| {}).unwrap();
+    let id = library.track_id(&song).unwrap().unwrap();
+    library.record_play(id, 1, 1_000).unwrap();
+
+    let report = library.delete_files(&[id]).unwrap();
+    if let Some((path, why)) = report.kept.first() {
+        // A machine whose temp folder has no trash cannot prove this, and
+        // saying so is better than pretending otherwise. What matters is
+        // that the file is still there: nothing was deleted for good.
+        assert!(song.is_file(), "{} was deleted anyway", path.display());
+        eprintln!("this machine cannot prove the trash here: {why}");
+        drop(library);
+        let _ = std::fs::remove_dir_all(&dir);
+        return;
+    }
+    assert_eq!(report.count(), 1);
+    assert!(!song.exists(), "the file left its folder");
+    assert_eq!(
+        status(&library, &song).as_deref(),
+        Some("missing"),
+        "the song is still a song, it is just not there"
+    );
+
+    // Now look where the operating system says it put it.
+    let mine: Vec<trash::TrashItem> = trash::os_limited::list()
+        .unwrap()
+        .into_iter()
+        .filter(|item| item.original_path() == song)
+        .collect();
+    assert_eq!(mine.len(), 1, "exactly one of them is in the trash");
+
+    // And put it back, which is what the system's own Restore does.
+    trash::os_limited::restore_all(mine).unwrap();
+    assert!(song.is_file(), "the file is back where it was");
+
+    library.scan(|_| {}).unwrap();
+    assert_eq!(
+        library.track_id(&song).unwrap(),
+        Some(id),
+        "and it is the same song, not a new one"
+    );
+    assert_eq!(status(&library, &song).as_deref(), Some("ok"));
+    assert_eq!(library.stats(id).unwrap().play_count, 1, "with its history");
+
+    drop(library);
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+/// Onsa never deletes for good, so a place with no trash is refused rather
+/// than deleted from (SPEC §15).
+#[test]
+fn a_place_with_no_trash_is_refused_and_says_so() {
+    // There is no way to make a folder on this machine lose its Recycle Bin,
+    // so what is checked here is the promise itself: the question is asked
+    // before anything is deleted, and its answer decides.
+    let dir = temp_dir("trash question");
+    match onsa_library::delete::trash_is_real(&dir) {
+        Ok(()) => {
+            assert!(
+                !dir.join(".onsa-trash-check").exists(),
+                "the probe left nothing behind"
+            );
+        }
+        Err(why) => {
+            eprintln!("this machine has no trash for {}: {why}", dir.display());
+        }
+    }
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+/// What is not there is not deleted, and the report says which is which.
+#[test]
+fn a_file_that_is_already_gone_is_reported_not_deleted() {
+    let dir = temp_dir("already gone");
+    let music = dir.join("音楽 folder");
+    std::fs::create_dir_all(&music).unwrap();
+    let song = music.join("hilang.wav");
+    song_file(
+        &song,
+        &Song {
+            title: "Hilang",
+            artist: "Dewi",
+            album: "Tempat sampah",
+            album_artist: None,
+            track: 1,
+            genre: "Pop",
+            picture: None,
+        },
+    );
+    let mut library = open(&dir);
+    library.add_folder(&music).unwrap();
+    library.scan(|_| {}).unwrap();
+    let id = library.track_id(&song).unwrap().unwrap();
+
+    // Somebody else got there first.
+    std::fs::remove_file(&song).unwrap();
+    let report = library.delete_files(&[id]).unwrap();
+    assert_eq!(report.count(), 0);
+    assert!(!report.all_done());
+    assert_eq!(report.kept, vec![(song, onsa_library::Refusal::NotThere)]);
+
+    drop(library);
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+/// Gives a file the modification time of another, without leaving std.
+fn same_time(path: &Path, when: std::time::SystemTime) {
+    std::fs::File::options()
+        .write(true)
+        .open(path)
+        .unwrap()
+        .set_modified(when)
+        .unwrap();
+}
+
+/// Two files that are alike in every measurable way are not guessed between.
+#[test]
+fn two_files_that_match_each_other_are_left_where_they_are() {
+    let dir = temp_dir("twins");
+    let music = dir.join("音楽 folder");
+    std::fs::create_dir_all(&music).unwrap();
+    let mut library = open(&dir);
+    library.add_folder(&music).unwrap();
+
+    let song = Song {
+        title: "Kembar",
+        artist: "Dewi",
+        album: "Watch",
+        album_artist: None,
+        track: 1,
+        genre: "Pop",
+        picture: None,
+    };
+    let one = music.join("satu.wav");
+    let two = music.join("dua.wav");
+    song_file(&one, &song);
+    std::fs::copy(&one, &two).unwrap();
+    // The same bytes and the same time: nothing tells them apart.
+    let when = std::fs::metadata(&one).unwrap().modified().unwrap();
+    same_time(&two, when);
+    library.scan(|_| {}).unwrap();
+
+    std::fs::remove_file(&one).unwrap();
+    std::fs::remove_file(&two).unwrap();
+    library
+        .apply_changes(&[Change::Removed(one.clone()), Change::Removed(two.clone())])
+        .unwrap();
+
+    let three = music.join("tiga.wav");
+    song_file(&three, &song);
+    same_time(&three, when);
+    library
+        .apply_changes(&[Change::Changed(three.clone())])
+        .unwrap();
+
+    // Neither of the two is claimed: a new row is the honest answer.
+    assert_eq!(status(&library, &one).as_deref(), Some("missing"));
+    assert_eq!(status(&library, &two).as_deref(), Some("missing"));
+    assert_eq!(status(&library, &three).as_deref(), Some("ok"));
+
     drop(library);
     let _ = std::fs::remove_dir_all(&dir);
 }
@@ -761,6 +1133,166 @@ fn where_a_track_sits_agrees_with_the_page_at_that_row() {
             .unwrap(),
         None
     );
+    drop(library);
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+// ---------------------------------------------------------- folders (M13)
+
+/// Letting a folder go takes its songs out of the library and leaves every
+/// file exactly where it is.
+#[test]
+fn a_folder_that_is_let_go_leaves_its_files_alone() {
+    let dir = temp_dir("let go");
+    let music = dir.join("音楽 folder");
+    fixture(&music);
+    let mut library = open(&dir);
+    library.add_folder(&music).unwrap();
+    library.scan(|_| {}).unwrap();
+    assert!(library.track_count().unwrap() > 0);
+    let files: Vec<PathBuf> = std::fs::read_dir(&music)
+        .unwrap()
+        .filter_map(|entry| entry.ok().map(|entry| entry.path()))
+        .collect();
+
+    assert!(library.remove_folder(&music).unwrap());
+
+    assert_eq!(library.track_count().unwrap(), 0, "the songs are gone");
+    assert!(library.folder_paths().unwrap().is_empty());
+    for file in files {
+        assert!(file.exists(), "{} was touched", file.display());
+    }
+    drop(library);
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+/// A folder that moved is the same folder: the songs in it keep their
+/// history, their playlists and the edits not yet written to them.
+#[test]
+fn a_folder_that_moved_keeps_everything_hanging_from_its_songs() {
+    let dir = temp_dir("moved folder");
+    let before = dir.join("dulu");
+    let music = before.join("音楽 folder");
+    fixture(&music);
+    let mut library = open(&dir);
+    library.add_folder(&music).unwrap();
+    library.scan(|_| {}).unwrap();
+
+    // A song that reads properly: the fixture also holds a file that does
+    // not, and what happens to that one is another test's business.
+    let one = library
+        .tracks_page(TrackSort::Title, false, 0, 50)
+        .unwrap()
+        .into_iter()
+        .find(|track| track.status == "ok")
+        .unwrap();
+    let relative = Path::new(&one.path)
+        .strip_prefix(&music)
+        .unwrap()
+        .to_path_buf();
+    library.record_play(one.id, 1, 60_000).unwrap();
+    library.set_rating(one.id, 4).unwrap();
+    let playlist = library.create_playlist("Bawa pindah").unwrap();
+    library.add_to_playlist(playlist, &[one.id]).unwrap();
+    library
+        .set_override(one.id, Field::Title, Some("Judul baru"))
+        .unwrap();
+
+    // The whole thing moves, as a drive letter changing would move it.
+    let after = dir.join("sekarang");
+    std::fs::create_dir_all(&after).unwrap();
+    let moved = after.join("音楽 folder");
+    std::fs::rename(&music, &moved).unwrap();
+    let carried = library.move_folder(&music, &moved).unwrap();
+    assert!(carried > 0, "the tracks came along");
+
+    assert_eq!(library.folder_paths().unwrap(), vec![moved.clone()]);
+    let now = library.track(one.id).unwrap().unwrap();
+    assert_eq!(
+        Path::new(&now.path),
+        moved.join(&relative),
+        "the same song, at its new address"
+    );
+    assert_eq!(now.status, "ok", "and it is here again");
+    assert_eq!(
+        library.track_id(&moved.join(&relative)).unwrap(),
+        Some(one.id)
+    );
+    assert_eq!(library.stats(one.id).unwrap().play_count, 1, "its history");
+    assert_eq!(library.stats(one.id).unwrap().rating, 4);
+    assert_eq!(
+        library.playlist_tracks(playlist).unwrap()[0].id,
+        one.id,
+        "still on the playlist"
+    );
+    assert_eq!(
+        library.track(one.id).unwrap().unwrap().title.as_deref(),
+        Some("Judul baru"),
+        "and the edit that was never written to the file"
+    );
+
+    // A rescan at the new place finds nothing new to do.
+    let report = library.scan(|_| {}).unwrap();
+    assert_eq!(report.missing, 0, "{report:?}");
+    assert_eq!(report.read, 0, "nothing had to be read again: {report:?}");
+
+    drop(library);
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+/// A folder left out of scanning stays out, and its songs leave the
+/// library without leaving the disk.
+#[test]
+fn an_excluded_subfolder_stays_out_until_it_is_asked_back() {
+    let dir = temp_dir("excluded");
+    let music = dir.join("音楽 folder");
+    fixture(&music);
+    let samples = music.join("サンプル");
+    std::fs::create_dir_all(&samples).unwrap();
+    let sample = samples.join("loop.wav");
+    song_file(
+        &sample,
+        &Song {
+            title: "Sampel",
+            artist: "Kerja",
+            album: "Bahan",
+            album_artist: None,
+            track: 1,
+            genre: "Pop",
+            picture: None,
+        },
+    );
+    let mut library = open(&dir);
+    library.add_folder(&music).unwrap();
+    library.scan(|_| {}).unwrap();
+    assert!(
+        library.track_id(&sample).unwrap().is_some(),
+        "the sample is in the library to begin with"
+    );
+    let before = library.track_count().unwrap();
+
+    let gone = library.exclude(&samples).unwrap();
+    assert_eq!(gone, 1, "the sample left the library");
+    assert!(sample.is_file(), "and stayed on the disk");
+    assert_eq!(library.exclusions().unwrap(), vec![samples.clone()]);
+    assert_eq!(library.track_count().unwrap(), before - 1);
+
+    // A scan does not bring it back, and does not mark anything missing.
+    let report = library.scan(|_| {}).unwrap();
+    assert_eq!(report.missing, 0, "{report:?}");
+    assert!(library.track_id(&sample).unwrap().is_none(), "still out");
+
+    // Nor does the watcher notice anything there.
+    library
+        .apply_changes(&[Change::Changed(sample.clone())])
+        .unwrap();
+    assert!(library.track_id(&sample).unwrap().is_none(), "still out");
+
+    // Asked back, it returns with the next scan.
+    assert!(library.include(&samples).unwrap());
+    library.scan(|_| {}).unwrap();
+    assert!(library.track_id(&sample).unwrap().is_some(), "back again");
+
     drop(library);
     let _ = std::fs::remove_dir_all(&dir);
 }

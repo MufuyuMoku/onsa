@@ -7,15 +7,16 @@
 //! Version 1 holds what the library itself needs (M3), version 2 the
 //! playlists (M6), version 3 the record of what Onsa has changed so that it
 //! can be taken back again (M7), and version 4 lets that record hold a
-//! cover as well, and version 5 holds the lyrics (M8). The scrobble queue
-//! and the download queue arrive as later migrations with the milestones
-//! that use them.
+//! cover as well, version 5 holds the lyrics (M8), and version 6 the
+//! subfolders left out of scanning (M13). The scrobble queue and the
+//! download queue arrive as later migrations with the milestones that use
+//! them.
 //!
 //! The numbers follow the order the work was done in, not the milestone
 //! numbers (see `docs/DECISIONS.md`).
 
 /// The migrations, in order. Index 0 is version 1.
-pub const MIGRATIONS: &[&str] = &[V1, V2, V3, V4, V5];
+pub const MIGRATIONS: &[&str] = &[V1, V2, V3, V4, V5, V6];
 
 const V1: &str = r#"
 CREATE TABLE folders (
@@ -244,4 +245,17 @@ CREATE TABLE lyrics (
     offset_ms   INTEGER NOT NULL DEFAULT 0,
     fetched_at  INTEGER                      -- when the source was asked
 );
+"#;
+
+/// Version 6 (M13): subfolders inside a library folder that are left out
+/// of scanning — sample folders, working files, anything that is not music
+/// somebody wants to listen to.
+const V6: &str = r#"
+CREATE TABLE folder_exclusions (
+    id         INTEGER PRIMARY KEY,
+    folder_id  INTEGER NOT NULL REFERENCES folders(id) ON DELETE CASCADE,
+    path       TEXT NOT NULL UNIQUE,
+    added_at   INTEGER NOT NULL
+);
+CREATE INDEX folder_exclusions_folder ON folder_exclusions(folder_id);
 "#;

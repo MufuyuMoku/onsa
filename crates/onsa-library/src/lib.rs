@@ -13,8 +13,10 @@ pub mod auto;
 pub mod clean;
 pub mod cover;
 mod db;
+pub mod delete;
 pub mod edits;
 mod error;
+pub mod folders;
 pub mod lyrics;
 pub mod m3u;
 pub mod overrides;
@@ -31,6 +33,7 @@ pub mod write;
 
 pub use auto::{Reason, Suggestion};
 pub use db::Library;
+pub use delete::{DeleteReport, Refusal};
 pub use edits::{Batch, BatchReport, Scope, Skipped, Summary, UndoReport};
 pub use error::{Error, Result};
 pub use lyrics::Cached;

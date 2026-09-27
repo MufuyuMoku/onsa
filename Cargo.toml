@@ -48,6 +48,10 @@ thiserror = "2"
 tracing = "0.1"
 tracing-appender = "0.2"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+# Deleting a file means the Recycle Bin or the Trash, never for good
+# (SPEC §15). Both systems have a protocol for it and neither is a matter of
+# moving the file somewhere by hand.
+trash = "5"
 
 # Debug information is the biggest thing in `target/`, and neither the tests
 # nor a development build needs it: panics still name the functions they

@@ -727,8 +727,14 @@ impl Library {
             _ => return Err(Error::Invalid("a move with nowhere to go".into())),
         };
         write::move_file(Path::new(after), Path::new(before))?;
+        // The file is back where the row now points, and Onsa is the one
+        // who put it there, so a row left reading "missing" by the move is
+        // not left reading it by the undo.
         self.conn.execute(
-            "UPDATE tracks SET path = ?2 WHERE id = ?1",
+            "UPDATE tracks
+                SET path = ?2,
+                    status = CASE WHEN status = 'missing' THEN 'ok' ELSE status END
+              WHERE id = ?1",
             params![track_id, before],
         )?;
         Ok(())

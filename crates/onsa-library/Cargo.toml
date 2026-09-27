@@ -16,3 +16,9 @@ serde_json.workspace = true
 sha2.workspace = true
 thiserror.workspace = true
 tracing.workspace = true
+trash.workspace = true
+
+[dev-dependencies]
+# The tests look into the Recycle Bin or Trash themselves, rather than
+# taking Onsa's word for what it did (SPEC §15).
+trash.workspace = true
