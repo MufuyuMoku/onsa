@@ -18,6 +18,9 @@ thiserror.workspace = true
 tracing.workspace = true
 trash.workspace = true
 
+[target.'cfg(windows)'.dependencies]
+windows-sys.workspace = true
+
 [dev-dependencies]
 # The tests look into the Recycle Bin or Trash themselves, rather than
 # taking Onsa's word for what it did (SPEC §15).

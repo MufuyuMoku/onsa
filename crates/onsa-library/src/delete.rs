@@ -75,12 +75,95 @@ impl DeleteReport {
     }
 }
 
+/// An answer Onsa has already worked out, and what it was worked out about.
+#[derive(Debug, Clone)]
+struct Remembered {
+    /// The volume the folder sat on when the question was answered, as far
+    /// as the system would say. Nothing means the system would not say.
+    volume: Option<u64>,
+    /// What the answer was.
+    answer: std::result::Result<(), Refusal>,
+}
+
 /// What Onsa has already found out about a place, so that deleting a hundred
 /// files does not probe the trash a hundred times.
-fn known() -> &'static Mutex<HashMap<PathBuf, std::result::Result<(), Refusal>>> {
-    static KNOWN: OnceLock<Mutex<HashMap<PathBuf, std::result::Result<(), Refusal>>>> =
-        OnceLock::new();
+///
+/// It lives no longer than this run of Onsa: a new session asks again. A
+/// drive can be unplugged and another one plugged into the same letter
+/// between one evening and the next, and an answer from yesterday is about
+/// yesterday's disk.
+fn known() -> &'static Mutex<HashMap<PathBuf, Remembered>> {
+    static KNOWN: OnceLock<Mutex<HashMap<PathBuf, Remembered>>> = OnceLock::new();
     KNOWN.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+/// Which volume a folder sits on, when the system will say which.
+///
+/// On Windows that is the serial number of the volume the folder is mounted
+/// from — asked about the folder's own mount point, not its drive letter,
+/// so a volume mounted into a folder is its own answer. On Linux it is the
+/// device id of the filesystem. Either way it is only used to notice that
+/// the ground moved; it is never shown and never stored.
+#[cfg(windows)]
+fn volume_of(dir: &Path) -> Option<u64> {
+    use std::os::windows::ffi::OsStrExt;
+    use windows_sys::Win32::Storage::FileSystem::{GetVolumeInformationW, GetVolumePathNameW};
+
+    let mut wide: Vec<u16> = dir.as_os_str().encode_wide().collect();
+    wide.push(0);
+    // MAX_PATH and its terminator, which is what GetVolumePathNameW asks for.
+    let mut mount = [0u16; 261];
+    // SAFETY: both strings are null-terminated and owned here, and the
+    // lengths handed over are the buffers' own. Every out parameter is
+    // either a pointer to a local or null, which these calls accept.
+    let named =
+        unsafe { GetVolumePathNameW(wide.as_ptr(), mount.as_mut_ptr(), mount.len() as u32) };
+    if named == 0 {
+        return None;
+    }
+    let mut serial: u32 = 0;
+    let told = unsafe {
+        GetVolumeInformationW(
+            mount.as_ptr(),
+            std::ptr::null_mut(),
+            0,
+            &mut serial,
+            std::ptr::null_mut(),
+            std::ptr::null_mut(),
+            std::ptr::null_mut(),
+            0,
+        )
+    };
+    // A serial of zero is what some filesystems answer when they have none
+    // to give, and an identity nobody can tell apart is no identity.
+    if told == 0 || serial == 0 {
+        return None;
+    }
+    Some(u64::from(serial))
+}
+
+#[cfg(not(windows))]
+fn volume_of(dir: &Path) -> Option<u64> {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+        std::fs::metadata(dir).ok().map(|about| about.dev())
+    }
+    #[cfg(not(unix))]
+    {
+        let _ = dir;
+        None
+    }
+}
+
+/// Whether an answer from earlier is still about the same ground.
+///
+/// Only a volume that was known then, is known now, and is the same one
+/// counts. A volume nobody can name is never assumed to be the one from
+/// before: the cost of being wrong here is somebody's file, and the cost of
+/// being careful is one probe.
+fn same_ground(then: Option<u64>, now: Option<u64>) -> bool {
+    matches!((then, now), (Some(then), Some(now)) if then == now)
 }
 
 /// What the answer is remembered against: the folder itself.
@@ -133,13 +216,18 @@ fn probe_landed_in_the_trash(dir: &Path) -> std::result::Result<bool, String> {
 /// Whether a file deleted from this folder really goes to the Recycle Bin or
 /// the Trash.
 ///
-/// Proven by doing it, once per place per run of Onsa. A place that cannot
-/// be asked counts as a place that does not keep the promise.
+/// Proven by doing it, once per place per run of Onsa — and again whenever
+/// the volume under that folder is not the one the answer was about. A
+/// place that cannot be asked counts as a place that does not keep the
+/// promise.
 pub fn trash_is_real(dir: &Path) -> std::result::Result<(), Refusal> {
     let place = place_of(dir);
+    let volume = volume_of(dir);
     if let Ok(known) = known().lock() {
-        if let Some(answer) = known.get(&place) {
-            return answer.clone();
+        if let Some(seen) = known.get(&place) {
+            if same_ground(seen.volume, volume) {
+                return seen.answer.clone();
+            }
         }
     }
     let answer = ask_the_place(dir);
@@ -152,7 +240,13 @@ pub fn trash_is_real(dir: &Path) -> std::result::Result<(), Refusal> {
         }
     }
     if let Ok(mut known) = known().lock() {
-        known.insert(place, answer.clone());
+        known.insert(
+            place,
+            Remembered {
+                volume,
+                answer: answer.clone(),
+            },
+        );
     }
     answer
 }
@@ -251,6 +345,64 @@ mod tests {
             assert!(same_folder(one, Path::new(r"c:\users\someone\音楽\")));
         }
         assert!(!same_folder(one, Path::new(r"C:\Users\someone")));
+    }
+
+    #[test]
+    fn an_answer_is_only_reused_on_the_ground_it_was_given_about() {
+        assert!(same_ground(Some(7), Some(7)));
+        assert!(
+            !same_ground(Some(7), Some(8)),
+            "another volume, another answer"
+        );
+        assert!(
+            !same_ground(None, None),
+            "a volume nobody can name is not the one from before"
+        );
+        assert!(!same_ground(Some(7), None));
+        assert!(!same_ground(None, Some(7)));
+    }
+
+    /// A folder that was let through once must not stay let through when
+    /// the disk under it has been swapped for another one.
+    #[test]
+    fn a_volume_that_changed_is_asked_about_again() {
+        let dir = std::env::temp_dir().join(format!("onsa volume {}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        // An answer that could not come from a real probe, so it is obvious
+        // whether it was reused or the question was asked again.
+        let stale = Err(Refusal::CannotTell("from another disk".into()));
+
+        // Remembered against a volume that is not the one there now.
+        known().lock().unwrap().insert(
+            place_of(&dir),
+            Remembered {
+                volume: Some(u64::MAX),
+                answer: stale.clone(),
+            },
+        );
+        assert_ne!(
+            trash_is_real(&dir),
+            stale,
+            "the ground moved, so the question had to be asked again"
+        );
+
+        // Remembered against the volume that really is there: reused.
+        known().lock().unwrap().insert(
+            place_of(&dir),
+            Remembered {
+                volume: volume_of(&dir),
+                answer: stale.clone(),
+            },
+        );
+        let reused = trash_is_real(&dir) == stale;
+        assert_eq!(
+            reused,
+            volume_of(&dir).is_some(),
+            "the same volume is answered from memory; one nobody can name is asked again"
+        );
+
+        known().lock().unwrap().remove(&place_of(&dir));
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]
