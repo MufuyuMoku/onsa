@@ -4,7 +4,7 @@ Status tiap milestone dari `SPEC.md` §15. Diperbarui di akhir setiap milestone.
 
 ---
 
-## Garis rilis (diperbarui 2026-09-25)
+## Garis rilis (diperbarui 2026-09-27)
 
 Yang benar-benar ditandai:
 
@@ -14,6 +14,7 @@ Yang benar-benar ditandai:
 | `v1.0.1` | `c21e923` | 2026-09-19 | Enam perbaikan dari sesi audit. Tidak ada fitur baru. |
 | `v1.1.0` | `4af6879` | 2026-09-20 | Bantuan di dalam aplikasi. Tidak ada kemampuan baru. |
 | `v1.2.0` | `26132f9` | 2026-09-21 | Paket untuk tester: tiap jalur internet dibuktikan terhadap layanan sungguhan, dan berkas pemasang Windows dibangun CI. Tidak ada fitur baru. |
+| `v1.3.0` | (lihat tagnya) | 2026-09-27 | **v1.3 "Rapi", selesai.** Validasi fpcalc dan tombol ke halaman unduhan resminya; empat bug dari pengujian pemilik proyek; warna nada yang terlihat di keenam tema, dengan kriteria terukur; **M13** pengelolaan folder sumber; **M14** panel Sedang diputar. |
 
 Garis rilis yang diputuskan pada 2026-09-19 menempatkan M7b, M10b, M11, dan M12 di v1.1.
 Bukan itu yang terjadi: yang ditandai v1.1.0 adalah bantuan di dalam aplikasi, dan v1.2.0
@@ -24,7 +25,7 @@ Garis selanjutnya, keputusan pemilik proyek 2026-09-25:
 
 | Rilis | Isinya |
 |---|---|
-| **v1.3 "Rapi"** | v1.3-a pemilihan fpcalc (selesai), v1.3-b dokumen dan pemeriksaan lisensi (selesai), **M13** pengelolaan folder sumber, **M14** panel Sedang diputar |
+| ~~**v1.3 "Rapi"**~~ | **Selesai, ditandai `v1.3.0` pada 2026-09-27.** v1.3-a pemilihan fpcalc, v1.3-b dokumen dan pemeriksaan lisensi, v1.3-c empat bug dari pengujian, v1.3-d warna nada di keenam tema, **M13** pengelolaan folder sumber, **M14** panel Sedang diputar |
 | **v1.4 "Unduhan penuh"** | **M10b** (Deno, ffmpeg, antrean paralel, dan unduhan otomatis fpcalc), **M15** daftar sumber unduhan di Bantuan, dan paket Linux (AppImage dan deb) yang dibangun CI — sebagian M12 |
 | **v1.5 "Tampilan"** | **M16**: skema tema baru, keenam tema dirombak, preset layout sebagai sumbu terpisah |
 | **v1.6 "Lirik & metadata"** | **M17** lirik lanjutan, lalu **M7b** (sisa pekerjaan sampul) |
@@ -36,6 +37,10 @@ beserta daftar lisensi pihak ketiga, dan lisensi proyek — menunggu keputusan p
 
 **Laporan tester bukan gerbang.** Tidak ada rilis di atas yang menunggu laporan tester;
 laporan yang datang masuk ke rilis patch berikutnya (v1.x.y).
+
+**Yang belum terbukti di v1.3.0:** setiap bagiannya diuji di Windows pada mesin pemilik
+proyek, dan sisi Linux hanya lewat CI — tidak ada satu pun layar Linux sungguhan yang
+pernah menampilkan Onsa v1.3. Paket Linux (AppImage dan deb) menyusul di v1.4.
 
 ---
 

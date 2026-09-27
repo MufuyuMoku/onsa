@@ -8,11 +8,13 @@ Onsa (音叉, garpu tala) adalah pemutar musik desktop untuk Windows dan Linux, 
 
 - **Pemutaran**: gapless, crossfade, antrean yang bisa diurut ulang, playlist manual dan playlist pintar, sleep timer, mini player.
 - **Rantai DSP yang terlihat**: ReplayGain, EQ sepuluh band atau parametrik (bisa mengimpor preset AutoEQ), limiter, meter puncak, spektrum. Tiap tahap bisa dimatikan dari strip jalur sinyal.
-- **Library**: memindai folder, mengikuti perubahannya, pencarian teks penuh, penjelajahan per album, artis, genre, dan folder.
+- **Library**: memindai folder, mengikuti perubahannya, pencarian teks penuh, penjelajahan per album, artis, genre, dan folder. Folder sumber bisa dilepas, diikuti ke tempat barunya (lagunya tetap lagu yang sama, beserta riwayat putar, playlist, dan editannya), dan dipersempit dengan mengecualikan subfolder.
+- **Berkas di disk**: memindah berkas lewat pratinjau dan ringkasan, bisa dibatalkan lewat Riwayat; dan menghapus berkas ke Recycle Bin atau Trash — tidak pernah permanen, dan di tempat yang tidak punya keduanya Onsa menolak dan mengatakan alasannya.
 - **Metadata**: editor tag satu lagu dan massal. Editan disimpan di Onsa dulu; "tulis ke berkas" aksi terpisah, dan tiap jalannya bisa dibatalkan. Ada rename berpola dengan pratinjau, perapihan otomatis tanpa jaringan, dan — bila dinyalakan — pencarian ke AcoustID, MusicBrainz, dan Cover Art Archive yang hasilnya selalu berupa usulan.
 - **Lirik**: berkas `.lrc` di sebelah lagu, lirik di dalam tag, atau LRCLIB. Baris yang sedang dinyanyikan menyala, klik baris untuk melompat ke sana, dan geseran waktu disimpan per lagu.
 - **Unduhan**: satu URL pada satu waktu lewat yt-dlp, yang diambil hanya setelah kamu menyetujui sumbernya dan dicocokkan dengan checksum yang diterbitkan rilisnya.
 - **Enam tema bawaan** (tiga gelap, tiga terang). Tema adalah berkas JSON: salin tema yang sedang dipakai dari Pengaturan → Tampilan sebagai titik mulai, ubah warnanya, buka Onsa lagi, dan tema itu muncul di daftar. Berkas tema yang tidak terbaca disebutkan di halaman yang sama, dengan alasannya.
+- **Layar Sedang diputar yang bisa diatur**: sampul, rincian sinyal, lirik, dan visualizer masing-masing bisa dimatikan, dan pilihannya tersimpan. Dengan visualizer disembunyikan, analisis suaranya benar-benar berhenti.
 - **Bantuan di dalam aplikasi**: tanda tanya di sudut yang sama pada tiap halaman, membuka penjelasan halaman itu beserta tiap kontrolnya, dan satu halaman Bantuan untuk hal yang tidak menempel di satu halaman.
 - **Dua bahasa**, Indonesia dan Inggris. Semua fitur internet mati secara bawaan dan bisa dimatikan kapan saja.
 
@@ -20,17 +22,24 @@ Onsa (音叉, garpu tala) adalah pemutar musik desktop untuk Windows dan Linux, 
 
 - **ffmpeg opsional.** Tanpa ffmpeg unduhan tetap berjalan: audionya diambil apa adanya, tanpa tag dan sampul tertanam, dan konversi ke MP3 atau FLAC tidak tersedia. Halaman Unduhan mengatakan itu di tempat pilihannya dibuat.
 - **Sumber yang hanya menyediakan Opus ditolak**, dengan pesan, karena Onsa belum punya decoder Opus. Lebih baik ditolak di muka daripada berkasnya mendarat lalu tidak pernah muncul di library.
-- **Folder library belum bisa dihapus** dari Pengaturan; yang ada baru menambah dan memindai ulang.
 - **fpcalc dipasang sendiri.** Pengenalan lagu lewat suaranya butuh fpcalc dari Chromaprint, dan Onsa belum bisa mengunduhnya sendiri: ada tombol yang membuka halaman rilis resminya, dan sesudah dipasang, tunjukkan berkasnya lewat "Cari fpcalc…" di Pengaturan → Metadata. Pencarian lewat judul dan artis tetap jalan tanpa fpcalc.
 - **Belum ada scrobble Last.fm.**
 
-Rilis sesudah v1.0.0 tidak menambah fitur: **v1.0.1** memperbaiki temuan audit, **v1.1.0**
-menambahkan bantuan di dalam aplikasi, dan **v1.2.0** adalah paket untuk tester beserta
-berkas pemasang Windows yang dibangun CI — yang belum menutup pekerjaan rilis. Garis
-berikutnya ada di [`docs/SPEC.md`](docs/SPEC.md) §15 dan
-[`docs/PROGRESS.md`](docs/PROGRESS.md): v1.3 "Rapi" (pengelolaan folder sumber, panel
-Sedang diputar), v1.4 "Unduhan penuh" (Deno dan ffmpeg, antrean paralel, unduhan otomatis
-fpcalc, paket Linux), v1.5 "Tampilan", v1.6 "Lirik & metadata", v1.7 "Video".
+Rilis sesudah v1.0.0 tidak menambah fitur sampai v1.3: **v1.0.1** memperbaiki temuan audit,
+**v1.1.0** menambahkan bantuan di dalam aplikasi, dan **v1.2.0** adalah paket untuk tester
+beserta berkas pemasang Windows yang dibangun CI.
+
+**v1.3.0 "Rapi" (selesai)** berisi: validasi fpcalc dan tombol ke halaman unduhan resminya;
+pemeriksaan lisensi dependensi di CI; empat bug dari pengujian pemilik proyek; warna nada
+yang benar-benar terlihat di keenam tema, dengan kriteria terukur; **M13** pengelolaan
+folder sumber — melepas folder, mengikutinya pindah, mengecualikan subfolder, memindah dan
+menghapus berkas; dan **M14** panel Sedang diputar yang bisa dimatikan sendiri-sendiri.
+Seluruhnya diuji di Windows; sisi Linux hanya lewat CI.
+
+Garis berikutnya ada di [`docs/SPEC.md`](docs/SPEC.md) §15 dan
+[`docs/PROGRESS.md`](docs/PROGRESS.md): v1.4 "Unduhan penuh" (Deno dan ffmpeg, antrean
+paralel, unduhan otomatis fpcalc, paket Linux), v1.5 "Tampilan", v1.6 "Lirik & metadata",
+v1.7 "Video".
 
 ## Membangun dan menjalankan
 
