@@ -370,6 +370,8 @@ export interface DisplayPrefs {
 	/** How the song list is ordered, kept between one start and the next. */
 	sort: SortKey;
 	sortDescending: boolean;
+	/** Which panels on Now Playing are showing; only the decided ones. */
+	panels: Record<string, boolean>;
 }
 
 /** Where one list was left standing, and under which ordering. */

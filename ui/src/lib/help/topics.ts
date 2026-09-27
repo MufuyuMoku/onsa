@@ -230,7 +230,11 @@ export const TOPICS: HelpTopic[] = [
 		controls: [
 			control('nowPlaying.close', 'help.says.nowPlayingClose'),
 			control('transport.seek', 'help.says.seek'),
-			control('help.name.nowPlayingLyrics', 'help.says.nowPlayingLyrics')
+			control('help.name.nowPlayingLyrics', 'help.says.nowPlayingLyrics'),
+			control('panel.cover', 'help.says.panelCover'),
+			control('panel.details', 'help.says.panelDetails'),
+			control('panel.lyrics', 'help.says.panelLyrics'),
+			control('panel.visualizer', 'help.says.panelVisualizer')
 		],
 		limits: []
 	},

@@ -153,6 +153,11 @@ const id = {
 	'nowPlaying.close': 'Kembali ke library',
 	'nowPlaying.format': 'Format',
 	'nowPlaying.output': 'Output',
+	'panel.title': 'Panel',
+	'panel.cover': 'Sampul',
+	'panel.details': 'Keterangan',
+	'panel.lyrics': 'Lirik',
+	'panel.visualizer': 'Visualizer',
 	'mini.open': 'Mini player',
 	'mini.close': 'Jendela penuh',
 	'sleep.title': 'Sleep timer',
@@ -748,7 +753,7 @@ const id = {
 	'help.downloads.limitOne':
 		'Satu unduhan berjalan pada satu waktu. Antrean yang berjalan bersamaan menyusul di versi berikutnya.',
 	'help.nowPlaying.what':
-		'Layar penuh untuk lagu yang sedang diputar: sampul besar, liriknya kalau ada, dan keterangan teknis tentang apa yang sedang terjadi pada suaranya.',
+		'Layar penuh untuk lagu yang sedang diputar: sampul besar, liriknya kalau ada, dan keterangan teknis tentang apa yang sedang terjadi pada suaranya. Tiap bagiannya bisa dimatikan sendiri-sendiri lewat deretan sakelar di atas, dan pilihanmu tetap tersimpan sesudah Onsa ditutup.',
 	'help.output.what':
 		'Ke mana suara dikirim, dan seberapa teliti Onsa mengolahnya sebelum dikirim. Semua yang di halaman ini hanya mengubah suara yang keluar sekarang; tidak ada satu pun yang mengubah berkas musikmu.',
 	'help.dsp.what':
@@ -902,6 +907,14 @@ const id = {
 	'help.name.nowPlayingLyrics': 'Lirik di layar ini',
 	'help.says.nowPlayingLyrics':
 		'Kalau lagunya punya lirik, barisnya muncul besar di sini dan baris yang sedang dinyanyikan menyala. Klik sebuah baris untuk melompat ke bagian itu.',
+	'help.says.panelCover':
+		'Menampilkan atau menyembunyikan sampul besar. Dengan sampulnya disembunyikan, keterangan lagunya memakai selebar layar.',
+	'help.says.panelDetails':
+		'Menampilkan atau menyembunyikan daftar keterangan teknis: format berkasnya, resample, ReplayGain, EQ, dan ke mana suaranya dikirim.',
+	'help.says.panelLyrics':
+		'Menampilkan atau menyembunyikan panel lirik. Disembunyikan berarti tidak ada tempatnya di layar ini; pencarian lirik sendiri diatur di Pengaturan → Lirik.',
+	'help.says.panelVisualizer':
+		'Menampilkan atau menyembunyikan visualizer spektrum. Disembunyikan, Onsa benar-benar berhenti menganalisis suaranya — bukan sekadar menyembunyikan gambarnya — jadi tidak ada tenaga yang terpakai untuk sesuatu yang tidak kamu lihat.',
 
 	'help.says.device':
 		'Lewat mana suaranya keluar: speaker, headphone, atau perangkat lain yang dikenali komputermu. "Default sistem" berarti Onsa ikut ke mana pun Windows atau Linux mengirim suara, termasuk ketika kamu mencolok headphone.',
@@ -1312,6 +1325,11 @@ const en: Record<MessageKey, string> = {
 	'nowPlaying.close': 'Back to the library',
 	'nowPlaying.format': 'Format',
 	'nowPlaying.output': 'Output',
+	'panel.title': 'Panels',
+	'panel.cover': 'Cover',
+	'panel.details': 'Details',
+	'panel.lyrics': 'Words',
+	'panel.visualizer': 'Visualizer',
 	'mini.open': 'Mini player',
 	'mini.close': 'Full window',
 	'sleep.title': 'Sleep timer',
@@ -1907,7 +1925,7 @@ const en: Record<MessageKey, string> = {
 	'help.downloads.limitOne':
 		'One download runs at a time. Several at once comes in a later version.',
 	'help.nowPlaying.what':
-		'A full screen for the song that is playing: a large cover, the words if there are any, and the technical detail of what is happening to the sound.',
+		'A full screen for the song that is playing: a large cover, the words if there are any, and the technical detail of what is happening to the sound. Each part can be turned off on its own with the row of switches at the top, and what you choose is still there after Onsa is closed.',
 	'help.output.what':
 		'Where the sound goes, and how carefully Onsa works on it before sending it there. Everything on this page changes only the sound coming out now; none of it changes your music files.',
 	'help.dsp.what':
@@ -2059,6 +2077,14 @@ const en: Record<MessageKey, string> = {
 	'help.name.nowPlayingLyrics': 'The words on this screen',
 	'help.says.nowPlayingLyrics':
 		'If the song has words, the lines appear here in large type and the line being sung lights up. Click a line to jump to that part of the song.',
+	'help.says.panelCover':
+		'Shows or hides the large cover. With the cover away, the song details use the full width of the screen.',
+	'help.says.panelDetails':
+		'Shows or hides the list of technical detail: the file format, resampling, ReplayGain, the EQ, and where the sound is going.',
+	'help.says.panelLyrics':
+		'Shows or hides the words panel. Hidden means it has no place on this screen; whether words are looked up at all is set in Settings → Words.',
+	'help.says.panelVisualizer':
+		'Shows or hides the spectrum visualizer. Hidden, Onsa really stops analysing the sound rather than merely hiding the picture, so nothing is spent on something you are not looking at.',
 
 	'help.says.device':
 		'Where the sound goes out: speakers, headphones, or another device your computer knows. "System default" means Onsa follows wherever Windows or Linux sends sound, including when you plug headphones in.',

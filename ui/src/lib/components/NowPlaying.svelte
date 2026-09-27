@@ -1,6 +1,13 @@
 <!--
 	Now Playing (SPEC section 9.2): the cover large, the spectrum, and the
 	signal told honestly. The lyrics join it in M8.
+
+	Which of those are on screen is the listener's to decide (M14), and the
+	decision is data rather than anything this component works out: the bar
+	at the top turns a panel on or off, the answer is stored, and the layout
+	presets of M16 will arrange the same map. Hiding the visualizer really
+	stops the analysis, because the component leaves the page and takes its
+	claim on the tap with it.
 -->
 <script lang="ts">
 	import { tonePosition } from '$lib/analysis.svelte';
@@ -9,9 +16,13 @@
 	import { clock, db, fileName, rate } from '$lib/format';
 	import { t } from '$lib/i18n/index.svelte';
 	import { player } from '$lib/player.svelte';
+	import { PANELS, shown, togglePanel, type PanelId } from '$lib/panels.svelte';
 	import Icon from './Icon.svelte';
 	import LyricsPanel from './LyricsPanel.svelte';
 	import Spectrum from './Spectrum.svelte';
+
+	/** The words on each toggle, which the help quotes as they are. */
+	const panelName = (id: PanelId) => t(`panel.${id}` as never);
 
 	const snapshot = $derived(player.snapshot);
 	const track = $derived(snapshot?.track ?? null);
@@ -34,15 +45,32 @@
 	});
 </script>
 
-<div class="now">
-	<button type="button" class="back label" onclick={() => navigate({ kind: 'tracks' })}>
-		<Icon name="back" />{t('nowPlaying.close')}
-	</button>
+<div class="now" class:wide={!shown('cover')}>
+	<div class="bar">
+		<button type="button" class="back label" onclick={() => navigate({ kind: 'tracks' })}>
+			<Icon name="back" />{t('nowPlaying.close')}
+		</button>
+		<div class="panels" role="group" aria-label={t('panel.title')}>
+			{#each PANELS as id (id)}
+				<button
+					type="button"
+					class="toggle label"
+					class:on={shown(id)}
+					aria-pressed={shown(id)}
+					onclick={() => togglePanel(id)}
+				>
+					{panelName(id)}
+				</button>
+			{/each}
+		</div>
+	</div>
 
 	{#if track}
-		<div class="art">
-			{#if track.coverId !== null}<img src={coverUrl(track.coverId, 512)} alt="" />{/if}
-		</div>
+		{#if shown('cover')}
+			<div class="art">
+				{#if track.coverId !== null}<img src={coverUrl(track.coverId, 512)} alt="" />{/if}
+			</div>
+		{/if}
 		<div class="text">
 			<h1 class="ellipsis">{track.title ?? fileName(track.path)}</h1>
 			<p class="artist ellipsis">{track.artist ?? t('track.unknownArtist')}</p>
@@ -67,43 +95,49 @@
 				<span class="numeric muted">{clock(snapshot?.duration)}</span>
 			</div>
 
-			<dl class="facts">
-				{#if format}
-					<dt class="label">{t('nowPlaying.format')}</dt>
-					<dd class="numeric">{format}</dd>
-				{/if}
-				{#if signal?.resample}
-					<dt class="label">{t('signal.resample')}</dt>
-					<dd class="numeric">{rate(signal.resample.from)} → {rate(signal.resample.to)}</dd>
-				{/if}
-				{#if signal && signal.replaygain.mode !== 'off'}
-					<dt class="label">{t('signal.replaygain')}</dt>
-					<dd class="numeric">
-						{signal.replaygain.album ? t('signal.album') : t('signal.track')}
-						{signal.replaygain.gainDb === null ? '' : db(signal.replaygain.gainDb)}
-					</dd>
-				{/if}
-				{#if signal?.eq.enabled}
-					<dt class="label">{t('signal.eq')}</dt>
-					<dd class="numeric">
-						{signal.eq.kind === 'graphic'
-							? t('signal.bands', { n: signal.eq.bands })
-							: t('signal.filters', { n: signal.eq.bands })} · {db(signal.eq.preampDb)}
-					</dd>
-				{/if}
-				{#if output}
-					<dt class="label">{t('nowPlaying.output')}</dt>
-					<dd class="numeric">{output}</dd>
-				{/if}
-			</dl>
+			{#if shown('details')}
+				<dl class="facts">
+					{#if format}
+						<dt class="label">{t('nowPlaying.format')}</dt>
+						<dd class="numeric">{format}</dd>
+					{/if}
+					{#if signal?.resample}
+						<dt class="label">{t('signal.resample')}</dt>
+						<dd class="numeric">{rate(signal.resample.from)} → {rate(signal.resample.to)}</dd>
+					{/if}
+					{#if signal && signal.replaygain.mode !== 'off'}
+						<dt class="label">{t('signal.replaygain')}</dt>
+						<dd class="numeric">
+							{signal.replaygain.album ? t('signal.album') : t('signal.track')}
+							{signal.replaygain.gainDb === null ? '' : db(signal.replaygain.gainDb)}
+						</dd>
+					{/if}
+					{#if signal?.eq.enabled}
+						<dt class="label">{t('signal.eq')}</dt>
+						<dd class="numeric">
+							{signal.eq.kind === 'graphic'
+								? t('signal.bands', { n: signal.eq.bands })
+								: t('signal.filters', { n: signal.eq.bands })} · {db(signal.eq.preampDb)}
+						</dd>
+					{/if}
+					{#if output}
+						<dt class="label">{t('nowPlaying.output')}</dt>
+						<dd class="numeric">{output}</dd>
+					{/if}
+				</dl>
+			{/if}
 		</div>
-		<section class="words">
-			<h2 class="label">{t('lyrics.title')}</h2>
-			<LyricsPanel large />
-		</section>
-		<div class="visualizer">
-			<Spectrum height={170} />
-		</div>
+		{#if shown('lyrics')}
+			<section class="words">
+				<h2 class="label">{t('lyrics.title')}</h2>
+				<LyricsPanel large />
+			</section>
+		{/if}
+		{#if shown('visualizer')}
+			<div class="visualizer">
+				<Spectrum height={170} />
+			</div>
+		{/if}
 	{:else}
 		<p class="muted nothing">{t('transport.nothing')}</p>
 	{/if}
@@ -138,6 +172,50 @@
 		}
 	}
 
+	/* With the cover away there is no second column for the words to sit
+	   beside, and a text block in an `auto` column would size itself to its
+	   longest line. */
+	.now.wide {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.bar {
+		grid-column: 1 / -1;
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px 16px;
+	}
+
+	.panels {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+	}
+
+	.toggle {
+		padding: 3px 9px;
+		border: 1px solid var(--onsa-border);
+		border-radius: var(--onsa-radius-sm);
+		background: none;
+		color: var(--onsa-text-secondary);
+		font-size: 11px;
+		cursor: pointer;
+	}
+
+	.toggle:hover {
+		color: var(--onsa-text-primary);
+	}
+
+	/* A panel that is showing is lit the way every other thing you can
+	   adjust is lit, so the row reads as a set of switches rather than as
+	   four buttons that do something. */
+	.toggle.on {
+		border-color: var(--onsa-role-adjustable);
+		color: var(--onsa-role-adjustable);
+	}
+
 	.visualizer {
 		grid-column: 1 / -1;
 		min-width: 0;
@@ -162,7 +240,6 @@
 	}
 
 	.back {
-		grid-column: 1 / -1;
 		display: inline-flex;
 		align-items: center;
 		justify-self: start;

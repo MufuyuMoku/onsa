@@ -439,6 +439,11 @@ pub struct DisplayPrefs {
     /// And which way round.
     #[serde(default)]
     pub sort_descending: bool,
+    /// Which panels on the Now Playing screen are showing (SPEC §15, M14).
+    /// Only the ones somebody decided about are in here; the rest show.
+    /// The layout presets of M16 arrange the same map.
+    #[serde(default)]
+    pub panels: BTreeMap<String, bool>,
 }
 
 /// What the song list is ordered by until somebody says otherwise. The
@@ -457,6 +462,7 @@ impl Default for DisplayPrefs {
             places: BTreeMap::new(),
             sort: default_sort(),
             sort_descending: false,
+            panels: BTreeMap::new(),
         }
     }
 }
