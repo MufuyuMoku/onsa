@@ -243,12 +243,17 @@ jobs:
           name: onsa-linux-packages
           path: packages
 
+      # The artifact keeps the folders the bundler put the files in, so the
+      # files are looked for rather than guessed at.
       - name: What apt is being asked to install
         run: |
           set -eu
-          ls -la packages/
-          deb="$(ls packages/*.deb)"
+          find packages -type f -printf '%s\t%p\n'
+          deb="$(find packages -name '*.deb' | head -n 1)"
+          test -n "$deb"
+          echo "ONSA_DEB=$deb" >> "$GITHUB_ENV"
           dpkg-deb --field "$deb" Package Version Depends Installed-Size
+          sha256sum "$deb"
 
       # Only the tools that look at it and give it a screen; nothing Onsa
       # itself needs. Whatever the package needs, apt is left to work out.
@@ -260,7 +265,7 @@ jobs:
       - name: Install it the way somebody would
         run: |
           set -eu
-          sudo apt-get install -y ./packages/*.deb
+          sudo apt-get install -y "./${ONSA_DEB}"
           echo "--- nothing is left half-installed"
           sudo apt-get check
           dpkg -s onsa | sed -n '1,12p'
@@ -331,7 +336,9 @@ jobs:
       - name: The AppImage starts too
         run: |
           set -eu
-          image="$(ls packages/*.AppImage)"
+          image="$(find packages -name '*.AppImage' | head -n 1)"
+          test -n "$image"
+          sha256sum "$image"
           chmod +x "$image"
           export ONSA_DATA_DIR="${RUNNER_TEMP}/onsa-appimage-profile"
           export WEBKIT_DISABLE_COMPOSITING_MODE=1
