@@ -746,3 +746,33 @@ Keputusan pemilik proyek atas hasil pemeriksaan pertama cargo deny. Dua pengecua
   clone — Git memang tidak menjalankan hook dari repo tanpa diminta — jadi cara menyalakannya
   ditulis di README, bukan diandalkan diam-diam.
 
+## 2026-09-28 · v1.4-a: paket Linux dibangun dan dicoba di CI
+
+- **Dua paket, bukan satu.** `.deb` untuk sistem yang punya pengelola paket yang bisa
+  diserahi dependensinya, dan AppImage untuk sisanya — satu berkas yang jalan di tempat ia
+  diletakkan. Keduanya x86_64; arsitektur lain belum punya alasan sampai ada yang memintanya.
+- **Dibangun pada tiap push ke `main`, bukan hanya saat rilis.** Paket yang baru dibangun
+  pertama kali pada hari rilis adalah paket yang diuji pertama kali pada hari rilis. Ia
+  ditinggalkan sebagai artifact yang bisa diunduh siapa saja, jadi ada yang bisa dicoba
+  sebelum ada yang ditandai. Tidak pada pull request: ini soal punya sesuatu untuk diambil
+  dari `main`, dan build rilis jauh lebih mahal daripada pemeriksaannya.
+- **Pembuktiannya di runner kedua, yang tidak pernah membangun apa pun.** Memasang `.deb` di
+  mesin yang barusan membangunnya tidak membuktikan apa-apa soal dependensi: semua pustaka
+  `-dev` sudah ada di sana. Jadi job `installs` berjalan di runner sendiri, mengunduh
+  artifact-nya, dan memasangnya seperti orang memasangnya.
+- **Yang bisa dibuktikan tanpa layar dikatakan, yang tidak juga dikatakan.** Yang terbukti:
+  dependensinya terselesaikan oleh apt, tidak ada pustaka yang hilang saat `ldd`, dan
+  prosesnya hidup lalu tetap hidup di bawah layar virtual. Yang tidak terbukti: rupa
+  jendelanya dan keluarnya suara. Runner tidak punya mata dan tidak punya kartu suara, dan
+  sebuah tes yang berpura-pura punya lebih buruk daripada tes yang mengakui tidak punya.
+- **Dependensi ALSA ditulis sebagai alternatif, `libasound2t64 | libasound2`.** Ubuntu 24.04
+  mengganti nama paketnya dalam perpindahan `time_t` 64-bit. Satu nama saja akan benar di
+  satu sisi perpindahan itu dan salah di sisi lain; alternatif benar di keduanya, dan itu
+  sintaks Debian biasa, bukan akal-akalan.
+- **AppImage dijalankan dengan `--appimage-extract-and-run` di CI.** Runner tidak punya
+  FUSE, jadi ia tidak bisa memasang dirinya sendiri. Yang dibuktikan dengan cara itu adalah
+  isinya, bukan pemasangannya — dan itu yang dicatat, bukan diklaim lebih.
+- **Layar virtual dan bus disediakan, sisanya tidak.** Runner hanya dipasangi `xvfb` dan
+  `dbus-x11`: keduanya alat untuk melihat, bukan sesuatu yang Onsa butuhkan. Apa pun yang
+  dibutuhkan Onsa harus datang dari paketnya sendiri, dan itulah yang sedang diuji.
+

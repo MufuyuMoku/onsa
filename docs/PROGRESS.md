@@ -26,7 +26,7 @@ Garis selanjutnya, keputusan pemilik proyek 2026-09-25:
 | Rilis | Isinya |
 |---|---|
 | ~~**v1.3 "Rapi"**~~ | **Selesai, ditandai `v1.3.0` pada 2026-09-27.** v1.3-a pemilihan fpcalc, v1.3-b dokumen dan pemeriksaan lisensi, v1.3-c empat bug dari pengujian, v1.3-d warna nada di keenam tema, **M13** pengelolaan folder sumber, **M14** panel Sedang diputar |
-| **v1.4 "Unduhan penuh"** | **M10b** (Deno, ffmpeg, antrean paralel, dan unduhan otomatis fpcalc), **M15** daftar sumber unduhan di Bantuan, dan paket Linux (AppImage dan deb) yang dibangun CI — sebagian M12 |
+| **v1.4 "Unduhan penuh"** | v1.4-a paket Linux yang dibangun CI (selesai, 2026-09-28) — sebagian M12; lalu **M10b** (Deno, ffmpeg, antrean paralel, dan unduhan otomatis fpcalc) dan **M15** daftar sumber unduhan di Bantuan |
 | **v1.5 "Tampilan"** | **M16**: skema tema baru, keenam tema dirombak, preset layout sebagai sumbu terpisah |
 | **v1.6 "Lirik & metadata"** | **M17** lirik lanjutan, lalu **M7b** (sisa pekerjaan sampul) |
 | **v1.7 "Video"** | **M11** (decoder Opus lebih dulu), lalu **M18** video |
@@ -1564,3 +1564,81 @@ jenis kesalahan yang hook ini tangkap sebelum berangkat.
 
 `cargo fmt --check`, `clippy -D warnings`, `cargo test --workspace`, `npm run check`, tes UI
 (49), dan `cargo deny check licenses` semuanya bersih.
+
+## 2026-09-28 · v1.4-a: paket Linux dibangun dan dicoba di CI
+
+Dua paket untuk x86_64, dibangun CI tanpa kunci: `.deb` dan AppImage. Keduanya dilampirkan ke
+halaman rilis pada tag versi, dan dibangun juga pada tiap push ke `main` sebagai artifact
+**onsa-linux-packages** — supaya paketnya bisa dicoba sebelum ada yang ditandai, bukan pertama
+kali dicoba pada hari rilis.
+
+### Apa yang dibangun
+
+Dari jalan CI `36414502822`:
+
+| Paket | Ukuran | sha256 |
+|---|---|---|
+| `Onsa_1.3.0_amd64.deb` | 19.735.586 | `5695efcf6c56b494da12d8c6e1cb430df314f7a0990c69dc973dc50c436d614e` |
+| `Onsa_1.3.0_amd64.AppImage` | 94.153.208 | `b31af903f4f78c0f6bf7d495928076aab18655ab01b7b1d8fe19d91a3ba6b1ff` |
+
+Hash-nya berubah tiap build — build-nya tidak reproducible byte per byte, dan tidak ada yang
+menjanjikan itu. Yang dijanjikan: berkas yang dilampirkan ke rilis adalah berkas yang dibangun
+CI, beserta `linux-sha256.txt` di halaman yang sama untuk memeriksanya.
+
+Yang diminta `.deb`-nya dari sistem:
+
+```
+Depends: libasound2t64 | libasound2, libayatana-appindicator3-1, libwebkit2gtk-4.1-0, libgtk-3-0
+Installed-Size: 50347
+```
+
+### Apa yang terbukti
+
+Job `installs` berjalan di runner kedua yang **tidak pernah membangun apa pun** — tidak ada satu
+pun pustaka `-dev` di sana — dan memasang paketnya seperti orang memasangnya. Yang terbukti:
+
+- **`apt` menyelesaikan dependensinya sendiri** dari berkas `.deb` itu: `Setting up onsa (1.3.0) ...`,
+  lalu `apt-get check` bersih.
+- **Tidak ada pustaka yang hilang**: `ldd /usr/bin/onsa` tidak menyebut satu pun "not found".
+- **Prosesnya hidup dan tetap hidup** di bawah layar virtual (`xvfb-run` + `dbus-run-session`):
+  muncul dalam tiga detik, masih jalan sepuluh detik kemudian. Lognya menunjukkan ia benar-benar
+  mulai bekerja, bukan sekadar belum mati:
+
+  ```
+  INFO onsa: Onsa starting version="1.3.0" data=/home/runner/work/_temp/onsa-profile/data
+  INFO onsa_library::db: library schema migrated version=1 … version=6
+  ERROR onsa::player: no audio output can be opened: ... device is not available
+  INFO onsa::media: system media controls ready
+  ```
+
+  Migrasi sampai **versi 6** berarti skema M13 pun berjalan di Linux. Kesalahan output audio itu
+  memang benar: runner tidak punya kartu suara — dan yang penting, Onsa **tidak mati karenanya**.
+- **AppImage-nya juga hidup**, dijalankan dengan `--appimage-extract-and-run`.
+
+### Apa yang tidak terbukti
+
+- **Rupa jendelanya.** Layar virtual membuat aplikasinya bisa mulai; tidak ada yang melihat
+  hasilnya. Tidak ada tangkapan layar, tidak ada perbandingan tema.
+- **Suaranya.** Runner tidak punya kartu suara, dan lognya mengatakan itu apa adanya.
+- **Pemasangan AppImage lewat FUSE.** Runner tidak punya FUSE, jadi yang dijalankan adalah isinya
+  yang dibongkar, bukan berkas yang memasang dirinya sendiri.
+- **Distribusi selain Ubuntu 24.04**, dan arsitektur selain x86_64.
+
+Ketiga hal pertama menunggu orang dengan layar Linux. Itulah yang diminta dari pemilik proyek
+di langkah berikutnya, lewat WSL.
+
+### Satu kegagalan di jalan, dan apa penyebabnya
+
+Jalan pertama (`36412697902`) gagal di job pemasangannya. Bukan paketnya: artifact-nya
+mempertahankan folder `deb/` dan `appimage/` yang dibuat bundler, sementara glob-nya menganggap
+berkasnya rata di satu folder. Sekarang berkasnya dicari dengan `find`, bukan ditebak jalurnya.
+
+### Yang perlu dicatat tentang membangun AppImage
+
+Bundler Tauri mengunduh `linuxdeploy` dan `linuxdeploy-plugin-appimage` dari GitHub saat
+membangun AppImage. Itu jaringan di jalur build, di luar sekadar mengunduh dependensi crate dan
+npm. Masih di dalam batas SPEC §12 ("CI tidak bergantung pada internet selain untuk mengunduh
+dependensi"), tapi disebutkan di sini supaya tidak jadi hal yang ditemukan orang lain belakangan.
+
+`cargo fmt --check`, `clippy -D warnings`, `cargo test --workspace`, `npm run check`, tes UI,
+dan `cargo deny check licenses` semuanya bersih; CI `36414502822` hijau di kelima job-nya.
