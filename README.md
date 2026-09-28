@@ -41,6 +41,58 @@ Garis berikutnya ada di [`docs/SPEC.md`](docs/SPEC.md) §15 dan
 paralel, unduhan otomatis fpcalc, paket Linux), v1.5 "Tampilan", v1.6 "Lirik & metadata",
 v1.7 "Video".
 
+## Memasang di Linux
+
+Dua paket untuk x86_64, keduanya dibangun CI dan tidak pernah membawa kunci API. Yang
+dilampirkan ke [halaman rilis](https://github.com/MufuyuMoku/onsa/releases) adalah berkas
+yang dibangun CI itu sendiri, beserta `linux-sha256.txt` untuk memeriksanya. Versi yang
+belum dirilis bisa diambil dari artifact **onsa-linux-packages** di jalannya CI pada `main`.
+
+**.deb** (Debian, Ubuntu, dan turunannya) — `apt` yang mengurus dependensinya:
+
+```sh
+sudo apt install ./Onsa_1.3.0_amd64.deb
+onsa
+```
+
+**AppImage** — satu berkas, jalan di tempatnya diletakkan:
+
+```sh
+chmod +x Onsa_1.3.0_amd64.AppImage
+./Onsa_1.3.0_amd64.AppImage
+```
+
+AppImage butuh FUSE untuk memasang dirinya sendiri. Di sistem yang tidak punya (`libfuse2`
+tidak terpasang), jalankan dengan `--appimage-extract-and-run`; ia akan membongkar dirinya
+ke folder sementara alih-alih memasangnya.
+
+Di luar yang ditarik paketnya sendiri, Onsa butuh **WebKitGTK 4.1** (`libwebkit2gtk-4.1-0`)
+dan **ALSA** (`libasound2t64`, atau `libasound2` di sistem yang lebih lama). Keduanya sudah
+disebut sebagai dependensi `.deb`, jadi `apt` memasangnya sendiri; untuk AppImage, keduanya
+harus sudah ada di sistem. Di PipeWire atau PulseAudio, suaranya lewat lapisan kompatibilitas
+ALSA mereka.
+
+### Mencobanya di WSL (Windows 11)
+
+Windows 11 menjalankan aplikasi berjendela Linux lewat WSLg, jadi Onsa versi Linux bisa
+dicoba tanpa memasang Linux sungguhan. Dari PowerShell:
+
+```powershell
+wsl --install -d Ubuntu
+```
+
+lalu di dalam Ubuntu-nya:
+
+```sh
+sudo apt update
+sudo apt install ./Onsa_1.3.0_amd64.deb
+onsa
+```
+
+Jendelanya muncul di desktop Windows seperti aplikasi biasa. Suara lewat WSLg juga jalan
+lewat PulseAudio yang disediakannya. Kalau jendelanya tidak muncul sama sekali, pastikan
+WSL-nya versi 2 dan sudah diperbarui (`wsl --update`); WSLg tidak ada di WSL 1.
+
 ## Membangun dan menjalankan
 
 Semua sistem: Rust stable (dengan `rustfmt` dan `clippy`) dan Node.js 24 atau lebih baru.

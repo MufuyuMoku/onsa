@@ -130,3 +130,237 @@ jobs:
       - name: Build application
         working-directory: src-tauri
         run: npx --prefix ../ui tauri build --debug --no-bundle
+
+  # The Linux packages themselves, on every push to main. A package that is
+  # only ever built at a release is a package whose first test is a release,
+  # so it is built here and left as something anybody can download and try.
+  #
+  # Not on pull requests: this is about having something to fetch from main,
+  # and a release build costs far more than the checks do.
+  packages:
+    name: linux packages
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      # Nobody's key travels in a package built here, exactly as for the
+      # Windows installer: the compiler refuses a build that would carry one.
+      ONSA_KEYLESS: '1'
+      ONSA_ACOUSTID_API_KEY: ''
+      ONSA_LASTFM_API_KEY: ''
+      ONSA_LASTFM_API_SECRET: ''
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc /usr/local/.ghcup
+          sudo rm -rf /usr/local/share/boost /usr/share/swift
+          sudo rm -rf "${AGENT_TOOLSDIRECTORY:-/opt/hostedtoolcache}"
+          df -h /
+
+      - name: Install Linux build dependencies
+        timeout-minutes: 10
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential file pkg-config libssl-dev \
+            libwebkit2gtk-4.1-dev libxdo-dev libayatana-appindicator3-dev \
+            librsvg2-dev libasound2-dev
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+
+      - name: npm ci
+        working-directory: ui
+        run: npm ci
+
+      - name: No keys in these packages
+        run: |
+          set -eu
+          test "${ONSA_KEYLESS}" = "1"
+          for name in ONSA_ACOUSTID_API_KEY ONSA_LASTFM_API_KEY ONSA_LASTFM_API_SECRET; do
+            value="$(printenv "$name" || true)"
+            if [ -n "$value" ]; then
+              echo "$name is set; a package built here must carry no keys" >&2
+              exit 1
+            fi
+            echo "$name: empty"
+          done
+
+      - name: Build the packages
+        run: ./ui/node_modules/.bin/tauri build --bundles deb,appimage
+
+      - name: What they are
+        run: |
+          set -eu
+          for file in target/release/bundle/deb/*.deb target/release/bundle/appimage/*.AppImage; do
+            echo "$file"
+            echo "  size: $(stat -c %s "$file") bytes"
+            echo "  sha256: $(sha256sum "$file" | cut -d' ' -f1)"
+          done
+          echo "--- what the .deb asks the system for"
+          dpkg-deb --field target/release/bundle/deb/*.deb Depends
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: onsa-linux-packages
+          path: |
+            target/release/bundle/deb/*.deb
+            target/release/bundle/appimage/*.AppImage
+          if-no-files-found: error
+          retention-days: 14
+
+  # The question the packages exist to answer: does this install and start on
+  # a machine that has never built anything? So it runs on its own runner,
+  # with none of the build dependencies on it, and installs the package the
+  # way somebody would.
+  #
+  # What this can prove without a screen is that the dependencies resolve,
+  # that nothing is missing at link time, and that the process comes up and
+  # stays up under a virtual display. What it cannot prove is that the window
+  # looks right or that sound comes out; a runner has neither eyes nor a
+  # sound card.
+  installs:
+    name: the .deb on a machine that never built it
+    needs: packages
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: onsa-linux-packages
+          path: packages
+
+      - name: What apt is being asked to install
+        run: |
+          set -eu
+          ls -la packages/
+          deb="$(ls packages/*.deb)"
+          dpkg-deb --field "$deb" Package Version Depends Installed-Size
+
+      # Only the tools that look at it and give it a screen; nothing Onsa
+      # itself needs. Whatever the package needs, apt is left to work out.
+      - name: A screen to start into, and a bus to talk on
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb dbus-x11
+
+      - name: Install it the way somebody would
+        run: |
+          set -eu
+          sudo apt-get install -y ./packages/*.deb
+          echo "--- nothing is left half-installed"
+          sudo apt-get check
+          dpkg -s onsa | sed -n '1,12p'
+
+      - name: Nothing missing at link time
+        run: |
+          set -eu
+          binary="$(command -v onsa)"
+          echo "installed at: $binary"
+          missing="$(ldd "$binary" | grep 'not found' || true)"
+          if [ -n "$missing" ]; then
+            echo "these shared libraries are missing:" >&2
+            echo "$missing" >&2
+            exit 1
+          fi
+          echo "every shared library it asks for is there"
+
+      - name: It starts, and stays up
+        run: |
+          set -eu
+          export ONSA_DATA_DIR="${RUNNER_TEMP}/onsa-profile"
+          export ONSA_LOG=debug
+          # A runner has no GPU, and WebKit expects one unless it is told
+          # otherwise. Neither of these changes what Onsa does.
+          export WEBKIT_DISABLE_COMPOSITING_MODE=1
+          export WEBKIT_DISABLE_DMABUF_RENDERER=1
+          export XDG_RUNTIME_DIR="${RUNNER_TEMP}/xdg"
+          mkdir -p "$XDG_RUNTIME_DIR" "$ONSA_DATA_DIR"
+          chmod 700 "$XDG_RUNTIME_DIR"
+
+          xvfb-run -a dbus-run-session -- onsa > "${RUNNER_TEMP}/onsa.out" 2>&1 &
+          wrapper=$!
+
+          up=no
+          for _ in $(seq 1 30); do
+            sleep 1
+            if pgrep -x onsa >/dev/null 2>&1; then
+              up=yes
+              break
+            fi
+            if ! kill -0 "$wrapper" 2>/dev/null; then
+              break
+            fi
+          done
+          if [ "$up" != "yes" ]; then
+            echo "onsa never came up" >&2
+            cat "${RUNNER_TEMP}/onsa.out" >&2 || true
+            exit 1
+          fi
+          echo "it came up; watching it for ten seconds"
+
+          sleep 10
+          if ! pgrep -x onsa >/dev/null 2>&1; then
+            echo "onsa did not stay up" >&2
+            cat "${RUNNER_TEMP}/onsa.out" >&2 || true
+            exit 1
+          fi
+          echo "still running after ten seconds"
+
+          pkill -x onsa || true
+          sleep 2
+          echo "--- what it said while it ran"
+          tail -n 40 "${RUNNER_TEMP}/onsa.out" || true
+
+      # The other package, started the same way. `--appimage-extract-and-run`
+      # unpacks it instead of mounting it, because a runner has no FUSE; what
+      # that proves is the contents, not the mounting.
+      - name: The AppImage starts too
+        run: |
+          set -eu
+          image="$(ls packages/*.AppImage)"
+          chmod +x "$image"
+          export ONSA_DATA_DIR="${RUNNER_TEMP}/onsa-appimage-profile"
+          export WEBKIT_DISABLE_COMPOSITING_MODE=1
+          export WEBKIT_DISABLE_DMABUF_RENDERER=1
+          export XDG_RUNTIME_DIR="${RUNNER_TEMP}/xdg"
+          mkdir -p "$XDG_RUNTIME_DIR" "$ONSA_DATA_DIR"
+          chmod 700 "$XDG_RUNTIME_DIR"
+
+          xvfb-run -a dbus-run-session -- "$image" --appimage-extract-and-run \
+            > "${RUNNER_TEMP}/appimage.out" 2>&1 &
+
+          up=no
+          for _ in $(seq 1 30); do
+            sleep 1
+            if pgrep -x onsa >/dev/null 2>&1; then
+              up=yes
+              break
+            fi
+          done
+          if [ "$up" != "yes" ]; then
+            echo "the AppImage never came up" >&2
+            cat "${RUNNER_TEMP}/appimage.out" >&2 || true
+            exit 1
+          fi
+          sleep 10
+          if ! pgrep -x onsa >/dev/null 2>&1; then
+            echo "the AppImage did not stay up" >&2
+            cat "${RUNNER_TEMP}/appimage.out" >&2 || true
+            exit 1
+          fi
+          echo "the AppImage came up and stayed up for ten seconds"
+          pkill -x onsa || true

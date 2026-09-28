@@ -82,7 +82,7 @@
     "linux": {
       "deb": {
         "depends": [
-          "libasound2"
+          "libasound2t64 | libasound2"
         ]
       }
     }
