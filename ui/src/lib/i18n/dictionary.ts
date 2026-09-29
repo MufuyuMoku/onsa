@@ -572,7 +572,9 @@ const id = {
 	'downloads.fromRelease': 'dari rilis resmi',
 	'downloads.installYourself': 'dipasang sendiri',
 	'downloads.ffmpegWhere':
-		'ffmpeg dipasang sendiri karena rilisnya berbentuk arsip, dan Onsa belum bisa membongkar arsip. Di Linux biasanya sudah ada, atau lewat paket ffmpeg. Di Windows: buka halaman di bawah, unduh berkasnya, buka arsipnya, lalu taruh folder bin-nya di PATH — atau centang "pakai program yang sudah ada di sistem" di bawah.',
+		'ffmpeg diunduh Onsa dari build resmi BtbN, sebagai arsip yang dibongkar sendiri oleh Onsa. Berkasnya besar, jadi unduhannya memakan waktu. Di Linux ffmpeg biasanya sudah ada lewat paket sistemnya; kalau begitu, centang "pakai program yang sudah ada di sistem" di bawah dan tidak perlu mengunduh apa-apa.',
+	'downloads.denoWhat':
+		'yt-dlp memakai Deno untuk memecahkan sebagian pengamanan YouTube. Tanpa Deno, sebagian video YouTube tetap bisa diunduh dan sebagian lagi gagal dengan pesan dari yt-dlp sendiri.',
 	'downloads.withoutFfmpeg':
 		'Tanpa ffmpeg, unduhan tetap jalan: berkasnya diambil apa adanya, tanpa tag dan tanpa sampul tertanam, dan konversi tidak tersedia.',
 	'downloads.noFfmpeg': 'Butuh ffmpeg, dan tidak ada yang ditemukan.',
@@ -673,6 +675,13 @@ const id = {
 		'Berkas ini bukan fpcalc. Pilihannya tidak disimpan. Yang dicari adalah program fpcalc, bukan berkas lagu dan bukan program lain.',
 	'programs.notFpcalcHere': 'ada berkasnya, tapi bukan fpcalc',
 	'programs.openPage': 'Buka halaman unduhan resmi',
+	'programs.fetch': 'Unduh fpcalc',
+	'programs.fetchTitle': 'Unduh fpcalc?',
+	'programs.fetchWhat':
+		'Onsa akan mengunduh berkas ini dari rilis resmi Chromaprint, memeriksanya terhadap sidik SHA-256 yang tersimpan di dalam Onsa, lalu membongkar arsipnya. Tidak ada yang ditulis ke mana pun sebelum sidiknya cocok.',
+	'programs.fetchSize': 'Kira-kira {size}',
+	'programs.fetching': 'Mengunduh…',
+	'programs.fetched': 'fpcalc terpasang.',
 	'programs.distroPackage':
 		'Di Debian dan Ubuntu, paketnya bernama {name}. Pasang lewat pengelola paket distromu, lalu tekan "Periksa lagi": Onsa mencari program di PATH, jadi tidak ada berkas yang perlu ditunjukkan.',
 
@@ -750,8 +759,6 @@ const id = {
 		'Hasil unduhan ditulis sebagai berkas baru di dalam folder library-mu, di subfolder "Unduhan", lalu muncul sendiri di library. Berkas musik yang sudah ada tidak disentuh.',
 	'help.downloads.limitOpus':
 		'Sumber yang hanya menyediakan audio format Opus ditolak di muka, dengan pesan, karena Onsa belum bisa memutar format itu.',
-	'help.downloads.limitOne':
-		'Satu unduhan berjalan pada satu waktu. Antrean yang berjalan bersamaan menyusul di versi berikutnya.',
 	'help.nowPlaying.what':
 		'Layar penuh untuk lagu yang sedang diputar: sampul besar, liriknya kalau ada, dan keterangan teknis tentang apa yang sedang terjadi pada suaranya. Tiap bagiannya bisa dimatikan sendiri-sendiri lewat deretan sakelar di atas, dan pilihanmu tetap tersimpan sesudah Onsa ditutup.',
 	'help.output.what':
@@ -996,6 +1003,8 @@ const id = {
 		'Menyimpan kunci itu di komputermu saja, untuk dipakai pada pertanyaan berikutnya.',
 	'help.says.metaKeyClear': 'Menghapus kunci yang tersimpan.',
 	'help.says.metaKeyTry': 'Mengirim satu pertanyaan kecil untuk memastikan kuncinya diterima.',
+	'help.says.fetchFpcalc':
+		'Onsa mengunduh fpcalc sendiri dari rilis resmi Chromaprint, lalu membongkar arsipnya. Sebelum apa pun diunduh, kamu ditunjukkan berkas mana, dari mana, dan kira-kira seberapa besar — dan berkasnya dicocokkan dengan sidik SHA-256 yang tersimpan di dalam Onsa sebelum ditulis ke mana pun. Rilis Chromaprint tidak menerbitkan daftar checksum, jadi sidik itulah yang dipegang Onsa.',
 	'help.says.metaChoose':
 		'Membuka jendela untuk menunjukkan sendiri letak berkas fpcalc di komputermu. fpcalc adalah program kecil yang menghitung sidik jari dari bunyi lagu; tanpa dia, "Cari data online" tidak bisa bertanya lewat suara. Berkas yang kamu tunjuk dijalankan sekali untuk memastikan itu benar fpcalc; kalau bukan, misalnya berkas lagu yang terpilih tanpa sengaja, pilihannya ditolak dan tidak disimpan.',
 	'help.says.openPage':
@@ -1744,7 +1753,9 @@ const en: Record<MessageKey, string> = {
 	'downloads.fromRelease': 'from the official release',
 	'downloads.installYourself': 'installed by you',
 	'downloads.ffmpegWhere':
-		'ffmpeg is installed by you, because its release comes as an archive and Onsa cannot unpack archives yet. On Linux it is usually there already, or in the ffmpeg package. On Windows: open the page below, download the file, unpack it and put its bin folder on PATH \u2014 or tick "use the programs already on this system" below.',
+		'Onsa fetches ffmpeg from BtbN’s official builds, as an archive it unpacks itself. The file is large, so the download takes a while. On Linux ffmpeg is usually already there through the system package; if it is, tick "use the programs already on this system" below and nothing needs fetching.',
+	'downloads.denoWhat':
+		'yt-dlp uses Deno to work through some of YouTube’s protections. Without it, some YouTube videos still download and others fail with a message from yt-dlp itself.',
 	'downloads.withoutFfmpeg':
 		'Without ffmpeg a download still works: the audio comes as it is, with no tags and no cover written into it, and converting is unavailable.',
 	'downloads.noFfmpeg': 'This needs ffmpeg, and none was found.',
@@ -1845,6 +1856,13 @@ const en: Record<MessageKey, string> = {
 		'This file is not fpcalc. The choice was not kept. What is being looked for is the fpcalc program, not a song file and not another program.',
 	'programs.notFpcalcHere': 'there is a file, but it is not fpcalc',
 	'programs.openPage': 'Open the official download page',
+	'programs.fetch': 'Fetch fpcalc',
+	'programs.fetchTitle': 'Fetch fpcalc?',
+	'programs.fetchWhat':
+		'Onsa will fetch this file from Chromaprint’s official release, check it against the SHA-256 fingerprint kept inside Onsa, and unpack it. Nothing is written anywhere until the fingerprint matches.',
+	'programs.fetchSize': 'About {size}',
+	'programs.fetching': 'Fetching…',
+	'programs.fetched': 'fpcalc is installed.',
 	'programs.distroPackage':
 		'On Debian and Ubuntu the package is called {name}. Install it with your distribution\'s package manager and press "Look again": Onsa searches PATH, so there is no file to point at.',
 
@@ -1922,8 +1940,6 @@ const en: Record<MessageKey, string> = {
 		'What is fetched is written as a new file inside your library folder, in a "Downloads" subfolder, and then appears in the library by itself. The music files you already have are not touched.',
 	'help.downloads.limitOpus':
 		'A source that offers audio only as Opus is refused up front, with a message, because Onsa cannot play that format yet.',
-	'help.downloads.limitOne':
-		'One download runs at a time. Several at once comes in a later version.',
 	'help.nowPlaying.what':
 		'A full screen for the song that is playing: a large cover, the words if there are any, and the technical detail of what is happening to the sound. Each part can be turned off on its own with the row of switches at the top, and what you choose is still there after Onsa is closed.',
 	'help.output.what':
@@ -2165,6 +2181,8 @@ const en: Record<MessageKey, string> = {
 	'help.says.metaKeySave': 'Keeps that key on your computer only, to use for the next question.',
 	'help.says.metaKeyClear': 'Deletes the key that was kept.',
 	'help.says.metaKeyTry': 'Sends one small question to be sure the key is accepted.',
+	'help.says.fetchFpcalc':
+		'Onsa fetches fpcalc itself from Chromaprint’s official release and unpacks it. Before anything is fetched you are shown which file, from where, and roughly how large — and the file is matched against a SHA-256 fingerprint kept inside Onsa before it is written anywhere. Chromaprint publishes no list of checksums, so that fingerprint is what Onsa holds instead.',
 	'help.says.metaChoose':
 		'Opens a window to point Onsa at the fpcalc file on your computer yourself. fpcalc is a small program that works out a fingerprint from the sound of a song; without it, "Look it up online" has nothing to ask by sound. The file you point at is run once to be sure it really is fpcalc; if it is not, a song file picked by mistake for instance, the choice is refused and nothing is kept.',
 	'help.says.openPage':

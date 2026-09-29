@@ -72,3 +72,16 @@ export function relativeTo(path: string, root: string): string {
 	if (!root || path.length <= root.length || !path.startsWith(root)) return path;
 	return path.slice(root.length).replace(/^[\\/]+/, '');
 }
+
+/**
+ * A size a person can read, from bytes.
+ *
+ * Megabytes and nothing smaller: everything Onsa ever shows a size for is a
+ * program or a download, and none of them is measured in kilobytes. One
+ * decimal place while that would tell you something, none once it would not.
+ */
+export function size(bytes: number | null | undefined): string {
+	if (!bytes) return '';
+	const mb = bytes / (1024 * 1024);
+	return `${mb < 10 ? mb.toFixed(1) : Math.round(mb)} MB`;
+}

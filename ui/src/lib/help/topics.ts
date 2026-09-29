@@ -221,7 +221,7 @@ export const TOPICS: HelpTopic[] = [
 			control('downloads.stopAll', 'help.says.stopAll')
 		],
 		files: 'help.downloads.files',
-		limits: ['help.downloads.limitOpus', 'help.downloads.limitOne']
+		limits: ['help.downloads.limitOpus']
 	},
 	{
 		id: 'nowPlaying',
@@ -309,6 +309,7 @@ export const TOPICS: HelpTopic[] = [
 			control('metadata.keyClear', 'help.says.metaKeyClear'),
 			control('metadata.keyTry', 'help.says.metaKeyTry'),
 			control('programs.openPage', 'help.says.openPage'),
+			control('programs.fetch', 'help.says.fetchFpcalc'),
 			control('programs.choose', 'help.says.metaChoose'),
 			control('programs.forget', 'help.says.metaForget'),
 			control('programs.refresh', 'help.says.metaRefresh')

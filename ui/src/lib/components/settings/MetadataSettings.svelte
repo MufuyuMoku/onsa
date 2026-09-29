@@ -9,6 +9,7 @@
 <script lang="ts">
 	import {
 		acoustidTest,
+		binaryInstall,
 		failureKey,
 		metadataGet,
 		programChoose,
@@ -20,12 +21,17 @@
 		type MetadataPrefs,
 		type ProgramStatus
 	} from '$lib/backend';
+	import { size } from '$lib/format';
 	import { t } from '$lib/i18n/index.svelte';
 	import type { MessageKey } from '$lib/i18n/dictionary';
+	import Confirm from '../Confirm.svelte';
 
 	let prefs = $state<MetadataPrefs | null>(null);
 	let programs = $state<ProgramStatus[]>([]);
 	let looking = $state(false);
+	/** Whether the listener is being asked about fetching fpcalc. */
+	let asking = $state(false);
+	let fetching = $state(false);
 	let typed = $state('');
 	let failure = $state<MessageKey | null>(null);
 	let note = $state<MessageKey | null>(null);
@@ -89,6 +95,29 @@
 			// choice was refused, and nothing was kept.
 			const key = failureKey(error);
 			failure = key === 'error.not_that_program' ? 'programs.notFpcalc' : key;
+		}
+	}
+
+	/**
+	 * Fetches fpcalc, once the listener has agreed to the file itself.
+	 *
+	 * The same rule as every other program Onsa fetches (SPEC §7.1): the
+	 * name, where it comes from and roughly what it weighs are on screen
+	 * before there is a button to press.
+	 */
+	async function fetchFpcalc(): Promise<void> {
+		asking = false;
+		fetching = true;
+		failure = null;
+		note = null;
+		try {
+			await binaryInstall('fpcalc');
+			note = 'programs.fetched';
+		} catch (error) {
+			failure = failureKey(error);
+		} finally {
+			fetching = false;
+			await lookAgain();
 		}
 	}
 
@@ -259,6 +288,11 @@
 		{/if}
 
 		<div class="actions">
+			{#if !usable && fingerprinter?.installable}
+				<button type="button" class="btn" disabled={fetching} onclick={() => (asking = true)}>
+					{fetching ? t('programs.fetching') : t('programs.fetch')}
+				</button>
+			{/if}
 			{#if !usable}
 				<button type="button" class="btn" onclick={openFpcalcPage}>
 					{t('programs.openPage')}
@@ -286,6 +320,22 @@
 		{#if failure}<p class="note fault-text">{t(failure)}</p>{/if}
 	</section>
 </div>
+
+{#if asking && fingerprinter}
+	<Confirm
+		title={t('programs.fetchTitle')}
+		message={`${fingerprinter.url ?? ''}
+
+${t('programs.fetchSize', {
+			size: size(fingerprinter.aboutBytes ?? 0)
+		})}
+
+${t('programs.fetchWhat')}`}
+		confirm={t('programs.fetch')}
+		onconfirm={fetchFpcalc}
+		oncancel={() => (asking = false)}
+	/>
+{/if}
 
 <style>
 	@import './settings.css';

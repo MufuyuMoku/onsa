@@ -30,7 +30,7 @@
 		type QueueItem,
 		type UrlTrouble
 	} from '$lib/backend';
-	import { clock } from '$lib/format';
+	import { clock, size } from '$lib/format';
 	import { t } from '$lib/i18n/index.svelte';
 	import type { MessageKey } from '$lib/i18n/dictionary';
 	import Icon from './Icon.svelte';
@@ -227,13 +227,6 @@
 		cannotWrite: 'downloads.cannotWrite',
 		unreadable: 'downloads.unreadable'
 	};
-
-	/** A size a person can read, from bytes. */
-	function size(bytes: number | null | undefined): string {
-		if (!bytes) return '';
-		const mb = bytes / (1024 * 1024);
-		return `${mb < 10 ? mb.toFixed(1) : Math.round(mb)} MB`;
-	}
 
 	/** Which programs still have to arrive before anything can be downloaded. */
 	const missing = $derived(programs.filter((one) => one.required && !one.present));

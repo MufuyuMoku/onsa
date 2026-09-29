@@ -62,6 +62,13 @@ pub struct ProgramDto {
     pub system_package: Option<String>,
     /// What it says its version is.
     pub version: Option<String>,
+    /// Whether Onsa can fetch this one itself.
+    pub installable: bool,
+    /// The exact file it would fetch, so the listener agrees to a thing
+    /// rather than to a word (SPEC §7.1).
+    pub url: Option<String>,
+    /// Roughly what that file weighs.
+    pub about_bytes: Option<u64>,
 }
 
 /// How a matching run stands, with everything it has found.
@@ -151,6 +158,7 @@ pub async fn program_status(app: AppHandle) -> Result<Vec<ProgramDto>, ErrorCode
                 let said = found
                     .as_ref()
                     .map(|found| onsa_downloader::identify(program, &found.path));
+                let release = onsa_downloader::install::release_for(program);
                 ProgramDto {
                     key: program.key().to_string(),
                     present: found.is_some(),
@@ -167,6 +175,9 @@ pub async fn program_status(app: AppHandle) -> Result<Vec<ProgramDto>, ErrorCode
                     page: onsa_downloader::release_page(program).to_string(),
                     system_package: onsa_downloader::system_package(program).map(str::to_string),
                     version: said.and_then(Result::ok),
+                    installable: release.is_some(),
+                    url: release.as_ref().map(|one| one.url.to_string()),
+                    about_bytes: release.as_ref().map(|one| one.about_bytes),
                 }
             })
             .collect())

@@ -12,7 +12,7 @@
 //! which never speaks to the network itself.
 
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
 use onsa_downloader::install::{self, MAX_BINARY};
@@ -326,12 +326,46 @@ pub async fn binary_install(app: AppHandle, program: String) -> Result<BinaryDto
         Err(_) => return Err(ErrorCode::Download),
     }
 
-    let listed = binaries_status(app).await?;
-    listed
+    // The row for the program that was just fetched. Not every program Onsa
+    // fetches is on the Downloads page — fpcalc belongs to the Metadata
+    // page — so a row that is not in that list is not a failure. It only
+    // means this program is met somewhere else.
+    let listed = binaries_status(app.clone()).await?;
+    if let Some(row) = listed
         .programs
         .into_iter()
         .find(|one| one.key == program.key())
-        .ok_or(ErrorCode::Library)
+    {
+        return Ok(row);
+    }
+    let found = tauri::async_runtime::spawn_blocking(move || {
+        let programs = online::programs(&app)?;
+        let found = programs.find(program);
+        let release = install::release_for(program);
+        Ok::<BinaryDto, ErrorCode>(BinaryDto {
+            key: program.key().to_string(),
+            present: found.is_some(),
+            from: found.as_ref().map(|found| {
+                match found.from {
+                    Where::Managed => "managed",
+                    Where::Chosen => "chosen",
+                    Where::System => "system",
+                }
+                .to_string()
+            }),
+            path: found.as_ref().map(|found| found.path.display().to_string()),
+            version: found.as_ref().and_then(|_| programs.version(program)),
+            installable: release.is_some(),
+            url: release.as_ref().map(|one| one.url.to_string()),
+            about_bytes: release.as_ref().map(|one| one.about_bytes),
+            page: install::release_page(program).to_string(),
+            system_package: install::system_package(program).map(str::to_string),
+            required: false,
+        })
+    })
+    .await
+    .map_err(|_| ErrorCode::Library)?;
+    found
 }
 
 /// Asks a fetch that is going to stop. What was fetched is thrown away.
@@ -451,15 +485,24 @@ impl Item {
     }
 }
 
-/// The downloads asked for, and whether one is going.
+/// How many downloads run at once (SPEC §15, M10b).
 ///
-/// One at a time for now: running several at once, and remembering the queue
-/// across restarts, belong to the rest of M10 (SPEC §7.3).
+/// A download is mostly waiting on the network, and each one starts an
+/// ffmpeg of its own to put the audio together, so a few at a time keeps a
+/// connection busy without turning a laptop into a fan. A parallel queue is
+/// what was asked for; an unbounded one is not.
+pub const AT_ONCE: usize = 3;
+
+/// The downloads asked for, and how many are going.
+///
+/// Remembering the queue across restarts is not part of this: a queue is
+/// about what somebody asked for while they were here.
 #[derive(Debug, Default)]
 pub struct Queue {
     items: Mutex<Vec<Item>>,
     next_id: AtomicU64,
-    running: AtomicBool,
+    /// How many workers are alive. The queue is running while any is.
+    working: AtomicUsize,
     stop: Arc<AtomicBool>,
 }
 
@@ -467,7 +510,7 @@ impl Queue {
     fn snapshot(&self, folder: Option<String>) -> QueueDto {
         let items = self.items.lock().unwrap_or_else(|e| e.into_inner());
         QueueDto {
-            running: self.running.load(Ordering::Relaxed),
+            running: self.working.load(Ordering::Relaxed) > 0,
             items: items.iter().map(Item::dto).collect(),
             folder,
         }
@@ -579,28 +622,52 @@ pub fn download_start(
         "downloads were asked for"
     );
 
-    if queue
-        .running
-        .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
-        .is_ok()
-    {
-        queue.stop.store(false, Ordering::SeqCst);
+    // Asking for downloads is asking for them to run: a stop from a moment
+    // ago was about what was in the queue then, not about what has just
+    // been added to it.
+    queue.stop.store(false, Ordering::SeqCst);
+
+    // As many workers as there is work for, up to the cap, counting the ones
+    // already going. Each takes the next waiting item under the lock, so
+    // they share one queue without ever taking the same row.
+    let wanted = {
+        let items = queue.items.lock().unwrap_or_else(|e| e.into_inner());
+        items.iter().filter(|one| one.state == "waiting").count()
+    }
+    .min(AT_ONCE);
+
+    loop {
+        let going = queue.working.load(Ordering::SeqCst);
+        if going >= wanted {
+            break;
+        }
+        if queue
+            .working
+            .compare_exchange(going, going + 1, Ordering::SeqCst, Ordering::SeqCst)
+            .is_err()
+        {
+            continue;
+        }
         let handle = app.clone();
         let mine = queue.clone();
+        let folder = into.clone();
         // A download takes minutes and reads a pipe the whole time; it
         // belongs on a thread of its own, not on the one answering the
         // interface.
         if let Err(error) = std::thread::Builder::new()
-            .name("onsa-downloads".into())
+            .name(format!("onsa-downloads-{}", going + 1))
             .spawn(move || {
-                work_through(&handle, &mine, format, &into);
-                mine.running.store(false, Ordering::SeqCst);
+                work_through(&handle, &mine, format, &folder);
+                mine.working.fetch_sub(1, Ordering::SeqCst);
                 let _ = handle.emit(DOWNLOAD_EVENT, ());
             })
         {
-            tracing::error!("the download thread could not be started: {error}");
-            queue.running.store(false, Ordering::SeqCst);
-            return Err(ErrorCode::Download);
+            queue.working.fetch_sub(1, Ordering::SeqCst);
+            tracing::error!("a download thread could not be started: {error}");
+            if queue.working.load(Ordering::SeqCst) == 0 {
+                return Err(ErrorCode::Download);
+            }
+            break;
         }
     }
 
@@ -625,7 +692,7 @@ pub fn download_stop(app: AppHandle) -> Result<QueueDto, ErrorCode> {
     download_queue(app)
 }
 
-/// Works through the queue, one item at a time.
+/// Works through the queue, taking the next thing nobody else has taken.
 fn work_through(app: &AppHandle, queue: &Queue, format: ytdlp::Format, into: &Path) {
     loop {
         if queue.stop.load(Ordering::SeqCst) {

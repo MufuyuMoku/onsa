@@ -24,12 +24,20 @@ use std::path::{Component, Path, PathBuf};
 
 use crate::{Error, Result};
 
-/// The most an archive may turn into once unpacked.
+/// The most an archive may turn into on disk.
 ///
-/// The largest thing Onsa fetches is an ffmpeg build, which is well under a
-/// hundred megabytes unpacked. This is room for that to grow without being
-/// room for a disk to fill.
+/// Counted against what is actually written, which for the large archives
+/// is a small part of them: Onsa keeps two files out of an ffmpeg build.
+/// Room for those without being room for a disk to fill.
 pub const MAX_UNPACKED: u64 = 400 * 1024 * 1024;
+
+/// The most a compressed stream may decompress to in memory.
+///
+/// A tar has to be decompressed whole before its entries can be read, and
+/// a tar can hold far more than the part of it that is wanted: an ffmpeg
+/// build is most of a gigabyte of tar for two files. This bounds that, and
+/// with it how much memory a hostile archive can ask for.
+pub const MAX_STREAM: u64 = 1024 * 1024 * 1024;
 
 /// The most entries an archive may hold. An ffmpeg build has a handful.
 pub const MAX_ENTRIES: usize = 4096;
@@ -113,20 +121,40 @@ fn refuse(entry: &str, why: &str) -> Error {
 ///
 /// Answers with the files it wrote, in the order it wrote them.
 pub fn unpack(bytes: &[u8], kind: Kind, into: &Path) -> Result<Vec<PathBuf>> {
+    unpack_only(bytes, kind, into, &[])
+}
+
+/// The same, writing only the files named here.
+///
+/// Every entry is still read and still judged: one that would leave the
+/// folder refuses the whole archive whether or not it was wanted. What
+/// changes is that the rest is not written down. An ffmpeg build carries
+/// ffplay, which Onsa never runs, and writing it would put half a gigabyte
+/// on somebody's disk to be deleted a moment later.
+///
+/// An empty list means everything, which is what [`unpack`] asks for.
+pub fn unpack_only(
+    bytes: &[u8],
+    kind: Kind,
+    into: &Path,
+    wanted: &[String],
+) -> Result<Vec<PathBuf>> {
     std::fs::create_dir_all(into)?;
     let outcome = match kind {
-        Kind::Zip => unpack_zip(bytes, into),
-        Kind::Tar => unpack_tar(bytes, into),
+        Kind::Zip => unpack_zip(bytes, into, wanted),
+        Kind::Tar => unpack_tar(bytes, into, wanted),
         Kind::TarGz => {
             let mut plain = Vec::new();
             flate2::read::GzDecoder::new(bytes)
-                .take(MAX_UNPACKED + 1)
+                .take(MAX_STREAM + 1)
                 .read_to_end(&mut plain)
                 .map_err(|error| Error::BadArchive(format!("gzip: {error}")))?;
-            if plain.len() as u64 > MAX_UNPACKED {
-                Err(Error::BadArchive("gzip: larger than Onsa will unpack".into()))
+            if plain.len() as u64 > MAX_STREAM {
+                Err(Error::BadArchive(
+                    "gzip: larger than Onsa will unpack".into(),
+                ))
             } else {
-                unpack_tar(&plain, into)
+                unpack_tar(&plain, into, wanted)
             }
         }
         Kind::TarXz => {
@@ -134,10 +162,10 @@ pub fn unpack(bytes: &[u8], kind: Kind, into: &Path) -> Result<Vec<PathBuf>> {
             let mut reader = std::io::BufReader::new(bytes);
             lzma_rs::xz_decompress(&mut reader, &mut plain)
                 .map_err(|error| Error::BadArchive(format!("xz: {error}")))?;
-            if plain.len() as u64 > MAX_UNPACKED {
+            if plain.len() as u64 > MAX_STREAM {
                 Err(Error::BadArchive("xz: larger than Onsa will unpack".into()))
             } else {
-                unpack_tar(&plain, into)
+                unpack_tar(&plain, into, wanted)
             }
         }
     };
@@ -145,6 +173,18 @@ pub fn unpack(bytes: &[u8], kind: Kind, into: &Path) -> Result<Vec<PathBuf>> {
         let _ = std::fs::remove_dir_all(into);
     }
     outcome
+}
+
+/// Whether this entry is one of the files asked for. Nothing asked for
+/// means everything.
+fn asked_for(relative: &Path, wanted: &[String]) -> bool {
+    if wanted.is_empty() {
+        return true;
+    }
+    relative
+        .file_name()
+        .and_then(|name| name.to_str())
+        .is_some_and(|name| wanted.iter().any(|one| one == name))
 }
 
 /// Keeps the running totals, so both readers count the same way.
@@ -164,11 +204,17 @@ impl Budget {
     fn one_more(&mut self, entry: &str, size: u64) -> Result<()> {
         self.entries += 1;
         if self.entries > MAX_ENTRIES {
-            return Err(refuse(entry, "the archive holds more entries than Onsa unpacks"));
+            return Err(refuse(
+                entry,
+                "the archive holds more entries than Onsa unpacks",
+            ));
         }
         self.bytes = self.bytes.saturating_add(size);
         if self.bytes > MAX_UNPACKED {
-            return Err(refuse(entry, "the archive unpacks to more than Onsa will hold"));
+            return Err(refuse(
+                entry,
+                "the archive unpacks to more than Onsa will hold",
+            ));
         }
         Ok(())
     }
@@ -200,10 +246,10 @@ fn write_entry(mut from: impl Read, to: &Path, claimed: u64) -> Result<()> {
     Ok(())
 }
 
-fn unpack_zip(bytes: &[u8], into: &Path) -> Result<Vec<PathBuf>> {
+fn unpack_zip(bytes: &[u8], into: &Path, wanted: &[String]) -> Result<Vec<PathBuf>> {
     let reader = std::io::Cursor::new(bytes);
-    let mut archive = zip::ZipArchive::new(reader)
-        .map_err(|error| Error::BadArchive(format!("zip: {error}")))?;
+    let mut archive =
+        zip::ZipArchive::new(reader).map_err(|error| Error::BadArchive(format!("zip: {error}")))?;
     let mut budget = Budget::new();
     let mut written = Vec::new();
 
@@ -230,6 +276,9 @@ fn unpack_zip(bytes: &[u8], into: &Path) -> Result<Vec<PathBuf>> {
         let Some(relative) = safe_relative(Path::new(&named)) else {
             return Err(refuse(&named, "it would not stay inside the folder"));
         };
+        if !asked_for(&relative, wanted) {
+            continue;
+        }
         let size = entry.size();
         let mode = entry.unix_mode();
         budget.one_more(&named, size)?;
@@ -242,7 +291,7 @@ fn unpack_zip(bytes: &[u8], into: &Path) -> Result<Vec<PathBuf>> {
     Ok(written)
 }
 
-fn unpack_tar(bytes: &[u8], into: &Path) -> Result<Vec<PathBuf>> {
+fn unpack_tar(bytes: &[u8], into: &Path, wanted: &[String]) -> Result<Vec<PathBuf>> {
     let mut archive = tar::Archive::new(std::io::Cursor::new(bytes));
     let mut budget = Budget::new();
     let mut written = Vec::new();
@@ -275,6 +324,9 @@ fn unpack_tar(bytes: &[u8], into: &Path) -> Result<Vec<PathBuf>> {
         if kind.is_dir() {
             budget.one_more(&named, 0)?;
             std::fs::create_dir_all(into.join(relative))?;
+            continue;
+        }
+        if !asked_for(&relative, wanted) {
             continue;
         }
         let size = entry.header().size().unwrap_or(0);

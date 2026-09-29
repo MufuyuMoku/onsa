@@ -9,7 +9,7 @@
 
 use std::path::{Path, PathBuf};
 
-use onsa_downloader::archive::{find_named, unpack, Kind};
+use onsa_downloader::archive::{find_named, unpack, unpack_only, Kind};
 use onsa_downloader::Error;
 
 fn temp_dir(name: &str) -> PathBuf {
@@ -191,7 +191,10 @@ fn a_tar_that_climbs_out_of_its_folder_is_refused() {
 fn a_tar_with_an_absolute_path_is_refused() {
     let dir = temp_dir("tar absolute");
     let bytes = tar(&[("/etc/cron.d/onsa", b"no", FILE, "")]);
-    refused(unpack(&bytes, Kind::Tar, &dir), "a tar with an absolute path");
+    refused(
+        unpack(&bytes, Kind::Tar, &dir),
+        "a tar with an absolute path",
+    );
     assert!(!dir.exists());
 }
 
@@ -199,7 +202,10 @@ fn a_tar_with_an_absolute_path_is_refused() {
 fn a_tar_with_a_link_is_refused() {
     let dir = temp_dir("tar symlink");
     let bytes = tar(&[("innocent", b"", SYMLINK, "/etc/passwd")]);
-    refused(unpack(&bytes, Kind::Tar, &dir), "a tar with a symbolic link");
+    refused(
+        unpack(&bytes, Kind::Tar, &dir),
+        "a tar with a symbolic link",
+    );
     assert!(!dir.exists());
 
     let dir = temp_dir("tar hardlink");
@@ -221,7 +227,10 @@ fn a_zip_that_climbs_out_of_its_folder_is_refused() {
 fn a_zip_with_an_absolute_path_is_refused() {
     let dir = temp_dir("zip absolute");
     let bytes = zip(&[("/etc/cron.d/onsa", b"no", 0o100644)]);
-    refused(unpack(&bytes, Kind::Zip, &dir), "a zip with an absolute path");
+    refused(
+        unpack(&bytes, Kind::Zip, &dir),
+        "a zip with an absolute path",
+    );
     assert!(!dir.exists());
 }
 
@@ -231,7 +240,10 @@ fn a_zip_with_a_symbolic_link_is_refused() {
     // 0o120000 is what a zip records for a link, and the body is where it
     // points — which is how this trick is played.
     let bytes = zip(&[("innocent", b"/etc/passwd", 0o120777)]);
-    refused(unpack(&bytes, Kind::Zip, &dir), "a zip with a symbolic link");
+    refused(
+        unpack(&bytes, Kind::Zip, &dir),
+        "a zip with a symbolic link",
+    );
     assert!(!dir.exists());
 }
 
@@ -262,7 +274,10 @@ fn an_archive_larger_than_onsa_will_hold_is_refused() {
         header
     });
     bytes.extend(std::iter::repeat_n(0u8, 1024));
-    refused(unpack(&bytes, Kind::Tar, &dir), "an archive that is too large");
+    refused(
+        unpack(&bytes, Kind::Tar, &dir),
+        "an archive that is too large",
+    );
     assert!(!dir.exists());
 }
 
@@ -272,8 +287,7 @@ fn a_gzipped_tar_is_unpacked_the_same_way() {
     // compressor of its own: the archive module is what is being tested.
     use std::io::Write;
     let plain = tar(&[("fpcalc", b"not really fpcalc", FILE, "")]);
-    let mut encoder =
-        flate2::write::GzEncoder::new(Vec::new(), flate2::Compression::default());
+    let mut encoder = flate2::write::GzEncoder::new(Vec::new(), flate2::Compression::default());
     encoder.write_all(&plain).unwrap();
     let bytes = encoder.finish().unwrap();
 
@@ -287,8 +301,7 @@ fn a_gzipped_tar_is_unpacked_the_same_way() {
 fn a_gzipped_tar_that_climbs_out_is_still_refused() {
     use std::io::Write;
     let plain = tar(&[("../escaped", b"no", FILE, "")]);
-    let mut encoder =
-        flate2::write::GzEncoder::new(Vec::new(), flate2::Compression::default());
+    let mut encoder = flate2::write::GzEncoder::new(Vec::new(), flate2::Compression::default());
     encoder.write_all(&plain).unwrap();
     let bytes = encoder.finish().unwrap();
 
@@ -345,7 +358,10 @@ fn an_archive_that_does_not_match_its_fingerprint_is_never_opened() {
     std::fs::create_dir_all(&dir).unwrap();
     let inside = onsa_downloader::Program::Fpcalc.file_name();
     let bytes = tar(&[(&inside, b"not really fpcalc", FILE, "")]);
-    let release = pretend("made-up.tar", "0000000000000000000000000000000000000000000000000000000000000000");
+    let release = pretend(
+        "made-up.tar",
+        "0000000000000000000000000000000000000000000000000000000000000000",
+    );
 
     let outcome = onsa_downloader::install::install_release(
         &dir,
@@ -377,4 +393,37 @@ fn an_archive_missing_what_it_should_hold_leaves_what_was_there_alone() {
     assert!(matches!(outcome, Err(Error::BadArchive(_))), "{outcome:?}");
     assert_eq!(std::fs::read_dir(&dir).unwrap().count(), 0);
     let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn only_what_was_asked_for_is_written_down() {
+    let dir = temp_dir("wanted only");
+    let bytes = tar(&[
+        ("build/bin/ffmpeg", b"the one Onsa runs", FILE, ""),
+        ("build/bin/ffplay", b"the one it never runs", FILE, ""),
+        ("build/doc/ffmpeg.html", b"pages and pages", FILE, ""),
+    ]);
+    let written =
+        unpack_only(&bytes, Kind::Tar, &dir, &["ffmpeg".to_string()]).expect("it unpacks");
+    assert_eq!(written.len(), 1, "{written:?}");
+    assert!(find_named(&written, "ffmpeg").is_some());
+    assert!(
+        !dir.join("build").join("bin").join("ffplay").exists(),
+        "what was not asked for was not put on the disk"
+    );
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn an_entry_that_would_escape_refuses_even_when_nobody_wanted_it() {
+    let dir = temp_dir("wanted but bad");
+    let bytes = tar(&[
+        ("ffmpeg", b"the one Onsa runs", FILE, ""),
+        ("../escaped", b"not wanted, and not allowed", FILE, ""),
+    ]);
+    refused(
+        unpack_only(&bytes, Kind::Tar, &dir, &["ffmpeg".to_string()]),
+        "a bad entry nobody asked for",
+    );
+    assert!(!dir.exists());
 }

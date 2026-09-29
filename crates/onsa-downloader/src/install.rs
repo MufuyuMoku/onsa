@@ -406,7 +406,14 @@ fn install_archive(
     std::fs::create_dir_all(bin_dir)?;
     let unpacked_into = bin_dir.join(format!(".unpacking-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&unpacked_into);
-    let written = archive::unpack(bytes, kind, &unpacked_into)?;
+    // Only what this release is fetched for. An ffmpeg build also carries
+    // ffplay, which Onsa never runs.
+    let wanted: Vec<String> = release
+        .holds
+        .iter()
+        .map(|program| program.file_name())
+        .collect();
+    let written = archive::unpack_only(bytes, kind, &unpacked_into, &wanted)?;
 
     let tidy = |outcome: Result<Vec<PathBuf>>| {
         let _ = std::fs::remove_dir_all(&unpacked_into);
@@ -632,7 +639,10 @@ not a checksum line at all
                 release.program.key()
             );
             match &release.verify {
-                Verify::Listed { sums_url, listed_as } => {
+                Verify::Listed {
+                    sums_url,
+                    listed_as,
+                } => {
                     assert!(sums_url.starts_with("https://github.com/"));
                     assert!(!listed_as.is_empty());
                 }

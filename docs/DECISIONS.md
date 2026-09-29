@@ -776,3 +776,42 @@ Keputusan pemilik proyek atas hasil pemeriksaan pertama cargo deny. Dua pengecua
   `dbus-x11`: keduanya alat untuk melihat, bukan sesuatu yang Onsa butuhkan. Apa pun yang
   dibutuhkan Onsa harus datang dari paketnya sendiri, dan itulah yang sedang diuji.
 
+## 2026-09-29 · M10b: membuka arsip milik orang lain
+
+- **Empat crate untuk arsip, semuanya Rust murni** (`zip`, `tar`, `flate2`, `lzma-rs`), atas izin
+  pemilik proyek dengan lima syarat yang sekarang jadi aturan yang diuji, bukan janji di komentar.
+  Rust murni dipilih supaya tidak ada C yang harus dibangun di kedua sistem.
+- **Arsip tidak pernah dipercaya soal isinya.** Checksum diperiksa sebelum dibuka; entri yang
+  absolut, mengandung `..`, menyebut huruf drive, atau berupa tautan menolak **seluruh** arsip,
+  bukan cuma dirinya. Tidak ada membongkar separuh yang baik dari sesuatu yang mencoba menulis di
+  luar foldernya.
+- **Jalur dinilai dari apa yang ditulisnya, bukan dari hasil resolusinya di disk.** Meresolusinya
+  berarti sudah mengikuti apa pun yang ada di sana.
+- **Yang tidak diminta tidak ditulis.** Build ffmpeg membawa ffplay yang tidak pernah dijalankan
+  Onsa; menuliskannya berarti menaruh setengah gigabyte di disk orang untuk dihapus sedetik
+  kemudian. Tiap entri tetap diperiksa — entri jahat yang tidak diminta pun tetap menolak seluruh
+  arsipnya.
+- **Dua batas, bukan satu.** `MAX_UNPACKED` membatasi yang ditulis ke disk; `MAX_STREAM`
+  membatasi yang didekompresi ke memori. Sebuah tar harus didekompresi utuh sebelum entrinya bisa
+  dibaca, dan tar ffmpeg jauh lebih besar daripada dua berkas yang diambil darinya.
+- **ffmpeg dipatok ke rilis bertanggal.** BtbN menerbitkan `latest` yang bergerak tanpa checksum,
+  dan rilis bertanggal harian yang menerbitkannya. Berkas yang bergerak tidak bisa dicocokkan
+  dengan apa pun, dan checksum di dalam kode untuk berkas yang berubah tiap hari sudah salah esok
+  harinya. Harganya: ffmpeg ikut bergerak saat Onsa bergerak — arah yang benar untuk sesuatu yang
+  dipertanggungjawabkan Onsa.
+- **fpcalc adalah satu-satunya yang sidiknya dibawa Onsa sendiri**, karena Chromaprint tidak
+  menerbitkan checksum sama sekali. Karena itu URL-nya menyebut versi, bukan `latest`: sidik di
+  dalam kode mematok versi, dan sebuah tes memastikan keduanya tidak pernah berpisah.
+- **Berkas checksum dibaca dari bentuknya, bukan dari nama di dalamnya.** Deno menerbitkan
+  checksum satu-berkas, dan kedua mesin pembangunnya menulisnya dengan cara berbeda — yang satu
+  `sha256sum`, yang lain `Get-FileHash` PowerShell lengkap dengan jalur mesin pembangunnya. Yang
+  dicari Onsa adalah satu-satunya hal berbentuk SHA-256 di dalamnya; berkas yang berisi dua
+  ditolak, karena berkas tentang dua hal bukan berkas yang dibaca pembaca ini.
+- **Tiga unduhan sekaligus.** Unduhan sebagian besar menunggu jaringan, dan tiap satunya
+  menjalankan ffmpeg sendiri. Beberapa sekaligus membuat sambungan terpakai tanpa membuat laptop
+  meraung. Antrean paralel yang diminta, bukan antrean tanpa batas.
+- **Deno ditunjuk, bukan dipasang di PATH.** yt-dlp mencari runtime di PATH sendiri; salinan yang
+  diunduh Onsa tidak ada di PATH. Onsa memberitahukannya lewat `--js-runtimes deno:<jalur>`,
+  persis bentuk yang didokumentasikan yt-dlp yang terpasang — dan tidak mengatakan apa-apa saat
+  Onsa tidak punya Deno, supaya yt-dlp tetap berperilaku bawaannya.
+

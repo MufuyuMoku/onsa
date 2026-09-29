@@ -201,6 +201,7 @@ pub fn arguments(
     format: Format,
     into: &Path,
     ffmpeg: Option<&Path>,
+    deno: Option<&Path>,
 ) -> Vec<std::ffi::OsString> {
     let mut args: Vec<std::ffi::OsString> = vec![
         "--newline".into(),
@@ -237,6 +238,24 @@ pub fn arguments(
                 args.push("flac".into());
             }
         }
+    }
+
+    // YouTube hands out players that have to be run before a format can be
+    // worked out, and yt-dlp runs them in a JavaScript runtime. It finds one
+    // on PATH by itself; a copy Onsa fetched is not on PATH, so Onsa says
+    // where it is, in the way the installed yt-dlp documents:
+    //
+    //     --js-runtimes RUNTIME[:PATH]
+    //         ... with an optional location for the runtime (either the path
+    //         to the binary or its containing directory)
+    //
+    // Left out entirely when there is no Deno, so yt-dlp keeps its own
+    // default behaviour rather than being told about one that is not there.
+    if let Some(found) = deno {
+        let mut told = std::ffi::OsString::from("deno:");
+        told.push(found.as_os_str());
+        args.push("--js-runtimes".into());
+        args.push(told);
     }
 
     args.push("-o".into());
@@ -276,11 +295,16 @@ pub fn download(
     // What yt-dlp will find for itself, not what Onsa would choose: it
     // searches PATH on its own account (see `Programs::reachable`).
     let ffmpeg = programs.reachable(Program::Ffmpeg);
+    // Deno is the other way round: yt-dlp finds one on PATH by itself, and
+    // a copy Onsa fetched is not on PATH — so it is told about that one
+    // only, and left to its own devices otherwise.
+    let deno = programs.find(Program::Deno);
     let args = arguments(
         url,
         format,
         into,
         ffmpeg.as_ref().map(|one| one.path.as_path()),
+        deno.as_ref().map(|one| one.path.as_path()),
     );
     let mut files: Vec<PathBuf> = Vec::new();
     let finished =
@@ -602,15 +626,46 @@ mod tests {
 
     /// The arguments as words, which is how these tests read them.
     fn words_of(format: Format, ffmpeg: Option<&Path>) -> Vec<String> {
+        words_with(format, ffmpeg, None)
+    }
+
+    fn words_with(format: Format, ffmpeg: Option<&Path>, deno: Option<&Path>) -> Vec<String> {
         arguments(
             "https://example.com/watch?v=abc",
             format,
             Path::new("/music"),
             ffmpeg,
+            deno,
         )
         .iter()
         .map(|one| one.to_string_lossy().to_string())
         .collect()
+    }
+
+    /// Where Deno is only said when Onsa has one to point at.
+    ///
+    /// yt-dlp looks along PATH for a JavaScript runtime by itself. Telling
+    /// it about one that is not there would be worse than saying nothing,
+    /// and saying nothing when Onsa has fetched one would waste it.
+    #[test]
+    fn a_deno_onsa_fetched_is_the_one_yt_dlp_is_told_about() {
+        let plain = words_of(Format::Original, None);
+        assert!(
+            !plain.iter().any(|word| word.starts_with("--js-runtimes")),
+            "nothing is said when there is no Deno: {plain:?}"
+        );
+
+        let deno = PathBuf::from("/home/someone/.onsa/bin/deno");
+        let words = words_with(Format::Original, None, Some(&deno));
+        let at = words
+            .iter()
+            .position(|word| word == "--js-runtimes")
+            .expect("it is told where Deno is");
+        assert_eq!(
+            words[at + 1],
+            format!("deno:{}", deno.display()),
+            "the shape the installed yt-dlp documents: RUNTIME[:PATH]"
+        );
     }
 
     #[test]

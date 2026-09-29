@@ -733,6 +733,12 @@ export interface ProgramStatus {
 	/** What the distribution calls it, on systems that have one. */
 	systemPackage: string | null;
 	version: string | null;
+	/** Whether Onsa can fetch this one itself. */
+	installable: boolean;
+	/** The exact file it would fetch, so the agreement is to a thing. */
+	url: string | null;
+	/** Roughly what that file weighs. */
+	aboutBytes: number | null;
 }
 
 /** Where a suggestion came from. */

@@ -1642,3 +1642,103 @@ dependensi"), tapi disebutkan di sini supaya tidak jadi hal yang ditemukan orang
 
 `cargo fmt --check`, `clippy -D warnings`, `cargo test --workspace`, `npm run check`, tes UI,
 dan `cargo deny check licenses` semuanya bersih; CI `36414502822` hijau di kelima job-nya.
+
+## 2026-09-29 · M10b: Deno, ffmpeg, fpcalc, dan antrean paralel
+
+Keempat program luar sekarang diunduh Onsa sendiri, dan antrean unduhannya berjalan beberapa
+sekaligus.
+
+### Pembongkar arsip
+
+Deno, ffmpeg, dan fpcalc diterbitkan sebagai arsip, jadi Onsa harus bisa membukanya. Empat crate
+Rust murni ditambahkan atas izin pemilik proyek: `zip`, `tar`, `flate2` (backend miniz_oxide),
+dan `lzma-rs`. Kelima syarat yang menyertai izin itu dijadikan aturan yang diuji:
+
+| Syarat | Bagaimana dijaga |
+|---|---|
+| checksum diperiksa **sebelum** dibongkar | `install_archive` membandingkan sidiknya lebih dulu; tes `an_archive_that_does_not_match_its_fingerprint_is_never_opened` memastikan foldernya tetap kosong |
+| tolak jalur absolut, `..`, symlink, hardlink | `safe_relative` menolak jalur, tar menolak tipe entri selain berkas dan folder, zip menolak mode `0o120000` |
+| satu entri ditolak = seluruh arsip ditolak | `one_bad_entry_refuses_the_whole_archive`, dan foldernya dihapus lagi |
+| batasi ukuran dan jumlah entri | `MAX_UNPACKED` 400 MB untuk yang ditulis, `MAX_STREAM` 1 GB untuk aliran terkompresi, `MAX_ENTRIES` 4096 |
+| bongkar ke folder sementara dulu | `.unpacking-<pid>` di dalam `bin/`, dipindahkan hanya bila semuanya berhasil |
+
+**17 tes**, dengan arsipnya ditulis byte per byte di dalam tesnya sendiri — arsip yang bermaksud
+keluar dari foldernya tidak akan ditulis oleh pustaka yang sopan, jadi tesnya tidak memakai satu.
+
+### Tiga cara sebuah rilis dipertanggungjawabkan
+
+Tidak ada cara keempat, dan tidak ada "tanpa diperiksa":
+
+| Program | Berkas | Dibuktikan dengan |
+|---|---|---|
+| yt-dlp | `yt-dlp.exe` / `yt-dlp_linux` | `SHA2-256SUMS` yang diterbitkan rilisnya |
+| ffmpeg | `.zip` / `.tar.xz` build BtbN | `checksums.sha256` rilis bertanggalnya |
+| Deno | `.zip` | berkas checksum satu-berkas di sebelahnya |
+| fpcalc | `.zip` / `.tar.gz` | **sidik SHA-256 di dalam kode Onsa** — Chromaprint tidak menerbitkan checksum |
+
+Berkas checksum Deno ditulis berbeda oleh kedua mesin yang membangunnya: Linux memakai
+`sha256sum`, Windows memakai `Get-FileHash` milik PowerShell yang menuliskan jalur mesin
+pembangunnya. Yang dibaca Onsa adalah **satu-satunya** hal berbentuk SHA-256 di dalam berkas itu,
+apa pun bentuk tulisannya; berkas yang berisi dua ditolak.
+
+**ffmpeg dipatok ke rilis bertanggal**, bukan ke `latest` milik BtbN, karena `latest` tidak punya
+checksum apa pun di sebelahnya dan berubah tiap hari.
+
+### Deno diberitahukan ke yt-dlp
+
+yt-dlp yang terpasang mendokumentasikan `--js-runtimes RUNTIME[:PATH]`. Onsa memakai persis itu,
+dan hanya ketika ia punya Deno sendiri untuk ditunjuk — kalau tidak, yt-dlp dibiarkan mencari
+sendiri di PATH seperti biasanya.
+
+### Apa yang benar-benar dibuktikan di mesin ini
+
+Seluruhnya lewat aplikasi yang berjalan, dengan profil kosong:
+
+| | hasil |
+|---|---|
+| fpcalc | diunduh, cocok dengan sidik di kode, dibongkar dari `.zip`, menjawab `fpcalc version 1.6.1` |
+| Deno | diunduh (43 MB `.zip`), menjawab `deno 2.9.7` |
+| yt-dlp | diunduh, menjawab `2026.08.19` |
+| ffmpeg | diunduh (196 MB `.zip`), menjawab `N-126947-g45f3fecca9-20260928` — **build yang persis dipatok** |
+| isi folder `bin/` | kelimanya, tanpa sisa `.unpacking`, **tanpa ffplay** |
+| satu video YouTube | masuk library sebagai `Me at the zoo — jawed`, tag terpasang lewat ffmpeg milik Onsa |
+| satu playlist | 19 item dibaca, **2 dicentang**, 2 itu saja yang diunduh |
+| antrean paralel | tiga item dijalankan bersamaan, terukur: `3,3,3,3,3,3,3,3,2,2,2,2,2,2,1,0` |
+
+### Deno: apa yang tidak bisa dibuktikan hari ini
+
+Yang diminta: satu unduhan yang **berhasil karena Deno ada** dan **gagal dengan pesan jelas bila
+tidak ada**. Setengahnya terbukti, setengahnya tidak, dan itu perlu dikatakan apa adanya.
+
+Tanpa runtime JavaScript, yt-dlp 2026.06.09 mengatakannya dengan jelas pada tiap URL YouTube:
+
+```
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled
+by default; to use another runtime add --js-runtimes RUNTIME[:PATH] ... YouTube extraction
+without a JS runtime has been deprecated, and some formats may be missing.
+```
+
+Dengan Deno, peringatan itu hilang dan yt-dlp melaporkan `JS runtimes: deno-2.9.0` serta
+`JS Challenge Providers: ... deno`.
+
+**Tapi pada video yang diuji hari ini, keduanya sama-sama berhasil.** Klien `android_vr` yang
+dipakai yt-dlp secara bawaan tidak butuh JavaScript untuk video-video itu. Saat klien `web`
+dipaksa — yang memang butuh — muncul `n challenge solving failed` tanpa runtime, tapi dengan Deno
+pun permintaannya ditolak YouTube karena alasan lain, jadi itu bukan perbandingan yang bersih.
+
+Jadi: **Deno terpasang, terhubung, dan yt-dlp mengakui melihatnya.** Apakah sebuah video tertentu
+gagal tanpanya bergantung pada apa yang sedang dilakukan YouTube hari itu, dan hari ini tidak ada
+yang gagal. Yang bisa dikatakan jujur bukan "gagal tanpa Deno", melainkan "diperingatkan dengan
+jelas tanpa Deno, dan sebagian format bisa hilang".
+
+### Hal lain yang perlu diketahui penguji
+
+- **Dua dari enam unduhan uji gagal**, masing-masing dengan alasannya sendiri: `noPlayableFormat`
+  (sumber hanya punya Opus — batasan v1 yang sudah tercatat) dan `siteRefused`.
+- **Berkas antara ikut terindeks sesaat.** Saat mengunduh dengan konversi, berkas `.m4a`
+  sementara yt-dlp sempat terlihat pengintai folder dan masuk library, lalu ditandai **hilang**
+  begitu dihapus. Itu perilaku yang benar dan bisa dibersihkan lewat "buang yang hilang", tapi
+  penguji akan melihatnya.
+
+`cargo fmt --check`, `clippy -D warnings`, `cargo test --workspace`, `npm run check`, tes UI, dan
+`cargo deny check licenses` semuanya bersih.
