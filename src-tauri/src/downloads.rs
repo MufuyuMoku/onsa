@@ -124,8 +124,12 @@ impl Fetching {
 ///
 /// ffprobe is not listed separately: it comes with ffmpeg, from the same
 /// folder, and a second row for it would be a second thing to do that is
-/// the same thing. Deno is not listed either — yt-dlp finds one for itself
-/// if there is one, and Onsa neither fetches it nor has tried it.
+/// the same thing. Deno is listed, because yt-dlp needs one for the whole
+/// of YouTube and cannot fetch it itself.
+///
+/// fpcalc is not listed here: it belongs to reading a track rather than to
+/// downloading one, so it is offered on the Metadata page — through this
+/// same command, from the same catalogue, under the same rules.
 #[tauri::command]
 pub async fn binaries_status(app: AppHandle) -> Result<BinariesDto, ErrorCode> {
     // Asking a program its version means running it.
@@ -142,14 +146,17 @@ pub async fn binaries_status(app: AppHandle) -> Result<BinariesDto, ErrorCode> {
                 .use_system
         };
         let programs = online::programs(&app)?;
-        let listed = [Program::YtDlp, Program::Ffmpeg]
+        let listed = [Program::YtDlp, Program::Ffmpeg, Program::Deno]
             .into_iter()
             .map(|program| {
                 // Onsa runs yt-dlp itself, so Onsa's own rules decide where
                 // it comes from. ffmpeg is run by yt-dlp, which searches
                 // PATH on its own account: what matters for that row is
                 // what yt-dlp will find, not what Onsa would have chosen.
-                let found = if program == Program::Ffmpeg {
+                // Onsa runs yt-dlp itself. ffmpeg and Deno are run by
+                // yt-dlp, which searches PATH on its own account: what
+                // matters for those rows is what yt-dlp will find.
+                let found = if program == Program::Ffmpeg || program == Program::Deno {
                     programs.reachable(program)
                 } else {
                     programs.find(program)
@@ -158,7 +165,7 @@ pub async fn binaries_status(app: AppHandle) -> Result<BinariesDto, ErrorCode> {
                 // to ask. Saying only "from the system" while the switch
                 // below is off reads like a switch that does nothing, so
                 // the row says whose copy it really is.
-                let despite_switch = program == Program::Ffmpeg
+                let despite_switch = (program == Program::Ffmpeg || program == Program::Deno)
                     && !use_system
                     && found.is_some()
                     && programs.find(program).is_none();
@@ -242,19 +249,30 @@ pub async fn binary_install(app: AppHandle, program: String) -> Result<BinaryDto
             );
         };
 
-        // The list first: fetching the file only to find there is nothing to
-        // check it against would be a download spent for nothing.
-        let sums = net::fetch(release.sums_url, MAX_SUMS, |_, _| true).map_err(trouble)?;
-        let sums = String::from_utf8(sums).map_err(|error| {
-            (
-                "unreadable".to_string(),
-                Some(format!("the list of checksums is not text: {error}")),
-            )
-        })?;
-        let expected = install::checksum_for(&sums, release.listed_as).ok_or_else(|| {
+        // Whatever this release is checked against comes first: fetching
+        // the file only to find there is nothing to check it against would
+        // be a download spent for nothing. A release Onsa carries the
+        // fingerprint for has nothing to fetch, and says so by having no
+        // checksum URL at all.
+        let published = match install::checksum_url(&release) {
+            Some(url) => {
+                let sums = net::fetch(url, MAX_SUMS, |_, _| true).map_err(trouble)?;
+                String::from_utf8(sums).map_err(|error| {
+                    (
+                        "unreadable".to_string(),
+                        Some(format!("the list of checksums is not text: {error}")),
+                    )
+                })?
+            }
+            None => String::new(),
+        };
+        let expected = install::expected_checksum(&release, &published).ok_or_else(|| {
             (
                 "noChecksum".to_string(),
-                Some(format!("no line in the list names {}", release.listed_as)),
+                Some(format!(
+                    "nothing was published that names {}",
+                    release.file_name
+                )),
             )
         })?;
 
@@ -264,11 +282,12 @@ pub async fn binary_install(app: AppHandle, program: String) -> Result<BinaryDto
         })
         .map_err(trouble)?;
 
-        install::install(&bin_dir, program, &bytes, &expected).map_err(|error| {
+        install::install_release(&bin_dir, &release, &bytes, &expected).map_err(|error| {
             tracing::warn!("{} was not installed: {error}", program.key());
             let said = Some(error.to_string());
             match error {
                 onsa_downloader::Error::ChecksumMismatch(_) => ("checksum".to_string(), said),
+                onsa_downloader::Error::BadArchive(_) => ("badArchive".to_string(), said),
                 _ => ("cannotWrite".to_string(), said),
             }
         })?;

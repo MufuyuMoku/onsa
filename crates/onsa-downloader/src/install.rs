@@ -10,48 +10,93 @@
 //! not match is not written anywhere, not even to be looked at: a binary
 //! Onsa cannot vouch for is one it has no business keeping.
 //!
-//! Only programs that are published as a **single file** are handled here.
-//! yt-dlp is one. Deno and ffmpeg come as archives, and the unpacking they
-//! need — with the dependencies it would add — waits for the rest of M10.
+//! Some releases are a single file (yt-dlp) and some are archives (Deno,
+//! ffmpeg, fpcalc). Both go through the same door: the bytes are checked
+//! against something Onsa did not download, and only then is anything
+//! written. Unpacking itself, and the rules that make it safe, are in
+//! [`crate::archive`].
 
 use std::path::{Path, PathBuf};
 
 use sha2::{Digest, Sha256};
 
+use crate::archive::{self, Kind};
 use crate::programs::Program;
 use crate::{Error, Result};
+
+/// How Onsa satisfies itself that what arrived is what it asked for.
+///
+/// There is no fourth arm, and there is deliberately no arm for "do not
+/// check": a file that was downloaded is never installed without being
+/// matched against something already inside Onsa or published by the
+/// release itself (SPEC §7.1).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Verify {
+    /// The release publishes a list that names its files; ours is in it.
+    Listed {
+        /// Where the list is.
+        sums_url: &'static str,
+        /// The name the list calls this file.
+        listed_as: &'static str,
+    },
+    /// The release publishes a file holding the checksum of this one file
+    /// and nothing else. Deno does this, in two different shapes depending
+    /// on which machine built it.
+    Alone {
+        /// Where that file is.
+        sums_url: &'static str,
+    },
+    /// The release publishes nothing to check against, so Onsa carries the
+    /// fingerprint of a version somebody looked at. That pins the version:
+    /// the URL names it, and a different file will not match.
+    Pinned {
+        /// The SHA-256 of the file at that exact URL.
+        sha256: &'static str,
+    },
+}
 
 /// Where one program comes from, and roughly what it weighs.
 ///
 /// Every field is fixed in the code. Nothing about a release is ever taken
 /// from something Onsa downloaded: the URL, the file it expects, and the
-/// list it checks against are all decided here (SPEC §7.1, §14).
+/// way it is checked are all decided here (SPEC §7.1, §14).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Release {
-    /// Which program this installs.
+    /// Which program this release is fetched for.
     pub program: Program,
     /// Where the file itself is.
     pub url: &'static str,
-    /// Where the published list of checksums is.
-    pub sums_url: &'static str,
-    /// The name the checksum list calls this file.
-    pub listed_as: &'static str,
+    /// What the release calls the file. Its ending also says whether this
+    /// is an archive, and which kind.
+    pub file_name: &'static str,
     /// Roughly how large it is, for the list shown before anything starts.
     pub about_bytes: u64,
+    /// How the bytes are checked before anything is written.
+    pub verify: Verify,
+    /// The programs to take out of it. One release can carry two: ffmpeg
+    /// and ffprobe arrive together and are never useful apart.
+    pub holds: &'static [Program],
 }
 
-/// Most a fetched binary may weigh before Onsa stops reading it.
-///
-/// yt-dlp is tens of megabytes; this is room for the ones that come later
-/// without being room for a mistake.
-pub const MAX_BINARY: u64 = 200 * 1024 * 1024;
+impl Release {
+    /// Which kind of archive this is, or nothing when it is one plain file.
+    pub fn archive(&self) -> Option<Kind> {
+        Kind::of(self.file_name)
+    }
+}
 
-/// The releases Onsa can install on this system today.
+/// Most a fetched file may weigh before Onsa stops reading it.
 ///
-/// Only single-file releases (see the module note). The list is per platform
-/// because the file differs; everything else about it does not.
+/// The ffmpeg builds are the large ones, around two hundred megabytes, and
+/// they grow. This is room for that without being room for a mistake.
+pub const MAX_BINARY: u64 = 400 * 1024 * 1024;
+
+/// The releases Onsa can install on this system.
+///
+/// Per platform, because the file differs; everything else about it does
+/// not. The order is the order the list is shown in.
 pub fn catalogue() -> Vec<Release> {
-    vec![yt_dlp()]
+    vec![yt_dlp(), ffmpeg(), deno(), fpcalc()]
 }
 
 /// yt-dlp's official release, which is one file and a published list of
@@ -61,9 +106,13 @@ fn yt_dlp() -> Release {
     Release {
         program: Program::YtDlp,
         url: "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe",
-        sums_url: "https://github.com/yt-dlp/yt-dlp/releases/latest/download/SHA2-256SUMS",
-        listed_as: "yt-dlp.exe",
+        file_name: "yt-dlp.exe",
         about_bytes: 18 * 1024 * 1024,
+        verify: Verify::Listed {
+            sums_url: "https://github.com/yt-dlp/yt-dlp/releases/latest/download/SHA2-256SUMS",
+            listed_as: "yt-dlp.exe",
+        },
+        holds: &[Program::YtDlp],
     }
 }
 
@@ -72,15 +121,128 @@ fn yt_dlp() -> Release {
     Release {
         program: Program::YtDlp,
         url: "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux",
-        sums_url: "https://github.com/yt-dlp/yt-dlp/releases/latest/download/SHA2-256SUMS",
-        listed_as: "yt-dlp_linux",
+        file_name: "yt-dlp_linux",
         about_bytes: 30 * 1024 * 1024,
+        verify: Verify::Listed {
+            sums_url: "https://github.com/yt-dlp/yt-dlp/releases/latest/download/SHA2-256SUMS",
+            listed_as: "yt-dlp_linux",
+        },
+        holds: &[Program::YtDlp],
     }
 }
 
-/// The release for one program, if Onsa can install it on this system.
+/// Deno's official release: a zip, with a file beside it holding that zip's
+/// checksum and nothing else (SPEC §7.1).
+///
+/// The two machines that build it write that file differently — Linux with
+/// `sha256sum`, Windows with PowerShell's `Get-FileHash` — so what is read
+/// out of it is the one checksum in it, whatever shape it came in.
+#[cfg(windows)]
+fn deno() -> Release {
+    Release {
+        program: Program::Deno,
+        url: "https://github.com/denoland/deno/releases/latest/download/deno-x86_64-pc-windows-msvc.zip",
+        file_name: "deno-x86_64-pc-windows-msvc.zip",
+        about_bytes: 43 * 1024 * 1024,
+        verify: Verify::Alone {
+            sums_url: "https://github.com/denoland/deno/releases/latest/download/deno-x86_64-pc-windows-msvc.zip.sha256sum",
+        },
+        holds: &[Program::Deno],
+    }
+}
+
+#[cfg(not(windows))]
+fn deno() -> Release {
+    Release {
+        program: Program::Deno,
+        url: "https://github.com/denoland/deno/releases/latest/download/deno-x86_64-unknown-linux-gnu.zip",
+        file_name: "deno-x86_64-unknown-linux-gnu.zip",
+        about_bytes: 42 * 1024 * 1024,
+        verify: Verify::Alone {
+            sums_url: "https://github.com/denoland/deno/releases/latest/download/deno-x86_64-unknown-linux-gnu.zip.sha256sum",
+        },
+        holds: &[Program::Deno],
+    }
+}
+
+/// The build of ffmpeg named in SPEC §7.1, pinned to one dated release.
+///
+/// BtbN publishes a moving `latest` with no checksums beside it, and a
+/// dated release every day that does publish them. The dated one is what
+/// Onsa fetches: a moving file cannot be checked against anything, and a
+/// checksum written into Onsa for a file that changes daily would be wrong
+/// by tomorrow. The cost is that ffmpeg moves when Onsa moves, which is the
+/// right way round for something Onsa vouches for.
+#[cfg(windows)]
+fn ffmpeg() -> Release {
+    Release {
+        program: Program::Ffmpeg,
+        url: "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-09-28-13-06/ffmpeg-N-126947-g45f3fecca9-win64-gpl.zip",
+        file_name: "ffmpeg-N-126947-g45f3fecca9-win64-gpl.zip",
+        about_bytes: 196 * 1024 * 1024,
+        verify: Verify::Listed {
+            sums_url: "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-09-28-13-06/checksums.sha256",
+            listed_as: "ffmpeg-N-126947-g45f3fecca9-win64-gpl.zip",
+        },
+        holds: &[Program::Ffmpeg, Program::Ffprobe],
+    }
+}
+
+#[cfg(not(windows))]
+fn ffmpeg() -> Release {
+    Release {
+        program: Program::Ffmpeg,
+        url: "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-09-28-13-06/ffmpeg-N-126947-g45f3fecca9-linux64-gpl.tar.xz",
+        file_name: "ffmpeg-N-126947-g45f3fecca9-linux64-gpl.tar.xz",
+        about_bytes: 153 * 1024 * 1024,
+        verify: Verify::Listed {
+            sums_url: "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-09-28-13-06/checksums.sha256",
+            listed_as: "ffmpeg-N-126947-g45f3fecca9-linux64-gpl.tar.xz",
+        },
+        holds: &[Program::Ffmpeg, Program::Ffprobe],
+    }
+}
+
+/// fpcalc from Chromaprint's official release (SPEC §7.1, §8).
+///
+/// Chromaprint publishes no checksums at all, so this is the one release
+/// Onsa carries the fingerprint for itself. Both were downloaded, hashed,
+/// and their sizes checked against what the release lists.
+#[cfg(windows)]
+fn fpcalc() -> Release {
+    Release {
+        program: Program::Fpcalc,
+        url: "https://github.com/acoustid/chromaprint/releases/download/v1.6.1/chromaprint-fpcalc-1.6.1-windows-x86_64.zip",
+        file_name: "chromaprint-fpcalc-1.6.1-windows-x86_64.zip",
+        about_bytes: 1_816_911,
+        verify: Verify::Pinned {
+            sha256: "735d6182b38e9f364b84ce6f4ccd682c75e2851de89735711d6b762d12b92a4e",
+        },
+        holds: &[Program::Fpcalc],
+    }
+}
+
+#[cfg(not(windows))]
+fn fpcalc() -> Release {
+    Release {
+        program: Program::Fpcalc,
+        url: "https://github.com/acoustid/chromaprint/releases/download/v1.6.1/chromaprint-fpcalc-1.6.1-linux-x86_64.tar.gz",
+        file_name: "chromaprint-fpcalc-1.6.1-linux-x86_64.tar.gz",
+        about_bytes: 2_396_444,
+        verify: Verify::Pinned {
+            sha256: "fc16cd37a70168040bc9ceb45f1d4d1216f5a75bc4c9cf8564bea70ac6a45733",
+        },
+        holds: &[Program::Fpcalc],
+    }
+}
+
+/// The release that brings one program, if Onsa can install it here.
+///
+/// ffprobe has no release of its own: it comes out of ffmpeg's.
 pub fn release_for(program: Program) -> Option<Release> {
-    catalogue().into_iter().find(|one| one.program == program)
+    catalogue()
+        .into_iter()
+        .find(|one| one.holds.contains(&program))
 }
 
 /// The page a person is sent to when they fetch a program themselves.
@@ -160,6 +322,125 @@ pub fn checksum_for(list: &str, file_name: &str) -> Option<String> {
         }
     }
     None
+}
+
+/// The one checksum in a file that holds a checksum for one file.
+///
+/// Deno publishes such a file beside each release, and the two machines
+/// that build it write it differently: Linux with `sha256sum`, so the file
+/// is `<hex>  <name>`; Windows with PowerShell's `Get-FileHash`, so it is
+/// three labelled lines and the name is a path on the build machine. What
+/// both have is exactly one thing that is shaped like a SHA-256, so that is
+/// what is looked for — and "exactly one" is the point. A file with two
+/// would be a file about two things, and this is not the reader for it.
+pub fn only_checksum(text: &str) -> Option<String> {
+    let mut found: Option<String> = None;
+    for word in text.split(|ch: char| !ch.is_ascii_alphanumeric()) {
+        if word.len() != 64 || !word.chars().all(|ch| ch.is_ascii_hexdigit()) {
+            continue;
+        }
+        if found.is_some() {
+            return None;
+        }
+        found = Some(word.to_lowercase());
+    }
+    found
+}
+
+/// The checksum for a release, out of whatever the release publishes.
+///
+/// `published` is the text fetched from [`Verify::Listed`] or
+/// [`Verify::Alone`], and is not read at all for [`Verify::Pinned`].
+pub fn expected_checksum(release: &Release, published: &str) -> Option<String> {
+    match &release.verify {
+        Verify::Listed { listed_as, .. } => checksum_for(published, listed_as),
+        Verify::Alone { .. } => only_checksum(published),
+        Verify::Pinned { sha256 } => Some(sha256.to_lowercase()),
+    }
+}
+
+/// Where the checksum is fetched from, when it has to be fetched at all.
+pub fn checksum_url(release: &Release) -> Option<&'static str> {
+    match &release.verify {
+        Verify::Listed { sums_url, .. } | Verify::Alone { sums_url } => Some(sums_url),
+        Verify::Pinned { .. } => None,
+    }
+}
+
+/// Installs whatever a release is: one file, or the programs inside an
+/// archive.
+///
+/// The checksum is checked first in both cases, before a byte is written or
+/// an archive is opened. Answers with what was put in place.
+pub fn install_release(
+    bin_dir: &Path,
+    release: &Release,
+    bytes: &[u8],
+    expected: &str,
+) -> Result<Vec<PathBuf>> {
+    match release.archive() {
+        None => Ok(vec![install(bin_dir, release.program, bytes, expected)?]),
+        Some(kind) => install_archive(bin_dir, release, bytes, expected, kind),
+    }
+}
+
+/// Takes the programs a release carries out of its archive.
+///
+/// In order: the bytes are checked, then unpacked into a folder of their
+/// own that did not exist a moment ago, then the programs that were asked
+/// for are moved into place, then the folder goes. Nothing is moved until
+/// every one of them has been found, so a release missing half of what it
+/// should hold leaves the previous versions alone.
+fn install_archive(
+    bin_dir: &Path,
+    release: &Release,
+    bytes: &[u8],
+    expected: &str,
+    kind: Kind,
+) -> Result<Vec<PathBuf>> {
+    let found = sha256_hex(bytes);
+    if !found.eq_ignore_ascii_case(expected.trim()) {
+        return Err(Error::ChecksumMismatch(release.program.key().to_string()));
+    }
+
+    std::fs::create_dir_all(bin_dir)?;
+    let unpacked_into = bin_dir.join(format!(".unpacking-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&unpacked_into);
+    let written = archive::unpack(bytes, kind, &unpacked_into)?;
+
+    let tidy = |outcome: Result<Vec<PathBuf>>| {
+        let _ = std::fs::remove_dir_all(&unpacked_into);
+        outcome
+    };
+
+    // Every one of them is found before any of them is moved.
+    let mut taking = Vec::new();
+    for program in release.holds {
+        let wanted = program.file_name();
+        match archive::find_named(&written, &wanted) {
+            Some(path) => taking.push((*program, path.clone())),
+            None => {
+                return tidy(Err(Error::BadArchive(format!(
+                    "{wanted} is not in {}",
+                    release.file_name
+                ))))
+            }
+        }
+    }
+
+    let mut installed = Vec::new();
+    for (program, path) in taking {
+        let bytes = match std::fs::read(&path) {
+            Ok(bytes) => bytes,
+            Err(error) => return tidy(Err(Error::Process(error))),
+        };
+        let sum = sha256_hex(&bytes);
+        match install(bin_dir, program, &bytes, &sum) {
+            Ok(target) => installed.push(target),
+            Err(error) => return tidy(Err(error)),
+        }
+    }
+    tidy(Ok(installed))
 }
 
 /// Puts a fetched program in place, but only if it is what it should be.
@@ -332,24 +613,96 @@ not a checksum line at all
     }
 
     #[test]
-    fn every_release_says_where_it_comes_from_and_where_to_check_it() {
+    fn every_release_says_where_it_comes_from_and_how_it_is_checked() {
         for release in catalogue() {
             assert!(
                 release.url.starts_with("https://github.com/"),
                 "{}: releases come from GitHub and nowhere else (SPEC §7.1)",
                 release.program.key()
             );
-            assert!(release.sums_url.starts_with("https://github.com/"));
-            assert!(!release.listed_as.is_empty());
+            assert!(
+                release.url.ends_with(release.file_name),
+                "{}: the URL ends in the file it says it fetches",
+                release.program.key()
+            );
             assert!(release.about_bytes > 0);
+            assert!(
+                !release.holds.is_empty(),
+                "{}: a release brings at least one program",
+                release.program.key()
+            );
+            match &release.verify {
+                Verify::Listed { sums_url, listed_as } => {
+                    assert!(sums_url.starts_with("https://github.com/"));
+                    assert!(!listed_as.is_empty());
+                }
+                Verify::Alone { sums_url } => {
+                    assert!(sums_url.starts_with("https://github.com/"));
+                }
+                Verify::Pinned { sha256 } => {
+                    assert_eq!(sha256.len(), 64, "{}", release.program.key());
+                    assert!(sha256.chars().all(|ch| ch.is_ascii_hexdigit()));
+                    assert!(
+                        !release.url.contains("/latest/"),
+                        "{}: a fingerprint in the code pins the version, so the URL must too",
+                        release.program.key()
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn every_program_onsa_runs_can_now_be_fetched() {
+        // Including ffprobe, which has no release of its own and comes out
+        // of ffmpeg's.
+        for program in Program::ALL {
+            let release = release_for(program)
+                .unwrap_or_else(|| panic!("{} has nowhere to come from", program.key()));
+            assert!(release.holds.contains(&program));
         }
         assert_eq!(
-            release_for(Program::YtDlp).map(|one| one.program),
-            Some(Program::YtDlp)
+            release_for(Program::Ffprobe).map(|one| one.program),
+            Some(Program::Ffmpeg)
         );
-        // The ones that come as archives are not offered yet.
-        assert_eq!(release_for(Program::Ffmpeg), None);
-        assert_eq!(release_for(Program::Deno), None);
+    }
+
+    #[test]
+    fn an_archive_is_known_by_what_the_release_calls_it() {
+        for release in catalogue() {
+            let is_archive = release.archive().is_some();
+            let one_file = release.holds.len() == 1 && release.program == Program::YtDlp;
+            assert!(
+                is_archive || one_file,
+                "{}: everything but yt-dlp arrives as an archive",
+                release.program.key()
+            );
+        }
+    }
+
+    /// The two shapes the one-file checksum arrives in, both real.
+    #[test]
+    fn the_one_checksum_in_a_file_is_read_whichever_way_it_was_written() {
+        let unix = "c6527f24f4b16031d3ae4fa9f658d5f11534c8d84ce7dc8502420280919c3490  deno.zip\n";
+        assert_eq!(
+            only_checksum(unix).as_deref(),
+            Some("c6527f24f4b16031d3ae4fa9f658d5f11534c8d84ce7dc8502420280919c3490")
+        );
+        // What PowerShell's Get-FileHash writes, including the build
+        // machine's own path, which is not a name Onsa could match on.
+        let windows = "\nAlgorithm : SHA256\nHash      : A0C3101B4158D1DFB7D6A78A7BF0F3DE80C96BB423C152BEEC8BEB22786F2238\nPath      : C:\\a\\deno\\deno\\target\\release\\deno.zip\n";
+        assert_eq!(
+            only_checksum(windows).as_deref(),
+            Some("a0c3101b4158d1dfb7d6a78a7bf0f3de80c96bb423c152beec8beb22786f2238")
+        );
+    }
+
+    #[test]
+    fn a_file_about_two_things_is_not_read_as_being_about_one() {
+        let two = "0000000000000000000000000000000000000000000000000000000000000000  a\n1111111111111111111111111111111111111111111111111111111111111111  b\n";
+        assert_eq!(only_checksum(two), None);
+        assert_eq!(only_checksum(""), None);
+        assert_eq!(only_checksum("nothing here"), None);
     }
 
     #[test]

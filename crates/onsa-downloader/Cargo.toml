@@ -6,9 +6,13 @@ rust-version.workspace = true
 publish.workspace = true
 
 [dependencies]
+flate2.workspace = true
+lzma-rs.workspace = true
 sha2.workspace = true
+tar.workspace = true
 thiserror.workspace = true
 tracing.workspace = true
+zip.workspace = true
 
 # Stopping a program together with everything it started (SPEC §7.3). Both
 # of these are already in the tree — Tauri and cpal bring them — so nothing
@@ -25,3 +29,8 @@ windows-sys = { version = "0.61", features = [
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
+
+[dev-dependencies]
+# The archive tests build their own gzip, so the module under test is the
+# only thing being tested.
+flate2.workspace = true

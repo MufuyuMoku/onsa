@@ -14,6 +14,7 @@
 
 #![warn(missing_docs)]
 
+pub mod archive;
 pub mod install;
 pub mod platform;
 pub mod programs;
@@ -72,4 +73,7 @@ pub enum Error {
     /// A downloaded binary did not match its published checksum.
     #[error("checksum mismatch for {0}")]
     ChecksumMismatch(String),
+    /// An archive holds something Onsa will not unpack.
+    #[error("this archive cannot be unpacked safely: {0}")]
+    BadArchive(String),
 }
