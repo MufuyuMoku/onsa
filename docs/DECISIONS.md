@@ -815,3 +815,23 @@ Keputusan pemilik proyek atas hasil pemeriksaan pertama cargo deny. Dua pengecua
   persis bentuk yang didokumentasikan yt-dlp yang terpasang — dan tidak mengatakan apa-apa saat
   Onsa tidak punya Deno, supaya yt-dlp tetap berperilaku bawaannya.
 
+## 2026-09-29 · M15: daftar yang ditanyakan, bukan daftar yang ditulis
+
+- **Daftarnya milik yt-dlp, bukan milik Onsa.** Menuliskannya di dalam kode akan membuatnya jadi
+  daftar tentang yt-dlp yang dipakai saat Onsa dibangun, lalu diam-diam menyimpang dari yt-dlp
+  yang sebenarnya bekerja. Ditanyakan ke program yang terpasang, daftarnya selalu tentang program
+  itu — dan halamannya menyebut versinya, supaya jelas ini daftar tentang apa.
+- **Tanda "sedang rusak" diteruskan apa adanya.** yt-dlp menandai sendiri extractor yang ia tahu
+  sedang tidak jalan. Menyembunyikannya akan membuat daftar ini terdengar seperti janji;
+  menampilkannya membuat kalimat "ada di daftar tidak berarti berhasil" jadi sesuatu yang bisa
+  dilihat, bukan sekadar dibaca.
+- **Ditanyakan sekali per versi per jalannya Onsa.** Menjalankan sebuah program untuk mencetak
+  tujuh belas ratus nama bukan pekerjaan yang diulang tiap ketukan tombol; dan karena yang
+  disimpan diikat pada versi yt-dlp, memperbarui yt-dlp otomatis membuat daftarnya ditanyakan
+  ulang.
+- **Yang digambar dibatasi 120 baris.** Tujuh belas ratus baris bukan daftar yang bisa dibaca
+  siapa pun; sisanya disebutkan jumlahnya dengan ajakan mempersempit pencarian.
+- **Tanpa yt-dlp, halamannya menunjuk ke halaman Unduhan** alih-alih menampilkan daftar kosong.
+  Daftar kosong terbaca seperti "tidak ada yang bisa diunduh"; yang sebenarnya terjadi adalah
+  belum ada yang bisa ditanyai.
+

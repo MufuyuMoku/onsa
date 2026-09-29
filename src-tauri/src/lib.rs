@@ -29,6 +29,7 @@ mod queue;
 mod session;
 mod settings;
 mod sleep;
+mod sources;
 mod startup;
 pub mod theme;
 mod tidy;
@@ -165,6 +166,7 @@ pub fn run() -> Result<()> {
             tidy::edit_history,
             tidy::edit_undo,
             online::program_status,
+            sources::download_sources,
             online::program_choose,
             online::program_pick,
             online::program_open_page,
@@ -308,6 +310,7 @@ fn setup(app: &mut tauri::App) -> Result<()> {
     app.manage(std::sync::Arc::new(matching::Matching::default()));
     app.manage(std::sync::Arc::new(downloads::Fetching::default()));
     app.manage(std::sync::Arc::new(downloads::Queue::default()));
+    app.manage(std::sync::Arc::new(sources::Sources::default()));
     app.manage(std::sync::Arc::new(lyrics::Lookups::default()));
     app.manage(logging);
     app.manage(library);

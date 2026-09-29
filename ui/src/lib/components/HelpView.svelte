@@ -6,9 +6,38 @@
 -->
 <script lang="ts">
 	import { app, navigate, showFirstRun, type SettingsSection, type View } from '$lib/app.svelte';
+	import { downloadSources, type DownloadSources } from '$lib/backend';
 	import { openHelp } from '$lib/layout.svelte';
 	import { t } from '$lib/i18n/index.svelte';
 	import { TOPICS } from '$lib/help/topics';
+
+	/**
+	 * The sites yt-dlp knows about (SPEC section 15, M15).
+	 *
+	 * Asked of the installed yt-dlp rather than written down here, so the
+	 * list is about the program that would do the work. Nothing until the
+	 * answer arrives; the backend keeps it for the rest of the run.
+	 */
+	let sites = $state<DownloadSources | null>(null);
+	let siteQuery = $state('');
+
+	$effect(() => {
+		downloadSources()
+			.then((found) => (sites = found))
+			.catch(() => (sites = { available: false, version: null, sources: [] }));
+	});
+
+	/** How many are drawn at once. Seventeen hundred rows is not a list. */
+	const AT_MOST = 120;
+
+	const matching = $derived.by(() => {
+		const all = sites?.sources ?? [];
+		const query = siteQuery.trim().toLowerCase();
+		if (!query) return all;
+		return all.filter((one) => one.name.toLowerCase().includes(query));
+	});
+
+	const shown = $derived(matching.slice(0, AT_MOST));
 
 	/**
 	 * The example theme. It is a file's contents rather than wording, the
@@ -123,6 +152,47 @@
 		</article>
 
 		<article>
+			<h3>{t('help.sites.head')}</h3>
+			{#if sites === null}
+				<p class="muted">{t('help.sites.reading')}</p>
+			{:else if !sites.available}
+				<p>{t('help.sites.noYtDlp')}</p>
+				<button type="button" class="btn" onclick={() => navigate({ kind: 'downloads' })}>
+					{t('help.sites.toDownloads')}
+				</button>
+			{:else}
+				<p>{t('help.sites.body', { n: sites.sources.length, version: sites.version ?? '' })}</p>
+				<p class="muted">{t('help.sites.honest')}</p>
+				<label class="inline">
+					<span class="label">{t('help.sites.search')}</span>
+					<input
+						class="field numeric"
+						type="search"
+						bind:value={siteQuery}
+						placeholder={t('help.sites.searchHint')}
+					/>
+				</label>
+				{#if shown.length === 0}
+					<p class="muted">{t('help.sites.none', { query: siteQuery })}</p>
+				{:else}
+					<ul class="sites">
+						{#each shown as site (site.name)}
+							<li class:music={site.music}>
+								<span class="numeric ellipsis">{site.name}</span>
+								{#if site.broken}<span class="caution-text">{t('help.sites.broken')}</span>{/if}
+							</li>
+						{/each}
+					</ul>
+					{#if shown.length < matching.length}
+						<p class="muted rest">
+							{t('help.sites.more', { n: matching.length - shown.length })}
+						</p>
+					{/if}
+				{/if}
+			{/if}
+		</article>
+
+		<article>
 			<h3>{t('help.limits.head')}</h3>
 			<ul>
 				<li>{t('help.limits.opus')}</li>
@@ -149,6 +219,40 @@
 </div>
 
 <style>
+	/* The list of sites: many short names, so they read as columns rather
+	   than as a very long single file. */
+	.sites {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+		gap: 2px 14px;
+		margin: 8px 0 0;
+		padding: 0;
+		list-style: none;
+		font-size: 12px;
+	}
+
+	.sites li {
+		display: flex;
+		align-items: baseline;
+		gap: 6px;
+		min-width: 0;
+	}
+
+	/* The music sites are what somebody came here looking for. */
+	.sites li.music .numeric {
+		color: var(--onsa-role-adjustable);
+	}
+
+	.sites .caution-text {
+		color: var(--onsa-role-caution);
+		font-size: 10px;
+	}
+
+	.rest {
+		margin: 8px 0 0;
+		font-size: 12px;
+	}
+
 	.help-page {
 		display: grid;
 		align-content: start;

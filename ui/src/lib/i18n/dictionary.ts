@@ -1083,6 +1083,10 @@ const id = {
 	'help.name.contents': 'Daftar halaman',
 	'help.says.contents':
 		'Setiap halaman Onsa. Klik satu untuk membukanya sekaligus membuka penjelasannya di panel kanan.',
+	'help.says.findSite':
+		'Menyaring daftar situs. Ketik sebagian nama — "band" sudah cukup untuk menemukan Bandcamp. Situs musik yang umum ada di atas daftar tanpa perlu dicari.',
+	'help.says.sitesToDownloads':
+		'Membuka halaman Unduhan, tempat yt-dlp dipasang. Daftar situsnya baru bisa ditampilkan sesudah yt-dlp ada, karena daftar itu memang datang dari yt-dlp.',
 	'help.says.firstRunAgain':
 		'Menampilkan lagi layar pertama yang muncul saat Onsa baru dipasang, termasuk daftar hal yang mudah terlewat. Tidak ada yang berubah karena membukanya.',
 
@@ -1113,6 +1117,20 @@ const id = {
 		'Kalau fpcalc sudah ada di sistemmu, Onsa memakainya sendiri tanpa kamu atur. Kalau belum, tombol "Buka halaman unduhan resmi" di Pengaturan, bagian Metadata, membuka halaman rilis Chromaprint di browsermu. Sesudah berkasnya ada, tekan "Cari fpcalc…" dan tunjukkan: di Windows namanya fpcalc.exe, ada di dalam folder hasil membuka paket itu; di Linux biasanya /usr/bin/fpcalc setelah paket libchromaprint-tools dipasang, dan di sana Onsa menemukannya sendiri.',
 	'help.fpcalc.check':
 		'Berkas yang kamu tunjuk dijalankan sekali dan ditanya versinya. Kalau yang menjawab bukan fpcalc, misalnya berkas lagu, gambar, atau program lain, pilihannya ditolak di tempat itu juga dan tidak disimpan. Gunanya supaya kegagalan nanti tidak terbaca seolah-olah berkas lagumu yang bermasalah.',
+	'help.sites.head': 'Situs yang bisa diunduh',
+	'help.sites.reading': 'Menanyakan ke yt-dlp…',
+	'help.sites.noYtDlp':
+		'Daftar ini datang dari yt-dlp yang terpasang, dan di mesin ini yt-dlp belum ada. Pasang dulu lewat halaman Unduhan, lalu kembali ke sini.',
+	'help.sites.toDownloads': 'Buka halaman Unduhan',
+	'help.sites.body':
+		'{n} situs dikenali oleh yt-dlp {version} yang terpasang di mesin ini. Daftarnya ditanyakan langsung ke program itu, bukan ditulis di dalam Onsa — jadi kalau yt-dlp diperbarui, daftar ini ikut berubah.',
+	'help.sites.honest':
+		'Ada di daftar ini tidak selalu berarti berhasil. Sebagian situs butuh kamu masuk akun, sebagian memblokir unduhan, dan sebagian sedang rusak lalu diperbaiki lagi beberapa minggu kemudian. Yang dikatakan daftar ini hanya satu: yt-dlp mengenal namanya. Yang ditandai "sedang rusak" adalah yang diakui yt-dlp sendiri sedang tidak jalan.',
+	'help.sites.search': 'Cari situs',
+	'help.sites.searchHint': 'misalnya bandcamp',
+	'help.sites.broken': 'sedang rusak',
+	'help.sites.none': 'Tidak ada yang cocok dengan "{query}".',
+	'help.sites.more': 'dan {n} lagi — persempit pencariannya untuk melihat sisanya.',
 	'help.programs.head': 'yt-dlp dan ffmpeg',
 	'help.programs.body':
 		'Keduanya program terpisah yang bukan bagian dari Onsa, dan hanya dipakai di halaman Unduhan. yt-dlp wajib: dialah yang mengambil audio dari alamat web. ffmpeg tidak wajib: tanpa dia unduhan tetap berjalan, tapi berkas hasilnya datang apa adanya — tanpa judul dan artis yang tertanam di dalamnya, tanpa gambar sampul, dan tanpa bisa diubah ke MP3 atau FLAC. Onsa tidak mengunduh keduanya diam-diam: ada tombol persetujuan untuk masing-masing, berkasnya diambil dari halaman rilis resminya, dan dicocokkan dengan sidik berkas yang diterbitkan rilis itu sebelum disimpan. Kalau keduanya sudah ada di komputermu, nyalakan "pakai program yang sudah ada di sistem" dan Onsa tidak mengunduh apa pun.',
@@ -2256,6 +2274,10 @@ const en: Record<MessageKey, string> = {
 		'Asks the lyrics service about this song once more. Only possible if you switched the internet search for lyrics on.',
 	'help.name.contents': 'The list of pages',
 	'help.says.contents': 'Every page in Onsa. Click one to open it with its explanation beside it.',
+	'help.says.findSite':
+		'Narrows the list of sites. Type part of a name — "band" is enough to find Bandcamp. The common music sites are at the top of the list without searching at all.',
+	'help.says.sitesToDownloads':
+		'Opens the Downloads page, where yt-dlp is installed. The list of sites can only be shown once yt-dlp is there, because the list comes from yt-dlp.',
 	'help.says.firstRunAgain':
 		'Shows the first screen again, the one that appears when Onsa is newly installed, including the list of things that are easy to miss. Opening it changes nothing.',
 
@@ -2286,6 +2308,20 @@ const en: Record<MessageKey, string> = {
 		'If fpcalc is already on your system, Onsa uses it by itself and there is nothing to set. If it is not, the "Open the official download page" button in Settings, under Metadata, opens the Chromaprint release page in your browser. Once you have the file, press "Find fpcalc…" and point at it: on Windows it is called fpcalc.exe, inside the folder that package unpacked into; on Linux it is usually /usr/bin/fpcalc once the libchromaprint-tools package is installed, and there Onsa finds it by itself.',
 	'help.fpcalc.check':
 		'The file you point at is run once and asked its version. If what answers is not fpcalc, a song, a picture or some other program, the choice is refused there and then and nothing is kept. That is so a failure later cannot read as though there were something wrong with your song file.',
+	'help.sites.head': 'Sites you can download from',
+	'help.sites.reading': 'Asking yt-dlp…',
+	'help.sites.noYtDlp':
+		'This list comes from the yt-dlp that is installed, and there is none on this machine yet. Install it from the Downloads page and come back.',
+	'help.sites.toDownloads': 'Open the Downloads page',
+	'help.sites.body':
+		'{n} sites are known to yt-dlp {version}, the one installed on this machine. The list is asked of that program rather than written inside Onsa — so when yt-dlp is updated, this list changes with it.',
+	'help.sites.honest':
+		'Being on this list does not always mean it will work. Some sites want you signed in, some block downloads, and some are broken for a while and fixed again weeks later. All the list says is that yt-dlp knows the name. The ones marked "broken right now" are the ones yt-dlp itself admits are not working.',
+	'help.sites.search': 'Find a site',
+	'help.sites.searchHint': 'bandcamp, say',
+	'help.sites.broken': 'broken right now',
+	'help.sites.none': 'Nothing matches “{query}”.',
+	'help.sites.more': 'and {n} more — narrow the search to see the rest.',
 	'help.programs.head': 'yt-dlp and ffmpeg',
 	'help.programs.body':
 		'Both are separate programs, not part of Onsa, and are used only on the Downloads page. yt-dlp is required: it is what fetches audio from a web address. ffmpeg is not: without it downloads still work, but what arrives is the file as it comes — with no title and artist inside it, no cover picture, and no way to turn it into MP3 or FLAC. Onsa does not download either behind your back: each has a button that agrees to it, the file is taken from its official release page, and it is checked against the fingerprint that release published before it is kept. If you already have them, switch on "use the programs already on this system" and Onsa downloads nothing.',

@@ -411,6 +411,8 @@ export const TOPICS: HelpTopic[] = [
 			control('help.name.contents', 'help.says.contents'),
 			control('help.name.contentsLinks', 'help.says.contentsLinks'),
 			control('help.theme.copy', 'help.says.themeExample'),
+			control('help.sites.search', 'help.says.findSite'),
+			control('help.sites.toDownloads', 'help.says.sitesToDownloads'),
 			control('help.firstRun', 'help.says.firstRunAgain')
 		],
 		limits: []

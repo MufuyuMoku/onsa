@@ -1742,3 +1742,39 @@ jelas tanpa Deno, dan sebagian format bisa hilang".
 
 `cargo fmt --check`, `clippy -D warnings`, `cargo test --workspace`, `npm run check`, tes UI, dan
 `cargo deny check licenses` semuanya bersih.
+
+## 2026-09-29 · M15: daftar sumber unduhan di Bantuan
+
+Halaman Bantuan mendapat bagian baru, **"Situs yang bisa diunduh"**, yang isinya ditanyakan
+langsung ke yt-dlp yang terpasang lewat `--list-extractors`.
+
+### Apa yang dibuktikan di aplikasi yang berjalan
+
+| | hasil |
+|---|---|
+| dari yt-dlp yang terpasang | **1751 situs**, dari **yt-dlp 2026.08.19** — versinya disebut di halaman itu |
+| bukan ditulis tangan | tidak ada satu pun nama situs di dalam kode Onsa; ganti versi yt-dlp, daftarnya ikut berubah |
+| sumber musik di atas | **52 baris** musik lebih dulu: youtube → soundcloud → Bandcamp → mixcloud → audiomack → Jamendo → archive.org → vimeo, masing-masing beserta halaman turunannya |
+| bisa dicari | mengetik `band` menyisakan Bandcamp (4 baris) dan Bandlab (2 baris) |
+| kalimat jujurnya | ada, dan diperkuat oleh **136 situs yang ditandai "sedang rusak"** — tanda itu datang dari yt-dlp sendiri, bukan dari tebakan Onsa |
+| tanpa yt-dlp | halamannya mengatakannya dan tombol **"Buka halaman Unduhan"** membuka halaman Unduhan (diuji dengan menyembunyikan yt-dlp dan mematikan "pakai program sistem") |
+
+### Tesnya tidak menyentuh jaringan
+
+Tiga tes unit membaca keluaran `--list-extractors` yang **direkam** di dalam tesnya sendiri:
+sebuah nama dibaca, yang ditandai `(CURRENTLY BROKEN)` ditandai, baris yang bukan nama (peringatan
+yang nyasar ke aliran yang sama) dibuang, urutan musik-dulu dijaga, dan keluaran kosong berarti
+nol situs, bukan tebakan.
+
+### Yang tidak ditampilkan sekaligus
+
+1751 baris bukan daftar yang bisa dibaca, jadi yang digambar paling banyak 120 baris dan sisanya
+disebutkan jumlahnya dengan ajakan mempersempit pencarian. Daftarnya juga ditanyakan sekali per
+versi per jalannya Onsa — menjalankan sebuah program untuk mencetak tujuh belas ratus nama bukan
+pekerjaan yang diulang tiap ketukan tombol.
+
+Kedua kendali barunya — kotak pencarian dan tombol ke halaman Unduhan — punya kalimatnya di panel
+bantuan halaman itu. **Nol kontrol terlewat.**
+
+`cargo fmt --check`, `clippy -D warnings`, `cargo test --workspace`, `npm run check`, tes UI (49),
+dan `cargo deny check licenses` semuanya bersih.

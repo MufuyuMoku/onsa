@@ -862,6 +862,25 @@ export const binariesStatus = () => call<Binaries>('binaries_status');
 export const binaryInstall = (program: string) =>
 	call<BinaryStatus>('binary_install', { program });
 export const binaryStop = () => call<void>('binary_stop');
+
+/** One site the installed yt-dlp knows about (SPEC section 15, M15). */
+export interface DownloadSource {
+	name: string;
+	/** Whether yt-dlp itself says this one is broken at the moment. */
+	broken: boolean;
+	/** Whether it is one of the music sites shown first. */
+	music: boolean;
+}
+
+/** The list, and whether there was a yt-dlp to ask. */
+export interface DownloadSources {
+	available: boolean;
+	/** The version that answered, so the page can say which list this is. */
+	version: string | null;
+	sources: DownloadSource[];
+}
+
+export const downloadSources = () => call<DownloadSources>('download_sources');
 export const binariesUseSystem = (allowed: boolean) =>
 	call<Binaries>('binaries_use_system', { allowed });
 
