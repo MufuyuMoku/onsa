@@ -181,6 +181,7 @@ pub fn run() -> Result<()> {
             downloads::binaries_use_system,
             downloads::download_probe,
             downloads::download_queue,
+            downloads::download_set_at_once,
             downloads::download_start,
             downloads::download_stop,
             lyrics::lyrics_for,
@@ -392,4 +393,30 @@ fn close_to_tray(app: &AppHandle) -> bool {
     app.try_state::<LibraryService>()
         .map(|library| session::load::<bool>(&library, settings::CLOSE_TO_TRAY_KEY))
         .unwrap_or(false)
+}
+
+#[cfg(test)]
+mod tests {
+    /// The `"version": "x.y.z"` a JSON file carries at its top.
+    fn json_version(text: &str) -> Option<String> {
+        let value: serde_json::Value = serde_json::from_str(text).ok()?;
+        value.get("version")?.as_str().map(str::to_string)
+    }
+
+    /// The version is written in three places, and the Linux packages are
+    /// named from one of them. v1.4 nearly shipped packages called 1.3.0.
+    #[test]
+    fn every_place_that_carries_the_version_says_the_same() {
+        let crate_version = env!("CARGO_PKG_VERSION");
+        assert_eq!(
+            json_version(include_str!("../tauri.conf.json")).as_deref(),
+            Some(crate_version),
+            "src-tauri/tauri.conf.json"
+        );
+        assert_eq!(
+            json_version(include_str!("../../ui/package.json")).as_deref(),
+            Some(crate_version),
+            "ui/package.json"
+        );
+    }
 }

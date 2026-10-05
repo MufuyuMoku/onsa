@@ -192,7 +192,9 @@ pub fn lookup(key: &str, print: &Fingerprint) -> Result<Vec<Match>, Failure> {
         ],
     )
     .map_err(|error| match error {
-        NetError::TooLarge | NetError::Unreachable | NetError::Stopped => Failure::Offline,
+        NetError::TooLarge | NetError::Unreachable | NetError::Stopped | NetError::Gone => {
+            Failure::Offline
+        }
     })?;
     read_matches(&answer.body)
 }

@@ -273,11 +273,18 @@ pub fn arguments(
 /// Every line yt-dlp prints is read: the progress lines become [`Step`]s,
 /// and the one line that is a path is the file that ended up on disk. A line
 /// that is neither goes to the log and stops nothing, as SPEC §7.2 asks.
+///
+/// yt-dlp does all its work in `work`, a folder of this download's own
+/// outside every library folder: the pieces, the audio before it is
+/// converted, the thumbnail before it is embedded. Only the finished file
+/// is moved into `into`, by [`hand_over`], so the library's watcher never
+/// sees anything but the file that stays (DECISIONS 2026-10-05).
 pub fn download(
     programs: &Programs,
     url: &str,
     format: Format,
     into: &Path,
+    work: &Path,
     stop: Arc<AtomicBool>,
     mut watching: impl FnMut(Step),
 ) -> Result<Vec<PathBuf>, Trouble> {
@@ -287,10 +294,12 @@ pub fn download(
     let found = programs
         .find(Program::YtDlp)
         .ok_or_else(|| Trouble::of("noYtDlp"))?;
-    std::fs::create_dir_all(into).map_err(|error| {
-        tracing::warn!("the download folder cannot be made: {error}");
-        Trouble::of("cannotWrite")
-    })?;
+    for folder in [into, work] {
+        std::fs::create_dir_all(folder).map_err(|error| {
+            tracing::warn!("the download folder cannot be made: {error}");
+            Trouble::of("cannotWrite")
+        })?;
+    }
 
     // What yt-dlp will find for itself, not what Onsa would choose: it
     // searches PATH on its own account (see `Programs::reachable`).
@@ -302,7 +311,7 @@ pub fn download(
     let args = arguments(
         url,
         format,
-        into,
+        work,
         ffmpeg.as_ref().map(|one| one.path.as_path()),
         deno.as_ref().map(|one| one.path.as_path()),
     );
@@ -326,7 +335,112 @@ pub fn download(
         tracing::warn!("yt-dlp failed: {said}");
         return Err(why_of(&said));
     }
-    Ok(files)
+
+    // What is in the work folder now is what yt-dlp finished: it deletes
+    // the audio it converted from and the thumbnail it embedded. The path
+    // it printed is only logged — on Windows it prints in the console's
+    // code page, so a title in Korean comes back without its Korean, and a
+    // path that names no file is no path to move.
+    for printed in &files {
+        tracing::debug!(file = %printed.display(), "yt-dlp says it finished");
+    }
+    let files = finished_in(work);
+    if files.is_empty() {
+        tracing::warn!("yt-dlp finished, and left nothing playable behind");
+        return Err(Trouble::of("cannotWrite"));
+    }
+    let mut arrived = Vec::with_capacity(files.len());
+    for file in files {
+        let placed = hand_over(work, into, &file).map_err(|error| {
+            tracing::warn!(file = %file.display(), "a download could not be moved into the library: {error}");
+            Trouble::of("cannotWrite")
+        })?;
+        arrived.push(placed);
+    }
+    Ok(arrived)
+}
+
+/// The audio files under the folder yt-dlp worked in, by what the library
+/// reads; anything else it left (a thumbnail it could not embed) stays out.
+fn finished_in(work: &Path) -> Vec<PathBuf> {
+    let mut found = Vec::new();
+    let mut pending = vec![work.to_path_buf()];
+    while let Some(folder) = pending.pop() {
+        let Ok(entries) = std::fs::read_dir(&folder) else {
+            continue;
+        };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            match entry.file_type() {
+                Ok(kind) if kind.is_dir() => pending.push(path),
+                Ok(kind) if kind.is_file() && onsa_library::scan::is_supported(&path) => {
+                    found.push(path)
+                }
+                _ => {}
+            }
+        }
+    }
+    found.sort();
+    found
+}
+
+/// What a file is called while it is being copied into the library.
+///
+/// Hidden, and ending in something no scanner reads as audio, so the
+/// watcher passes over it. It only exists when the folder yt-dlp worked in
+/// is on another drive than the library and a rename is not possible.
+const ARRIVING: &str = "onsa-arriving";
+
+/// Moves one finished file from where yt-dlp worked into the library.
+///
+/// It keeps the folders yt-dlp made under `work` (the artist), so the file
+/// lands where it would have if yt-dlp had written it there itself. A
+/// rename is tried first, which on one drive is a single step: the file is
+/// not there, and then it is, whole. Across drives the bytes are copied to
+/// a hidden name beside the destination and renamed once complete, so a
+/// half-copied file is never one the library can see either.
+pub fn hand_over(work: &Path, into: &Path, file: &Path) -> std::io::Result<PathBuf> {
+    let below = match file.strip_prefix(work) {
+        Ok(below) if below.components().count() > 0 => below.to_path_buf(),
+        // yt-dlp only ever writes where it was told; if a path ever comes
+        // back from elsewhere, the name is all that is used of it.
+        _ => PathBuf::from(file.file_name().ok_or_else(|| {
+            std::io::Error::new(std::io::ErrorKind::InvalidInput, "a path with no name")
+        })?),
+    };
+    let target = into.join(below);
+    if let Some(parent) = target.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+    if std::fs::rename(file, &target).is_ok() {
+        return Ok(target);
+    }
+    copy_into_place(file, &target)?;
+    Ok(target)
+}
+
+/// The way across drives: copied under a hidden name, then renamed.
+fn copy_into_place(file: &Path, target: &Path) -> std::io::Result<()> {
+    let name = target
+        .file_name()
+        .map(|name| name.to_string_lossy().to_string())
+        .unwrap_or_default();
+    let arriving = target.with_file_name(format!(".{name}.{ARRIVING}"));
+    let copied = (|| {
+        std::fs::copy(file, &arriving)?;
+        // Flushing needs a handle that may write, on Windows at least.
+        std::fs::OpenOptions::new()
+            .write(true)
+            .open(&arriving)?
+            .sync_all()?;
+        std::fs::rename(&arriving, target)
+    })();
+    if let Err(error) = copied {
+        let _ = std::fs::remove_file(&arriving);
+        return Err(error);
+    }
+    let _ = std::fs::remove_file(file);
+    Ok(())
 }
 
 /// Why a download ended badly: a word the interface can say in the
@@ -622,6 +736,115 @@ mod tests {
             }
             _ => panic!("that was a progress line"),
         }
+    }
+
+    fn scratch(name: &str) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!(
+            "onsa ytdlp {} {name} 音叉 テスト",
+            std::process::id()
+        ));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).expect("a scratch folder");
+        dir
+    }
+
+    /// Every file under `dir`, as paths relative to it.
+    fn everything_in(dir: &Path) -> Vec<PathBuf> {
+        let mut found = Vec::new();
+        let mut pending = vec![dir.to_path_buf()];
+        while let Some(next) = pending.pop() {
+            for entry in std::fs::read_dir(&next).expect("readable").flatten() {
+                let path = entry.path();
+                if path.is_dir() {
+                    pending.push(path);
+                } else {
+                    found.push(path.strip_prefix(dir).expect("below").to_path_buf());
+                }
+            }
+        }
+        found.sort();
+        found
+    }
+
+    #[test]
+    fn only_the_finished_file_reaches_the_library() {
+        let root = scratch("hand over");
+        let work = root.join("work");
+        let library = root.join("Musik Saya").join("Unduhan");
+        let artist = work.join("Lilith");
+        std::fs::create_dir_all(&artist).unwrap();
+        // What yt-dlp leaves while it converts: the audio it fetched, the
+        // thumbnail it has not embedded yet, and the finished file.
+        std::fs::write(artist.join("Lampu Kota [abc].m4a"), b"before").unwrap();
+        std::fs::write(artist.join("Lampu Kota [abc].webp"), b"cover").unwrap();
+        let finished = artist.join("Lampu Kota [abc].mp3");
+        std::fs::write(&finished, b"after").unwrap();
+
+        let placed = hand_over(&work, &library, &finished).expect("moved");
+        assert_eq!(placed, library.join("Lilith").join("Lampu Kota [abc].mp3"));
+        assert_eq!(std::fs::read(&placed).unwrap(), b"after");
+        assert_eq!(
+            everything_in(&library),
+            vec![PathBuf::from("Lilith").join("Lampu Kota [abc].mp3")],
+            "nothing else ever enters the library folder"
+        );
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn what_yt_dlp_finished_is_found_by_looking_not_by_its_word() {
+        let root = scratch("finished");
+        let artist = root.join("officialpsy");
+        std::fs::create_dir_all(&artist).unwrap();
+        // The real name, which the printed one lost its Korean from.
+        let real = artist.join("PSY - GANGNAM STYLE(강남스타일) MV [9bZkp7q19f0].mp3");
+        std::fs::write(&real, b"audio").unwrap();
+        std::fs::write(artist.join("PSY [9bZkp7q19f0].webp"), b"a cover left over").unwrap();
+        assert_eq!(finished_in(&root), vec![real]);
+        assert!(finished_in(&root.join("nowhere")).is_empty());
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn across_drives_the_copy_is_hidden_until_it_is_whole() {
+        let root = scratch("copy");
+        let from = root.join("work").join("Lampu Kota [abc].flac");
+        std::fs::create_dir_all(from.parent().unwrap()).unwrap();
+        std::fs::write(&from, b"audio").unwrap();
+        let target = root.join("library").join("Lampu Kota [abc].flac");
+        std::fs::create_dir_all(target.parent().unwrap()).unwrap();
+
+        copy_into_place(&from, &target).expect("copied");
+        assert_eq!(std::fs::read(&target).unwrap(), b"audio");
+        assert!(!from.exists(), "the working copy goes");
+        assert_eq!(
+            everything_in(&root.join("library")),
+            vec![PathBuf::from("Lampu Kota [abc].flac")],
+            "no hidden name is left behind"
+        );
+        // And the hidden name is one no scanner reads as audio.
+        let arriving = format!(".Lampu Kota [abc].flac.{ARRIVING}");
+        assert!(!onsa_library::scan::is_supported(Path::new(&arriving)));
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn yt_dlp_is_told_to_work_outside_the_library() {
+        let work = if cfg!(windows) {
+            PathBuf::from(r"C:\cache\downloads")
+        } else {
+            PathBuf::from("/home/rian/.cache/onsa/downloads/7")
+        };
+        let args = arguments("https://example.com/v", Format::Mp3, &work, None, None);
+        let pattern = args
+            .iter()
+            .position(|one| one == "-o")
+            .and_then(|at| args.get(at + 1))
+            .expect("an output pattern");
+        assert!(
+            Path::new(pattern).starts_with(&work),
+            "{pattern:?} is not in the folder yt-dlp works in"
+        );
     }
 
     /// The arguments as words, which is how these tests read them.

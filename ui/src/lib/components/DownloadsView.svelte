@@ -14,6 +14,7 @@
 		binaryStop,
 		downloadProbe,
 		downloadQueue,
+		downloadSetAtOnce,
 		downloadStart,
 		downloadStop,
 		EVENTS,
@@ -61,7 +62,7 @@
 	 * stops: the reason has to outlive the thing that failed, or the only
 	 * account of it is a line in a log nobody opens.
 	 */
-	let installTrouble = $state<{ code: string; said: string | null } | null>(null);
+	let installTrouble = $state<{ key: string; code: string; said: string | null } | null>(null);
 	let picked = $state<Record<string, boolean>>({});
 	let format = $state<DownloadFormat>('original');
 	let queue = $state<DownloadQueue | null>(null);
@@ -74,7 +75,7 @@
 			// The reason outlives the fetch: `progress` is cleared as soon
 			// as it stops, and the reason is what somebody needs afterwards.
 			if (next.finished && next.failed) {
-				installTrouble = { code: next.failed, said: next.said };
+				installTrouble = { key: next.key, code: next.failed, said: next.said };
 			}
 		});
 		// The queue says only that it changed; what it changed to is asked
@@ -113,6 +114,15 @@
 	const chosen = $derived(
 		(probe?.entries ?? []).filter((one) => picked[one.url] ?? true)
 	);
+
+	/** How many downloads run at once (SPEC section 7.3). */
+	async function setAtOnce(next: number): Promise<void> {
+		try {
+			queue = await downloadSetAtOnce(next);
+		} catch (error) {
+			failure = failureKey(error);
+		}
+	}
 
 	async function start(): Promise<void> {
 		try {
@@ -221,6 +231,7 @@
 		cannotRun: 'downloads.cannotRun',
 		stopped: 'downloads.stopped',
 		unreachable: 'downloads.unreachable',
+		releaseGone: 'downloads.releaseGone',
 		tooLarge: 'downloads.tooLarge',
 		noChecksum: 'downloads.noChecksum',
 		checksum: 'downloads.checksumFailed',
@@ -294,6 +305,13 @@
 						<span class="source numeric muted ellipsis" title={program.url}>{program.url}</span>
 					{/if}
 
+					{#if program.key === 'deno' && !program.present}
+						<!-- yt-dlp's own warning about a missing runtime never
+						     reaches the window (Onsa runs it with no warnings),
+						     so this is where the listener is told. -->
+						<p class="note anyway caution-text">{t('downloads.denoWhat')}</p>
+					{/if}
+
 					{#if !program.installable && !program.present}
 						<span class="source muted">{t('downloads.ffmpegWhere')}</span>
 						<!-- Onsa cannot fetch this one yet, so the next thing
@@ -354,6 +372,17 @@
 			<p class="fault-text note">
 				{t(WHY[installTrouble.code] ?? 'downloads.unreachable')}
 			</p>
+			{#if installTrouble.code === 'releaseGone'}
+				<!-- The release this build points at is gone, so the page it
+				     came from is the one useful next step; the row itself only
+				     offers it for programs Onsa cannot fetch at all. -->
+				{@const gone = installTrouble.key}
+				<div class="row">
+					<button type="button" class="btn" onclick={() => programOpenPage(gone)}>
+						{t('programs.openPage')}
+					</button>
+				</div>
+			{/if}
 			{#if installTrouble.said}
 				<details class="detail">
 					<summary>{t('downloads.seeDetail')}</summary>
@@ -426,6 +455,18 @@
 							<option value="original">{t('downloads.formatOriginal')}</option>
 							<option value="mp3" disabled={!canConvert}>MP3</option>
 							<option value="flac" disabled={!canConvert}>FLAC</option>
+						</select>
+					</label>
+					<label class="inline">
+						<span class="label">{t('downloads.atOnce')}</span>
+						<select
+							class="field numeric"
+							value={queue?.atOnce ?? 2}
+							onchange={(event) => setAtOnce(Number(event.currentTarget.value))}
+						>
+							{#each [1, 2, 3, 4] as count (count)}
+								<option value={count}>{count}</option>
+							{/each}
 						</select>
 					</label>
 					<button type="button" class="btn primary" disabled={chosen.length === 0} onclick={start}>
@@ -663,6 +704,10 @@
 	.anyway {
 		grid-column: 1 / -1;
 		margin: 2px 0 0;
+	}
+
+	.caution-text {
+		color: var(--onsa-role-caution);
 	}
 
 	.said {

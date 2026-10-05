@@ -574,7 +574,7 @@ const id = {
 	'downloads.ffmpegWhere':
 		'ffmpeg diunduh Onsa dari build resmi BtbN, sebagai arsip yang dibongkar sendiri oleh Onsa. Berkasnya besar, jadi unduhannya memakan waktu. Di Linux ffmpeg biasanya sudah ada lewat paket sistemnya; kalau begitu, centang "pakai program yang sudah ada di sistem" di bawah dan tidak perlu mengunduh apa-apa.',
 	'downloads.denoWhat':
-		'yt-dlp memakai Deno untuk memecahkan sebagian pengamanan YouTube. Tanpa Deno, sebagian video YouTube tetap bisa diunduh dan sebagian lagi gagal dengan pesan dari yt-dlp sendiri.',
+		'Deno belum ada. Tanpanya, yt-dlp tidak bisa memecahkan sebagian pengamanan YouTube, jadi sebagian format YouTube bisa tidak tersedia. Banyak video tetap bisa diunduh.',
 	'downloads.withoutFfmpeg':
 		'Tanpa ffmpeg, unduhan tetap jalan: berkasnya diambil apa adanya, tanpa tag dan tanpa sampul tertanam, dan konversi tidak tersedia.',
 	'downloads.noFfmpeg': 'Butuh ffmpeg, dan tidak ada yang ditemukan.',
@@ -593,6 +593,7 @@ const id = {
 	'downloads.look': 'Lihat isinya',
 	'downloads.looking': 'Menanyakan…',
 	'downloads.format': 'Format',
+	'downloads.atOnce': 'Sekaligus',
 	'downloads.formatOriginal': 'Asli (disarankan)',
 	'downloads.conversionNote': 'Konversi tidak menambah kualitas: FLAC hanya memperbesar ukuran, MP3 menurunkan kualitas.',
 	'downloads.fetchCount': 'Unduh {n} lagu',
@@ -607,6 +608,8 @@ const id = {
 	'downloads.refused': 'yt-dlp tidak bisa membaca URL itu.',
 	'error.no_folder': 'Belum ada folder library, jadi belum ada tempat menaruh hasil unduhan.',
 	'downloads.unreachable': 'Rilisnya tidak terjangkau. Coba lagi nanti.',
+	'downloads.releaseGone':
+		'Rilis yang ditunjuk Onsa versi ini sudah tidak ada di sumbernya (404), jadi mencoba lagi tidak akan menolong. Perbarui Onsa, atau ambil programnya sendiri lewat "Buka halaman unduhan resmi".',
 	'downloads.tooLarge': 'Berkasnya jauh lebih besar daripada yang seharusnya, jadi tidak diambil.',
 	'downloads.stopped': 'Dihentikan. Tidak ada yang ditulis.',
 	'downloads.noChecksum': 'Rilisnya tidak menyebutkan checksum untuk berkas ini, jadi tidak dipasang.',
@@ -1773,7 +1776,7 @@ const en: Record<MessageKey, string> = {
 	'downloads.ffmpegWhere':
 		'Onsa fetches ffmpeg from BtbN’s official builds, as an archive it unpacks itself. The file is large, so the download takes a while. On Linux ffmpeg is usually already there through the system package; if it is, tick "use the programs already on this system" below and nothing needs fetching.',
 	'downloads.denoWhat':
-		'yt-dlp uses Deno to work through some of YouTube’s protections. Without it, some YouTube videos still download and others fail with a message from yt-dlp itself.',
+		'Deno is not here yet. Without it, yt-dlp cannot work through some of YouTube’s protections, so some YouTube formats may be missing. Many videos still download.',
 	'downloads.withoutFfmpeg':
 		'Without ffmpeg a download still works: the audio comes as it is, with no tags and no cover written into it, and converting is unavailable.',
 	'downloads.noFfmpeg': 'This needs ffmpeg, and none was found.',
@@ -1792,6 +1795,7 @@ const en: Record<MessageKey, string> = {
 	'downloads.look': 'See what is there',
 	'downloads.looking': 'Asking…',
 	'downloads.format': 'Format',
+	'downloads.atOnce': 'At once',
 	'downloads.formatOriginal': 'As it is (suggested)',
 	'downloads.conversionNote': 'Converting adds no quality: FLAC only makes it larger, MP3 makes it worse.',
 	'downloads.fetchCount': 'Download {n} tracks',
@@ -1806,6 +1810,8 @@ const en: Record<MessageKey, string> = {
 	'downloads.refused': 'yt-dlp could not read that URL.',
 	'error.no_folder': 'There is no library folder yet, so there is nowhere to put a download.',
 	'downloads.unreachable': 'The release could not be reached. Try again later.',
+	'downloads.releaseGone':
+		'The release this version of Onsa points to is no longer at its source (404), so trying again will not help. Update Onsa, or fetch the program yourself with "Open the official download page".',
 	'downloads.tooLarge': 'The file is far larger than it should be, so it was not taken.',
 	'downloads.stopped': 'Stopped. Nothing was written.',
 	'downloads.noChecksum': 'The release lists no checksum for this file, so it was not installed.',

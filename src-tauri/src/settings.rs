@@ -44,6 +44,8 @@ pub const TIDY_KEY: &str = "tidy";
 pub const PROGRAMS_KEY: &str = "programs";
 /// Key the lyrics settings are stored under.
 pub const LYRICS_KEY: &str = "lyrics";
+/// Key of how the downloader works through its queue.
+pub const DOWNLOADS_KEY: &str = "downloads";
 
 /// Reads one setting, or its default.
 pub fn load<T: DeserializeOwned + Default>(library: &Library, key: &str) -> T {
@@ -383,6 +385,35 @@ pub struct ProgramPrefs {
     pub paths: BTreeMap<String, String>,
 }
 
+/// How the downloader works through its queue (SPEC §7.3).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct DownloadPrefs {
+    /// How many downloads run at once. SPEC §7.3: adjustable, 2 by default.
+    pub at_once: u8,
+}
+
+impl DownloadPrefs {
+    /// The fewest downloads that can run at once: one, which is a plain
+    /// queue.
+    pub const FEWEST: u8 = 1;
+    /// The most. Each download starts an ffmpeg of its own once its audio
+    /// arrives, so past a handful a laptop is working harder without the
+    /// connection getting any busier.
+    pub const MOST: u8 = 4;
+
+    /// The number to use, whatever was stored.
+    pub fn at_once(&self) -> usize {
+        usize::from(self.at_once.clamp(Self::FEWEST, Self::MOST))
+    }
+}
+
+impl Default for DownloadPrefs {
+    fn default() -> Self {
+        Self { at_once: 2 }
+    }
+}
+
 impl Default for ProgramPrefs {
     fn default() -> Self {
         Self {
@@ -638,6 +669,16 @@ fn finite<T: Into<f64> + Copy>(value: T, fallback: T) -> T {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn two_downloads_run_at_once_unless_somebody_says_otherwise() {
+        assert_eq!(DownloadPrefs::default().at_once(), 2, "SPEC §7.3");
+        // Whatever was stored, the number used is one Onsa allows.
+        assert_eq!(DownloadPrefs { at_once: 0 }.at_once(), 1);
+        assert_eq!(DownloadPrefs { at_once: 200 }.at_once(), 4);
+        let read: DownloadPrefs = serde_json::from_str("{}").expect("an empty setting reads");
+        assert_eq!(read.at_once(), 2);
+    }
 
     #[test]
     fn power_saving_overrides_the_buffer_the_resampler_and_the_position_events() {

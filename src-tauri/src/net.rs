@@ -35,6 +35,10 @@ pub enum NetError {
     TooLarge,
     /// The listener asked for it to stop.
     Stopped,
+    /// The far end answered that the thing asked for is not there: 404 or
+    /// 410. Unlike [`NetError::Unreachable`], trying again later will not
+    /// help — the address itself is wrong now.
+    Gone,
 }
 
 /// A fetch that did not finish: what kind of trouble, and what was said.
@@ -61,6 +65,7 @@ impl std::fmt::Display for NetError {
             Self::Unreachable => write!(f, "the service could not be reached"),
             Self::TooLarge => write!(f, "the answer was too large"),
             Self::Stopped => write!(f, "it was stopped"),
+            Self::Gone => write!(f, "nothing is there any more"),
         }
     }
 }
@@ -268,6 +273,42 @@ impl Service {
     }
 }
 
+/// The variable that moves where program releases are fetched from, for
+/// testing only. See [`release_address`].
+const RELEASES_MOVED_BY: &str = "ONSA_RELEASES_URL";
+
+/// Where a program release is really fetched from (SPEC §7.1).
+///
+/// The address fixed in the code, unless a test has stood GitHub up on this
+/// machine — which is how a release that has gone (a 404) is shown on the
+/// screen without waiting for one to actually go. Like [`Service::base`],
+/// **it can only ever point at this machine**: anything else is ignored, so
+/// the variable cannot send Onsa to fetch a program from somewhere new.
+pub fn release_address(url: &'static str) -> String {
+    moved_release(url, std::env::var(RELEASES_MOVED_BY).ok().as_deref())
+}
+
+/// [`release_address`] without the environment, so it can be tested.
+fn moved_release(url: &str, moved_to: Option<&str>) -> String {
+    let Some(base) = moved_to
+        .map(|value| value.trim().trim_end_matches('/'))
+        .filter(|value| !value.is_empty())
+    else {
+        return url.to_string();
+    };
+    if !loopback(base) {
+        tracing::warn!("{RELEASES_MOVED_BY} is not this machine, so it is ignored");
+        return url.to_string();
+    }
+    match url.strip_prefix("https://github.com") {
+        Some(rest) => {
+            tracing::warn!("fetching a program release from this machine instead of GitHub");
+            format!("{base}{rest}")
+        }
+        None => url.to_string(),
+    }
+}
+
 /// Whether an address is this machine and nowhere else.
 fn loopback(url: &str) -> bool {
     let Ok(parsed) = reqwest::Url::parse(url) else {
@@ -389,8 +430,17 @@ pub fn fetch(
     if !response.status().is_success() {
         let status = response.status();
         tracing::debug!(status = status.as_u16(), "the release refused");
+        // A release that is no longer there is not a network having a bad
+        // day, and saying "try again later" about it would send somebody
+        // round in circles. It is told apart so the window can say what is
+        // actually true: this version of Onsa points at something gone.
+        let gone = status == reqwest::StatusCode::NOT_FOUND || status == reqwest::StatusCode::GONE;
         return Err(FetchTrouble {
-            kind: NetError::Unreachable,
+            kind: if gone {
+                NetError::Gone
+            } else {
+                NetError::Unreachable
+            },
             said: Some(format!("the release answered {status}")),
         });
     }
@@ -514,6 +564,24 @@ fn read_key_answer(status: u16, body: &[u8]) -> crate::commands::KeyTest {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_release_is_only_ever_moved_to_this_machine() {
+        let real = "https://github.com/BtbN/FFmpeg-Builds/releases/download/x/f.zip";
+        assert_eq!(moved_release(real, None), real);
+        assert_eq!(moved_release(real, Some("  ")), real);
+        assert_eq!(
+            moved_release(real, Some("http://127.0.0.1:9340/")),
+            "http://127.0.0.1:9340/BtbN/FFmpeg-Builds/releases/download/x/f.zip"
+        );
+        for elsewhere in [
+            "https://example.com",
+            "http://127.0.0.1.example.com",
+            "file:///c:/x",
+        ] {
+            assert_eq!(moved_release(real, Some(elsewhere)), real, "{elsewhere}");
+        }
+    }
 
     #[test]
     fn a_service_that_cannot_answer_says_nothing_about_the_key() {

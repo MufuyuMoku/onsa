@@ -256,7 +256,8 @@ pub async fn binary_install(app: AppHandle, program: String) -> Result<BinaryDto
         // checksum URL at all.
         let published = match install::checksum_url(&release) {
             Some(url) => {
-                let sums = net::fetch(url, MAX_SUMS, |_, _| true).map_err(trouble)?;
+                let sums = net::fetch(&net::release_address(url), MAX_SUMS, |_, _| true)
+                    .map_err(trouble)?;
                 String::from_utf8(sums).map_err(|error| {
                     (
                         "unreadable".to_string(),
@@ -276,10 +277,14 @@ pub async fn binary_install(app: AppHandle, program: String) -> Result<BinaryDto
             )
         })?;
 
-        let bytes = net::fetch(release.url, MAX_BINARY, |done, total| {
-            say(done, total, false, None, None);
-            !mine.stop.load(Ordering::SeqCst)
-        })
+        let bytes = net::fetch(
+            &net::release_address(release.url),
+            MAX_BINARY,
+            |done, total| {
+                say(done, total, false, None, None);
+                !mine.stop.load(Ordering::SeqCst)
+            },
+        )
         .map_err(trouble)?;
 
         install::install_release(&bin_dir, &release, &bytes, &expected).map_err(|error| {
@@ -407,6 +412,7 @@ fn why(error: NetError) -> String {
         NetError::Unreachable => "unreachable".to_string(),
         NetError::TooLarge => "tooLarge".to_string(),
         NetError::Stopped => "stopped".to_string(),
+        NetError::Gone => "releaseGone".to_string(),
     }
 }
 
@@ -451,6 +457,8 @@ pub struct QueueDto {
     pub items: Vec<ItemDto>,
     /// Where finished files are being put.
     pub folder: Option<String>,
+    /// How many downloads run at once (SPEC §7.3).
+    pub at_once: u8,
 }
 
 /// One row of the queue, as the application holds it.
@@ -485,13 +493,36 @@ impl Item {
     }
 }
 
-/// How many downloads run at once (SPEC §15, M10b).
+/// How many downloads run at once: the listener's setting (SPEC §7.3,
+/// adjustable, 2 by default), held between one and four.
 ///
 /// A download is mostly waiting on the network, and each one starts an
 /// ffmpeg of its own to put the audio together, so a few at a time keeps a
-/// connection busy without turning a laptop into a fan. A parallel queue is
-/// what was asked for; an unbounded one is not.
-pub const AT_ONCE: usize = 3;
+/// connection busy without turning a laptop into a fan.
+fn at_once(app: &AppHandle) -> usize {
+    let library = app.state::<crate::library::LibraryService>();
+    library
+        .read(|library| {
+            Ok(crate::settings::load::<crate::settings::DownloadPrefs>(
+                library,
+                crate::settings::DOWNLOADS_KEY,
+            ))
+        })
+        .unwrap_or_default()
+        .at_once()
+}
+
+/// Where yt-dlp works on one download before the finished file is moved
+/// into the library: in the cache, outside every library folder, so the
+/// watcher never sees a piece, a pre-conversion copy or a thumbnail.
+fn work_folder(app: &AppHandle, id: u64) -> PathBuf {
+    work_root(app).join(id.to_string())
+}
+
+/// The folder every download works in, one subfolder each.
+fn work_root(app: &AppHandle) -> PathBuf {
+    app.state::<crate::Folders>().cache.join("downloads")
+}
 
 /// The downloads asked for, and how many are going.
 ///
@@ -507,12 +538,13 @@ pub struct Queue {
 }
 
 impl Queue {
-    fn snapshot(&self, folder: Option<String>) -> QueueDto {
+    fn snapshot(&self, folder: Option<String>, at_once: usize) -> QueueDto {
         let items = self.items.lock().unwrap_or_else(|e| e.into_inner());
         QueueDto {
             running: self.working.load(Ordering::Relaxed) > 0,
             items: items.iter().map(Item::dto).collect(),
             folder,
+            at_once: u8::try_from(at_once).unwrap_or(u8::MAX),
         }
     }
 
@@ -580,7 +612,29 @@ pub fn download_queue(app: AppHandle) -> Result<QueueDto, ErrorCode> {
     let folder = output_folder(&app)
         .ok()
         .map(|path| path.display().to_string());
-    Ok(app.state::<Arc<Queue>>().snapshot(folder))
+    let at_once = at_once(&app);
+    Ok(app.state::<Arc<Queue>>().snapshot(folder, at_once))
+}
+
+/// Sets how many downloads run at once (SPEC §7.3).
+///
+/// Takes effect for the downloads asked for next; the ones already going
+/// are left to finish rather than stopped part way.
+#[tauri::command]
+pub fn download_set_at_once(app: AppHandle, at_once: u8) -> Result<QueueDto, ErrorCode> {
+    {
+        let library = app.state::<crate::library::LibraryService>();
+        let prefs = crate::settings::DownloadPrefs { at_once };
+        // Stored as it will be used, so what is read back is what runs.
+        let prefs = crate::settings::DownloadPrefs {
+            at_once: u8::try_from(prefs.at_once()).unwrap_or(2),
+        };
+        library.read(|library| {
+            crate::settings::save(library, crate::settings::DOWNLOADS_KEY, &prefs)
+        })?;
+        tracing::info!(at_once = prefs.at_once, "downloads at once");
+    }
+    download_queue(app)
 }
 
 /// Adds items to the queue and starts working through them.
@@ -627,6 +681,13 @@ pub fn download_start(
     // been added to it.
     queue.stop.store(false, Ordering::SeqCst);
 
+    // Nothing is working, so whatever is in the folder downloads work in was
+    // left by a run that ended badly. It is outside the library and nobody
+    // will ever want it.
+    if queue.working.load(Ordering::SeqCst) == 0 {
+        let _ = std::fs::remove_dir_all(work_root(&app));
+    }
+
     // As many workers as there is work for, up to the cap, counting the ones
     // already going. Each takes the next waiting item under the lock, so
     // they share one queue without ever taking the same row.
@@ -634,7 +695,7 @@ pub fn download_start(
         let items = queue.items.lock().unwrap_or_else(|e| e.into_inner());
         items.iter().filter(|one| one.state == "waiting").count()
     }
-    .min(AT_ONCE);
+    .min(at_once(&app));
 
     loop {
         let going = queue.working.load(Ordering::SeqCst);
@@ -731,20 +792,36 @@ fn work_through(app: &AppHandle, queue: &Queue, format: ytdlp::Format, into: &Pa
         };
 
         let handle = app.clone();
-        let outcome = ytdlp::download(&programs, &url, format, into, queue.stop.clone(), |step| {
-            {
-                let mut items = queue.items.lock().unwrap_or_else(|e| e.into_inner());
-                if let Some(item) = items.iter_mut().find(|one| one.id == id) {
-                    item.fraction = step.fraction;
-                    item.speed = step.speed;
-                    item.eta = step.eta;
-                    if let Some(name) = step.name {
-                        item.title = name;
+        let work = work_folder(app, id);
+        let outcome = ytdlp::download(
+            &programs,
+            &url,
+            format,
+            into,
+            &work,
+            queue.stop.clone(),
+            |step| {
+                {
+                    let mut items = queue.items.lock().unwrap_or_else(|e| e.into_inner());
+                    if let Some(item) = items.iter_mut().find(|one| one.id == id) {
+                        item.fraction = step.fraction;
+                        item.speed = step.speed;
+                        item.eta = step.eta;
+                        if let Some(name) = step.name {
+                            item.title = name;
+                        }
                     }
                 }
+                let _ = handle.emit(DOWNLOAD_EVENT, ());
+            },
+        );
+        // Whatever is left of the work — all of it, when the download failed
+        // or was stopped — goes with it.
+        if let Err(error) = std::fs::remove_dir_all(&work) {
+            if error.kind() != std::io::ErrorKind::NotFound {
+                tracing::debug!("a download's work folder stays: {error}");
             }
-            let _ = handle.emit(DOWNLOAD_EVENT, ());
-        });
+        }
 
         match outcome {
             Ok(files) => {

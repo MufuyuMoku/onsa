@@ -919,6 +919,8 @@ export interface DownloadQueue {
 	running: boolean;
 	items: QueueItem[];
 	folder: string | null;
+	/** How many downloads run at once, 1 to 4 (SPEC section 7.3). */
+	atOnce: number;
 }
 
 /** What Onsa asks yt-dlp for (SPEC section 7.2). */
@@ -945,6 +947,8 @@ export const downloadQueue = () => call<DownloadQueue>('download_queue');
 export const downloadStart = (items: { url: string; title: string }[], format: DownloadFormat) =>
 	call<DownloadQueue>('download_start', { items, format });
 export const downloadStop = () => call<DownloadQueue>('download_stop');
+export const downloadSetAtOnce = (atOnce: number) =>
+	call<DownloadQueue>('download_set_at_once', { atOnce });
 export const matchState = () => call<MatchState>('match_state');
 export const matchStart = (tracks: number[]) => call<MatchState>('match_start', { tracks });
 export const matchStop = () => call<MatchState>('match_stop');
