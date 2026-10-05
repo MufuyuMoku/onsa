@@ -173,16 +173,23 @@ fn deno() -> Release {
 /// checksum written into Onsa for a file that changes daily would be wrong
 /// by tomorrow. The cost is that ffmpeg moves when Onsa moves, which is the
 /// right way round for something Onsa vouches for.
+///
+/// The dated release must be the **last build of a month**. BtbN keeps only
+/// the last fourteen daily builds, but keeps each month's last build for two
+/// years; a pin to any other day stops existing about two weeks after it is
+/// published, and every copy of Onsa that names it then fetches a 404. A
+/// test holds this, and even a month-end build expires after two years, so
+/// the pin is looked at again before every release (DECISIONS 2026-10-05).
 #[cfg(windows)]
 fn ffmpeg() -> Release {
     Release {
         program: Program::Ffmpeg,
-        url: "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-09-28-13-06/ffmpeg-N-126947-g45f3fecca9-win64-gpl.zip",
-        file_name: "ffmpeg-N-126947-g45f3fecca9-win64-gpl.zip",
-        about_bytes: 196 * 1024 * 1024,
+        url: "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-09-30-13-08/ffmpeg-N-127021-ge0c94b2d1c-win64-gpl.zip",
+        file_name: "ffmpeg-N-127021-ge0c94b2d1c-win64-gpl.zip",
+        about_bytes: 190 * 1024 * 1024,
         verify: Verify::Listed {
-            sums_url: "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-09-28-13-06/checksums.sha256",
-            listed_as: "ffmpeg-N-126947-g45f3fecca9-win64-gpl.zip",
+            sums_url: "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-09-30-13-08/checksums.sha256",
+            listed_as: "ffmpeg-N-127021-ge0c94b2d1c-win64-gpl.zip",
         },
         holds: &[Program::Ffmpeg, Program::Ffprobe],
     }
@@ -192,15 +199,65 @@ fn ffmpeg() -> Release {
 fn ffmpeg() -> Release {
     Release {
         program: Program::Ffmpeg,
-        url: "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-09-28-13-06/ffmpeg-N-126947-g45f3fecca9-linux64-gpl.tar.xz",
-        file_name: "ffmpeg-N-126947-g45f3fecca9-linux64-gpl.tar.xz",
-        about_bytes: 153 * 1024 * 1024,
+        url: "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-09-30-13-08/ffmpeg-N-127021-ge0c94b2d1c-linux64-gpl.tar.xz",
+        file_name: "ffmpeg-N-127021-ge0c94b2d1c-linux64-gpl.tar.xz",
+        about_bytes: 148 * 1024 * 1024,
         verify: Verify::Listed {
-            sums_url: "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-09-28-13-06/checksums.sha256",
-            listed_as: "ffmpeg-N-126947-g45f3fecca9-linux64-gpl.tar.xz",
+            sums_url: "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-09-30-13-08/checksums.sha256",
+            listed_as: "ffmpeg-N-127021-ge0c94b2d1c-linux64-gpl.tar.xz",
         },
         holds: &[Program::Ffmpeg, Program::Ffprobe],
     }
+}
+
+/// The BtbN release a URL is in, by its tag: `autobuild-YYYY-MM-DD-HH-MM`.
+#[cfg(test)]
+fn btbn_tag(url: &str) -> Option<&str> {
+    url.strip_prefix("https://github.com/BtbN/FFmpeg-Builds/releases/download/")?
+        .split('/')
+        .next()
+}
+
+/// Whether a BtbN tag is the last build of its month, the only kind BtbN
+/// keeps for longer than two weeks (see [`ffmpeg`]).
+///
+/// Judged by the date in the tag: the day must be the last of that month.
+/// Two builds on the same last day would both pass, and both are kept only
+/// if the later one is the one pinned, which a person checks against the
+/// release list when the pin moves.
+#[cfg(test)]
+fn is_month_end_tag(tag: &str) -> bool {
+    let Some(date) = tag.strip_prefix("autobuild-") else {
+        return false;
+    };
+    let parts: Vec<&str> = date.split('-').collect();
+    let [year, month, day, hour, minute] = parts.as_slice() else {
+        return false;
+    };
+    let number = |text: &str, width: usize| -> Option<u32> {
+        if text.len() != width || !text.chars().all(|ch| ch.is_ascii_digit()) {
+            return None;
+        }
+        text.parse().ok()
+    };
+    let (Some(year), Some(month), Some(day), Some(_), Some(_)) = (
+        number(year, 4),
+        number(month, 2),
+        number(day, 2),
+        number(hour, 2),
+        number(minute, 2),
+    ) else {
+        return false;
+    };
+    let leap = (year % 4 == 0 && year % 100 != 0) || year % 400 == 0;
+    let last = match month {
+        1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
+        4 | 6 | 9 | 11 => 30,
+        2 if leap => 29,
+        2 => 28,
+        _ => return false,
+    };
+    day == last
 }
 
 /// fpcalc from Chromaprint's official release (SPEC §7.1, §8).
@@ -660,6 +717,45 @@ not a checksum line at all
                 }
             }
         }
+    }
+
+    #[test]
+    fn ffmpeg_is_pinned_to_a_build_btbn_keeps() {
+        // BtbN deletes a daily build after two weeks and keeps a month's
+        // last build for two years. Anything else 404s for everybody soon
+        // after it ships, and no test against a local server would notice.
+        let release = ffmpeg();
+        let tag = btbn_tag(release.url).expect("the ffmpeg URL is a BtbN release");
+        assert!(
+            is_month_end_tag(tag),
+            "{tag}: pin ffmpeg to the last build of a month"
+        );
+        let Verify::Listed { sums_url, .. } = release.verify else {
+            panic!("BtbN publishes checksums.sha256 beside each dated build");
+        };
+        assert_eq!(
+            btbn_tag(sums_url),
+            Some(tag),
+            "the checksums come from the same release"
+        );
+    }
+
+    #[test]
+    fn only_the_last_day_of_a_month_counts_as_month_end() {
+        assert!(is_month_end_tag("autobuild-2026-09-30-13-08"));
+        assert!(is_month_end_tag("autobuild-2026-08-31-13-27"));
+        assert!(is_month_end_tag("autobuild-2026-02-28-12-59"));
+        assert!(is_month_end_tag("autobuild-2028-02-29-12-00"), "leap year");
+        // The pin v1.4 almost shipped with.
+        assert!(!is_month_end_tag("autobuild-2026-09-28-13-06"));
+        assert!(!is_month_end_tag("autobuild-2028-02-28-12-00"), "leap year");
+        assert!(
+            !is_month_end_tag("autobuild-2026-09-31-13-08"),
+            "no such day"
+        );
+        assert!(!is_month_end_tag("latest"));
+        assert!(!is_month_end_tag("autobuild-2026-9-30-13-08"));
+        assert!(!is_month_end_tag("autobuild-2026-09-30"));
     }
 
     #[test]
