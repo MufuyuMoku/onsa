@@ -72,7 +72,15 @@ pub fn stream<S: AsRef<OsStr>>(
     let complaints = child.stderr.take().map(|pipe| {
         std::thread::spawn(move || {
             let mut kept: Vec<String> = Vec::new();
-            for line in BufReader::new(pipe).lines().map_while(std::io::Result::ok) {
+            // Read as bytes and decoded leniently: a program that prints in
+            // the console's code page rather than UTF-8 (yt-dlp on Windows,
+            // with a title in Korean) would otherwise end the reading at
+            // that line, and a pipe nobody reads fills up and stops it.
+            for line in BufReader::new(pipe)
+                .split(b'\n')
+                .map_while(std::io::Result::ok)
+            {
+                let line = lenient(&line);
                 if kept.len() == KEEP_COMPLAINTS {
                     kept.remove(0);
                 }
@@ -84,15 +92,19 @@ pub fn stream<S: AsRef<OsStr>>(
 
     let mut stopped = false;
     if let Some(out) = child.stdout.take() {
-        for line in BufReader::new(out).lines() {
+        for line in BufReader::new(out).split(b'\n') {
             if stop.load(Ordering::SeqCst) {
                 stopped = true;
                 break;
             }
             match line {
-                Ok(line) => on_line(&line),
-                // A line that is not text is not worth ending a download for.
-                Err(error) => tracing::debug!("a line could not be read: {error}"),
+                // A line that is not UTF-8 is still read, with what cannot
+                // be decoded marked rather than ending anything.
+                Ok(line) => on_line(&lenient(&line)),
+                Err(error) => {
+                    tracing::debug!("a line could not be read: {error}");
+                    break;
+                }
             }
         }
     }
@@ -143,8 +155,25 @@ impl Finished {
     }
 }
 
+/// One line of output as text, whatever it was written in, without the
+/// line ending.
+fn lenient(bytes: &[u8]) -> String {
+    let bytes = bytes.strip_suffix(b"\r").unwrap_or(bytes);
+    String::from_utf8_lossy(bytes).into_owned()
+}
+
 #[cfg(test)]
 mod tests {
+    use super::lenient;
+
+    #[test]
+    fn a_line_in_another_code_page_is_read_rather_than_dropped() {
+        assert_eq!(lenient(b"plain\r"), "plain");
+        // Windows-1252 for "café": not UTF-8, still a line.
+        assert_eq!(lenient(b"caf\xe9"), "caf\u{fffd}");
+        assert_eq!(lenient("音叉 テスト".as_bytes()), "音叉 テスト");
+    }
+
     use super::*;
     use std::path::PathBuf;
     use std::time::{Duration, Instant};
