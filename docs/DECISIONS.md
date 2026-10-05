@@ -903,3 +903,20 @@ Keputusan pemilik proyek atas hasil pemeriksaan pertama cargo deny. Dua pengecua
   runtime" milik yt-dlp tidak pernah sampai ke layar. Baris Deno di halaman Unduhan menampilkan
   peringatan berwarna *caution* selama Deno belum ada; kalimatnya tidak menjanjikan kegagalan,
   karena hari ini video yang diuji tetap berhasil tanpa Deno.
+
+## 2026-10-05 · Keputusan pemilik proyek atas laporan M10b
+
+- **Peringatan Deno di baris Deno: disetujui.**
+- **Tombol halaman rilis resmi: SPEC §7.1 yang diubah, bukan kodenya.** Tombol itu muncul di
+  tempat Onsa tidak bisa memasang program itu sendiri — program di luar katalognya, rilis yang
+  menjawab 404, atau unduhan yang gagal — bukan di setiap baris yang belum terpasang. Baris yang
+  bisa dipasang Onsa sudah punya tindakan yang lebih langsung: tombol setujunya. Menaruh dua
+  jalan di setiap baris membuat yang benar (biarkan Onsa memasang dan memeriksanya) jadi pilihan
+  yang setara dengan mengunduh sendiri tanpa diperiksa.
+  *Catatan keadaan kode hari ini:* di halaman Unduhan tombol itu muncul sesudah 404; sesudah
+  kegagalan lain (checksum, tidak terjangkau) belum. Itu selisih terhadap kalimat SPEC yang baru,
+  dicatat di PROGRESS, dan tidak diubah tanpa keputusan.
+- **Antrean di DB dan pertanyaan folder output: tidak masuk v1.4.0**, menjadi sisa M10b yang
+  dikerjakan di v1.4.1, sebelum M16 (SPEC §15). Akibatnya bagi pemakai v1.4.0 disebut di catatan
+  rilis: antrean yang belum selesai hilang bila Onsa ditutup.
+- **Rentang unduhan paralel 1–4: diterima.**

@@ -250,7 +250,7 @@ Downloader punya bagian tersendiri di UI. yt-dlp dijalankan sebagai proses terpi
   - fpcalc: rilis resmi Chromaprint (`chromaprint-fpcalc-<versi>-windows-x86_64.zip` / `chromaprint-fpcalc-<versi>-linux-x86_64.tar.gz`).
 - **Bila rilisnya tidak menerbitkan checksum**, Onsa menyimpan sidik SHA-256 versi yang sudah diperiksa di dalam kodenya dan menolak berkas yang tidak cocok. Rilis Chromaprint tidak menerbitkan daftar checksum, jadi fpcalc memakai cara ini. Tidak ada jalan ketiga: sebuah berkas yang diunduh tidak pernah dipasang tanpa dicocokkan dengan sesuatu yang sudah ada di dalam Onsa atau diterbitkan rilisnya sendiri.
 - Unduhan otomatis fpcalc dikerjakan di **M10b**, memakai pembongkar arsip yang sama dengan ffmpeg dan Deno. Aturan persetujuan di atas — nama, sumber, perkiraan ukuran, lalu tombol setuju — berlaku sama untuk fpcalc.
-- Di tempat sebuah program disebut belum ada, Onsa menyediakan tombol yang membuka **halaman rilis resmi** program itu di browser. URL-nya tetap dan tertulis di kode, tidak pernah berasal dari masukan pengguna atau dari jawaban layanan mana pun.
+- Di tempat Onsa **tidak bisa memasang sebuah program sendiri** — program yang tidak ada di katalognya, rilis yang menjawab 404, atau unduhan yang gagal — Onsa menyediakan tombol yang membuka **halaman rilis resmi** program itu di browser. Baris program yang belum terpasang tapi bisa dipasang Onsa cukup menampilkan tombol setujunya. URL halaman itu tetap dan tertulis di kode, tidak pernah berasal dari masukan pengguna atau dari jawaban layanan mana pun. (Diubah 2026-10-05, keputusan pemilik proyek.)
 - Opsi **"pakai program sistem"**: bila yt-dlp, ffmpeg, atau Deno sudah ada di PATH (umum di Linux), pengguna bisa memakai itu.
 - Ada tombol update untuk yt-dlp (`yt-dlp -U` atau unduh ulang) dan tampilan versi setiap binary.
 
@@ -502,6 +502,7 @@ Urutannya pernah diubah dua kali, atas keputusan pemilik proyek. Alasannya beser
 | v1.2 | Paket untuk tester (selesai) |
 | v1.3 "Rapi" | v1.3-a pemilihan fpcalc (selesai), v1.3-b dokumen dan pemeriksaan lisensi (selesai), v1.3-c dan v1.3-d perbaikan dari pengujian (selesai), **M13** (selesai di Windows; sisi Linux lewat CI), **M14** (selesai di Windows; sisi Linux lewat CI) |
 | v1.4 "Unduhan penuh" | **M10b** (termasuk unduhan otomatis fpcalc), **M15**, dan paket Linux (AppImage dan deb) yang dibangun CI — sebagian M12 |
+| v1.4.1 | **Sisa M10b**: antrean unduhan disimpan di DB, dan pertanyaan apakah folder output di luar library mau ditambahkan (§7.3). Dikerjakan sebelum M16 |
 | v1.5 "Tampilan" | **M16** |
 | v1.6 "Lirik & metadata" | **M17** dan **M7b** |
 | v1.7 "Video" | **M11** (decoder Opus lebih dulu), lalu **M18** |
@@ -557,6 +558,8 @@ Pengelolaan binary (persetujuan, checksum, update, opsi program sistem), pratinj
 **Selesai bila:** URL satu video dan satu playlist bisa diunduh sampai muncul di library di kedua OS, tidak ada jendela konsol di Windows, dan tombol batal menghentikan semua proses turunan.
 
 Dikerjakan lebih awal dan dibelah atas keputusan pemilik proyek (2026-09-18): **M10a** = pengambil binary berkas tunggal (unduh + checksum) dengan yt-dlp sebagai konsumen pertama, integrasi yt-dlp, dan halaman Unduhan beserta persetujuan §7.1. **M10b** = Deno dan ffmpeg (yang butuh pembongkar arsip), antrean paralel, dan sisanya. Urutan barunya: M7a → M10a → M8 → M10b.
+
+**Sisa M10b** (keputusan pemilik proyek 2026-10-05): antrean unduhan yang disimpan di DB dan pertanyaan folder output di luar library (§7.3) tidak masuk v1.4.0. Keduanya dikerjakan di **v1.4.1**, sebelum M16. Sampai itu, antrean hanya ada di memori: unduhan yang belum selesai hilang bila Onsa ditutup, dan hasil unduhan selalu masuk `Unduhan` di dalam folder library pertama.
 
 ### M11. Kualitas lanjutan
 Decoder Opus (lalu ubah prioritas format downloader), exclusive mode WASAPI, dan penyempurnaan mode hemat daya.

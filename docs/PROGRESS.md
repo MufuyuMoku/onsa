@@ -27,6 +27,7 @@ Garis selanjutnya, keputusan pemilik proyek 2026-09-25:
 |---|---|
 | ~~**v1.3 "Rapi"**~~ | **Selesai, ditandai `v1.3.0` pada 2026-09-27.** v1.3-a pemilihan fpcalc, v1.3-b dokumen dan pemeriksaan lisensi, v1.3-c empat bug dari pengujian, v1.3-d warna nada di keenam tema, **M13** pengelolaan folder sumber, **M14** panel Sedang diputar |
 | **v1.4 "Unduhan penuh"** | v1.4-a paket Linux yang dibangun CI (selesai, 2026-09-28) — sebagian M12; lalu **M10b** (Deno, ffmpeg, antrean paralel, dan unduhan otomatis fpcalc) dan **M15** daftar sumber unduhan di Bantuan |
+| **v1.4.1** | **Sisa M10b**: antrean unduhan disimpan di DB, dan pertanyaan folder output di luar library. Dikerjakan sebelum M16 (keputusan pemilik proyek 2026-10-05) |
 | **v1.5 "Tampilan"** | **M16**: skema tema baru, keenam tema dirombak, preset layout sebagai sumbu terpisah |
 | **v1.6 "Lirik & metadata"** | **M17** lirik lanjutan, lalu **M7b** (sisa pekerjaan sampul) |
 | **v1.7 "Video"** | **M11** (decoder Opus lebih dulu), lalu **M18** video |
@@ -1927,24 +1928,34 @@ diantrekan dengan pengaturan 2: jumlah yang berjalan per sampel 0,5 detik `2×20
 | §7.1 sumber hanya rilis resmi GitHub | selesai | yt-dlp, Deno, BtbN, Chromaprint; dijaga tes |
 | §7.1 verifikasi checksum; sidik di kode bila rilis tidak menerbitkan | selesai | tiga cara, tanpa cara keempat |
 | §7.1 unduhan otomatis fpcalc dengan pembongkar yang sama | selesai | |
-| §7.1 tombol ke halaman rilis resmi "di tempat sebuah program disebut belum ada" | **menyimpang** | di halaman Unduhan tombol itu hanya muncul untuk program yang tidak bisa dipasang Onsa — kini tidak ada — dan sesudah 404. Baris yt-dlp/ffmpeg/Deno yang "belum ada" tidak menampilkannya |
+| §7.1 tombol ke halaman rilis resmi "di tempat sebuah program disebut belum ada" | **menyimpang** → SPEC diubah | keputusan 2026-10-05: tombol itu untuk tempat Onsa tidak bisa memasang sendiri (lihat di bawah tabel) |
 | §7.1 opsi "pakai program sistem" | selesai | |
 | §7.1 tombol update yt-dlp (`-U` **atau unduh ulang**) dan versi tiap binary | selesai | "Perbarui" mengunduh ulang rilis terbaru; versi tiap program tampil |
 | §7.3 array argumen, tanpa shell | selesai | |
 | §7.3 `CREATE_NO_WINDOW` | selesai | diuji di M10a, tidak diuji ulang hari ini |
 | §7.3 batal menghentikan seluruh pohon proses | selesai | diuji di M10a; folder kerja ikut dihapus saat batal, tapi itu belum diuji di aplikasi |
 | §7.3 unduhan paralel bisa diatur, bawaan 2 | selesai (hari ini) | M10b memasangnya tetap 3 tanpa pengaturan — itu menyimpang dan sudah diluruskan |
-| §7.3 antrean unduhan disimpan di DB | **belum** | antrean hanya di memori; hilang saat Onsa ditutup |
+| §7.3 antrean unduhan disimpan di DB | **belum** → v1.4.1 | antrean hanya di memori; hilang saat Onsa ditutup |
 | §7.3 folder output default di dalam folder library | selesai | `<folder library pertama>/Unduhan` |
-| §7.3 bila folder output di luar library, tanyakan apakah ditambahkan | **belum** | folder output tidak bisa dipilih sama sekali, jadi pertanyaannya tidak pernah muncul |
+| §7.3 bila folder output di luar library, tanyakan apakah ditambahkan | **belum** → v1.4.1 | folder output tidak bisa dipilih sama sekali, jadi pertanyaannya tidak pernah muncul |
 | §7.3 catatan tanggung jawab hak konten | selesai | |
 | M10a-belum: Deno dan ffmpeg (arsip) | selesai | |
 | M10a-belum: antrean paralel (bawaan 2) | selesai (hari ini) | lihat §7.3 |
-| M10a-belum: antrean disimpan di database | **belum** | |
-| M10a-belum: menanyakan folder keluaran di luar library | **belum** | |
+| M10a-belum: antrean disimpan di database | **belum** → v1.4.1 | |
+| M10a-belum: menanyakan folder keluaran di luar library | **belum** → v1.4.1 | |
 | M10a-belum: tombol `yt-dlp -U` khusus | **menyimpang** (diizinkan SPEC) | unduh ulang, yang SPEC §7.1 izinkan |
 | (temuan) peringatan tanpa Deno tidak tampil | selesai (hari ini) | lihat poin 4 |
 | (temuan) berkas antara masuk library lalu hilang | selesai (hari ini) | lihat poin 3 |
+
+**Keputusan pemilik proyek atas tabel ini (2026-10-05):** peringatan Deno disetujui; rentang
+paralel 1–4 diterima; SPEC §7.1 diubah supaya tombol halaman rilis resmi muncul di tempat Onsa
+tidak bisa memasang program itu sendiri (sesudah 404 atau unduhan yang gagal), bukan di setiap
+baris yang belum terpasang; antrean di DB dan pertanyaan folder output menjadi **sisa M10b di
+v1.4.1**, sebelum M16.
+
+**Selisih yang tersisa terhadap SPEC §7.1 yang baru:** kodenya menampilkan tombol itu sesudah
+404, tapi belum sesudah kegagalan unduhan lainnya (checksum tidak cocok, rilis tidak
+terjangkau). Tidak diubah — keputusan kali ini hanya dokumen.
 
 ### Pemeriksaan
 
