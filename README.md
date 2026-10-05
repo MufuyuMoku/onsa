@@ -51,15 +51,15 @@ belum dirilis bisa diambil dari artifact **onsa-linux-packages** di jalannya CI 
 **.deb** (Debian, Ubuntu, dan turunannya) — `apt` yang mengurus dependensinya:
 
 ```sh
-sudo apt install ./Onsa_1.3.0_amd64.deb
+sudo apt install ./Onsa_1.4.0_amd64.deb
 onsa
 ```
 
 **AppImage** — satu berkas, jalan di tempatnya diletakkan:
 
 ```sh
-chmod +x Onsa_1.3.0_amd64.AppImage
-./Onsa_1.3.0_amd64.AppImage
+chmod +x Onsa_1.4.0_amd64.AppImage
+./Onsa_1.4.0_amd64.AppImage
 ```
 
 AppImage butuh FUSE untuk memasang dirinya sendiri. Di sistem yang tidak punya (`libfuse2`
@@ -85,7 +85,7 @@ lalu di dalam Ubuntu-nya:
 
 ```sh
 sudo apt update
-sudo apt install ./Onsa_1.3.0_amd64.deb
+sudo apt install ./Onsa_1.4.0_amd64.deb
 onsa
 ```
 
