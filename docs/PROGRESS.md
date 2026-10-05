@@ -1721,6 +1721,11 @@ without a JS runtime has been deprecated, and some formats may be missing.
 Dengan Deno, peringatan itu hilang dan yt-dlp melaporkan `JS runtimes: deno-2.9.0` serta
 `JS Challenge Providers: ... deno`.
 
+> **Koreksi 2026-10-05.** Baris `deno-2.9.0` dan yt-dlp `2026.06.09` di atas **bukan** dari
+> salinan milik Onsa, melainkan dari Deno dan yt-dlp yang dipasang WinGet di PATH sistem mesin
+> ini, dijalankan dari terminal biasa. Bukti ulang dengan salinan Onsa saja dan PATH bersih ada
+> di bagian "2026-10-05 · Sebelum tag v1.4.0".
+
 **Tapi pada video yang diuji hari ini, keduanya sama-sama berhasil.** Klien `android_vr` yang
 dipakai yt-dlp secara bawaan tidak butuh JavaScript untuk video-video itu. Saat klien `web`
 dipaksa — yang memang butuh — muncul `n challenge solving failed` tanpa runtime, tapi dengan Deno
@@ -1778,3 +1783,170 @@ bantuan halaman itu. **Nol kontrol terlewat.**
 
 `cargo fmt --check`, `clippy -D warnings`, `cargo test --workspace`, `npm run check`, tes UI (49),
 dan `cargo deny check licenses` semuanya bersih.
+
+
+## 2026-10-05 · Sebelum tag v1.4.0: patokan ffmpeg, versi, berkas antara, bukti Deno
+
+Atas permintaan pemilik proyek, empat hal diselesaikan sebelum `v1.4.0` ditandai. **Tag belum
+dibuat.**
+
+### 1. Patokan ffmpeg
+
+| | |
+|---|---|
+| masalahnya | BtbN hanya menyimpan 14 build harian terakhir; build terakhir tiap bulan disimpan dua tahun ("Release Retention Policy" di README BtbN/FFmpeg-Builds). Patokan lama `autobuild-2026-09-28-13-06` build harian biasa: sekitar dua minggu sesudah terbit, semua salinan v1.4 akan mendapat 404 |
+| patokan baru | `autobuild-2026-09-30-13-08`, `ffmpeg-N-127021-ge0c94b2d1c-{win64-gpl.zip, linux64-gpl.tar.xz}` |
+| rilisnya ada | daftar rilis BtbN lewat API GitHub memuat tag itu, bersama build akhir bulan sejak `2024-11-30` — kebijakannya terlihat berlaku |
+| checksum cocok | `85c4a463…718a1` (win64) dan `3a2a94e7…f2b66` (linux64) di `checksums.sha256` rilis itu **sama** dengan digest aset yang dilaporkan GitHub |
+| dipasang sungguhan | di aplikasi yang berjalan, profil kosong: diunduh, cocok dengan checksum, dibongkar, menjawab `ffmpeg version N-127021-ge0c94b2d1c-20260930` |
+| dijaga tes | `ffmpeg_is_pinned_to_a_build_btbn_keeps` menolak patokan yang tanggalnya bukan hari terakhir bulannya; `only_the_last_day_of_a_month_counts_as_month_end` mencakup patokan lama dan tahun kabisat |
+| tetap harus dilihat orang | build akhir bulan pun hilang sesudah dua tahun, jadi tiap rilis memeriksa patokannya (DECISIONS 2026-10-05) |
+
+**Kalau URL yang dipatok menjawab 404**, sebelumnya Onsa mengatakan "Rilisnya tidak terjangkau.
+Coba lagi nanti." — salah, karena mencoba lagi tidak akan pernah berhasil. Sekarang 404/410
+menjadi kalimatnya sendiri. Disimulasikan di aplikasi yang berjalan dengan server lokal yang
+menjawab 404 untuk semua jalur, lewat `ONSA_RELEASES_URL` (hanya menerima alamat mesin ini).
+Yang tampil sesudah menekan "Setuju dan unduh" pada ffmpeg:
+
+> Rilis yang ditunjuk Onsa versi ini sudah tidak ada di sumbernya (404), jadi mencoba lagi tidak
+> akan menolong. Perbarui Onsa, atau ambil programnya sendiri lewat "Buka halaman unduhan resmi".
+
+disertai tombol **Buka halaman unduhan resmi** tepat di bawahnya dan, di "Lihat detail",
+`the release answered 404 Not Found`. Server lokalnya mencatat satu permintaan,
+`/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-09-30-13-08/checksums.sha256`: daftar
+checksum diambil lebih dulu, jadi 190 MB tidak diunduh untuk sesuatu yang tidak bisa diperiksa.
+
+### 2. Versi
+
+`1.4.0` di `Cargo.toml` (dan `Cargo.lock`), `src-tauri/tauri.conf.json`, `ui/package.json`
+(dan `package-lock.json`), serta nama paket di README. Tes baru
+`every_place_that_carries_the_version_says_the_same` gagal bila ketiganya berbeda.
+
+### 3. Berkas antara tidak pernah terlihat oleh pemantau folder
+
+**Diperbaiki dulu, baru dibuktikan.** yt-dlp sekarang bekerja di `<cache>/downloads/<id>/`, di
+luar semua folder library; Onsa sendiri yang memindahkan berkas akhirnya ke
+`<folder library>/Unduhan/<artis>/`. Alasan pemilihan caranya di DECISIONS 2026-10-05.
+
+Dibuktikan di aplikasi yang berjalan (build rilis, profil kosong, PATH bersih), dengan folder
+library ber-aksara Jepang dan spasi (`musik uji 音楽`), dan sebuah pengamat terpisah yang
+membaca seluruh isi folder library **tiap ~10 ms** dan mencatat setiap nama yang pernah muncul:
+
+| unduhan | format | hasil |
+|---|---|---|
+| Me at the zoo | MP3 (konversi) | selesai |
+| Me at the zoo | FLAC (konversi) | selesai |
+| Me at the zoo | Asli (`.m4a`, tanpa konversi) | selesai |
+
+- **14.398 kali dibaca dalam 156 detik; nama yang pernah terlihat: tepat tiga**, yaitu ketiga
+  berkas akhir. Tidak ada `.m4a` sebelum konversi, `.temp.m4a`, `.webp`, atau `.png` thumbnail.
+- Semua itu memang ada — di folder kerja. Baris perintah ffmpeg yang direkam saat berjalan
+  menulis `…\cache\downloads\1\jawed\Me at the zoo [jNQXAC9IVRw].m4a`, `.temp.m4a`, `.webp`,
+  dan `.png` di sana.
+- **Database: sebelum 0 baris, sesudah 3 baris, 3 berstatus `ok`, 0 berstatus hilang.**
+- Folder kerja kosong lagi sesudahnya.
+
+Putaran kedua: tiga lagu sekaligus (MP3), salah satunya berjudul Korea. Putaran ini menemukan
+**dua bug**, keduanya diperbaiki lalu diulang:
+
+- yt-dlp di Windows mencetak path hasil lewat pipa dalam code page konsol, jadi
+  `PSY - GANGNAM STYLE(강남스타일) M⧸V` tercetak tanpa huruf Koreanya, dan berkas yang
+  disebutkan tidak ada. Sebelum perbaikan berkas antara, bug ini tersembunyi — path cetakan
+  hanya masuk log. Sekarang Onsa mengambil berkas audio yang memang ada di folder kerja, bukan
+  path cetakan.
+- Pembaca stderr di `runner` berhenti membaca pada baris pertama yang bukan UTF-8. Pipa yang tidak
+  dibaca lagi bisa penuh dan menghentikan yt-dlp. Sekarang keluaran dibaca sebagai byte dan
+  diterjemahkan dengan lunak.
+
+Ulangan: **ketiganya selesai**, judul Korea masuk dengan nama aslinya; dua yang sudah ada
+**ditimpa** dengan baris library yang sama (id 4 dan 5 tetap); **6 baris, 0 hilang**; pengamat
+hanya melihat berkas akhir.
+
+### 4. Bukti Deno, dengan salinan milik Onsa saja
+
+**Asal baris lama.** `deno-2.9.0` dan yt-dlp `2026.06.09` adalah Deno dan yt-dlp WinGet di PATH
+sistem mesin ini, dijalankan dari terminal biasa — bukan salinan milik Onsa (lihat koreksi di
+bagian M10b).
+
+**Ulangan.** PATH diganti `C:\Windows\system32;C:\Windows`; `where deno` dan `where yt-dlp`
+tidak menemukan apa pun. Onsa memasang sendiri yt-dlp `2026.08.19`, Deno `2.9.7`, dan ffmpeg.
+Baris perintah yang **benar-benar dikirim Onsa** ke yt-dlp, direkam dari daftar proses saat unduhan
+berjalan (jalur folder uji disingkat `…`):
+
+```
+"…\profil\data\bin\yt-dlp.exe" --newline --no-warnings --progress-template download:%(progress)j
+  --print after_move:filepath --no-playlist -f bestaudio[ext=m4a]/bestaudio[ext=mp3]/bestaudio[ext=aac]
+  --embed-metadata --embed-thumbnail -x --ffmpeg-location …\profil\data\bin\ffmpeg.exe
+  --audio-format mp3 --js-runtimes deno:…\profil\data\bin\deno.exe
+  -o "…\profil\cache\downloads\1\%(artist,uploader)s/%(title)s [%(id)s].%(ext)s"
+  https://www.youtube.com/watch?v=jNQXAC9IVRw
+```
+
+Argumen yang sama ditambah `-v`, dengan yt-dlp milik Onsa dan PATH bersih:
+
+```
+[debug] yt-dlp version stable@2026.08.19 from yt-dlp/yt-dlp [594bd50c2] (win_exe)
+[debug] exe versions: ffmpeg N-127021-ge0c94b2d1c-20260930 (setts), ffprobe N-127021-ge0c94b2d1c-20260930
+[debug] JS runtimes: deno-2.9.7
+[debug] [youtube] [jsc] JS Challenge Providers: bun (unavailable), deno, node (unavailable), quickjs (unavailable)
+```
+
+Tanpa Deno (salinan yt-dlp yang sama di folder tanpa Deno di sebelahnya, PATH bersih):
+
+```
+[debug] JS runtimes: none
+WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; ...
+```
+
+**Hal yang perlu diketahui:**
+
+- yt-dlp juga mencari Deno **di foldernya sendiri**. Karena Deno milik Onsa berada di sebelah
+  `yt-dlp.exe` di `bin/`, yt-dlp menemukannya walau tanpa `--js-runtimes`. Argumen itu tetap
+  dikirim karena menyebut jalurnya dengan pasti.
+- **Peringatan yt-dlp tidak pernah sampai ke layar Onsa**, karena Onsa menjalankannya dengan
+  `--no-warnings`. Teks penjelasan Deno ada di kamus sejak M10b tapi tidak pernah ditampilkan
+  komponen mana pun. Supaya "diperingatkan dengan jelas tanpa Deno" benar di aplikasi, baris Deno
+  di halaman Unduhan sekarang menampilkan peringatan berwarna *caution* selama Deno belum ada.
+  Perubahan ini **di luar empat poin yang diminta** dan dilaporkan di sini, bukan ditambal diam-diam.
+
+### Jumlah unduhan paralel
+
+Diluruskan ke SPEC §7.3: **bisa diatur, bawaan 2** (rentang 1–4, pilihan "Sekaligus" di samping
+pilihan format). Di aplikasi yang berjalan: bawaan terbaca 2; disetel 3 → 3, 9 → 4, 0 → 1. Tiga lagu
+diantrekan dengan pengaturan 2: jumlah yang berjalan per sampel 0,5 detik `2×20, 1×15, 0×1`,
+**maksimal 2**.
+
+### Laporan M10b terhadap SPEC §7.1, §7.3, dan "Belum dikerjakan (M10b)"
+
+| Butir | Status | Keterangan |
+|---|---|---|
+| §7.1 tiga program pengunduh (yt-dlp, ffmpeg+ffprobe, Deno) + fpcalc | selesai | keempatnya diunduh Onsa sendiri |
+| §7.1 satu pengelola untuk semuanya; pencarian pilihan → `bin` → PATH | selesai | `onsa-downloader::programs` |
+| §7.1 lokasi `<app_data>/bin/` | selesai | |
+| §7.1 daftar nama, sumber, perkiraan ukuran sebelum tombol setuju | selesai | termasuk fpcalc di halaman Metadata |
+| §7.1 sumber hanya rilis resmi GitHub | selesai | yt-dlp, Deno, BtbN, Chromaprint; dijaga tes |
+| §7.1 verifikasi checksum; sidik di kode bila rilis tidak menerbitkan | selesai | tiga cara, tanpa cara keempat |
+| §7.1 unduhan otomatis fpcalc dengan pembongkar yang sama | selesai | |
+| §7.1 tombol ke halaman rilis resmi "di tempat sebuah program disebut belum ada" | **menyimpang** | di halaman Unduhan tombol itu hanya muncul untuk program yang tidak bisa dipasang Onsa — kini tidak ada — dan sesudah 404. Baris yt-dlp/ffmpeg/Deno yang "belum ada" tidak menampilkannya |
+| §7.1 opsi "pakai program sistem" | selesai | |
+| §7.1 tombol update yt-dlp (`-U` **atau unduh ulang**) dan versi tiap binary | selesai | "Perbarui" mengunduh ulang rilis terbaru; versi tiap program tampil |
+| §7.3 array argumen, tanpa shell | selesai | |
+| §7.3 `CREATE_NO_WINDOW` | selesai | diuji di M10a, tidak diuji ulang hari ini |
+| §7.3 batal menghentikan seluruh pohon proses | selesai | diuji di M10a; folder kerja ikut dihapus saat batal, tapi itu belum diuji di aplikasi |
+| §7.3 unduhan paralel bisa diatur, bawaan 2 | selesai (hari ini) | M10b memasangnya tetap 3 tanpa pengaturan — itu menyimpang dan sudah diluruskan |
+| §7.3 antrean unduhan disimpan di DB | **belum** | antrean hanya di memori; hilang saat Onsa ditutup |
+| §7.3 folder output default di dalam folder library | selesai | `<folder library pertama>/Unduhan` |
+| §7.3 bila folder output di luar library, tanyakan apakah ditambahkan | **belum** | folder output tidak bisa dipilih sama sekali, jadi pertanyaannya tidak pernah muncul |
+| §7.3 catatan tanggung jawab hak konten | selesai | |
+| M10a-belum: Deno dan ffmpeg (arsip) | selesai | |
+| M10a-belum: antrean paralel (bawaan 2) | selesai (hari ini) | lihat §7.3 |
+| M10a-belum: antrean disimpan di database | **belum** | |
+| M10a-belum: menanyakan folder keluaran di luar library | **belum** | |
+| M10a-belum: tombol `yt-dlp -U` khusus | **menyimpang** (diizinkan SPEC) | unduh ulang, yang SPEC §7.1 izinkan |
+| (temuan) peringatan tanpa Deno tidak tampil | selesai (hari ini) | lihat poin 4 |
+| (temuan) berkas antara masuk library lalu hilang | selesai (hari ini) | lihat poin 3 |
+
+### Pemeriksaan
+
+`cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings`,
+`cargo test --workspace`, `npm run check`, dan tes UI bersih di Windows (`scripts/check.sh`).

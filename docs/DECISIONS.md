@@ -835,3 +835,71 @@ Keputusan pemilik proyek atas hasil pemeriksaan pertama cargo deny. Dua pengecua
   Daftar kosong terbaca seperti "tidak ada yang bisa diunduh"; yang sebenarnya terjadi adalah
   belum ada yang bisa ditanyai.
 
+
+## 2026-10-05 · Sebelum v1.4.0: patokan ffmpeg, berkas antara, unduhan paralel
+
+- **ffmpeg dipatok ke build terakhir sebuah bulan, bukan build harian mana pun.** "Release
+  Retention Policy" di README BtbN/FFmpeg-Builds: hanya 14 build harian terakhir yang disimpan,
+  sementara build terakhir tiap bulan disimpan **dua tahun**. Patokan sebelumnya
+  (`autobuild-2026-09-28-13-06`) adalah build harian biasa dan akan dihapus sekitar dua minggu
+  sesudah terbit — semua salinan v1.4 lalu mendapat 404 untuk ffmpeg. Tes yang ada tidak akan
+  menangkapnya, karena memakai server lokal. Patokan sekarang `autobuild-2026-09-30-13-08`
+  (`N-127021-ge0c94b2d1c`). Keberadaan rilisnya diperiksa lewat API GitHub, dan checksum kedua
+  berkasnya di `checksums.sha256` rilis itu sama dengan digest aset yang dilaporkan GitHub.
+  Tes `ffmpeg_is_pinned_to_a_build_btbn_keeps` menolak patokan yang tanggalnya bukan hari
+  terakhir bulannya.
+- **Build akhir bulan pun kedaluwarsa, sesudah dua tahun.** Jadi **setiap rilis memeriksa
+  patokannya**: tag-nya masih ada di daftar rilis BtbN, dan berkasnya masih cocok dengan
+  `checksums.sha256`-nya. Patokan yang umurnya mendekati dua tahun dipindah ke build akhir bulan
+  yang lebih baru. Tes hanya bisa menjaga bentuk patokannya; umurnya harus dilihat orang.
+- **404 dan 410 dibedakan dari "tidak terjangkau".** Sebelumnya, rilis yang sudah hilang
+  terbaca "Rilisnya tidak terjangkau. Coba lagi nanti." — saran yang mengirim orang berputar,
+  karena mencoba lagi tidak akan pernah berhasil. Sekarang `NetError::Gone` menjadi kalimat
+  tersendiri: rilis yang ditunjuk Onsa versi ini sudah tidak ada, perbarui Onsa atau ambil
+  sendiri lewat halaman unduhan resminya.
+- **`ONSA_RELEASES_URL` untuk menguji itu di aplikasi yang berjalan**, dengan aturan yang sama
+  dengan `ONSA_*_URL` milik layanan metadata: hanya alamat mesin ini yang diterima, selain itu
+  diabaikan dan dicatat di log. Dengan itu sebuah server lokal yang menjawab 404 bisa berdiri di
+  tempat GitHub tanpa menunggu rilis BtbN benar-benar hilang, dan variabel itu tidak bisa dipakai
+  untuk mengambil program dari tempat lain.
+- **yt-dlp bekerja di luar library; hanya hasil akhirnya yang masuk.** Sebelumnya yt-dlp menulis
+  langsung ke `<folder library>/Unduhan`, jadi `.m4a` sebelum konversi (dan thumbnail sebelum
+  ditanam) terlihat pemantau folder, masuk library, lalu tertinggal sebagai baris **hilang**.
+  Pilihan yang ditimbang:
+  1. *Pemantau mengabaikan folder tersembunyi* (`.onsa-partial/` di dalam folder library).
+     Ditolak: itu mengubah perilaku `onsa-library` untuk semua orang demi satu pemakai, dan
+     benar-tidaknya bergantung pada aturan pemantau yang bisa berubah.
+  2. *Daftar ekstensi sementara yang diabaikan.* Ditolak: berkas antara yt-dlp ber-ekstensi
+     audio biasa (`.m4a`, `.webm`), justru itu masalahnya.
+  3. **Folder kerja di luar library** (dipilih). yt-dlp diberi `-o` ke
+     `<cache>/downloads/<id>/…`; sesudah selesai, Onsa sendiri memindahkan berkas yang dicetak
+     `after_move:filepath` ke `<folder library>/Unduhan/…`, dengan subfolder artis yang sama.
+     Di satu drive itu satu `rename`: berkasnya belum ada, lalu ada, utuh. Di drive berbeda,
+     berkasnya disalin ke nama tersembunyi berakhiran `.onsa-arriving` di sebelah tujuannya —
+     tidak dibaca pemindai mana pun sebagai audio — lalu di-rename sekali selesai. Folder
+     kerjanya dihapus sesudah tiap unduhan, berhasil atau tidak, dan seluruh folder
+     `downloads` dibersihkan saat antrean mulai dari keadaan diam (sisa dari Onsa yang mati di
+     tengah unduhan).
+  Konsekuensi: yt-dlp tidak lagi melihat berkas yang sudah ada di library, jadi mengunduh
+  ulang lagu yang sama **menimpa** berkasnya alih-alih dilewati. Baris library-nya tetap satu
+  (path yang sama).
+- **Jumlah unduhan paralel mengikuti SPEC §7.3: bisa diatur, bawaan 2.** M10b memasangnya
+  tetap di 3 tanpa pengaturan; itu menyimpang dari SPEC dan diluruskan. Rentangnya 1–4: satu
+  adalah antrean biasa, dan lewat empat laptop bekerja lebih keras tanpa sambungan jadi lebih
+  sibuk, karena tiap unduhan menjalankan ffmpeg-nya sendiri. Disimpan di pengaturan
+  `downloads`, berlaku untuk unduhan berikutnya; yang sedang berjalan dibiarkan selesai.
+- **Versi dijaga tes.** Paket Linux dinamai dari `tauri.conf.json`, dan v1.4 hampir terbit
+  dengan nama `Onsa_1.3.0`. Tes `every_place_that_carries_the_version_says_the_same`
+  memastikan `Cargo.toml`, `tauri.conf.json`, dan `ui/package.json` menyebut versi yang sama.
+- **Hasil unduhan dikenali dari isi folder kerja, bukan dari path yang dicetak yt-dlp.** Di
+  Windows yt-dlp mencetak ke pipa dalam code page konsol, jadi judul ber-aksara Korea kembali
+  tanpa huruf Koreanya dan path cetakannya tidak menunjuk berkas mana pun. Folder kerja satu
+  unduhan hanya berisi apa yang diselesaikan yt-dlp (ia menghapus audio sumber konversi dan
+  thumbnail yang sudah ditanam), jadi berkas audio yang tersisa di sana adalah hasilnya. Path
+  cetakan tetap masuk log. Keluaran program luar juga dibaca sebagai byte dan diterjemahkan
+  dengan lunak, supaya baris yang bukan UTF-8 tidak menghentikan pembacaan pipa.
+- **Peringatan tanpa Deno ditampilkan Onsa sendiri.** Onsa menjalankan yt-dlp dengan
+  `--no-warnings` supaya keluaran progresnya bersih, jadi peringatan "No supported JavaScript
+  runtime" milik yt-dlp tidak pernah sampai ke layar. Baris Deno di halaman Unduhan menampilkan
+  peringatan berwarna *caution* selama Deno belum ada; kalimatnya tidak menjanjikan kegagalan,
+  karena hari ini video yang diuji tetap berhasil tanpa Deno.
