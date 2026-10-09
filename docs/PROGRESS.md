@@ -4,7 +4,7 @@ Status tiap milestone dari `SPEC.md` §15. Diperbarui di akhir setiap milestone.
 
 ---
 
-## Garis rilis (diperbarui 2026-09-27)
+## Garis rilis (diperbarui 2026-10-09)
 
 Yang benar-benar ditandai:
 
@@ -15,6 +15,7 @@ Yang benar-benar ditandai:
 | `v1.1.0` | `4af6879` | 2026-09-20 | Bantuan di dalam aplikasi. Tidak ada kemampuan baru. |
 | `v1.2.0` | `26132f9` | 2026-09-21 | Paket untuk tester: tiap jalur internet dibuktikan terhadap layanan sungguhan, dan berkas pemasang Windows dibangun CI. Tidak ada fitur baru. |
 | `v1.3.0` | (lihat tagnya) | 2026-09-27 | **v1.3 "Rapi", selesai.** Validasi fpcalc dan tombol ke halaman unduhan resminya; empat bug dari pengujian pemilik proyek; warna nada yang terlihat di keenam tema, dengan kriteria terukur; **M13** pengelolaan folder sumber; **M14** panel Sedang diputar. |
+| `v1.4.0` | (lihat tagnya) | 2026-10-09 | **v1.4 "Unduhan penuh", selesai.** **M10b** (ffmpeg, Deno, fpcalc diunduh Onsa sendiri; unduhan paralel bawaan 2; berkas antara di luar library), **M15** daftar situs di Bantuan, paket Linux dari CI. Sisa M10b ke v1.4.1. |
 
 Garis rilis yang diputuskan pada 2026-09-19 menempatkan M7b, M10b, M11, dan M12 di v1.1.
 Bukan itu yang terjadi: yang ditandai v1.1.0 adalah bantuan di dalam aplikasi, dan v1.2.0
@@ -26,7 +27,7 @@ Garis selanjutnya, keputusan pemilik proyek 2026-09-25:
 | Rilis | Isinya |
 |---|---|
 | ~~**v1.3 "Rapi"**~~ | **Selesai, ditandai `v1.3.0` pada 2026-09-27.** v1.3-a pemilihan fpcalc, v1.3-b dokumen dan pemeriksaan lisensi, v1.3-c empat bug dari pengujian, v1.3-d warna nada di keenam tema, **M13** pengelolaan folder sumber, **M14** panel Sedang diputar |
-| **v1.4 "Unduhan penuh"** | v1.4-a paket Linux yang dibangun CI (selesai, 2026-09-28) — sebagian M12; lalu **M10b** (Deno, ffmpeg, antrean paralel, dan unduhan otomatis fpcalc) dan **M15** daftar sumber unduhan di Bantuan |
+| ~~**v1.4 "Unduhan penuh"**~~ | **Selesai, ditandai `v1.4.0` pada 2026-10-09.** v1.4-a paket Linux yang dibangun CI (selesai, 2026-09-28) — sebagian M12; lalu **M10b** (Deno, ffmpeg, antrean paralel, dan unduhan otomatis fpcalc) dan **M15** daftar sumber unduhan di Bantuan |
 | **v1.4.1** | **Sisa M10b**: antrean unduhan disimpan di DB, dan pertanyaan folder output di luar library. Dikerjakan sebelum M16 (keputusan pemilik proyek 2026-10-05) |
 | **v1.5 "Tampilan"** | **M16**: skema tema baru, keenam tema dirombak, preset layout sebagai sumbu terpisah |
 | **v1.6 "Lirik & metadata"** | **M17** lirik lanjutan, lalu **M7b** (sisa pekerjaan sampul) |
@@ -39,9 +40,10 @@ beserta daftar lisensi pihak ketiga, dan lisensi proyek — menunggu keputusan p
 **Laporan tester bukan gerbang.** Tidak ada rilis di atas yang menunggu laporan tester;
 laporan yang datang masuk ke rilis patch berikutnya (v1.x.y).
 
-**Yang belum terbukti di v1.3.0:** setiap bagiannya diuji di Windows pada mesin pemilik
-proyek, dan sisi Linux hanya lewat CI — tidak ada satu pun layar Linux sungguhan yang
-pernah menampilkan Onsa v1.3. Paket Linux (AppImage dan deb) menyusul di v1.4.
+**Yang terbukti di v1.4.0:** setiap bagiannya diuji di Windows, dan pemilik proyek menguji
+installer Windows dan paket Linux dari build CI `5ebe455` — Linux di WSL (Ubuntu lewat WSLg):
+lancar dan normal, tanpa temuan. Mesin Linux sungguhan (bukan WSL) belum pernah
+menampilkan Onsa.
 
 ---
 

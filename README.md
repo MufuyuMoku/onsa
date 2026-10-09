@@ -12,7 +12,7 @@ Onsa (音叉, garpu tala) adalah pemutar musik desktop untuk Windows dan Linux, 
 - **Berkas di disk**: memindah berkas lewat pratinjau dan ringkasan, bisa dibatalkan lewat Riwayat; dan menghapus berkas ke Recycle Bin atau Trash — tidak pernah permanen, dan di tempat yang tidak punya keduanya Onsa menolak dan mengatakan alasannya.
 - **Metadata**: editor tag satu lagu dan massal. Editan disimpan di Onsa dulu; "tulis ke berkas" aksi terpisah, dan tiap jalannya bisa dibatalkan. Ada rename berpola dengan pratinjau, perapihan otomatis tanpa jaringan, dan — bila dinyalakan — pencarian ke AcoustID, MusicBrainz, dan Cover Art Archive yang hasilnya selalu berupa usulan.
 - **Lirik**: berkas `.lrc` di sebelah lagu, lirik di dalam tag, atau LRCLIB. Baris yang sedang dinyanyikan menyala, klik baris untuk melompat ke sana, dan geseran waktu disimpan per lagu.
-- **Unduhan**: satu URL pada satu waktu lewat yt-dlp, yang diambil hanya setelah kamu menyetujui sumbernya dan dicocokkan dengan checksum yang diterbitkan rilisnya.
+- **Unduhan** lewat yt-dlp, beberapa sekaligus (bawaan 2, bisa 1–4). yt-dlp, ffmpeg, Deno, dan fpcalc diambil Onsa sendiri — hanya setelah kamu menyetujui sumbernya, dan dicocokkan dengan checksum yang diterbitkan rilisnya (atau sidik yang tersimpan di Onsa, untuk fpcalc). Hanya berkas jadinya yang pernah masuk folder library.
 - **Enam tema bawaan** (tiga gelap, tiga terang). Tema adalah berkas JSON: salin tema yang sedang dipakai dari Pengaturan → Tampilan sebagai titik mulai, ubah warnanya, buka Onsa lagi, dan tema itu muncul di daftar. Berkas tema yang tidak terbaca disebutkan di halaman yang sama, dengan alasannya.
 - **Layar Sedang diputar yang bisa diatur**: sampul, rincian sinyal, lirik, dan visualizer masing-masing bisa dimatikan, dan pilihannya tersimpan. Dengan visualizer disembunyikan, analisis suaranya benar-benar berhenti.
 - **Bantuan di dalam aplikasi**: tanda tanya di sudut yang sama pada tiap halaman, membuka penjelasan halaman itu beserta tiap kontrolnya, dan satu halaman Bantuan untuk hal yang tidak menempel di satu halaman.
@@ -20,9 +20,9 @@ Onsa (音叉, garpu tala) adalah pemutar musik desktop untuk Windows dan Linux, 
 
 ## Lingkup v1, apa adanya
 
-- **ffmpeg opsional.** Tanpa ffmpeg unduhan tetap berjalan: audionya diambil apa adanya, tanpa tag dan sampul tertanam, dan konversi ke MP3 atau FLAC tidak tersedia. Halaman Unduhan mengatakan itu di tempat pilihannya dibuat.
+- **ffmpeg dan Deno opsional.** Tanpa ffmpeg unduhan tetap berjalan: audionya diambil apa adanya, tanpa tag dan sampul tertanam, dan konversi ke MP3 atau FLAC tidak tersedia. Tanpa Deno, sebagian format YouTube bisa tidak tersedia. Halaman Unduhan mengatakan keduanya.
 - **Sumber yang hanya menyediakan Opus ditolak**, dengan pesan, karena Onsa belum punya decoder Opus. Lebih baik ditolak di muka daripada berkasnya mendarat lalu tidak pernah muncul di library.
-- **fpcalc dipasang sendiri.** Pengenalan lagu lewat suaranya butuh fpcalc dari Chromaprint, dan Onsa belum bisa mengunduhnya sendiri: ada tombol yang membuka halaman rilis resminya, dan sesudah dipasang, tunjukkan berkasnya lewat "Cari fpcalc…" di Pengaturan → Metadata. Pencarian lewat judul dan artis tetap jalan tanpa fpcalc.
+- **Antrean unduhan belum disimpan**: unduhan yang belum selesai hilang bila Onsa ditutup, dan hasil unduhan selalu masuk `Unduhan` di folder library pertama. Keduanya dijadwalkan untuk v1.4.1.
 - **Belum ada scrobble Last.fm.**
 
 Rilis sesudah v1.0.0 tidak menambah fitur sampai v1.3: **v1.0.1** memperbaiki temuan audit,
@@ -36,10 +36,15 @@ folder sumber — melepas folder, mengikutinya pindah, mengecualikan subfolder, 
 menghapus berkas; dan **M14** panel Sedang diputar yang bisa dimatikan sendiri-sendiri.
 Seluruhnya diuji di Windows; sisi Linux hanya lewat CI.
 
+**v1.4.0 "Unduhan penuh" (selesai)** berisi: **M10b** — ffmpeg, Deno, dan fpcalc diambil Onsa
+sendiri dari rilis resminya dengan checksum, antrean yang menjalankan beberapa unduhan
+sekaligus, dan berkas sementara yang tidak pernah terlihat di library; **M15** daftar situs
+yang bisa diunduh di Bantuan; dan paket Linux (`.deb` dan AppImage) yang dibangun CI. Diuji
+di Windows, dan sisi Linux di WSL.
+
 Garis berikutnya ada di [`docs/SPEC.md`](docs/SPEC.md) §15 dan
-[`docs/PROGRESS.md`](docs/PROGRESS.md): v1.4 "Unduhan penuh" (Deno dan ffmpeg, antrean
-paralel, unduhan otomatis fpcalc, paket Linux), v1.5 "Tampilan", v1.6 "Lirik & metadata",
-v1.7 "Video".
+[`docs/PROGRESS.md`](docs/PROGRESS.md): v1.4.1 (sisa M10b: antrean tersimpan, folder
+unduhan), v1.5 "Tampilan", v1.6 "Lirik & metadata", v1.7 "Video".
 
 ## Memasang di Linux
 
