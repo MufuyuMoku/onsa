@@ -920,3 +920,44 @@ Keputusan pemilik proyek atas hasil pemeriksaan pertama cargo deny. Dua pengecua
   dikerjakan di v1.4.1, sebelum M16 (SPEC §15). Akibatnya bagi pemakai v1.4.0 disebut di catatan
   rilis: antrean yang belum selesai hilang bila Onsa ditutup.
 - **Rentang unduhan paralel 1–4: diterima.**
+
+## 2026-10-10 · v1.4.1: sisa M10b
+
+- **Antrean disimpan sebagai "yang masih harus dikerjakan".** Tabel `download_queue` (migrasi 7)
+  memuat satu baris per unduhan yang diminta, dan baris itu dihapus begitu unduhannya berakhir —
+  selesai, gagal, atau dihentikan. Yang tertinggal saat Onsa ditutup adalah persis yang belum
+  selesai. Unduhan yang gagal **tidak** diulang sendiri sesudah restart, dan yang dihentikan
+  memang dihentikan dengan sengaja.
+- **Antrean yang pulih menunggu tombol "Lanjutkan", tidak berjalan sendiri.** Membuka Onsa tidak
+  boleh mulai mengambil dari internet tanpa ditekan apa pun — sejalan dengan "tidak ada yang
+  menghubungi internet kecuali kamu menyalakannya". Halaman Unduhan menyebut berapa yang belum
+  selesai, dan satu tekanan melanjutkannya. Meminta unduhan baru juga menjalankan yang menunggu:
+  meminta unduhan berarti meminta antrean berjalan.
+- **Tiap baris membawa format dan folder tujuannya sendiri.** Sebelumnya format dan folder
+  dibawa oleh *pekerja*, dari permintaan pertama yang memulainya: dua permintaan dengan format
+  berbeda yang tumpang tindih membuat yang kedua diunduh dengan format yang pertama. Sekarang
+  tidak bisa, dan antrean yang pulih sesudah restart tetap ke tempat dan format yang diminta.
+- **`AUTOINCREMENT` pada `download_queue`.** Id baris juga dipakai layar untuk mengikuti
+  unduhan. Tanpa `AUTOINCREMENT`, SQLite memberi id 1 lagi begitu tabelnya kosong, dan unduhan
+  baru tertukar dengan unduhan lama yang sudah selesai (ditemukan saat pengujian: item baru
+  tertahan "sedang diunduh" selamanya). Migrasi 7 **diubah sebelum pernah dirilis**; aturan
+  "migrasi yang sudah diterapkan tidak pernah diubah" berlaku untuk yang sudah sampai ke
+  pemakai. Profil uji di mesin pengembangan yang sudah memakai versi 7 dibetulkan manual.
+- **Folder output bisa dipilih**, karena tanpa itu pertanyaan SPEC §7.3 tidak pernah punya
+  kesempatan muncul. Bawaannya tetap `Unduhan` di folder library pertama. Bila folder yang
+  dipakai ada di luar library, halaman Unduhan bertanya — "Tambahkan ke library" atau "Biarkan
+  di luar" — dan bertanya terus sampai dijawab. "Biarkan di luar" diingat **per folder** (folder
+  terakhir yang dijawab begitu); memilih folder lain bertanya lagi. Menambahkan ke library
+  memakai jalan yang sama dengan Pengaturan → Library. "Di dalam library" berarti di dalam salah
+  satu folder library dan tidak di subfolder yang dikecualikan.
+- **Tombol halaman rilis resmi sesudah pemasangan gagal karena alasan apa pun**, di halaman
+  Unduhan maupun Metadata, kecuali bila pendengar sendiri yang menghentikannya. Di halaman
+  Metadata tombol itu sebelumnya selalu tampil selama fpcalc belum ada; sekarang hanya sesudah
+  unduhannya gagal (atau bila Onsa tidak bisa memasangnya sama sekali), sesuai §7.1 yang baru.
+  Alasan kegagalan fpcalc kini tetap terlihat — sebelumnya terhapus oleh pembacaan ulang daftar
+  program sesudahnya.
+- **`windows-sha256.txt` dibuat di setiap build rilis**, bukan hanya saat tag, dan ikut
+  artifact `onsa-installer-windows`. Dengan begitu build uji yang dijalankan manual sudah
+  membuktikan isinya sebelum ada tag. Formatnya sama dengan yang dibaca `sha256sum -c`: hash, dua
+  spasi, nama berkas — ditulis sendiri, karena `sha256sum` di Windows menandai berkas dengan
+  bintang.

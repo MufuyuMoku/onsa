@@ -1963,3 +1963,88 @@ terjangkau). Tidak diubah — keputusan kali ini hanya dokumen.
 
 `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings`,
 `cargo test --workspace`, `npm run check`, dan tes UI bersih di Windows (`scripts/check.sh`).
+
+## 2026-10-10 · v1.4.1: sisa M10b
+
+Empat hal yang diminta pemilik proyek. **Tag belum dibuat.**
+
+### 1. Antrean unduhan disimpan di DB
+
+Migrasi 7 menambah tabel `download_queue`; satu baris per unduhan yang belum berakhir, dengan
+format dan folder tujuannya. Saat Onsa dibuka, yang tersisa kembali sebagai **menunggu**, dan
+halaman Unduhan menyebutnya: "*n* unduhan belum selesai sejak Onsa terakhir ditutup", dengan
+tombol **Lanjutkan**. Alasan tidak berjalan sendiri di DECISIONS 2026-10-10.
+
+Dibuktikan di aplikasi yang berjalan (build rilis, PATH bersih), dengan **proses Onsa dimatikan
+paksa** — lebih keras daripada menutup jendela:
+
+| | hasil |
+|---|---|
+| migrasi pada profil lama (versi 6, 6 lagu) | naik ke versi 7 tanpa kehilangan apa pun |
+| 3 unduhan FLAC, 1 sekaligus; Onsa dimatikan saat item ke-2 berjalan | DB menyimpan yang belum berakhir; tidak ada yt-dlp/ffmpeg yang tertinggal hidup |
+| Onsa dibuka lagi | yang tersisa kembali sebagai *menunggu*; tidak ada yang berjalan sendiri |
+| yang sedang berjalan saat dimatikan ("lima", dua berkas `.part`/thumbnail di folder kerja) | kembali sebagai *menunggu*; folder kerjanya dibersihkan saat Onsa dibuka |
+| tombol **Lanjutkan** ditekan di layar | selesai; antrean di DB kosong lagi |
+| ulangan dengan build final: Queen (berjalan) + PSY (menunggu), dimatikan, dibuka, Lanjutkan | keduanya kembali *menunggu*, keduanya selesai; **15 lagu, 0 hilang**, folder kerja kosong |
+
+**Bug yang ditemukan dan diperbaiki saat menguji:** sesudah antrean di DB kosong, SQLite memberi
+id 1 lagi, sehingga unduhan baru tertukar dengan unduhan lama di layar dan tertahan "sedang
+diunduh". Sekarang `AUTOINCREMENT`, dijaga tes
+`an_id_is_never_given_out_twice_even_once_the_queue_is_empty`.
+
+Satu hal yang tidak berubah: judul di antrean adalah judul dari pratinjau. Kode untuk menyimpan
+judul asli dari progres yt-dlp ada, tapi keluaran progres yang diminta Onsa tidak membawa judul,
+jadi jalur itu tidak pernah terpakai di uji ini.
+
+### 2. Folder output dan pertanyaan §7.3
+
+Folder output **bisa dipilih** ("Pilih folder…", dan "Kembali ke folder bawaan"), karena tanpa
+itu pertanyaannya tidak punya kesempatan muncul. Dibuktikan di aplikasi yang berjalan:
+
+| | hasil |
+|---|---|
+| tombol "Pilih folder…" membuka dialog Windows yang sungguhan, folder dipilih | tersimpan; pertanyaan "Folder ini di luar library … Tambahkan folder ini ke library?" muncul dengan dua tombol |
+| "Biarkan di luar" | pertanyaannya hilang, diganti catatan; unduhan MP3 masuk ke `di luar 外\jawed\…`; **library tetap 11 lagu** |
+| Onsa dimatikan dan dibuka lagi dengan folder yang sama | **tidak ditanya lagi** |
+| folder lain di luar library, "Tambahkan ke library" | folder masuk daftar folder library; unduhan ke sana muncul sebagai lagu ke-13, status `ok` |
+| "Kembali ke folder bawaan" | kembali ke `musik uji 音楽\Unduhan` |
+
+**Yang tidak sepenuhnya terbukti:** dialog folder Windows hanya bisa dikendalikan lewat
+keyboard dari luar, dan ketikan itu meleset — dialog memilih folder lain milik pemilik mesin
+(`Documents\Call of Duty MWII`), hanya ke pengaturan profil uji, dan tidak ada yang ditulis ke
+sana. Jadi untuk folder uji tertentu, path-nya diberikan ke perintah yang sama yang dipanggil
+tombol itu sesudah dialog menjawab, lalu tampilannya dimuat ulang. Bagian dialog → pengaturan →
+pertanyaan muncul tetap terbukti dari pilihan yang meleset itu.
+
+### 3. Tombol halaman resmi sesudah pemasangan gagal
+
+Disimulasikan dengan server lokal di tempat GitHub (`ONSA_RELEASES_URL`):
+
+| kegagalan | halaman | yang tampil |
+|---|---|---|
+| checksum tidak cocok (yt-dlp) | Unduhan | "Checksum-nya tidak cocok…" + **Buka halaman unduhan resmi** |
+| rilis menjawab 500 (ffmpeg) | Unduhan | "Rilisnya tidak terjangkau…" + **Buka halaman unduhan resmi** |
+| checksum tidak cocok, lalu 500 (fpcalc) | Metadata | alasannya + **Buka halaman unduhan resmi** |
+| sebelum ada yang gagal | keduanya | tombol itu **tidak ada** — yang ada tombol setuju/"Unduh fpcalc" |
+
+Dua hal ikut diperbaiki: di halaman Metadata, alasan kegagalan fpcalc dulu terhapus oleh
+pembacaan ulang daftar program sesudahnya; dan tombol halaman resmi di sana dulu selalu tampil
+selama fpcalc belum ada, yang kini tidak sesuai §7.1.
+
+### 4. `windows-sha256.txt`
+
+Dibuat di setiap build rilis dan ikut artifact `onsa-installer-windows`; pada tag ia diunggah ke
+halaman rilis bersama installer, seperti `linux-sha256.txt`. Formatnya diuji dengan
+`sha256sum -c`. Unggahan ke halaman rilis baru bisa terbukti saat tag.
+
+### Temuan dari v1.4.0 yang ikut ditutup
+
+Pilihan **"Sekaligus"** di v1.4.0 tidak punya baris di panel bantuan halaman Unduhan, padahal
+setiap kontrol harus punya. Sekarang ada, bersama kontrol baru v1.4.1. Teks bantuan berkas di
+halaman Unduhan (versi Inggris menyebut subfolder "Downloads", padahal namanya `Unduhan`) dan
+penjelasan fpcalc di Bantuan ikut diluruskan.
+
+### Pemeriksaan
+
+`cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings`,
+`cargo test --workspace`, `npm run check`, dan tes UI bersih di Windows (`scripts/check.sh`).
