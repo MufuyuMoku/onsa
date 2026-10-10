@@ -550,6 +550,12 @@ impl Library {
         Ok(())
     }
 
+    /// Whether a file at `path` would be part of the library: inside one of
+    /// its folders, and not in a subfolder left out of it.
+    pub fn holds(&self, path: &Path) -> Result<bool> {
+        Ok(self.folder_for(path)?.is_some())
+    }
+
     /// The watched folder that holds `path`, as id and path.
     fn folder_for(&self, path: &Path) -> Result<Option<i64>> {
         // A path inside a subfolder that is left out belongs to no library

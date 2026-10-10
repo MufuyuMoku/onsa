@@ -7,16 +7,16 @@
 //! Version 1 holds what the library itself needs (M3), version 2 the
 //! playlists (M6), version 3 the record of what Onsa has changed so that it
 //! can be taken back again (M7), and version 4 lets that record hold a
-//! cover as well, version 5 holds the lyrics (M8), and version 6 the
-//! subfolders left out of scanning (M13). The scrobble queue and the
-//! download queue arrive as later migrations with the milestones that use
-//! them.
+//! cover as well, version 5 holds the lyrics (M8), version 6 the
+//! subfolders left out of scanning (M13), and version 7 the download queue
+//! (v1.4.1). The scrobble queue arrives as a later migration with the
+//! milestone that uses it.
 //!
 //! The numbers follow the order the work was done in, not the milestone
 //! numbers (see `docs/DECISIONS.md`).
 
 /// The migrations, in order. Index 0 is version 1.
-pub const MIGRATIONS: &[&str] = &[V1, V2, V3, V4, V5, V6];
+pub const MIGRATIONS: &[&str] = &[V1, V2, V3, V4, V5, V6, V7];
 
 const V1: &str = r#"
 CREATE TABLE folders (
@@ -258,4 +258,22 @@ CREATE TABLE folder_exclusions (
     added_at   INTEGER NOT NULL
 );
 CREATE INDEX folder_exclusions_folder ON folder_exclusions(folder_id);
+"#;
+
+/// Version 7 (v1.4.1, the rest of M10b): the downloads still to do, so the
+/// queue outlives Onsa being closed (SPEC §7.3). A row is removed when its
+/// download ends, however it ends.
+///
+/// `AUTOINCREMENT`, because the id is also how the queue on screen follows
+/// a download: without it SQLite hands out the same id again once the
+/// table is empty, and a finished download and a new one become one row.
+const V7: &str = r#"
+CREATE TABLE download_queue (
+    id        INTEGER PRIMARY KEY AUTOINCREMENT,
+    url       TEXT NOT NULL,
+    title     TEXT NOT NULL,
+    format    TEXT NOT NULL,
+    folder    TEXT NOT NULL,
+    added_at  INTEGER NOT NULL
+);
 "#;
