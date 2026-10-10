@@ -391,6 +391,12 @@ pub struct ProgramPrefs {
 pub struct DownloadPrefs {
     /// How many downloads run at once. SPEC §7.3: adjustable, 2 by default.
     pub at_once: u8,
+    /// Where finished downloads go, when the listener chose somewhere.
+    /// Nothing means `Unduhan` inside the first library folder.
+    pub folder: Option<String>,
+    /// The folder the listener said may stay outside the library, so the
+    /// question is not asked again about it (SPEC §7.3).
+    pub outside_ok: Option<String>,
 }
 
 impl DownloadPrefs {
@@ -410,7 +416,11 @@ impl DownloadPrefs {
 
 impl Default for DownloadPrefs {
     fn default() -> Self {
-        Self { at_once: 2 }
+        Self {
+            at_once: 2,
+            folder: None,
+            outside_ok: None,
+        }
     }
 }
 
@@ -674,8 +684,22 @@ mod tests {
     fn two_downloads_run_at_once_unless_somebody_says_otherwise() {
         assert_eq!(DownloadPrefs::default().at_once(), 2, "SPEC §7.3");
         // Whatever was stored, the number used is one Onsa allows.
-        assert_eq!(DownloadPrefs { at_once: 0 }.at_once(), 1);
-        assert_eq!(DownloadPrefs { at_once: 200 }.at_once(), 4);
+        assert_eq!(
+            DownloadPrefs {
+                at_once: 0,
+                ..DownloadPrefs::default()
+            }
+            .at_once(),
+            1
+        );
+        assert_eq!(
+            DownloadPrefs {
+                at_once: 200,
+                ..DownloadPrefs::default()
+            }
+            .at_once(),
+            4
+        );
         let read: DownloadPrefs = serde_json::from_str("{}").expect("an empty setting reads");
         assert_eq!(read.at_once(), 2);
     }

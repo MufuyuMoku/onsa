@@ -918,7 +918,14 @@ export interface QueueItem {
 export interface DownloadQueue {
 	running: boolean;
 	items: QueueItem[];
+	/** Where finished files go, when there is anywhere. */
 	folder: string | null;
+	/** Whether that folder was chosen, rather than the default one. */
+	folderChosen: boolean;
+	/** Whether what lands there appears in the library. */
+	folderInLibrary: boolean;
+	/** Whether the listener already said that folder may stay outside. */
+	outsideAccepted: boolean;
 	/** How many downloads run at once, 1 to 4 (SPEC section 7.3). */
 	atOnce: number;
 }
@@ -949,6 +956,10 @@ export const downloadStart = (items: { url: string; title: string }[], format: D
 export const downloadStop = () => call<DownloadQueue>('download_stop');
 export const downloadSetAtOnce = (atOnce: number) =>
 	call<DownloadQueue>('download_set_at_once', { atOnce });
+export const downloadChooseFolder = (path: string | null) =>
+	call<DownloadQueue>('download_choose_folder', { path });
+export const downloadKeepOutside = () => call<DownloadQueue>('download_keep_outside');
+export const downloadResume = () => call<DownloadQueue>('download_resume');
 export const matchState = () => call<MatchState>('match_state');
 export const matchStart = (tracks: number[]) => call<MatchState>('match_start', { tracks });
 export const matchStop = () => call<MatchState>('match_stop');

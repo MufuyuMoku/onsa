@@ -215,7 +215,13 @@ export const TOPICS: HelpTopic[] = [
 			control('programs.openPage', 'help.says.openPage'),
 			control('downloads.urlPlaceholder', 'help.says.urlField'),
 			control('downloads.look', 'help.says.look'),
+			control('downloads.chooseFolder', 'help.says.chooseOutput'),
+			control('downloads.folderDefault', 'help.says.outputDefault'),
+			control('downloads.outsideAdd', 'help.says.outsideAdd'),
+			control('downloads.outsideKeep', 'help.says.outsideKeep'),
+			control('downloads.resume', 'help.says.resume'),
 			control('downloads.format', 'help.says.format'),
+			control('downloads.atOnce', 'help.says.atOnce'),
 			control('downloads.fetchCount', 'help.says.fetch'),
 			control('downloads.stop', 'help.says.stop'),
 			control('downloads.stopAll', 'help.says.stopAll')

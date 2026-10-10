@@ -12,7 +12,7 @@
 //! which never speaks to the network itself.
 
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
 use onsa_downloader::install::{self, MAX_BINARY};
@@ -447,26 +447,42 @@ pub struct ItemDto {
     pub said: Option<String>,
 }
 
-/// The queue as it stands.
+/// The queue as it stands, and where it puts what it finishes.
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct QueueDto {
     /// Whether anything is being downloaded right now.
     pub running: bool,
-    /// Everything asked for in this run of Onsa, newest last.
+    /// Everything asked for, newest last: in this run of Onsa, and what was
+    /// left unfinished when it was last closed.
     pub items: Vec<ItemDto>,
-    /// Where finished files are being put.
+    /// Where finished files are being put, when there is anywhere.
     pub folder: Option<String>,
+    /// Whether that folder was chosen, rather than the one inside the first
+    /// library folder.
+    pub folder_chosen: bool,
+    /// Whether what lands in that folder appears in the library.
+    pub folder_in_library: bool,
+    /// Whether the listener has already said that folder may stay outside
+    /// the library, so the question is not asked again (SPEC §7.3).
+    pub outside_accepted: bool,
     /// How many downloads run at once (SPEC §7.3).
     pub at_once: u8,
 }
 
 /// One row of the queue, as the application holds it.
+///
+/// It carries its own format and folder: two batches asked for with two
+/// formats share one set of workers, and a download picked up after a
+/// restart goes where it was first asked to.
 #[derive(Debug, Clone)]
 struct Item {
+    /// Its row in the database's queue, which outlives Onsa being closed.
     id: u64,
     url: String,
     title: String,
+    format: ytdlp::Format,
+    folder: PathBuf,
     state: &'static str,
     fraction: Option<f64>,
     speed: Option<f64>,
@@ -477,6 +493,29 @@ struct Item {
 }
 
 impl Item {
+    fn waiting(
+        id: u64,
+        url: String,
+        title: String,
+        format: ytdlp::Format,
+        folder: PathBuf,
+    ) -> Self {
+        Self {
+            id,
+            url,
+            title,
+            format,
+            folder,
+            state: "waiting",
+            fraction: None,
+            speed: None,
+            eta: None,
+            file: None,
+            failed: None,
+            said: None,
+        }
+    }
+
     fn dto(&self) -> ItemDto {
         ItemDto {
             id: self.id,
@@ -493,13 +532,8 @@ impl Item {
     }
 }
 
-/// How many downloads run at once: the listener's setting (SPEC §7.3,
-/// adjustable, 2 by default), held between one and four.
-///
-/// A download is mostly waiting on the network, and each one starts an
-/// ffmpeg of its own to put the audio together, so a few at a time keeps a
-/// connection busy without turning a laptop into a fan.
-fn at_once(app: &AppHandle) -> usize {
+/// The downloader's settings, as stored.
+fn prefs(app: &AppHandle) -> crate::settings::DownloadPrefs {
     let library = app.state::<crate::library::LibraryService>();
     library
         .read(|library| {
@@ -509,7 +543,17 @@ fn at_once(app: &AppHandle) -> usize {
             ))
         })
         .unwrap_or_default()
-        .at_once()
+}
+
+/// Changes the downloader's settings and stores them.
+fn change_prefs(
+    app: &AppHandle,
+    change: impl FnOnce(&mut crate::settings::DownloadPrefs),
+) -> Result<(), ErrorCode> {
+    let mut stored = prefs(app);
+    change(&mut stored);
+    let library = app.state::<crate::library::LibraryService>();
+    library.read(|library| crate::settings::save(library, crate::settings::DOWNLOADS_KEY, &stored))
 }
 
 /// Where yt-dlp works on one download before the finished file is moved
@@ -526,44 +570,90 @@ fn work_root(app: &AppHandle) -> PathBuf {
 
 /// The downloads asked for, and how many are going.
 ///
-/// Remembering the queue across restarts is not part of this: a queue is
-/// about what somebody asked for while they were here.
+/// What has not finished is also in the database (SPEC §7.3), so closing
+/// Onsa part way loses nothing: [`restore`] puts it back as waiting.
 #[derive(Debug, Default)]
 pub struct Queue {
     items: Mutex<Vec<Item>>,
-    next_id: AtomicU64,
     /// How many workers are alive. The queue is running while any is.
     working: AtomicUsize,
     stop: Arc<AtomicBool>,
 }
 
 impl Queue {
-    fn snapshot(&self, folder: Option<String>, at_once: usize) -> QueueDto {
+    fn snapshot(&self) -> (bool, Vec<ItemDto>) {
         let items = self.items.lock().unwrap_or_else(|e| e.into_inner());
-        QueueDto {
-            running: self.working.load(Ordering::Relaxed) > 0,
-            items: items.iter().map(Item::dto).collect(),
-            folder,
-            at_once: u8::try_from(at_once).unwrap_or(u8::MAX),
-        }
+        (
+            self.working.load(Ordering::Relaxed) > 0,
+            items.iter().map(Item::dto).collect(),
+        )
     }
 
     /// Asks whatever is downloading to stop, and drops what is waiting.
-    pub fn stop(&self) {
+    /// Answers with the rows that were waiting, so they can be forgotten.
+    fn stop(&self) -> Vec<u64> {
         self.stop.store(true, Ordering::SeqCst);
         let mut items = self.items.lock().unwrap_or_else(|e| e.into_inner());
+        let mut dropped = Vec::new();
         for item in items.iter_mut().filter(|one| one.state == "waiting") {
             item.state = "stopped";
+            dropped.push(item.id);
         }
+        dropped
     }
 }
 
-/// Where finished downloads go: inside the library, so they appear in it.
+/// Puts back what was left unfinished when Onsa was last closed.
 ///
-/// The first library folder is used. Onsa refuses to download at all when
-/// there is none rather than inventing somewhere — a file nobody asked for,
-/// somewhere nobody chose, is worse than a clear refusal (SPEC §7.3).
+/// It comes back **waiting**, not running: opening Onsa does not start
+/// fetching from the internet by itself. The page offers to carry on, and
+/// one press does (DECISIONS 2026-10-10).
+pub fn restore(app: &AppHandle) {
+    // Nothing can be working yet, so whatever is in the work folder was left
+    // by a run that ended part way. It is outside the library.
+    let _ = std::fs::remove_dir_all(work_root(app));
+
+    let library = app.state::<crate::library::LibraryService>();
+    let rows = match library.read(|library| library.queued_downloads()) {
+        Ok(rows) => rows,
+        Err(code) => {
+            tracing::warn!("the download queue cannot be read: {code:?}");
+            return;
+        }
+    };
+    let queue = app.state::<Arc<Queue>>();
+    let mut items = queue.items.lock().unwrap_or_else(|e| e.into_inner());
+    for row in rows {
+        let (Some(format), Ok(id)) = (ytdlp::Format::from_name(&row.format), u64::try_from(row.id))
+        else {
+            // A row Onsa cannot read is one it cannot carry out either.
+            let _ = library.write(|library| library.forget_queued_download(row.id));
+            continue;
+        };
+        items.push(Item::waiting(
+            id,
+            row.url,
+            row.title,
+            format,
+            PathBuf::from(row.folder),
+        ));
+    }
+    if !items.is_empty() {
+        tracing::info!(left = items.len(), "unfinished downloads restored, waiting");
+    }
+}
+
+/// Where finished downloads go (SPEC §7.3).
+///
+/// The folder the listener chose, if they chose one. Otherwise `Unduhan`
+/// inside the first library folder, so what arrives appears in the library.
+/// With neither, Onsa refuses to download rather than inventing somewhere —
+/// a file nobody asked for, somewhere nobody chose, is worse than a clear
+/// refusal.
 fn output_folder(app: &AppHandle) -> Result<PathBuf, ErrorCode> {
+    if let Some(chosen) = prefs(app).folder.filter(|one| !one.trim().is_empty()) {
+        return Ok(PathBuf::from(chosen));
+    }
     let library = app.state::<crate::library::LibraryService>();
     let folders = library.read(|library| library.folders())?;
     let first = folders.first().ok_or(ErrorCode::NoFolder)?;
@@ -609,11 +699,27 @@ pub struct ProbeTrouble {
 /// The queue as it stands.
 #[tauri::command]
 pub fn download_queue(app: AppHandle) -> Result<QueueDto, ErrorCode> {
-    let folder = output_folder(&app)
-        .ok()
-        .map(|path| path.display().to_string());
-    let at_once = at_once(&app);
-    Ok(app.state::<Arc<Queue>>().snapshot(folder, at_once))
+    let stored = prefs(&app);
+    let folder = output_folder(&app).ok();
+    let folder_in_library = match &folder {
+        Some(path) => {
+            let library = app.state::<crate::library::LibraryService>();
+            library.read(|library| library.holds(path)).unwrap_or(false)
+        }
+        None => false,
+    };
+    let folder_text = folder.as_ref().map(|path| path.display().to_string());
+    let outside_accepted = folder_text.is_some() && stored.outside_ok == folder_text;
+    let (running, items) = app.state::<Arc<Queue>>().snapshot();
+    Ok(QueueDto {
+        running,
+        items,
+        folder: folder_text,
+        folder_chosen: stored.folder.is_some(),
+        folder_in_library,
+        outside_accepted,
+        at_once: u8::try_from(stored.at_once()).unwrap_or(2),
+    })
 }
 
 /// Sets how many downloads run at once (SPEC §7.3).
@@ -622,22 +728,54 @@ pub fn download_queue(app: AppHandle) -> Result<QueueDto, ErrorCode> {
 /// are left to finish rather than stopped part way.
 #[tauri::command]
 pub fn download_set_at_once(app: AppHandle, at_once: u8) -> Result<QueueDto, ErrorCode> {
-    {
-        let library = app.state::<crate::library::LibraryService>();
-        let prefs = crate::settings::DownloadPrefs { at_once };
+    change_prefs(&app, |prefs| {
+        prefs.at_once = at_once;
         // Stored as it will be used, so what is read back is what runs.
-        let prefs = crate::settings::DownloadPrefs {
-            at_once: u8::try_from(prefs.at_once()).unwrap_or(2),
-        };
-        library.read(|library| {
-            crate::settings::save(library, crate::settings::DOWNLOADS_KEY, &prefs)
-        })?;
-        tracing::info!(at_once = prefs.at_once, "downloads at once");
-    }
+        prefs.at_once = u8::try_from(prefs.at_once()).unwrap_or(2);
+    })?;
+    tracing::info!(at_once, "downloads at once");
+    download_queue(app)
+}
+
+/// Chooses where finished downloads go, or goes back to the folder inside
+/// the first library folder when `path` is nothing (SPEC §7.3).
+///
+/// An earlier "leave it outside" is kept: it names its folder, so it only
+/// ever answers the question for that folder.
+#[tauri::command]
+pub fn download_choose_folder(app: AppHandle, path: Option<String>) -> Result<QueueDto, ErrorCode> {
+    let chosen = match path
+        .map(|one| one.trim().to_string())
+        .filter(|one| !one.is_empty())
+    {
+        Some(path) => {
+            let folder = PathBuf::from(&path);
+            if !folder.is_absolute() || !folder.is_dir() {
+                return Err(ErrorCode::NoFolder);
+            }
+            Some(path)
+        }
+        None => None,
+    };
+    change_prefs(&app, |prefs| prefs.folder = chosen.clone())?;
+    tracing::info!(chosen = chosen.is_some(), "where downloads go");
+    download_queue(app)
+}
+
+/// Lets the folder downloads go into stay outside the library: the answer
+/// "no" to SPEC §7.3's question, kept so it is not asked again for this
+/// folder.
+#[tauri::command]
+pub fn download_keep_outside(app: AppHandle) -> Result<QueueDto, ErrorCode> {
+    let folder = output_folder(&app)?.display().to_string();
+    change_prefs(&app, |prefs| prefs.outside_ok = Some(folder))?;
     download_queue(app)
 }
 
 /// Adds items to the queue and starts working through them.
+///
+/// Each is written to the database before anything runs, so a download
+/// asked for is a download that survives Onsa being closed.
 #[tauri::command]
 pub fn download_start(
     app: AppHandle,
@@ -646,56 +784,60 @@ pub fn download_start(
 ) -> Result<QueueDto, ErrorCode> {
     let format = ytdlp::Format::from_name(&format).ok_or(ErrorCode::Library)?;
     let into = output_folder(&app)?;
+    let folder_text = into.display().to_string();
     let queue = app.state::<Arc<Queue>>().inner().clone();
+    let library = app.state::<crate::library::LibraryService>();
 
-    {
-        let mut waiting = queue.items.lock().unwrap_or_else(|e| e.into_inner());
-        for one in items {
-            if !ytdlp::is_a_url(&one.url) {
-                continue;
-            }
-            let id = queue.next_id.fetch_add(1, Ordering::SeqCst) + 1;
-            waiting.push(Item {
-                id,
-                url: one.url,
-                title: one.title,
-                state: "waiting",
-                fraction: None,
-                speed: None,
-                eta: None,
-                file: None,
-                failed: None,
-                said: None,
-            });
+    let mut added = Vec::new();
+    for one in items {
+        if !ytdlp::is_a_url(&one.url) {
+            continue;
         }
+        let row = library.write(|library| {
+            library.queue_download(&one.url, &one.title, format.name(), &folder_text)
+        })?;
+        let id = u64::try_from(row).map_err(|_| ErrorCode::Library)?;
+        added.push(Item::waiting(id, one.url, one.title, format, into.clone()));
     }
+    queue
+        .items
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .extend(added);
 
     tracing::info!(
         format = format.name(),
         folder = %into.display(),
         "downloads were asked for"
     );
+    run(&app)?;
+    download_queue(app)
+}
 
+/// Carries on with what is waiting: what was left unfinished when Onsa was
+/// last closed, or what a stop left behind.
+#[tauri::command]
+pub fn download_resume(app: AppHandle) -> Result<QueueDto, ErrorCode> {
+    tracing::info!("the waiting downloads were asked to carry on");
+    run(&app)?;
+    download_queue(app)
+}
+
+/// Starts as many workers as there is waiting work for, up to the setting,
+/// counting the ones already going.
+fn run(app: &AppHandle) -> Result<(), ErrorCode> {
+    let queue = app.state::<Arc<Queue>>().inner().clone();
     // Asking for downloads is asking for them to run: a stop from a moment
-    // ago was about what was in the queue then, not about what has just
-    // been added to it.
+    // ago was about what was in the queue then.
     queue.stop.store(false, Ordering::SeqCst);
 
-    // Nothing is working, so whatever is in the folder downloads work in was
-    // left by a run that ended badly. It is outside the library and nobody
-    // will ever want it.
-    if queue.working.load(Ordering::SeqCst) == 0 {
-        let _ = std::fs::remove_dir_all(work_root(&app));
-    }
-
-    // As many workers as there is work for, up to the cap, counting the ones
-    // already going. Each takes the next waiting item under the lock, so
-    // they share one queue without ever taking the same row.
+    // Each worker takes the next waiting item under the lock, so they share
+    // one queue without ever taking the same row.
     let wanted = {
         let items = queue.items.lock().unwrap_or_else(|e| e.into_inner());
         items.iter().filter(|one| one.state == "waiting").count()
     }
-    .min(at_once(&app));
+    .min(prefs(app).at_once());
 
     loop {
         let going = queue.working.load(Ordering::SeqCst);
@@ -711,14 +853,13 @@ pub fn download_start(
         }
         let handle = app.clone();
         let mine = queue.clone();
-        let folder = into.clone();
         // A download takes minutes and reads a pipe the whole time; it
         // belongs on a thread of its own, not on the one answering the
         // interface.
         if let Err(error) = std::thread::Builder::new()
             .name(format!("onsa-downloads-{}", going + 1))
             .spawn(move || {
-                work_through(&handle, &mine, format, &folder);
+                work_through(&handle, &mine);
                 mine.working.fetch_sub(1, Ordering::SeqCst);
                 let _ = handle.emit(DOWNLOAD_EVENT, ());
             })
@@ -731,8 +872,7 @@ pub fn download_start(
             break;
         }
     }
-
-    download_queue(app)
+    Ok(())
 }
 
 /// One thing the interface asked to download.
@@ -748,13 +888,27 @@ pub struct DownloadRequest {
 /// Stops the download that is going, and drops what was waiting.
 #[tauri::command]
 pub fn download_stop(app: AppHandle) -> Result<QueueDto, ErrorCode> {
-    app.state::<Arc<Queue>>().stop();
+    let dropped = app.state::<Arc<Queue>>().stop();
+    forget(&app, &dropped);
     tracing::info!("the downloads were asked to stop");
     download_queue(app)
 }
 
+/// Takes rows out of the database's queue, because they are over.
+fn forget(app: &AppHandle, ids: &[u64]) {
+    let library = app.state::<crate::library::LibraryService>();
+    for id in ids {
+        let Ok(row) = i64::try_from(*id) else {
+            continue;
+        };
+        if let Err(code) = library.write(|library| library.forget_queued_download(row)) {
+            tracing::warn!("a finished download stays in the stored queue: {code:?}");
+        }
+    }
+}
+
 /// Works through the queue, taking the next thing nobody else has taken.
-fn work_through(app: &AppHandle, queue: &Queue, format: ytdlp::Format, into: &Path) {
+fn work_through(app: &AppHandle, queue: &Queue) {
     loop {
         if queue.stop.load(Ordering::SeqCst) {
             return;
@@ -765,12 +919,12 @@ fn work_through(app: &AppHandle, queue: &Queue, format: ytdlp::Format, into: &Pa
             match items.iter_mut().find(|one| one.state == "waiting") {
                 Some(item) => {
                     item.state = "running";
-                    Some((item.id, item.url.clone()))
+                    Some((item.id, item.url.clone(), item.format, item.folder.clone()))
                 }
                 None => None,
             }
         };
-        let Some((id, url)) = next else {
+        let Some((id, url, format, into)) = next else {
             return;
         };
         let _ = app.emit(DOWNLOAD_EVENT, ());
@@ -797,10 +951,11 @@ fn work_through(app: &AppHandle, queue: &Queue, format: ytdlp::Format, into: &Pa
             &programs,
             &url,
             format,
-            into,
+            &into,
             &work,
             queue.stop.clone(),
             |step| {
+                let mut renamed = None;
                 {
                     let mut items = queue.items.lock().unwrap_or_else(|e| e.into_inner());
                     if let Some(item) = items.iter_mut().find(|one| one.id == id) {
@@ -808,9 +963,18 @@ fn work_through(app: &AppHandle, queue: &Queue, format: ytdlp::Format, into: &Pa
                         item.speed = step.speed;
                         item.eta = step.eta;
                         if let Some(name) = step.name {
-                            item.title = name;
+                            if name != item.title {
+                                item.title = name.clone();
+                                renamed = Some(name);
+                            }
                         }
                     }
+                }
+                // The real name is written down once, so a queue picked up
+                // after a restart says what each item is.
+                if let (Some(name), Ok(row)) = (renamed, i64::try_from(id)) {
+                    let library = handle.state::<crate::library::LibraryService>();
+                    let _ = library.write(|library| library.retitle_queued_download(row, &name));
                 }
                 let _ = handle.emit(DOWNLOAD_EVENT, ());
             },
@@ -843,7 +1007,11 @@ fn work_through(app: &AppHandle, queue: &Queue, format: ytdlp::Format, into: &Pa
     }
 }
 
-/// Writes down how one item ended, and tells the interface.
+/// Writes down how one item ended, takes it out of the stored queue, and
+/// tells the interface.
+///
+/// Every ending is an ending: a failed download is not retried by itself
+/// after a restart, and a stopped one was stopped on purpose.
 fn finish(
     app: &AppHandle,
     queue: &Queue,
@@ -869,17 +1037,22 @@ fn finish(
             item.eta = None;
         }
     }
+    forget(app, &[id]);
     let _ = app.emit(DOWNLOAD_EVENT, ());
 }
 
 /// Hands a finished file to the library, so it appears there (SPEC §7.2).
 ///
-/// The folder downloads go into is inside a library folder, so the watcher
+/// When the folder downloads go into is inside a library folder the watcher
 /// usually notices on its own; asking for a scan makes it immediate rather
-/// than eventual.
+/// than eventual. A folder outside the library is left alone: the listener
+/// was asked, and said so.
 fn hand_to_library(app: &AppHandle, file: &Path) {
     tracing::info!(file = %file.display(), "a download finished");
     let library = app.state::<crate::library::LibraryService>();
+    if !library.read(|library| library.holds(file)).unwrap_or(false) {
+        return;
+    }
     if let Err(error) = library.rescan() {
         tracing::warn!("the library could not be told about a download: {error:?}");
     }

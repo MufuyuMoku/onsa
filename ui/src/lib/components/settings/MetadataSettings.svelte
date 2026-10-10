@@ -34,6 +34,8 @@
 	let fetching = $state(false);
 	let typed = $state('');
 	let failure = $state<MessageKey | null>(null);
+	/** Whether Onsa tried to fetch fpcalc and could not. */
+	let fetchFailed = $state(false);
 	let note = $state<MessageKey | null>(null);
 
 	$effect(() => {
@@ -110,14 +112,21 @@
 		fetching = true;
 		failure = null;
 		note = null;
+		fetchFailed = false;
+		let why: MessageKey | null = null;
 		try {
 			await binaryInstall('fpcalc');
 			note = 'programs.fetched';
 		} catch (error) {
-			failure = failureKey(error);
+			fetchFailed = true;
+			why = failureKey(error);
 		} finally {
 			fetching = false;
 			await lookAgain();
+			// Reading the list again clears the page's failure; the reason
+			// the fetch failed has to outlive that, or the page offers the
+			// official page without saying why.
+			if (why) failure = why;
 		}
 	}
 
@@ -293,7 +302,10 @@
 					{fetching ? t('programs.fetching') : t('programs.fetch')}
 				</button>
 			{/if}
-			{#if !usable}
+			<!-- The official page is for where Onsa cannot install it itself
+			     (SPEC section 7.1): nothing to install from here, or a fetch
+			     that failed. Otherwise the fetch button is the way. -->
+			{#if !usable && (!fingerprinter?.installable || fetchFailed)}
 				<button type="button" class="btn" onclick={openFpcalcPage}>
 					{t('programs.openPage')}
 				</button>

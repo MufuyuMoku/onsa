@@ -182,6 +182,9 @@ pub fn run() -> Result<()> {
             downloads::download_probe,
             downloads::download_queue,
             downloads::download_set_at_once,
+            downloads::download_choose_folder,
+            downloads::download_keep_outside,
+            downloads::download_resume,
             downloads::download_start,
             downloads::download_stop,
             lyrics::lyrics_for,
@@ -318,6 +321,8 @@ fn setup(app: &mut tauri::App) -> Result<()> {
     app.manage(player);
     app.manage(WindowMode::default());
     app.manage(sleep::SleepTimer::default());
+    // What was left unfinished when Onsa was last closed (SPEC §7.3).
+    downloads::restore(app.handle());
 
     if let Some(window) = app.get_webview_window(session::MAIN_WINDOW) {
         session::restore_window(&window, &window_state, &app.state::<WindowMode>());

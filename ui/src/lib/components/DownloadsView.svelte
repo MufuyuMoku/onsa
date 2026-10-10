@@ -8,18 +8,23 @@
 -->
 <script lang="ts">
 	import {
+		addFolder,
 		binariesStatus,
 		binariesUseSystem,
 		binaryInstall,
 		binaryStop,
+		downloadChooseFolder,
+		downloadKeepOutside,
 		downloadProbe,
 		downloadQueue,
+		downloadResume,
 		downloadSetAtOnce,
 		downloadStart,
 		downloadStop,
 		EVENTS,
 		failureKey,
 		on,
+		pickFolder,
 		programOpenPage,
 		urlTroubleOf,
 		type Binaries,
@@ -113,6 +118,56 @@
 
 	const chosen = $derived(
 		(probe?.entries ?? []).filter((one) => picked[one.url] ?? true)
+	);
+
+	/** Chooses where finished downloads go, or goes back to the default. */
+	async function chooseFolder(back: boolean): Promise<void> {
+		try {
+			const path = back ? null : await pickFolder(t('downloads.chooseFolder'));
+			if (!back && !path) return;
+			queue = await downloadChooseFolder(path);
+			failure = null;
+		} catch (error) {
+			failure = failureKey(error);
+		}
+	}
+
+	/** SPEC section 7.3's question, answered yes: the folder joins the library. */
+	async function addOutputToLibrary(): Promise<void> {
+		if (!queue?.folder) return;
+		try {
+			await addFolder(queue.folder);
+			queue = await downloadQueue();
+			failure = null;
+		} catch (error) {
+			failure = failureKey(error);
+		}
+	}
+
+	/** The same question, answered no: it stays outside, and is not asked again. */
+	async function keepOutside(): Promise<void> {
+		try {
+			queue = await downloadKeepOutside();
+		} catch (error) {
+			failure = failureKey(error);
+		}
+	}
+
+	/** Carries on with what was left waiting, from before Onsa was closed. */
+	async function resume(): Promise<void> {
+		try {
+			queue = await downloadResume();
+			failure = null;
+		} catch (error) {
+			failure = failureKey(error);
+		}
+	}
+
+	const leftWaiting = $derived(
+		queue && !queue.running ? queue.items.filter((one) => one.state === 'waiting').length : 0
+	);
+	const askOutside = $derived(
+		Boolean(queue?.folder) && !queue?.folderInLibrary && !queue?.outsideAccepted
 	);
 
 	/** How many downloads run at once (SPEC section 7.3). */
@@ -372,10 +427,10 @@
 			<p class="fault-text note">
 				{t(WHY[installTrouble.code] ?? 'downloads.unreachable')}
 			</p>
-			{#if installTrouble.code === 'releaseGone'}
-				<!-- The release this build points at is gone, so the page it
-				     came from is the one useful next step; the row itself only
-				     offers it for programs Onsa cannot fetch at all. -->
+			{#if installTrouble.code !== 'stopped'}
+				<!-- Onsa could not install it, whatever the reason, so the page
+				     it comes from is the next step (SPEC section 7.1). A fetch the
+				     listener stopped is not a failure, and offers nothing. -->
 				{@const gone = installTrouble.key}
 				<div class="row">
 					<button type="button" class="btn" onclick={() => programOpenPage(gone)}>
@@ -402,6 +457,45 @@
 				{t('downloads.needYtDlp')}
 			</p>
 		{:else}
+			<!-- Where finished files go, and SPEC section 7.3's question when
+			     that is outside the library. -->
+			<div class="row folder">
+				<span class="label">{t('downloads.savedTo')}</span>
+				<span class="numeric muted where grow">{queue?.folder ?? t('downloads.noFolderYet')}</span>
+				<button type="button" class="btn" onclick={() => chooseFolder(false)}>
+					{t('downloads.chooseFolder')}
+				</button>
+				{#if queue?.folderChosen}
+					<button type="button" class="btn" onclick={() => chooseFolder(true)}>
+						{t('downloads.folderDefault')}
+					</button>
+				{/if}
+			</div>
+			{#if askOutside}
+				<div class="ask">
+					<p class="note caution-text">{t('downloads.outsideAsk')}</p>
+					<div class="row">
+						<button type="button" class="btn primary" onclick={addOutputToLibrary}>
+							{t('downloads.outsideAdd')}
+						</button>
+						<button type="button" class="btn" onclick={keepOutside}>
+							{t('downloads.outsideKeep')}
+						</button>
+					</div>
+				</div>
+			{:else if queue?.folder && !queue.folderInLibrary}
+				<p class="muted note">{t('downloads.outsideKept')}</p>
+			{/if}
+
+			{#if leftWaiting > 0}
+				<div class="row">
+					<p class="note">{t('downloads.leftWaiting', { n: leftWaiting })}</p>
+					<button type="button" class="btn primary" onclick={resume}>
+						{t('downloads.resume')}
+					</button>
+				</div>
+			{/if}
+
 			<div class="row">
 				<input
 					class="field grow numeric"
@@ -483,9 +577,6 @@
 
 			{#if queue && queue.items.length > 0}
 				<h2 class="label">{t('downloads.queue')}</h2>
-				{#if queue.folder}
-					<p class="muted note numeric where">{queue.folder}</p>
-				{/if}
 				<ul class="items queued">
 					{#each queue.items as item (item.id)}
 						<li class="item run" class:failed={item.state === 'failed'}>
@@ -708,6 +799,17 @@
 
 	.caution-text {
 		color: var(--onsa-role-caution);
+	}
+
+	.grow {
+		flex: 1 1 auto;
+		min-width: 0;
+	}
+
+	.ask {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
 	}
 
 	.said {

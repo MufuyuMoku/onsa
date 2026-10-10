@@ -598,6 +598,17 @@ const id = {
 	'downloads.conversionNote': 'Konversi tidak menambah kualitas: FLAC hanya memperbesar ukuran, MP3 menurunkan kualitas.',
 	'downloads.fetchCount': 'Unduh {n} lagu',
 	'downloads.queue': 'Antrean',
+	'downloads.savedTo': 'Disimpan ke',
+	'downloads.noFolderYet': 'Belum ada — pilih folder, atau tambahkan folder library dulu.',
+	'downloads.chooseFolder': 'Pilih folder…',
+	'downloads.folderDefault': 'Kembali ke folder bawaan',
+	'downloads.outsideAsk':
+		'Folder ini di luar library, jadi lagu yang diunduh ke sini tidak akan muncul di library. Tambahkan folder ini ke library?',
+	'downloads.outsideAdd': 'Tambahkan ke library',
+	'downloads.outsideKeep': 'Biarkan di luar',
+	'downloads.outsideKept': 'Folder ini di luar library: hasil unduhannya tidak muncul di library.',
+	'downloads.leftWaiting': '{n} unduhan belum selesai sejak Onsa terakhir ditutup.',
+	'downloads.resume': 'Lanjutkan',
 	'downloads.waiting': 'menunggu',
 	'downloads.running': 'sedang diunduh',
 	'downloads.done': 'selesai',
@@ -759,7 +770,7 @@ const id = {
 	'help.downloads.what':
 		'Mengambil audio dari sebuah alamat web (URL) dan menaruhnya di folder musikmu, satu alamat pada satu waktu. Yang mengambil bukan Onsa sendiri melainkan yt-dlp, sebuah program terpisah yang diunduh Onsa hanya setelah kamu menekan tombol persetujuannya. Kamu yang bertanggung jawab atas hak isi yang kamu unduh.',
 	'help.downloads.files':
-		'Hasil unduhan ditulis sebagai berkas baru di dalam folder library-mu, di subfolder "Unduhan", lalu muncul sendiri di library. Berkas musik yang sudah ada tidak disentuh.',
+		'Hasil unduhan ditulis sebagai berkas baru di subfolder "Unduhan" di dalam folder library pertamamu, atau di folder yang kamu pilih, lalu muncul sendiri di library bila folder itu bagian dari library. Selama diunduh, berkas sementaranya ada di folder cache Onsa, bukan di folder musikmu. Antrean yang belum selesai disimpan, jadi tidak hilang saat Onsa ditutup. Berkas musik yang sudah ada tidak disentuh, kecuali lagu yang sama diunduh lagi ke tempat yang sama: berkas itu ditimpa.',
 	'help.downloads.limitOpus':
 		'Sumber yang hanya menyediakan audio format Opus ditolak di muka, dengan pesan, karena Onsa belum bisa memutar format itu.',
 	'help.nowPlaying.what':
@@ -911,6 +922,18 @@ const id = {
 	'help.says.stop':
 		'Menghentikan satu unduhan yang sedang berjalan. Berkas setengah jadi dibuang.',
 	'help.says.stopAll': 'Menghentikan semua yang sedang berjalan dan yang masih menunggu.',
+	'help.says.chooseOutput':
+		'Memilih folder tempat hasil unduhan disimpan. Kalau folder itu di luar library, Onsa bertanya apakah folder itu mau ditambahkan ke library.',
+	'help.says.outputDefault':
+		'Kembali menyimpan hasil unduhan di subfolder "Unduhan" di dalam folder library pertamamu.',
+	'help.says.outsideAdd':
+		'Menambahkan folder tujuan unduhan ke library, supaya lagu yang diunduh ke sana muncul di library.',
+	'help.says.outsideKeep':
+		'Membiarkan folder tujuan di luar library. Unduhan tetap disimpan di sana, tapi tidak muncul di library, dan pertanyaannya tidak diulang untuk folder ini.',
+	'help.says.resume':
+		'Melanjutkan unduhan yang belum selesai saat Onsa terakhir ditutup. Onsa tidak memulainya sendiri saat dibuka.',
+	'help.says.atOnce':
+		'Berapa unduhan yang berjalan bersamaan, dari 1 sampai 4. Bawaannya 2. Berlaku untuk unduhan berikutnya.',
 	'help.says.nowPlayingClose': 'Menutup layar ini dan kembali ke daftar lagu.',
 	'help.says.seek':
 		'Batang panjang berisi posisi lagu. Klik atau tarik untuk melompat ke bagian lain. Panah kiri dan kanan di papan ketik memundurkan atau memajukan lima detik.',
@@ -1011,7 +1034,7 @@ const id = {
 	'help.says.metaChoose':
 		'Membuka jendela untuk menunjukkan sendiri letak berkas fpcalc di komputermu. fpcalc adalah program kecil yang menghitung sidik jari dari bunyi lagu; tanpa dia, "Cari data online" tidak bisa bertanya lewat suara. Berkas yang kamu tunjuk dijalankan sekali untuk memastikan itu benar fpcalc; kalau bukan, misalnya berkas lagu yang terpilih tanpa sengaja, pilihannya ditolak dan tidak disimpan.',
 	'help.says.openPage':
-		'Membuka halaman rilis resmi program itu di browser bawaanmu. Alamatnya sudah tertulis di dalam Onsa dan selalu sama — sumber yang sama yang dipakai Onsa sendiri kalau ia mengunduh program itu.',
+		'Membuka halaman rilis resmi program itu di browser bawaanmu. Tombol ini muncul ketika Onsa tidak bisa memasang program itu sendiri, misalnya sesudah unduhannya gagal. Alamatnya sudah tertulis di dalam Onsa dan selalu sama — sumber yang sama yang dipakai Onsa sendiri kalau ia mengunduh program itu.',
 	'help.says.metaForget': 'Melupakan letak yang tadi kamu tunjukkan.',
 	'help.says.metaRefresh':
 		'Memeriksa lagi apakah programnya sekarang ada, misalnya sesudah kamu memasangnya.',
@@ -1117,7 +1140,7 @@ const id = {
 	'help.fpcalc.body':
 		'fpcalc adalah program kecil yang bukan bagian dari Onsa. Ia dipakai di satu tempat saja: tombol "Cari data online" di halaman Rapikan, untuk menghitung sidik jari dari bunyi sebuah lagu. Ia tidak wajib. Pencarian yang berangkat dari judul dan artis yang sudah tertulis di lagunya tetap jalan tanpa fpcalc; yang tidak bisa jalan hanyalah pengenalan untuk lagu yang tidak punya keterangan apa pun.',
 	'help.fpcalc.where':
-		'Kalau fpcalc sudah ada di sistemmu, Onsa memakainya sendiri tanpa kamu atur. Kalau belum, tombol "Buka halaman unduhan resmi" di Pengaturan, bagian Metadata, membuka halaman rilis Chromaprint di browsermu. Sesudah berkasnya ada, tekan "Cari fpcalc…" dan tunjukkan: di Windows namanya fpcalc.exe, ada di dalam folder hasil membuka paket itu; di Linux biasanya /usr/bin/fpcalc setelah paket libchromaprint-tools dipasang, dan di sana Onsa menemukannya sendiri.',
+		'Kalau fpcalc sudah ada di sistemmu, Onsa memakainya sendiri tanpa kamu atur. Kalau belum, tekan "Unduh fpcalc" di Pengaturan, bagian Metadata: Onsa mengambilnya dari rilis resmi Chromaprint dan mencocokkannya dengan sidik yang tersimpan di dalam Onsa. Kalau unduhan itu gagal, muncul tombol "Buka halaman unduhan resmi"; ambil berkasnya dari sana, lalu tekan "Cari fpcalc…" dan tunjukkan: di Windows namanya fpcalc.exe, ada di dalam folder hasil membuka paket itu; di Linux biasanya /usr/bin/fpcalc setelah paket libchromaprint-tools dipasang, dan di sana Onsa menemukannya sendiri.',
 	'help.fpcalc.check':
 		'Berkas yang kamu tunjuk dijalankan sekali dan ditanya versinya. Kalau yang menjawab bukan fpcalc, misalnya berkas lagu, gambar, atau program lain, pilihannya ditolak di tempat itu juga dan tidak disimpan. Gunanya supaya kegagalan nanti tidak terbaca seolah-olah berkas lagumu yang bermasalah.',
 	'help.sites.head': 'Situs yang bisa diunduh',
@@ -1800,6 +1823,17 @@ const en: Record<MessageKey, string> = {
 	'downloads.conversionNote': 'Converting adds no quality: FLAC only makes it larger, MP3 makes it worse.',
 	'downloads.fetchCount': 'Download {n} tracks',
 	'downloads.queue': 'Queue',
+	'downloads.savedTo': 'Saved to',
+	'downloads.noFolderYet': 'Nowhere yet — choose a folder, or add a library folder first.',
+	'downloads.chooseFolder': 'Choose folder…',
+	'downloads.folderDefault': 'Back to the default folder',
+	'downloads.outsideAsk':
+		'This folder is outside the library, so what is downloaded here will not appear in the library. Add this folder to the library?',
+	'downloads.outsideAdd': 'Add to library',
+	'downloads.outsideKeep': 'Leave it outside',
+	'downloads.outsideKept': 'This folder is outside the library: what is downloaded here does not appear in it.',
+	'downloads.leftWaiting': '{n} downloads were not finished when Onsa was last closed.',
+	'downloads.resume': 'Carry on',
 	'downloads.waiting': 'waiting',
 	'downloads.running': 'downloading',
 	'downloads.done': 'done',
@@ -1961,7 +1995,7 @@ const en: Record<MessageKey, string> = {
 	'help.downloads.what':
 		'Fetches audio from a web address (a URL) and puts it in your music folder, one address at a time. The fetching is not done by Onsa itself but by yt-dlp, a separate program Onsa downloads only after you press the button that agrees to it. The rights to whatever you download are your responsibility.',
 	'help.downloads.files':
-		'What is fetched is written as a new file inside your library folder, in a "Downloads" subfolder, and then appears in the library by itself. The music files you already have are not touched.',
+		'What is fetched is written as a new file in the "Unduhan" subfolder of your first library folder, or in the folder you chose, and appears in the library by itself when that folder is part of it. While a download is going, its temporary files are in Onsa\'s cache folder, not in your music folder. A queue that has not finished is kept, so closing Onsa does not lose it. The music files you already have are not touched, unless the same song is downloaded again to the same place: then that file is replaced.',
 	'help.downloads.limitOpus':
 		'A source that offers audio only as Opus is refused up front, with a message, because Onsa cannot play that format yet.',
 	'help.nowPlaying.what':
@@ -2111,6 +2145,18 @@ const en: Record<MessageKey, string> = {
 	'help.says.fetch': 'Starts fetching what was found into your music folder.',
 	'help.says.stop': 'Stops one download that is running. A half-finished file is thrown away.',
 	'help.says.stopAll': 'Stops everything that is running and everything still waiting.',
+	'help.says.chooseOutput':
+		'Chooses the folder downloads are saved in. If that folder is outside the library, Onsa asks whether to add it to the library.',
+	'help.says.outputDefault':
+		'Goes back to saving downloads in the "Unduhan" subfolder of your first library folder.',
+	'help.says.outsideAdd':
+		'Adds the download folder to the library, so songs downloaded there appear in it.',
+	'help.says.outsideKeep':
+		'Leaves the download folder outside the library. Downloads are still saved there but do not appear in the library, and the question is not asked again for this folder.',
+	'help.says.resume':
+		'Carries on with the downloads that had not finished when Onsa was last closed. Onsa does not start them by itself when it opens.',
+	'help.says.atOnce':
+		'How many downloads run at the same time, from 1 to 4. The default is 2. It applies to the downloads that come next.',
 	'help.says.nowPlayingClose': 'Closes this screen and goes back to the list of songs.',
 	'help.says.seek':
 		'The long bar holding the position in the song. Click or drag it to jump elsewhere. The left and right arrow keys step back and forward five seconds.',
@@ -2210,7 +2256,7 @@ const en: Record<MessageKey, string> = {
 	'help.says.metaChoose':
 		'Opens a window to point Onsa at the fpcalc file on your computer yourself. fpcalc is a small program that works out a fingerprint from the sound of a song; without it, "Look it up online" has nothing to ask by sound. The file you point at is run once to be sure it really is fpcalc; if it is not, a song file picked by mistake for instance, the choice is refused and nothing is kept.',
 	'help.says.openPage':
-		"Opens that program's official release page in your usual browser. The address is written inside Onsa and never changes — the same source Onsa itself fetches that program from.",
+		"Opens that program's official release page in your usual browser. It appears when Onsa cannot install that program itself, for example after its download failed. The address is written inside Onsa and never changes — the same source Onsa itself fetches that program from.",
 	'help.says.metaForget': 'Forgets the place you pointed at.',
 	'help.says.metaRefresh':
 		'Looks again for whether the program is there now, after you have installed it for instance.',
@@ -2311,7 +2357,7 @@ const en: Record<MessageKey, string> = {
 	'help.fpcalc.body':
 		'fpcalc is a small program that is not part of Onsa. It is used in one place only: the "Look it up online" button on the Tidy up page, to work out a fingerprint from the sound of a song. It is not required. Looking a song up by the title and artist already written inside it works without fpcalc; what cannot work without it is recognising a song that says nothing about itself at all.',
 	'help.fpcalc.where':
-		'If fpcalc is already on your system, Onsa uses it by itself and there is nothing to set. If it is not, the "Open the official download page" button in Settings, under Metadata, opens the Chromaprint release page in your browser. Once you have the file, press "Find fpcalc…" and point at it: on Windows it is called fpcalc.exe, inside the folder that package unpacked into; on Linux it is usually /usr/bin/fpcalc once the libchromaprint-tools package is installed, and there Onsa finds it by itself.',
+		'If fpcalc is already on your system, Onsa uses it by itself and there is nothing to set. If it is not, press "Fetch fpcalc" in Settings, under Metadata: Onsa fetches it from Chromaprint’s official release and checks it against the fingerprint kept inside Onsa. If that fetch fails, an "Open the official download page" button appears; get the file there, then press "Find fpcalc…" and point at it: on Windows it is called fpcalc.exe, inside the folder that package unpacked into; on Linux it is usually /usr/bin/fpcalc once the libchromaprint-tools package is installed, and there Onsa finds it by itself.',
 	'help.fpcalc.check':
 		'The file you point at is run once and asked its version. If what answers is not fpcalc, a song, a picture or some other program, the choice is refused there and then and nothing is kept. That is so a failure later cannot read as though there were something wrong with your song file.',
 	'help.sites.head': 'Sites you can download from',
