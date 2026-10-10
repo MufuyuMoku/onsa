@@ -12,7 +12,7 @@ Onsa (音叉, garpu tala) adalah pemutar musik desktop untuk Windows dan Linux, 
 - **Berkas di disk**: memindah berkas lewat pratinjau dan ringkasan, bisa dibatalkan lewat Riwayat; dan menghapus berkas ke Recycle Bin atau Trash — tidak pernah permanen, dan di tempat yang tidak punya keduanya Onsa menolak dan mengatakan alasannya.
 - **Metadata**: editor tag satu lagu dan massal. Editan disimpan di Onsa dulu; "tulis ke berkas" aksi terpisah, dan tiap jalannya bisa dibatalkan. Ada rename berpola dengan pratinjau, perapihan otomatis tanpa jaringan, dan — bila dinyalakan — pencarian ke AcoustID, MusicBrainz, dan Cover Art Archive yang hasilnya selalu berupa usulan.
 - **Lirik**: berkas `.lrc` di sebelah lagu, lirik di dalam tag, atau LRCLIB. Baris yang sedang dinyanyikan menyala, klik baris untuk melompat ke sana, dan geseran waktu disimpan per lagu.
-- **Unduhan** lewat yt-dlp, beberapa sekaligus (bawaan 2, bisa 1–4). yt-dlp, ffmpeg, Deno, dan fpcalc diambil Onsa sendiri — hanya setelah kamu menyetujui sumbernya, dan dicocokkan dengan checksum yang diterbitkan rilisnya (atau sidik yang tersimpan di Onsa, untuk fpcalc). Hanya berkas jadinya yang pernah masuk folder library.
+- **Unduhan** lewat yt-dlp, beberapa sekaligus (bawaan 2, bisa 1–4). yt-dlp, ffmpeg, Deno, dan fpcalc diambil Onsa sendiri — hanya setelah kamu menyetujui sumbernya, dan dicocokkan dengan checksum yang diterbitkan rilisnya (atau sidik yang tersimpan di Onsa, untuk fpcalc). Hanya berkas jadinya yang pernah masuk folder library. Antrean yang belum selesai tetap ada sesudah Onsa ditutup, dan folder hasilnya bisa dipilih — kalau di luar library, Onsa bertanya apakah folder itu mau ditambahkan.
 - **Enam tema bawaan** (tiga gelap, tiga terang). Tema adalah berkas JSON: salin tema yang sedang dipakai dari Pengaturan → Tampilan sebagai titik mulai, ubah warnanya, buka Onsa lagi, dan tema itu muncul di daftar. Berkas tema yang tidak terbaca disebutkan di halaman yang sama, dengan alasannya.
 - **Layar Sedang diputar yang bisa diatur**: sampul, rincian sinyal, lirik, dan visualizer masing-masing bisa dimatikan, dan pilihannya tersimpan. Dengan visualizer disembunyikan, analisis suaranya benar-benar berhenti.
 - **Bantuan di dalam aplikasi**: tanda tanya di sudut yang sama pada tiap halaman, membuka penjelasan halaman itu beserta tiap kontrolnya, dan satu halaman Bantuan untuk hal yang tidak menempel di satu halaman.
@@ -22,7 +22,6 @@ Onsa (音叉, garpu tala) adalah pemutar musik desktop untuk Windows dan Linux, 
 
 - **ffmpeg dan Deno opsional.** Tanpa ffmpeg unduhan tetap berjalan: audionya diambil apa adanya, tanpa tag dan sampul tertanam, dan konversi ke MP3 atau FLAC tidak tersedia. Tanpa Deno, sebagian format YouTube bisa tidak tersedia. Halaman Unduhan mengatakan keduanya.
 - **Sumber yang hanya menyediakan Opus ditolak**, dengan pesan, karena Onsa belum punya decoder Opus. Lebih baik ditolak di muka daripada berkasnya mendarat lalu tidak pernah muncul di library.
-- **Antrean unduhan belum disimpan**: unduhan yang belum selesai hilang bila Onsa ditutup, dan hasil unduhan selalu masuk `Unduhan` di folder library pertama. Keduanya dijadwalkan untuk v1.4.1.
 - **Belum ada scrobble Last.fm.**
 
 Rilis sesudah v1.0.0 tidak menambah fitur sampai v1.3: **v1.0.1** memperbaiki temuan audit,
@@ -43,8 +42,8 @@ yang bisa diunduh di Bantuan; dan paket Linux (`.deb` dan AppImage) yang dibangu
 di Windows, dan sisi Linux di WSL.
 
 Garis berikutnya ada di [`docs/SPEC.md`](docs/SPEC.md) §15 dan
-[`docs/PROGRESS.md`](docs/PROGRESS.md): v1.4.1 (sisa M10b: antrean tersimpan, folder
-unduhan), v1.5 "Tampilan", v1.6 "Lirik & metadata", v1.7 "Video".
+[`docs/PROGRESS.md`](docs/PROGRESS.md): v1.5 "Tampilan", v1.6 "Lirik & metadata", v1.7
+"Video".
 
 ## Memasang di Linux
 
@@ -56,15 +55,15 @@ belum dirilis bisa diambil dari artifact **onsa-linux-packages** di jalannya CI 
 **.deb** (Debian, Ubuntu, dan turunannya) — `apt` yang mengurus dependensinya:
 
 ```sh
-sudo apt install ./Onsa_1.4.0_amd64.deb
+sudo apt install ./Onsa_1.4.1_amd64.deb
 onsa
 ```
 
 **AppImage** — satu berkas, jalan di tempatnya diletakkan:
 
 ```sh
-chmod +x Onsa_1.4.0_amd64.AppImage
-./Onsa_1.4.0_amd64.AppImage
+chmod +x Onsa_1.4.1_amd64.AppImage
+./Onsa_1.4.1_amd64.AppImage
 ```
 
 AppImage butuh FUSE untuk memasang dirinya sendiri. Di sistem yang tidak punya (`libfuse2`
@@ -90,7 +89,7 @@ lalu di dalam Ubuntu-nya:
 
 ```sh
 sudo apt update
-sudo apt install ./Onsa_1.4.0_amd64.deb
+sudo apt install ./Onsa_1.4.1_amd64.deb
 onsa
 ```
 
