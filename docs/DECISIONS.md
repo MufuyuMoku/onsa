@@ -961,3 +961,36 @@ Keputusan pemilik proyek atas hasil pemeriksaan pertama cargo deny. Dua pengecua
   membuktikan isinya sebelum ada tag. Formatnya sama dengan yang dibaca `sha256sum -c`: hash, dua
   spasi, nama berkas — ditulis sendiri, karena `sha256sum` di Windows menandai berkas dengan
   bintang.
+
+## 2026-10-10 · M16: konsep enam tema baru (keputusan pemilik proyek)
+
+Dokumen konsep `docs/design/konsep-tema.md` disetujui pemilik proyek pada 2026-10-10, sebagai
+"dokumen konsep yang disetujui" yang diminta M16 untuk keenam tema sekaligus. Acuan rupanya ada di
+`docs/design/konsep-tema/referensi/` (satu HTML per tema); angka di dokumen menang atas yang
+terlihat di referensi. Keputusan yang mengubah aturan yang sebelumnya terkunci:
+
+- **Keputusan terkunci §1 "Tema bawaan" diubah oleh pemilik proyek**: enam tema lama diganti
+  Kokpit Tua (gelap, pembuka), Laut Dalam (gelap), Jendela Biru, Lorong Kuning, Siang Mimpi, dan
+  Krom Saku (terang). Jumlahnya tetap enam, dan Onsa tetap membuka dengan tema gelap. Kalimat M16
+  "jumlah dan nama keenam tema bawaan tidak berubah" dihapus.
+- **Pilihan tema lama yang tersimpan dipetakan**, supaya tidak ada yang membuka Onsa lalu
+  mendapati temanya hilang tanpa penjelasan: `kaca-asap` → `laut-dalam`; `kokpit-kaca` dan
+  `deck-malam` → `kokpit-tua`; `kubikel-biru` → `jendela-biru`; `kilau-milenium` → `krom-saku`;
+  `musim-dingin` → `kokpit-tua`.
+- **§9.1 "tidak ada dekorasi tanpa fungsi" dilonggarkan**: dekorasi boleh bila tidak mengganggu
+  keterbacaan, yang bergerak mati di hemat daya dan gerak dikurangi, dan tidak ada yang berkedip
+  lebih dari sekali per detik. Ditambah aturan **tidak ada tombol palsu**.
+- **§9.4 "tema tambahan tidak menambah font baru" dicabut**: tiap tema boleh membawa font sendiri,
+  dengan lisensi OFL atau lebih bebas, dibundel beserta lisensinya, hanya bobot yang dipakai.
+  Font yang tidak lagi dipakai tema mana pun (Chakra Petch, Share Tech Mono, Barlow, Barlow
+  Condensed, dan B612 biasa bila tidak terpakai) dihapus dari bundel. Sumber, versi yang
+  dipatok, dan ukuran total dicatat di sini saat font dibundel.
+- **Skema tema (§9.3) bertambah tiga lapis**: font per tema, teks hiasan (kunci kamus i18n,
+  `aria-hidden`, tidak pernah menggantikan nama fungsi), dan layout khas (sebagai data, lanjutan
+  `setPanels` M14 — tidak ada cabang kode yang menyebut nama tema).
+- **Tiga preset standar** (Klasik, Galeri, Layar penuh) wajib bisa dipakai dengan setiap tema;
+  layout khas tiap tema menjadi bawaan saat tema dipilih dan hanya tersedia untuk temanya.
+- **Kriteria selesai M16 diganti** dengan bagian 10 dokumen konsep, ditambah syarat lama yang
+  tetap berlaku: tema buatan pengguna dari skema lama terbaca atau ditolak dengan alasan jelas.
+- Dua pertanyaan Jendela Biru (bilah judul dan baris menu) diputuskan Claude Code dan dilaporkan
+  ke pemilik proyek **sebelum** tema itu dikerjakan; keputusannya dicatat di sini saat itu.

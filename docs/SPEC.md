@@ -22,7 +22,7 @@ Keputusan berikut sudah final. Jangan diubah tanpa persetujuan pemilik proyek.
 | Audio | `symphonia` (decode), `rubato` (resample), `cpal` (output), `rtrb` (ring buffer lock-free), `realfft` (analisis) |
 | Tag | `lofty` (baca dan tulis) |
 | HTTP | `reqwest` dengan TLS bawaannya (rustls), klien blocking. Satu klien untuk seluruh proyek: M7 sampai M10 memakai yang sama. Wajib: User-Agent `Onsa/<versi> (<kontak>)`, timeout koneksi dan timeout total, batas ukuran jawaban dan unduhan, serta kegagalan jaringan yang dikembalikan sebagai nilai — tidak boleh membuat aplikasi macet atau berhenti. |
-| Tema bawaan | Enam: tiga gelap (Kaca asap, Kokpit kaca, Deck malam) dan tiga terang (Kubikel biru, Kilau milenium, Musim dingin utara). Lihat §9. Onsa tetap membuka dengan tema gelap. |
+| Tema bawaan | Enam: dua gelap (**Kokpit Tua**, Laut Dalam) dan empat terang (Jendela Biru, Lorong Kuning, Siang Mimpi, Krom Saku). Lihat §9.4 dan `docs/design/konsep-tema.md`. Onsa membuka dengan **Kokpit Tua**. (Diubah 2026-10-10, keputusan pemilik proyek: enam tema lama diganti; pilihan lama yang tersimpan dipetakan, §9.4.) |
 | Bahasa UI | Indonesia dan Inggris, default mengikuti locale OS |
 
 ---
@@ -43,7 +43,7 @@ onsa/
 │  └─ onsa-cli/               CLI untuk menguji mesin audio tanpa UI
 ├─ src-tauri/                 lem aplikasi: state, command, event, integrasi OS, tray
 ├─ ui/                        SvelteKit
-├─ themes/                    tiga tema bawaan (JSON), dibundel ke aplikasi
+├─ themes/                    enam tema bawaan (JSON), dibundel ke aplikasi
 └─ docs/
 ```
 
@@ -307,10 +307,15 @@ Downloader punya bagian tersendiri di UI. yt-dlp dijalankan sebagai proses terpi
 
 ### 9.1 Prinsip identitas
 
-- Onsa tampil seperti alat ukur yang jujur: tenang, rapi, dan menunjukkan apa yang terjadi pada sinyal. Tidak ada dekorasi tanpa fungsi.
-- Kekayaan visual datang dari **material** (kaca, bezel, logam) dan **warna yang punya arti**, bukan dari banyaknya warna.
-- Animasi cepat (100–150 ms) dan tanpa efek memantul. Yang bergerak terus-menerus hanya meter dan visualizer.
-- Hormati `prefers-reduced-motion`: meter tetap berjalan, tapi transisi dekoratif dimatikan.
+- Onsa tampil seperti alat ukur yang jujur: rapi, dan menunjukkan apa yang terjadi pada sinyal.
+- Kekayaan visual datang dari **material** (logam, plastik, kertas, kaca) dan **warna yang punya arti**, bukan dari banyaknya warna.
+- **Dekorasi boleh** (diubah 2026-10-10, sebelumnya "tidak ada dekorasi tanpa fungsi"), dengan tiga syarat:
+  1. tidak pernah mengganggu keterbacaan meter, waktu, judul, lirik, dan semua teks kontrol;
+  2. dekorasi yang **bergerak** mati di mode hemat daya dan saat `prefers-reduced-motion`; dekorasi diam boleh tetap ada;
+  3. **tidak ada kedip cepat**: paling banyak satu kedipan per detik, dan tidak ada kilatan terang besar (keselamatan fotosensitif).
+- **Tidak ada tombol palsu.** Apa pun yang terlihat seperti tombol harus benar-benar berfungsi; yang tidak berfungsi tidak boleh tampak bisa diklik, dan disembunyikan dari pembaca layar bila ia hiasan.
+- Animasi kontrol cepat (100–150 ms) dan tanpa efek memantul. Yang bergerak terus-menerus hanya meter, visualizer, dan dekorasi bergerak yang memenuhi syarat di atas.
+- Hormati `prefers-reduced-motion`: meter tetap berjalan, tapi transisi dan dekorasi yang bergerak dimatikan.
 - Semua angka memakai tabular numbers agar digit tidak bergoyang.
 - Teks UI pendek, teknis, dan tepat.
 
@@ -335,13 +340,13 @@ Downloader punya bagian tersendiri di UI. yt-dlp dijalankan sebagai proses terpi
 - **Peak meter L/R** di dekat volume, dengan indikator clip.
 - **Mini player**: jendela ringkas satu baris seperti satu unit rak alat audio (cover kecil, judul, waktu, meter, kontrol), dengan opsi always-on-top.
 - **Pengaturan**: Output & Kualitas, DSP & EQ, Library, Tampilan, Lirik, Integrasi (Last.fm), Downloader, Pintasan, Tentang.
-- **Layar pertama** (first-run): pilih folder musik, lalu pilih salah satu dari tiga tema (dengan pratinjau langsung), lalu scan dimulai.
+- **Layar pertama** (first-run): pilih folder musik, lalu pilih salah satu dari enam tema (dengan pratinjau langsung), lalu scan dimulai.
 
 ### 9.3 Skema tema
 
 Tema adalah file JSON. Tema bawaan ada di `themes/` dan bersifat baca saja. Pengguna bisa menduplikasi lalu mengeditnya. Tema buatan pengguna disimpan di `<app_config>/themes/*.json`. Tema divalidasi saat dimuat: field yang hilang atau salah diganti nilai default, dan tema tidak boleh membuat aplikasi rusak.
 
-Tema terdiri dari lima lapis:
+Tema terdiri dari delapan lapis (lapis 6–8 sejak M16):
 
 1. **Token warna**, termasuk **peran warna berbasis arti** yang wajib diisi setiap tema:
 
@@ -366,23 +371,32 @@ Tema terdiri dari lima lapis:
 
 5. **Efek dan aset**: glow, pantulan kaca, grain, dan gambar tekstur opsional.
 
+6. **Font per tema**: tema menyebut keluarga font untuk perannya masing-masing (tampilan/judul, teks, angka). Hanya font yang **dibundel** Onsa yang bisa disebut — berlisensi OFL atau lebih bebas, di `ui/static/fonts/` beserta lisensinya, tidak pernah dimuat dari internet (§14). Noto Sans JP selalu jadi fallback CJK. Font yang tidak dikenal diganti font bawaan dan disebutkan di halaman Tampilan.
+
+7. **Teks hiasan**: kalimat yang hanya hiasan ("kamu pernah ke sini sebelumnya."). Tema hanya menyebut **kunci kamus**-nya; teksnya ada di kamus i18n (`id` dan `en`) di bawah kunci milik tema itu. Teks hiasan tidak pernah menggantikan nama fungsi — menu, tombol, dan pengaturan tetap kata yang sama di semua tema — dan disembunyikan dari pembaca layar (`aria-hidden`).
+
+8. **Layout khas**: satu susunan milik tema itu, sebagai **data** (lanjutan `setPanels` dari M14), bukan cabang kode yang menyebut nama tema. Saat tema dipilih, layout khasnya menjadi bawaan; pengguna tetap bisa memilih preset lain sesudahnya. Layout khas hanya tersedia untuk temanya sendiri. Lihat juga **preset layout** di M16.
+
 Token diterjemahkan menjadi CSS variables berprefiks `--onsa-`. Varian dipasang sebagai atribut `data-*` pada root, dan komponen membaca varian tersebut. Contoh lengkapnya ada di file `themes/*.json`.
 
 ### 9.4 Enam tema bawaan
 
-Referensi visual: `docs/design/palet-preview.html`.
+Rinciannya — palet per peran, font, komponen, gerak, dekorasi, layout khas, dan daftar "Dilarang" tiap tema — ada di **`docs/design/konsep-tema.md`** (disetujui pemilik proyek 2026-10-10), dengan acuan rupa di `docs/design/konsep-tema/referensi/`. Angka di dokumen itu menang atas yang terlihat di berkas referensinya. Ringkasnya:
 
-- **Kaca asap** (`kaca-asap`): layar fosfor teal di balik kaca gelap, seperti deck kaset dan receiver era 80-an. Segmen yang mati tetap samar terlihat ("88:88" di belakang angka waktu, blok spektrum dan meter yang redup). Setiap layar punya pantulan kaca tipis, glow halus di elemen yang menyala, dan amber sebagai filter kedua. Font: Chakra Petch + Share Tech Mono.
-- **Kokpit kaca** (`kokpit-kaca`): bezel berlapis di latar navy. Warna sepenuhnya mengikuti peran (putih label, cyan bisa diatur, hijau aktif, magenta posisi putar, amber hati-hati, merah clip). Font: B612 + B612 Mono, font terbuka yang dirancang untuk layar kokpit.
-- **Deck malam** (`deck-malam`): pelat logam hitam bertekstur sikat, meter jarum VU dengan muka krem yang disinari lampu hangat, jarum merah, dan LED biru untuk tahap aktif. Label bergaya sablon huruf kapital kecil. Font: Barlow + Barlow Condensed.
+| Tema | id | | Watak | Font | Layout khas |
+|---|---|---|---|---|---|
+| **Kokpit Tua** | `kokpit-tua` | gelap, **pembuka** | panel instrumen pesawat tua: logam berpaku keling, pelat label hitam, jarum VU bermuka krem, lampu pijar | Saira Stencil One, B612 Mono | **Panel Instrumen**: sampul dalam bingkai instrumen, posisi sebagai jam jarum berlabel MENIT, VU jarum L/R |
+| Laut Dalam | `laut-dalam` | gelap | menyelam: makin ke bawah makin gelap, cahaya hanya dari makhluk yang bercahaya | Cormorant Garamond, Martian Mono | **Menyelam**: skala kedalaman vertikal sebagai progress (bisa diklik dan diseret), spektrum plankton |
+| Jendela Biru | `jendela-biru` | terang | rasa desktop awal 2000-an: bilah judul biru mengilap, tombol krem timbul, panel tugas biru | DejaVu Sans Condensed | **Jendela**: aplikasi sebagai sebuah jendela dengan panel tugas dan bilah tugas berisi lagu dan jam sungguhan |
+| Lorong Kuning | `lorong-kuning` | terang | kantor kosong yang terlalu tenang: kertas dinding kuning bergaris, neon, memo | Courier Prime, VT323 | **Lorong**: plafon bernyala neon, memo, sampul tertempel, cap waktu handycam |
+| Siang Mimpi | `siang-mimpi` | terang | mimpi siang yang akrab tapi janggal: langit terlalu terang, padang, pintu yang berdiri sendiri | Gloock, Pixelify Sans | **Padang**: judul dan lirik melayang di langit, sampul di balik pintu, spektrum rumput |
+| Krom Saku | `krom-saku` | terang | pemutar CD saku sekitar 2000: krom, plastik biru bening, LCD hijau-abu, stiker hologram | Orbitron, Exo 2 | **Pemutar Saku**: sampul sebagai label cakram yang berputar, LCD, kotak lirik plastik |
 
-Tiga tema terang, dibuat sebagai **terinspirasi, bukan tiruan**: tidak ada logo, ikon, wallpaper, atau aset asli dari mana pun, dan tidak ada kode yang tahu nama tema tertentu — semuanya lewat skema §9.3.
+- **Batas meniru**: boleh meniru rasa dan susunan sebuah era atau gaya, digambar ulang dengan CSS atau gambar buatan sendiri. Tidak boleh memakai aset asli (wallpaper, ikon, logo, suara, foto), nama produk atau merek sebagai nama tema atau teks di layar, dan font milik pihak lain. Tiap tema punya daftar "Dilarang"-nya sendiri di dokumen konsep, sebagai tambahan aturan ini.
+- **Tidak ada kode yang tahu nama tema tertentu** — semuanya lewat skema §9.3, termasuk layout khas.
+- **Pilihan tema lama yang tersimpan dipetakan**: `kaca-asap` → `laut-dalam`; `kokpit-kaca` dan `deck-malam` → `kokpit-tua`; `kubikel-biru` → `jendela-biru`; `kilau-milenium` → `krom-saku`; `musim-dingin` → `kokpit-tua`.
 
-- **Kubikel biru** (`kubikel-biru`): panel krem-abu dengan kontrol bersudut siku dan tepi timbul, bilah judul dialog berwarna biru dengan tulisan terang, scrollbar lebar, dan garis tipis antar baris. Rasa kantor awal 2000-an. Font: Barlow + Barlow Condensed + B612 Mono.
-- **Kilau milenium** (`kilau-milenium`): plastik bening di atas putih kebiruan — kontrol berbentuk kapsul, kaca, glow, playhead merah muda, baris berselang-seling. Font: Chakra Petch + Share Tech Mono.
-- **Musim dingin utara** (`musim-dingin`): putih kebiruan seperti pagi bersalju, meter jarum bermuka krem, aksen tembaga, panel yang sedikit cekung, label huruf kapital kecil, dan sedikit grain. Font: B612 + B612 Mono + Barlow Condensed.
-
-Semua tema memakai **Noto Sans JP** sebagai fallback untuk teks Jepang/CJK. Semua font berlisensi OFL dan **dibundel di dalam aplikasi** (tidak dimuat dari internet), di `ui/static/fonts/`, lengkap dengan file lisensinya. Tema tambahan tidak menambah font baru: yang sudah dibundel dipilih ulang untuk masing-masing watak.
+Semua tema memakai **Noto Sans JP** sebagai fallback untuk teks Jepang/CJK. Semua font **dibundel di dalam aplikasi** (tidak dimuat dari internet), di `ui/static/fonts/`, lengkap dengan berkas lisensinya, dan hanya bobot yang dipakai. Font yang tidak lagi dipakai tema mana pun dihapus dari bundel beserta lisensinya.
 
 ### 9.5 Warna nada
 
@@ -601,11 +615,25 @@ Halaman Bantuan memuat daftar situs yang bisa diunduh, **diambil dari yt-dlp yan
 **Preset layout adalah sumbu terpisah dari tema**: tema mengatur rupa, preset layout mengatur susunan. Keduanya dipilih sendiri-sendiri dan tiap gabungan harus bisa dipakai.
 
 - Layout terinspirasi pola yang sudah dikenal dari aplikasi streaming (sidebar + grid sampul + bar pemutar; layar penuh sampul atau video + lirik), **tanpa meniru rupa aplikasi tertentu**.
-- Skema tema diperluas di luar warna: huruf (yang dibundel, §9), material permukaan, bingkai dan bevel, gaya meter dan visualizer, animasi, dan layout bawaan tema itu.
-- **Tiap tema butuh dokumen konsep yang disetujui pemilik proyek sebelum dikerjakan.**
-- Jumlah dan nama keenam tema bawaan tidak berubah — itu Keputusan terkunci (§1).
+- Skema tema diperluas di luar warna: huruf (yang dibundel, §9), material permukaan, bingkai dan bevel, gaya meter dan visualizer, animasi, teks hiasan, dan layout khas tema itu (§9.3).
+- **Tiap tema butuh dokumen konsep yang disetujui pemilik proyek sebelum dikerjakan.** Keenamnya disetujui sekaligus pada 2026-10-10: `docs/design/konsep-tema.md`.
+- **Tiga preset standar** yang wajib bisa dipakai bersama **setiap** tema:
+  - **Klasik**: susunan Onsa sekarang (sidebar, konten, panel kanan, transport, strip jalur sinyal; §9.2).
+  - **Galeri**: sidebar, grid sampul untuk library, bar pemutar di bawah.
+  - **Layar penuh**: sampul atau visual besar dengan lirik, kontrol minimum.
+- **Layout khas** tiap tema (§9.3 lapis 8, §9.4) menjadi bawaan saat tema itu dipilih, dan hanya tersedia untuk temanya. Di preset standar, tema tetap tampil dengan rupanya (warna, font, material) tapi tanpa susunan khasnya — misalnya Laut Dalam di Klasik memakai progress bar horizontal biasa berwarna laut, bukan skala kedalaman.
+- `docs/design/palet-preview.html` boleh dihapus sesudah tema baru selesai.
 
-**Selesai bila:** di kedua OS — tiap preset layout bisa dipakai bersama tiap tema dan sebaliknya, keenam tema bawaan tampil sesuai dokumen konsepnya yang sudah disetujui, dan berkas tema buatan pengguna dari skema lama tetap terbaca atau ditolak dengan alasan yang jelas di halaman Tampilan (§9.3).
+**Selesai bila:** di kedua OS —
+1. Keenam tema tampil sesuai `docs/design/konsep-tema.md` dan berkas referensinya, di layout khasnya masing-masing; tangkapan layar tiap tema dinilai pemilik proyek.
+2. Tiap tema bisa dipakai di ketiga preset standar dan sebaliknya: 18 susunan preset standar ditambah 6 layout khas, semuanya lolos pemeriksa tata letak yang sudah ada (tidak ada tumpang tindih, tidak ada gulir ke samping, tidak ada teks terpotong tanpa elipsis).
+3. Teks utama lolos WCAG AA di keenam tema; lirik tidak aktif dan label minimal 3:1. Warna yang gagal digelapkan atau diterangkan, dan angkanya dilaporkan.
+4. Warna nada lolos kriteria yang sudah dijaga tes (CIEDE2000 dan beda rona), dengan ujung-ujung usulan dokumen konsep; ujung yang gagal diganti dan dilaporkan.
+5. Semua dekorasi yang bergerak berhenti di mode hemat daya dan saat gerak dikurangi, dan tidak ada yang berkedip lebih dari sekali per detik.
+6. Tidak ada font yang dimuat dari internet; semuanya dibundel dengan lisensinya.
+7. Pilihan tema lama yang tersimpan berpindah sesuai pemetaan §9.4.
+8. Tidak ada tombol palsu di layout mana pun.
+9. Berkas tema buatan pengguna dari skema lama tetap terbaca atau ditolak dengan alasan yang jelas di halaman Tampilan (§9.3).
 
 ### M17. Lirik lanjutan
 - **Ambil dan simpan lirik massal** untuk satu album atau satu playlist sekaligus dari LRCLIB, disimpan ke berkas `.lrc` di sebelah lagunya atau ke dalam tag.

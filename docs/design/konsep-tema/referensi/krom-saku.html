@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<title>Onsa — Krom Saku</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&amp;family=Exo+2:wght@500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#1E5FD0}a:hover{color:#0B3A8F}
+.ks-chrome{background:linear-gradient(180deg,#FDFDFE 0%,#C9CED6 45%,#9AA1AC 52%,#E6E9EE 100%);border:1px solid #7E8794;box-shadow:inset 0 1px 0 #fff}
+.ks-candy{background:linear-gradient(160deg,rgba(120,190,255,0.55),rgba(40,120,230,0.35));border:1px solid rgba(255,255,255,0.8);box-shadow:inset 0 2px 0 rgba(255,255,255,0.7),inset 0 -8px 16px rgba(20,70,160,0.18),0 6px 16px rgba(30,60,120,0.18)}
+.ks-nav{display:flex;align-items:center;gap:8px;padding:8px 12px;min-height:36px;border-radius:999px;border:0;background:none;font-family:'Exo 2',sans-serif;font-weight:600;font-size:14px;color:#203A66;text-align:left;cursor:pointer}
+.ks-btn{width:48px;height:48px;border-radius:50%;color:#203A66;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.ks-lcd{background:#B4C49B;border:2px solid #6E7B5C;box-shadow:inset 0 2px 6px rgba(0,0,0,0.25);color:#1F2A14;font-family:'Orbitron',sans-serif}
+</style>
+</helmet>
+<div style="width:1000px;height:640px;box-sizing:border-box;background:linear-gradient(135deg,#E7EAF0,#CFD5DE 50%,#EEF0F4);background-image:repeating-linear-gradient(0deg,rgba(255,255,255,0.35) 0 1px,transparent 1px 3px),linear-gradient(135deg,#E7EAF0,#CFD5DE 50%,#EEF0F4);color:#203A66;font-family:'Exo 2',sans-serif;display:grid;grid-template-rows:1fr 100px;overflow:hidden">
+
+<div style="display:flex;gap:18px;padding:20px;min-height:0;box-sizing:border-box">
+<nav aria-label="Navigasi" class="ks-candy" style="width:176px;flex:none;border-radius:26px;padding:14px 10px;box-sizing:border-box;display:flex;flex-direction:column;gap:4px">
+<div style="margin:0 6px 12px;padding:6px 10px;border-radius:10px;text-align:center;font-family:'Orbitron',sans-serif;font-weight:700;font-size:18px;letter-spacing:0.15em;color:#2a2a40;background:linear-gradient(115deg,#FFD6F5,#C9F2FF 30%,#E9FFC9 55%,#FFE3B8 80%,#E3C9FF);box-shadow:inset 0 0 0 1px rgba(255,255,255,0.8)">ONSA</div>
+<button class="ks-nav" style="background:rgba(255,255,255,0.75)"><span style="width:8px;height:8px;border-radius:50%;background:#FF5FA8;box-shadow:0 0 6px #FF5FA8"></span>Sedang diputar</button>
+<button class="ks-nav"><span style="width:8px"></span>Library</button>
+<button class="ks-nav"><span style="width:8px"></span>Playlist</button>
+<button class="ks-nav"><span style="width:8px"></span>Unduhan</button>
+<button class="ks-nav"><span style="width:8px"></span>Rapikan</button>
+<button class="ks-nav"><span style="width:8px"></span>Pengaturan</button>
+<div style="margin-top:auto;padding:0 12px;font-family:'Orbitron',sans-serif;font-size:10px;color:#4A6390;letter-spacing:0.1em">ANTI-SKIP 40s ✓</div>
+</nav>
+
+<main style="flex:1;min-width:0;display:flex;flex-direction:column;gap:14px">
+<div style="display:flex;gap:24px;align-items:center">
+<div class="ks-chrome" style="width:236px;height:236px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center">
+<div role="img" aria-label="Sampul lagu berbentuk cakram" style="width:206px;height:206px;border-radius:50%;position:relative;background:radial-gradient(circle,#E9ECF2 0 13%,transparent 13.5%),conic-gradient(from 20deg,#E6F0FF,#FFD9F3,#D9FFF4,#FFF4C9,#E2D9FF,#D9F0FF,#FFE0EC,#E6F0FF);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.12)">
+<div style="position:absolute;inset:18%;border-radius:50%;background:radial-gradient(circle,transparent 0 22%,rgba(255,255,255,0) 23%),radial-gradient(circle at 30% 30%,#7FB6FF,#2E5FC7 70%);box-shadow:inset 0 0 0 3px rgba(255,255,255,0.6);-webkit-mask:radial-gradient(circle,transparent 0 23%,#000 24%);mask:radial-gradient(circle,transparent 0 23%,#000 24%)"></div>
+<div style="position:absolute;inset:0;border-radius:50%;background:linear-gradient(125deg,rgba(255,255,255,0.55) 0 30%,rgba(255,255,255,0) 45%)"></div>
+</div>
+</div>
+<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:10px">
+<div class="ks-lcd" style="border-radius:8px;padding:10px 14px;display:flex;justify-content:space-between;align-items:baseline">
+<span style="font-size:13px;letter-spacing:0.15em">TRK 03</span>
+<span style="font-size:34px;font-weight:700;letter-spacing:0.08em">02:14</span>
+<span style="font-size:11px;letter-spacing:0.1em">FLAC 44.1</span>
+</div>
+<h1 style="margin:0;font-weight:700;font-size:38px;line-height:1;color:#18305A">Garpu Tala</h1>
+<div style="font-size:17px;font-weight:600;color:#3E5B8C">Contoh Artis — Album Contoh</div>
+<div class="ks-candy" style="border-radius:14px;padding:10px 14px;display:flex;flex-direction:column;gap:4px;font-size:15px;font-weight:600;background:linear-gradient(160deg,rgba(255,190,230,0.55),rgba(255,120,190,0.25))">
+<div style="color:#8A6A8A">gelombang datang dari tempat yang jauh</div>
+<div style="color:#3A1030">aku mendengarnya sebelum melihatnya</div>
+<div style="color:#8A6A8A">gema kembali, lebih pelan dari tadi</div>
+</div>
+</div>
+</div>
+<div class="ks-lcd" style="flex:1;min-height:0;border-radius:12px;padding:10px 12px;box-sizing:border-box;display:flex;align-items:flex-end;gap:3px">
+<sc-for list="{{bars}}" as="b" hint-placeholder-count="36">
+<div style="flex:1;height:100%;display:flex;align-items:flex-end;background:repeating-linear-gradient(0deg,transparent 0 5px,#B4C49B 5px 7px)">
+<div style="width:100%;height:{{b.h}};background:repeating-linear-gradient(0deg,#1F2A14 0 5px,transparent 5px 7px)"></div>
+</div>
+</sc-for>
+</div>
+</main>
+</div>
+
+<div class="ks-chrome" style="display:flex;align-items:center;gap:16px;padding:0 22px;border-width:1px 0 0;border-radius:0">
+<div style="display:flex;gap:8px;align-items:center">
+<button class="ks-btn ks-chrome" aria-label="Sebelumnya"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18 6 9 12l9 6V6zM6 6h2v12H6z"/></svg></button>
+<button class="ks-btn ks-candy" aria-label="Jeda" style="width:62px;height:62px;color:#fff;background:radial-gradient(circle at 40% 30%,#B9DCFF,#3D86F0 55%,#1E5FD0)"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg></button>
+<button class="ks-btn ks-chrome" aria-label="Berikutnya"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m6 6 9 6-9 6V6zM16 6h2v12h-2z"/></svg></button>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:6px">
+<div style="height:10px;border-radius:999px;background:#9AA1AC;box-shadow:inset 0 1px 3px rgba(0,0,0,0.35);position:relative"><div style="position:absolute;left:0;top:0;bottom:0;width:46%;border-radius:999px;background:linear-gradient(#FF9CCB,#FF5FA8)"></div></div>
+<div style="display:flex;gap:6px;font-size:11px;font-weight:700;font-family:'Orbitron',sans-serif;color:#3E5B8C;letter-spacing:0.05em"><span>FLAC</span><span>›</span><span style="color:#1A8A4A">RG</span><span>›</span><span style="color:#1A8A4A">EQ</span><span>›</span><span style="color:#1A8A4A">LIM</span><span>›</span><span>WASAPI</span><span style="margin-left:auto">04:51</span></div>
+</div>
+<div class="ks-lcd" aria-label="Meter" style="border-radius:6px;padding:6px 8px;display:flex;flex-direction:column;gap:4px;width:110px">
+<div style="height:7px;background:repeating-linear-gradient(90deg,#1F2A14 0 5px,transparent 5px 7px);width:72%"></div>
+<div style="height:7px;background:repeating-linear-gradient(90deg,#1F2A14 0 5px,transparent 5px 7px);width:64%"></div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1000,"height":640}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var bars = [];
+    for (var i = 0; i < 36; i++) {
+      var v = 0.2 + 0.58 * Math.abs(Math.sin(i * 0.5 + 0.9)) * (1 - i / 54) + 0.12 * Math.abs(Math.sin(i * 2.4));
+      bars.push({ h: Math.round(Math.min(0.94, v) * 100) + '%' });
+    }
+    return { bars: bars };
+  }
+}
+</script>
+</body>
+</html>

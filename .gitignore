@@ -40,3 +40,6 @@ Thumbs.db
 
 # Portable test builds (M4a); never committed.
 dist-test/
+
+# The theme concept as it was handed over; the documents live in docs/design.
+/konsep-tema-onsa.zip

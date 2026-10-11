@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<title>Onsa — Jendela Biru</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#0B3FB0}a:hover{color:#1C5BD8}
+.jb-pane{background:#fff;border-radius:3px 3px 0 0;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,60,0.25)}
+.jb-pane-head{background:linear-gradient(90deg,#fff,#C6D3F7);color:#215DC6;font-weight:700;font-size:12px;padding:6px 10px}
+.jb-link{display:flex;align-items:center;gap:8px;padding:5px 10px;font-size:12px;color:#215DC6;background:none;border:0;font-family:'Noto Sans',sans-serif;text-align:left;cursor:pointer;min-height:28px;width:100%}
+.jb-ico{width:14px;height:14px;border-radius:3px;flex:none}
+.jb-btn{height:30px;min-width:30px;padding:0 10px;border-radius:3px;border:1px solid #003C74;background:linear-gradient(#FFFFFF,#ECEBE6 85%,#D6D0C5);font-family:'Noto Sans',sans-serif;font-size:12px;color:#000;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer}
+.jb-cap{width:21px;height:21px;border-radius:3px;border:1px solid #fff;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700}
+</style>
+</helmet>
+<div style="width:1000px;height:640px;box-sizing:border-box;background:#3A6EA5;font-family:'Noto Sans',sans-serif;font-size:12px;display:flex;flex-direction:column;overflow:hidden">
+
+<div style="flex:1;min-height:0;margin:10px 10px 0;display:flex;flex-direction:column;border-radius:8px 8px 0 0;background:#0831D9;padding:0 3px 3px;box-shadow:0 4px 18px rgba(0,0,0,0.35)">
+<div style="height:30px;display:flex;align-items:center;gap:8px;padding:0 6px;background:linear-gradient(#3D95FF 0%,#0A5DE8 10%,#0055E5 45%,#0647D4 88%,#0638B0 100%);border-radius:7px 7px 0 0;color:#fff">
+<span style="width:16px;height:16px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,#9cd 60%,#368);flex:none" aria-hidden="true"></span>
+<span style="font-weight:700;font-size:13px;text-shadow:1px 1px 1px #0a1f63">Onsa — Sedang diputar</span>
+<span style="margin-left:auto;display:flex;gap:2px">
+<span class="jb-cap" style="background:linear-gradient(#5d97ff,#2563e0)">_</span>
+<span class="jb-cap" style="background:linear-gradient(#5d97ff,#2563e0)">□</span>
+<span class="jb-cap" style="background:linear-gradient(#E8805C,#C33A1C)">×</span>
+</span>
+</div>
+<div style="height:22px;display:flex;align-items:center;gap:14px;padding:0 8px;background:#ECE9D8;border-bottom:1px solid #fff;color:#000"><span>Berkas</span><span>Putar</span><span>Tampilan</span><span>Alat</span><span>Bantuan</span></div>
+
+<div style="flex:1;min-height:0;display:flex;background:#ECE9D8">
+<nav aria-label="Navigasi" style="width:190px;flex:none;background:linear-gradient(#7BA2E7,#6375D6);padding:12px 10px;box-sizing:border-box;display:flex;flex-direction:column;gap:12px">
+<div class="jb-pane"><div class="jb-pane-head">Musik</div>
+<div style="padding:4px 0;background:#D6DFF7">
+<button class="jb-link" style="font-weight:700"><span class="jb-ico" style="background:linear-gradient(#7fd86b,#2f9e1f)"></span>Sedang diputar</button>
+<button class="jb-link"><span class="jb-ico" style="background:linear-gradient(#ffd56b,#e0a21f)"></span>Library</button>
+<button class="jb-link"><span class="jb-ico" style="background:linear-gradient(#8fb4ff,#2f62d9)"></span>Playlist</button>
+</div></div>
+<div class="jb-pane"><div class="jb-pane-head">Alat</div>
+<div style="padding:4px 0;background:#D6DFF7">
+<button class="jb-link"><span class="jb-ico" style="background:linear-gradient(#a6e3ff,#2b98d6)"></span>Unduhan</button>
+<button class="jb-link"><span class="jb-ico" style="background:linear-gradient(#ffb0e0,#c94f9e)"></span>Rapikan</button>
+<button class="jb-link"><span class="jb-ico" style="background:linear-gradient(#ddd,#888)"></span>Pengaturan</button>
+</div></div>
+</nav>
+
+<main style="flex:1;min-width:0;padding:14px;box-sizing:border-box;display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;gap:16px">
+<div role="img" aria-label="Sampul lagu" style="width:190px;height:190px;flex:none;border:2px solid;border-color:#808080 #fff #fff #808080;background:linear-gradient(#69A8F0 0 55%,#7DC24A 55%);position:relative;box-sizing:border-box">
+<div style="position:absolute;left:-10%;right:-10%;top:48%;height:40%;border-radius:50% 50% 0 0;background:#5DAE36"></div>
+<div style="position:absolute;top:14%;left:16%;width:60px;height:18px;border-radius:10px;background:rgba(255,255,255,0.85)"></div>
+</div>
+<fieldset style="flex:1;min-width:0;margin:0;border:1px solid #D0D0BF;border-radius:4px;padding:10px 14px">
+<legend style="color:#0046D5;padding:0 4px">Info lagu</legend>
+<div style="font-size:22px;font-weight:700;color:#000">Garpu Tala</div>
+<div style="color:#333;margin-top:2px">Contoh Artis — Album Contoh</div>
+<div style="color:#555;margin-top:6px">FLAC · 44,1 kHz · 16-bit · stereo</div>
+<div style="margin-top:12px;background:#fff;border:1px solid #7F9DB9;padding:8px 10px;display:flex;flex-direction:column;gap:4px;font-size:13px">
+<div style="color:#888">gelombang datang dari tempat yang jauh</div>
+<div style="background:#316AC5;color:#fff;padding:1px 4px">aku mendengarnya sebelum melihatnya</div>
+<div style="color:#888">gema kembali, lebih pelan dari tadi</div>
+</div>
+</fieldset>
+</div>
+<div style="flex:1;min-height:0;border:2px solid;border-color:#808080 #fff #fff #808080;background:#000B2E;display:flex;align-items:flex-end;gap:3px;padding:8px;box-sizing:border-box">
+<sc-for list="{{bars}}" as="b" hint-placeholder-count="36">
+<div style="flex:1;height:{{b.h}};background:linear-gradient(0deg,#1E4FD6,#57A0FF 70%,#C4E3FF)"></div>
+</sc-for>
+</div>
+<div style="display:flex;align-items:center;gap:10px">
+<button class="jb-btn" aria-label="Sebelumnya"><svg width="14" height="14" viewBox="0 0 24 24" fill="#1d3a8a" aria-hidden="true"><path d="M18 6 9 12l9 6V6zM6 6h2v12H6z"/></svg></button>
+<button aria-label="Jeda" style="width:44px;height:44px;border-radius:50%;border:1px solid #1d6b12;background:radial-gradient(circle at 40% 30%,#C9F5B8,#62C24A 45%,#2E8A1E);box-shadow:inset 0 -3px 6px rgba(0,0,0,0.25);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg></button>
+<button class="jb-btn" aria-label="Berikutnya"><svg width="14" height="14" viewBox="0 0 24 24" fill="#1d3a8a" aria-hidden="true"><path d="m6 6 9 6-9 6V6zM16 6h2v12h-2z"/></svg></button>
+<span style="width:40px;text-align:right">02:14</span>
+<div style="flex:1;height:14px;border:1px solid #7F9DB9;border-radius:3px;background:#fff;padding:2px;box-sizing:border-box;display:flex;gap:2px">
+<sc-for list="{{seg}}" as="s" hint-placeholder-count="20"><div style="width:8px;background:linear-gradient(#ACEDAD,#3EBE3F 50%,#ACEDAD)"></div></sc-for>
+</div>
+<span>04:51</span>
+<div aria-label="Meter" style="display:flex;flex-direction:column;gap:2px;width:70px">
+<div style="height:6px;background:#fff;border:1px solid #7F9DB9"><div style="width:72%;height:100%;background:#3EBE3F"></div></div>
+<div style="height:6px;background:#fff;border:1px solid #7F9DB9"><div style="width:64%;height:100%;background:#3EBE3F"></div></div>
+</div>
+</div>
+</main>
+</div>
+<div style="height:22px;display:flex;align-items:center;gap:4px;padding:0 6px;background:#ECE9D8;border-top:1px solid #ACA899;color:#000">
+<span style="border:1px solid;border-color:#ACA899 #fff #fff #ACA899;padding:0 6px">FLAC 44.1/16</span><span>→</span>
+<span style="border:1px solid;border-color:#ACA899 #fff #fff #ACA899;padding:0 6px;color:#1a7a10">✔ RG</span><span>→</span>
+<span style="border:1px solid;border-color:#ACA899 #fff #fff #ACA899;padding:0 6px;color:#1a7a10">✔ EQ</span><span>→</span>
+<span style="border:1px solid;border-color:#ACA899 #fff #fff #ACA899;padding:0 6px;color:#1a7a10">✔ Limiter</span><span>→</span>
+<span style="border:1px solid;border-color:#ACA899 #fff #fff #ACA899;padding:0 6px">WASAPI</span>
+</div>
+</div>
+
+<div style="height:34px;flex:none;margin-top:10px;display:flex;align-items:center;background:linear-gradient(#3168D5 0%,#4993E6 8%,#2157D7 40%,#1941A5 100%)">
+<button style="height:100%;padding:0 18px 0 12px;border:0;border-radius:0 12px 12px 0;background:linear-gradient(#3C9A3C,#59B858 10%,#3A9A3A 60%,#2E7B2E);color:#fff;font-family:'Noto Sans',sans-serif;font-style:italic;font-weight:700;font-size:16px;text-shadow:1px 1px 1px #1a4a1a;cursor:pointer">onsa</button>
+<span style="margin-left:8px;height:24px;padding:0 10px;display:flex;align-items:center;border-radius:3px;background:#1E52B7;color:#fff;box-shadow:inset 1px 1px 2px #0d2c70">Garpu Tala — Contoh Artis</span>
+<span style="margin-left:auto;height:100%;padding:0 14px;display:flex;align-items:center;background:linear-gradient(#0C59B9,#139EE9 10%,#18B9ED 50%,#0F8ED9);color:#fff;border-left:1px solid #0A3E9A">08:21</span>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1000,"height":640}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var bars = [];
+    for (var i = 0; i < 36; i++) {
+      var v = 0.2 + 0.6 * Math.abs(Math.sin(i * 0.5 + 0.8)) * (1 - i / 54) + 0.12 * Math.abs(Math.sin(i * 2.1));
+      bars.push({ h: Math.round(Math.min(0.95, v) * 100) + '%' });
+    }
+    var seg = [];
+    for (var j = 0; j < 22; j++) seg.push({ n: j });
+    return { bars: bars, seg: seg };
+  }
+}
+</script>
+</body>
+</html>
