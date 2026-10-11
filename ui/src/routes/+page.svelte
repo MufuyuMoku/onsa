@@ -26,6 +26,7 @@
 	import { settings, updateDsp } from '$lib/settings.svelte';
 	import { themeFailure } from '$lib/theme/index.svelte';
 	import AlbumGrid from '$lib/components/AlbumGrid.svelte';
+	import Ceiling from '$lib/components/Ceiling.svelte';
 	import AlbumList from '$lib/components/AlbumList.svelte';
 	import AlbumView from '$lib/components/AlbumView.svelte';
 	import BrowseView from '$lib/components/BrowseView.svelte';
@@ -166,7 +167,11 @@
 		data-transport={arranged.transport}
 		class:with-queue={layout.queueDocked}
 		class:no-signal={!arranged.signal}
+		class:corridor={arranged.chrome === 'corridor'}
 	>
+		{#if arranged.chrome === 'corridor'}
+			<Ceiling />
+		{/if}
 		{#if layout.sidebar !== 'hidden'}
 			<Sidebar mode={layout.sidebar} />
 		{/if}
@@ -358,6 +363,19 @@
 
 	.shell > :global(.sidebar) {
 		grid-area: sidebar;
+	}
+
+	/* A ceiling over everything: the grid starts under it. */
+	.shell.corridor {
+		padding-top: 56px;
+	}
+
+	.shell.corridor > :global(.ceiling) {
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		z-index: 3;
 	}
 
 	/* Panels that cover the content rather than sit beside it. */

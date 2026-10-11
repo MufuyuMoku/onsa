@@ -10,11 +10,11 @@ export type Base = 'dark' | 'light';
 export type MeterVariant = 'bar' | 'segment' | 'needle' | 'line';
 export type SpectrumVariant = 'bar' | 'segment' | 'soft' | 'dots';
 export type PanelTexture = 'glass' | 'bezel' | 'brushed';
-export type StageIndicator = 'glow-chip' | 'outline-chip' | 'led' | 'glow-text';
+export type StageIndicator = 'glow-chip' | 'outline-chip' | 'led' | 'glow-text' | 'brackets';
 export type TimeDisplay = 'ghost-segment' | 'plain';
 export type LabelCase = 'as-written' | 'uppercase';
 export type ControlShape = 'soft' | 'square' | 'pill' | 'bevel' | 'ring';
-export type FrameStyle = 'hairline' | 'inset' | 'raised' | 'none';
+export type FrameStyle = 'hairline' | 'inset' | 'raised' | 'none' | 'card';
 export type RowStyle = 'lines' | 'stripes' | 'plain';
 export type Scrollbar = 'thin' | 'classic' | 'hidden';
 export type TooltipStyle = 'plain' | 'panel';
@@ -37,6 +37,8 @@ export interface Theme {
 		display: string;
 		/** The words of a song. */
 		lyrics: string;
+		/** A theme's own touches, such as a camcorder's time stamp. */
+		accent: string;
 		cjkFallback: string;
 	};
 	color: {
@@ -75,6 +77,10 @@ export interface Theme {
 			led: string;
 			/** Warning stripes, where a theme draws them. */
 			stripe: string;
+			/** Behind the line being sung; transparent when not marked. */
+			highlight: string;
+			/** The floor under the transport, where a theme draws one. */
+			ground: string;
 		};
 		/** The two sides of a raised or sunken edge. */
 		edge: {
@@ -128,15 +134,22 @@ export interface Theme {
 	signature: Signature | null;
 }
 
-export type Decoration = 'rivets' | 'hazard-stripe' | 'marine-snow' | 'lure';
+export type Decoration =
+	| 'rivets'
+	| 'hazard-stripe'
+	| 'marine-snow'
+	| 'lure'
+	| 'wallpaper'
+	| 'carpet'
+	| 'exit-sign';
 export type SidebarPlace = 'shown' | 'hidden';
 export type QueuePlace = 'docked' | 'floating';
 export type TransportStyle = 'full' | 'bar' | 'minimal';
 export type LibraryHome = 'tracks' | 'albums';
-export type NowPlayingStyle = 'classic' | 'immersive' | 'instrument' | 'dive';
-export type CoverFrame = 'plain' | 'instrument' | 'lit';
+export type NowPlayingStyle = 'classic' | 'immersive' | 'instrument' | 'dive' | 'memo';
+export type CoverFrame = 'plain' | 'instrument' | 'lit' | 'photo';
 export type PositionStyle = 'bar' | 'dial' | 'depth';
-export type Chrome = 'none' | 'window';
+export type Chrome = 'none' | 'window' | 'corridor';
 
 /**
  * What goes where in the window (SPEC M16).

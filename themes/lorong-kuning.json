@@ -1,0 +1,131 @@
+{
+  "$schema": "onsa-theme/1",
+  "id": "lorong-kuning",
+  "name": {
+    "id": "Lorong Kuning",
+    "en": "Yellow Hallway"
+  },
+  "version": 1,
+  "builtin": true,
+  "base": "light",
+  "fonts": {
+    "ui": "Courier Prime",
+    "numeric": "Courier Prime",
+    "label": "Courier Prime",
+    "display": "Courier Prime",
+    "lyrics": "Courier Prime",
+    "accent": "VT323",
+    "cjkFallback": "Noto Sans JP"
+  },
+  "color": {
+    "surface": {
+      "app": "#C9B458",
+      "body": "#E9DFA4",
+      "bodyHighlight": "#F1E9BC",
+      "well": "#DCD6B4",
+      "raised": "#DCD6B4",
+      "line": "#B5A55A"
+    },
+    "text": {
+      "primary": "#3A3218",
+      "secondary": "#6B5E2A",
+      "silkscreen": "#6B5E2A"
+    },
+    "role": {
+      "label": "#6B5E2A",
+      "adjustable": "#3A3218",
+      "active": "#2E7D3A",
+      "position": "#3A3218",
+      "caution": "#C27A1A",
+      "clip": "#B0301C"
+    },
+    "lit": {
+      "on": "#4A4122",
+      "ghost": "rgba(74,65,34,0.08)",
+      "glow": "rgba(0,0,0,0)",
+      "secondary": "#6B5E2A",
+      "meterFace": "#E9DFA4",
+      "needle": "#B0301C",
+      "knob": "#3A3218",
+      "led": "#2E7D3A",
+      "highlight": "#FBFAEA",
+      "ground": "#8A7A44"
+    },
+    "edge": {
+      "light": "#FBFAEA",
+      "dark": "#6B5E2A"
+    }
+  },
+  "shape": {
+    "radius": {
+      "sm": 0,
+      "md": 0,
+      "lg": 0
+    },
+    "density": "comfortable",
+    "hairline": 1,
+    "control": "square",
+    "frame": "card"
+  },
+  "variants": {
+    "meter": "bar",
+    "spectrum": "bar",
+    "panelTexture": "bezel",
+    "stageIndicator": "brackets",
+    "timeDisplay": "plain",
+    "rows": "lines",
+    "scrollbar": "classic",
+    "tooltip": "panel",
+    "dialog": "flat"
+  },
+  "effects": {
+    "glow": false,
+    "glassReflection": false,
+    "grain": 0.0,
+    "labelCase": "as-written"
+  },
+  "toneColor": {
+    "enabled": true,
+    "targets": [
+      "spectrum"
+    ],
+    "warm": "#8A3A1A",
+    "cool": "#1F5A52"
+  },
+  "motion": {
+    "fast": 120,
+    "slow": 180,
+    "ease": "standard"
+  },
+  "decor": [
+    "wallpaper",
+    "carpet",
+    "exit-sign"
+  ],
+  "ornament": [
+    "ornament.lorong-kuning.title",
+    "ornament.lorong-kuning.sign",
+    "ornament.lorong-kuning.spectrum",
+    "ornament.lorong-kuning.strip"
+  ],
+  "signature": {
+    "id": "lorong",
+    "name": {
+      "id": "Lorong",
+      "en": "Hallway"
+    },
+    "sidebar": "shown",
+    "queue": "floating",
+    "transport": "full",
+    "signal": true,
+    "libraryHome": "tracks",
+    "nowPlaying": "memo",
+    "cover": "photo",
+    "position": "bar",
+    "chrome": "corridor",
+    "plates": false,
+    "panels": {
+      "details": false
+    }
+  }
+}

@@ -571,3 +571,74 @@ input[type='checkbox'] {
 		animation: none !important;
 	}
 }
+
+/* Cards laid on the window's ground, each with a hard shadow, the way
+   paper lies on a desk. */
+:root[data-onsa-frame='card'] .shell > .sidebar,
+:root[data-onsa-frame='card'] .shell > .content,
+:root[data-onsa-frame='card'] .shell > .side {
+	margin: 10px 0 10px 10px;
+	border: var(--onsa-hairline) solid var(--onsa-surface-line);
+	background: var(--onsa-surface-body);
+	box-shadow: 2px 3px 0 color-mix(in srgb, var(--onsa-edge-dark) 35%, transparent);
+}
+
+:root[data-onsa-frame='card'] .shell > .content,
+:root[data-onsa-frame='card'] .shell > .side {
+	margin-right: 10px;
+}
+
+:root[data-onsa-frame='card'] .panel {
+	box-shadow: 2px 3px 0 color-mix(in srgb, var(--onsa-edge-dark) 35%, transparent);
+}
+
+/* Striped wallpaper over the window's ground. */
+:root[data-onsa-decor~='wallpaper'] .shell {
+	background-color: var(--onsa-surface-app);
+	background-image:
+		repeating-linear-gradient(
+			90deg,
+			color-mix(in srgb, var(--onsa-edge-dark) 14%, transparent) 0 2px,
+			transparent 2px 22px
+		),
+		repeating-linear-gradient(0deg, rgb(255 250 200 / 0.06) 0 1px, transparent 1px 6px);
+}
+
+/* A speckled carpet under the transport, its edge a darker line. */
+:root[data-onsa-decor~='carpet'] .shell .transport > footer {
+	border-top: 3px solid var(--onsa-edge-dark);
+	background-color: var(--onsa-lit-ground);
+	background-image:
+		radial-gradient(color-mix(in srgb, var(--onsa-edge-dark) 45%, transparent) 1px, transparent 1.5px),
+		radial-gradient(rgb(200 180 110 / 0.25) 1px, transparent 1.5px);
+	background-size:
+		7px 7px,
+		11px 11px;
+}
+
+/* The exit sign: a sign, not a button. It takes no pointer, has no hover,
+   and is hidden from screen readers where it is drawn. */
+.exit-sign {
+	align-self: flex-start;
+	margin: auto 10px 10px;
+	padding: 2px 8px;
+	background: var(--onsa-role-active);
+	color: var(--onsa-lit-highlight);
+	font-family: var(--onsa-font-label);
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	box-shadow: 0 0 10px color-mix(in srgb, var(--onsa-role-active) 60%, transparent);
+	pointer-events: none;
+	user-select: none;
+}
+
+/* Where the Now Playing screen lays its own cards on the ground (the memo
+   arrangement), the content is not a card itself: the ground shows
+   between them. */
+:root[data-onsa-frame='card'] .shell > .content:has(.now[data-arrangement='memo']) {
+	border-color: transparent;
+	background: transparent;
+	box-shadow: none;
+}

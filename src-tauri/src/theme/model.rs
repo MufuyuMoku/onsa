@@ -114,6 +114,9 @@ pub struct Fonts {
     pub display: String,
     /// Family for the words of a song; falls back to the interface family.
     pub lyrics: String,
+    /// Family for a theme's own touches — a camcorder's time stamp, say;
+    /// falls back to the numeric family.
+    pub accent: String,
     /// Family used behind the others for Japanese, Korean and Chinese text.
     pub cjk_fallback: String,
 }
@@ -219,6 +222,12 @@ pub struct LitColors {
     pub stripe: String,
     /// Indicator lamp; falls back to the active role.
     pub led: String,
+    /// Behind the line being sung, where a theme marks it as if with a
+    /// highlighter; transparent when it does not.
+    pub highlight: String,
+    /// The floor, for a theme that draws one under the transport (a
+    /// carpet, a meadow); falls back to the raised surface.
+    pub ground: String,
 }
 
 /// Radii, density and hairline width.
@@ -421,6 +430,8 @@ theme_enum!(
         Led => "led",
         /// The label itself lights up.
         GlowText => "glow-text",
+        /// The name in square brackets, in the active colour when on.
+        Brackets => "brackets",
     }
 );
 
@@ -493,6 +504,8 @@ theme_enum!(
         Inset => "inset",
         /// Standing out of it.
         Raised => "raised",
+        /// A card laid on it, with a hard shadow.
+        Card => "card",
         /// Nothing at all.
         None => "none",
     }
@@ -585,6 +598,13 @@ theme_enum!(
         MarineSnow => "marine-snow",
         /// A lure of light hanging from above on its line. Still.
         Lure => "lure",
+        /// Striped wallpaper over the window's ground. Still.
+        Wallpaper => "wallpaper",
+        /// A speckled carpet under the transport. Still.
+        Carpet => "carpet",
+        /// A sign at the foot of the navigation, in the active colour, with
+        /// the theme's `sign` ornament on it. A sign, not a button. Still.
+        ExitSign => "exit-sign",
     }
 );
 
@@ -643,6 +663,9 @@ theme_enum!(
         /// Cover and a large title side by side, the words under them, the
         /// spectrum along the bottom, and the position down the right.
         Dive => "dive",
+        /// The cover beside one card holding the title and the words, and
+        /// the spectrum on a card of its own under them.
+        Memo => "memo",
     }
 );
 
@@ -656,6 +679,8 @@ theme_enum!(
         /// Lit from one corner, darkening towards the far one — never by
         /// more than half, so the picture stays clear.
         Lit => "lit",
+        /// A photograph stuck on: a paper border and a hard shadow.
+        Photo => "photo",
     }
 );
 
@@ -679,5 +704,10 @@ theme_enum!(
         None => "none",
         /// Yes: a title bar, a menu bar, a task panel and a task bar.
         Window => "window",
+        /// A ceiling of lamps above the window, and the play time stamped in
+        /// the top corners the way a camcorder stamps it. One lamp may dim
+        /// slowly now and then; it stops in power saving and under reduced
+        /// motion.
+        Corridor => "corridor",
     }
 );

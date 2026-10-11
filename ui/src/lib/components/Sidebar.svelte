@@ -8,7 +8,11 @@
 -->
 <script lang="ts">
 	import { ornament } from '$lib/ornament.svelte';
+	import { activeTheme } from '$lib/theme/index.svelte';
 	const footNote = $derived(ornament('sidebar'));
+	const exitSign = $derived(
+		(activeTheme()?.decor ?? []).includes('exit-sign') ? ornament('sign') : null
+	);
 	import { app, navigate, type SettingsSection, type View } from '$lib/app.svelte';
 	import { t } from '$lib/i18n/index.svelte';
 	import type { MessageKey } from '$lib/i18n/dictionary';
@@ -178,6 +182,12 @@
 	{/if}
 
 	{@render group('nav.settings', [...settingsPages, helpPage])}
+
+	{#if mode === 'full' && exitSign}
+		<!-- A sign on the wall, not a way out of anywhere: no pointer, no
+		     hover, nothing for a screen reader to press. -->
+		<p class="exit-sign" aria-hidden="true">{exitSign}</p>
+	{/if}
 
 	{#if mode === 'full' && footNote}
 		<!-- Ornament text at the foot of the panel, for the look alone. -->

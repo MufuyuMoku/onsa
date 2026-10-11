@@ -9,6 +9,8 @@
 	lost, only put away (SPEC section 9.2).
 -->
 <script lang="ts">
+	import { ornament } from '$lib/ornament.svelte';
+	const stripNote = $derived(ornament('strip'));
 	import type { RgMode } from '$lib/backend';
 	import { navigate, type SettingsSection } from '$lib/app.svelte';
 	import { db, rate } from '$lib/format';
@@ -152,7 +154,7 @@
 		oncontextmenu={(event) => show('output', event)}
 	>
 		{#if signal?.output}
-			{signal.output.backend}{#if detailed}<em
+			{signal.output.backend}{#if detailed}{' '}<em
 					>{signal.output.name} · {rate(signal.output.sampleRate)}</em
 				>{/if}
 		{:else}
@@ -171,6 +173,11 @@
 		>
 			<Icon name="more" />
 		</button>
+	{/if}
+
+	{#if stripNote && !folded}
+		<!-- Ornament text at the far end of the strip, for the look alone. -->
+		<span class="strip-note ellipsis" aria-hidden="true">{stripNote}</span>
 	{/if}
 </div>
 
@@ -338,6 +345,24 @@
 		text-shadow: 0 0 8px var(--onsa-role-active);
 	}
 
+	/* The name in square brackets, like a memo typed in a hurry. */
+	:global(:root[data-onsa-stage-indicator='brackets']) .stage {
+		border-color: transparent;
+		padding: 3px 2px;
+	}
+
+	:global(:root[data-onsa-stage-indicator='brackets']) .stage::before {
+		content: '[';
+	}
+
+	:global(:root[data-onsa-stage-indicator='brackets']) .stage::after {
+		content: ']';
+	}
+
+	:global(:root[data-onsa-stage-indicator='brackets']) .stage.on {
+		color: var(--onsa-role-active);
+	}
+
 	/* LEDs (Deck malam): no border, a lamp before the name. */
 	:global(:root[data-onsa-stage-indicator='led']) .stage {
 		border-color: transparent;
@@ -362,5 +387,14 @@
 		box-shadow:
 			0 0 6px var(--onsa-lit-led),
 			0 0 12px var(--onsa-lit-led);
+	}
+
+	.strip-note {
+		flex: 0 1 auto;
+		min-width: 0;
+		margin-left: auto;
+		padding-left: 12px;
+		color: var(--onsa-role-label);
+		font-size: 11px;
 	}
 </style>

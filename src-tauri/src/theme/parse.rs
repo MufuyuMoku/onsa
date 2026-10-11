@@ -63,8 +63,10 @@ pub fn parse_theme(id_hint: &str, source: &str) -> Result<LoadedTheme> {
     let fonts_node = cx.child(root, "fonts", "fonts");
     let ui_font = cx.font(fonts_node, "ui", "fonts.ui", DEFAULT_UI_FONT);
     let label_font = cx.font(fonts_node, "label", "fonts.label", &ui_font);
+    let numeric_font = cx.font(fonts_node, "numeric", "fonts.numeric", &ui_font);
     let fonts = Fonts {
-        numeric: cx.font(fonts_node, "numeric", "fonts.numeric", &ui_font),
+        accent: cx.font(fonts_node, "accent", "fonts.accent", &numeric_font),
+        numeric: numeric_font,
         display: cx.font(fonts_node, "display", "fonts.display", &label_font),
         lyrics: cx.font(fonts_node, "lyrics", "fonts.lyrics", &ui_font),
         cjk_fallback: cx.font(
@@ -80,6 +82,7 @@ pub fn parse_theme(id_hint: &str, source: &str) -> Result<LoadedTheme> {
     let color_node = cx.child(root, "color", "color");
 
     let surface_node = cx.child(color_node, "surface", "color.surface");
+    let raised_surface = cx.color(surface_node, "raised", "color.surface.raised", "#232A3A");
     let surface = SurfaceColors {
         app: cx.color(surface_node, "app", "color.surface.app", "#232326"),
         body: cx.color(surface_node, "body", "color.surface.body", "#161B26"),
@@ -90,7 +93,7 @@ pub fn parse_theme(id_hint: &str, source: &str) -> Result<LoadedTheme> {
             "#1D2332",
         ),
         well: cx.color(surface_node, "well", "color.surface.well", "#06080E"),
-        raised: cx.color(surface_node, "raised", "color.surface.raised", "#232A3A"),
+        raised: raised_surface.clone(),
         line: cx.color(surface_node, "line", "color.surface.line", "#2A3242"),
         backdrop: cx.backdrop(surface_node, "backdrop", "color.surface.backdrop"),
     };
@@ -135,6 +138,8 @@ pub fn parse_theme(id_hint: &str, source: &str) -> Result<LoadedTheme> {
         knob: cx.color(lit_node, "knob", "color.lit.knob", &text_primary),
         led: cx.color(lit_node, "led", "color.lit.led", &role.active),
         stripe: cx.color(lit_node, "stripe", "color.lit.stripe", &role.caution),
+        highlight: cx.color(lit_node, "highlight", "color.lit.highlight", "transparent"),
+        ground: cx.color(lit_node, "ground", "color.lit.ground", &raised_surface),
         on: lit_on,
         secondary: lit_secondary,
     };
@@ -276,6 +281,8 @@ pub(crate) const BUNDLED_FONTS: &[&str] = &[
     "Saira Stencil One",
     "Cormorant Garamond",
     "Martian Mono",
+    "Courier Prime",
+    "VT323",
 ];
 
 /// How a key of ornament text has to look: `ornament.<theme>.<name>`, the

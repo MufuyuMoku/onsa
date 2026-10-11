@@ -14,7 +14,7 @@ import { textFor } from './i18n/index.svelte';
 import { activeTheme } from './theme/index.svelte';
 
 /** Where ornament text can go. */
-export type OrnamentSlot = 'sidebar' | 'title' | 'strip' | 'display';
+export type OrnamentSlot = 'sidebar' | 'title' | 'strip' | 'display' | 'sign' | 'spectrum';
 
 /** The words the theme in use puts in a slot, or nothing. */
 export function ornament(slot: OrnamentSlot): string | null {

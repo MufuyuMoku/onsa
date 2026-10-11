@@ -257,6 +257,8 @@
 	.line.on {
 		color: var(--onsa-role-position);
 		font-weight: 500;
+		/* Transparent unless the theme marks the line as if with a pen. */
+		background: var(--onsa-lit-highlight);
 	}
 
 	:global(:root[data-onsa-glow='true']) .line.on {

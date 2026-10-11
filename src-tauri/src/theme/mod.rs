@@ -45,7 +45,7 @@ pub fn current_choice(stored: Option<String>) -> Option<String> {
 }
 
 /// The three built-in themes, in the order the first-run screen shows them.
-const BUILTIN_SOURCES: [(&str, &str); 8] = [
+const BUILTIN_SOURCES: [(&str, &str); 9] = [
     (
         "kokpit-tua",
         include_str!("../../../themes/kokpit-tua.json"),
@@ -53,6 +53,10 @@ const BUILTIN_SOURCES: [(&str, &str); 8] = [
     (
         "laut-dalam",
         include_str!("../../../themes/laut-dalam.json"),
+    ),
+    (
+        "lorong-kuning",
+        include_str!("../../../themes/lorong-kuning.json"),
     ),
     ("kaca-asap", include_str!("../../../themes/kaca-asap.json")),
     (
@@ -283,9 +287,16 @@ mod tests {
         let ids: Vec<&str> = themes.iter().map(|theme| theme.id.as_str()).collect();
         let built = ids.iter().filter(|id| NEW_SIX.contains(id)).count();
         assert!(built >= 1, "Kokpit Tua comes first");
+        // Built one at a time, so not every one of them is here yet; the
+        // ones that are stand in SPEC's order.
+        let in_order: Vec<&str> = NEW_SIX
+            .iter()
+            .copied()
+            .filter(|id| ids.contains(id))
+            .collect();
         assert_eq!(
             ids[..built],
-            NEW_SIX[..built],
+            in_order[..],
             "SPEC §1: the new themes, in the order SPEC gives them"
         );
         assert_eq!(

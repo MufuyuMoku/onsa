@@ -39,6 +39,7 @@
 	/** What the theme draws here for its look alone (SPEC section 9.1). */
 	const decor = $derived(activeTheme()?.decor ?? []);
 	const overTitle = $derived(ornament('title'));
+	const overSpectrum = $derived(ornament('spectrum'));
 
 	/** The words on each toggle, which the help quotes as they are. */
 	const panelName = (id: PanelId) => t(`panel.${id}` as never);
@@ -138,7 +139,7 @@
 			{#if track.album}
 				<p class="muted ellipsis">{track.album}{track.year ? ` · ${track.year}` : ''}</p>
 			{/if}
-			{#if arranged.plates && !shown('details') && format}
+			{#if !['classic', 'immersive'].includes(arranged.nowPlaying) && !shown('details') && format}
 				<!-- The one line of the signal an instrument panel prints under
 				     the title; the full account is the details panel's. -->
 				<p class="numeric format-line ellipsis">{format}</p>
@@ -146,7 +147,7 @@
 
 			<div
 				class="timeline"
-				class:away={dialled || sounded || arranged.nowPlaying === 'immersive'}
+				class:away={arranged.nowPlaying !== 'classic'}
 			>
 				<span class="numeric position">{clock(player.position)}</span>
 				<input
@@ -213,7 +214,10 @@
 		{/if}
 		{#if shown('visualizer')}
 			<figure class="visualizer">
-				<Spectrum height={arranged.nowPlaying === 'instrument' ? 120 : 170} />
+				{#if overSpectrum}
+					<span class="over-spectrum" aria-hidden="true">{overSpectrum}</span>
+				{/if}
+				<Spectrum height={['instrument', 'memo'].includes(arranged.nowPlaying) ? 120 : 170} />
 				{#if arranged.plates}<figcaption class="plate">{t('plate.spectrum')}</figcaption>{/if}
 			</figure>
 		{/if}
@@ -620,6 +624,91 @@
 			transparent 0 30%,
 			color-mix(in srgb, var(--onsa-surface-well) 50%, transparent) 78%
 		);
+	}
+
+	/* Memo: the cover stuck on beside one card that holds the title and the
+	   words, and the spectrum on a card of its own under them. The two
+	   halves of the card are two elements drawn as one. */
+	.now[data-arrangement='memo'] {
+		align-content: stretch;
+		grid-template-columns: auto minmax(0, 1fr);
+		grid-template-areas:
+			'bar bar'
+			'cover text'
+			'cover words'
+			'viz viz';
+		grid-template-rows: auto auto minmax(110px, 1fr) auto;
+		row-gap: 0;
+		column-gap: 20px;
+	}
+
+	.now[data-arrangement='memo'] > .bar {
+		grid-area: bar;
+		margin-bottom: 14px;
+	}
+
+	.now[data-arrangement='memo'] > .cover {
+		grid-area: cover;
+		align-self: start;
+	}
+
+	.now[data-arrangement='memo'] > .text,
+	.now[data-arrangement='memo'] > .words,
+	.now[data-arrangement='memo'] > .visualizer {
+		border: var(--onsa-hairline) solid var(--onsa-surface-line);
+		background: var(--onsa-surface-body);
+		box-shadow: 2px 3px 0 color-mix(in srgb, var(--onsa-edge-dark) 35%, transparent);
+	}
+
+	.now[data-arrangement='memo'] > .text {
+		grid-area: text;
+		align-self: stretch;
+		padding: 14px 18px 4px;
+		border-bottom: 0;
+		box-shadow: none;
+	}
+
+	.now[data-arrangement='memo'] > .words {
+		grid-area: words;
+		height: auto;
+		min-height: 0;
+		padding: 0 4px 10px;
+		border-top: 0;
+	}
+
+	.now[data-arrangement='memo'] > .visualizer {
+		grid-area: viz;
+		margin-top: 14px;
+		padding: 10px 12px;
+	}
+
+	.now[data-arrangement='memo'] .art {
+		width: min(200px, 24cqw);
+		height: min(200px, 24cqw);
+	}
+
+	.now[data-arrangement='memo'].wide {
+		grid-template-areas:
+			'bar bar'
+			'text text'
+			'words words'
+			'viz viz';
+	}
+
+	/* A photograph stuck on: a paper border and a hard shadow. */
+	.now[data-cover='photo'] .art {
+		border: 6px solid var(--onsa-surface-body);
+		border-radius: 0;
+		box-shadow: 2px 3px 0 color-mix(in srgb, var(--onsa-edge-dark) 45%, transparent);
+	}
+
+	.over-spectrum {
+		align-self: stretch;
+		font-family: var(--onsa-font-label);
+		font-size: 11px;
+		letter-spacing: 0.14em;
+		color: var(--onsa-role-label);
+		text-transform: uppercase;
 	}
 
 	/* Layar penuh: the picture large, the title over the words beside it. */

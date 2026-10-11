@@ -47,6 +47,8 @@ export function themeVariables(theme: Theme): Record<string, string> {
 		'--onsa-lit-knob': color.lit.knob,
 		'--onsa-lit-led': color.lit.led,
 		'--onsa-lit-stripe': color.lit.stripe,
+		'--onsa-lit-highlight': color.lit.highlight,
+		'--onsa-lit-ground': color.lit.ground,
 
 		'--onsa-edge-light': color.edge.light,
 		'--onsa-edge-dark': color.edge.dark,
@@ -61,6 +63,7 @@ export function themeVariables(theme: Theme): Record<string, string> {
 		'--onsa-font-numeric': fontStack(fonts.numeric, fonts.cjkFallback, 'ui-monospace, monospace'),
 		'--onsa-font-display': fontStack(fonts.display, fonts.cjkFallback),
 		'--onsa-font-lyrics': fontStack(fonts.lyrics, fonts.cjkFallback),
+		'--onsa-font-accent': fontStack(fonts.accent, fonts.cjkFallback, 'ui-monospace, monospace'),
 
 		'--onsa-grain': `${effects.grain}`,
 
