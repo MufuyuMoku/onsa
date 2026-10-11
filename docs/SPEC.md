@@ -502,7 +502,7 @@ Urutannya pernah diubah dua kali, atas keputusan pemilik proyek. Alasannya beser
 | v1.2 | Paket untuk tester (selesai) |
 | v1.3 "Rapi" | v1.3-a pemilihan fpcalc (selesai), v1.3-b dokumen dan pemeriksaan lisensi (selesai), v1.3-c dan v1.3-d perbaikan dari pengujian (selesai), **M13** (selesai di Windows; sisi Linux lewat CI), **M14** (selesai di Windows; sisi Linux lewat CI) |
 | v1.4 "Unduhan penuh" | **M10b** (termasuk unduhan otomatis fpcalc), **M15**, dan paket Linux (AppImage dan deb) yang dibangun CI — sebagian M12 (selesai, `v1.4.0`) |
-| v1.4.1 | **Sisa M10b**: antrean unduhan disimpan di DB, dan pertanyaan apakah folder output di luar library mau ditambahkan (§7.3) — beserta folder output yang bisa dipilih. Dikerjakan sebelum M16 |
+| v1.4.1 | **Sisa M10b**: antrean unduhan disimpan di DB, dan pertanyaan apakah folder output di luar library mau ditambahkan (§7.3) — beserta folder output yang bisa dipilih. Dikerjakan sebelum M16 (selesai, `v1.4.1`) |
 | v1.5 "Tampilan" | **M16** |
 | v1.6 "Lirik & metadata" | **M17** dan **M7b** |
 | v1.7 "Video" | **M11** (decoder Opus lebih dulu), lalu **M18** |

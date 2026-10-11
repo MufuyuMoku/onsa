@@ -4,7 +4,7 @@ Status tiap milestone dari `SPEC.md` §15. Diperbarui di akhir setiap milestone.
 
 ---
 
-## Garis rilis (diperbarui 2026-10-09)
+## Garis rilis (diperbarui 2026-10-11)
 
 Yang benar-benar ditandai:
 
@@ -16,6 +16,7 @@ Yang benar-benar ditandai:
 | `v1.2.0` | `26132f9` | 2026-09-21 | Paket untuk tester: tiap jalur internet dibuktikan terhadap layanan sungguhan, dan berkas pemasang Windows dibangun CI. Tidak ada fitur baru. |
 | `v1.3.0` | (lihat tagnya) | 2026-09-27 | **v1.3 "Rapi", selesai.** Validasi fpcalc dan tombol ke halaman unduhan resminya; empat bug dari pengujian pemilik proyek; warna nada yang terlihat di keenam tema, dengan kriteria terukur; **M13** pengelolaan folder sumber; **M14** panel Sedang diputar. |
 | `v1.4.0` | (lihat tagnya) | 2026-10-09 | **v1.4 "Unduhan penuh", selesai.** **M10b** (ffmpeg, Deno, fpcalc diunduh Onsa sendiri; unduhan paralel bawaan 2; berkas antara di luar library), **M15** daftar situs di Bantuan, paket Linux dari CI. Sisa M10b ke v1.4.1. |
+| `v1.4.1` | (lihat tagnya) | 2026-10-11 | **Sisa M10b**: antrean unduhan disimpan di DB, folder output bisa dipilih beserta pertanyaan §7.3, tombol halaman resmi sesudah pemasangan gagal, `windows-sha256.txt`. |
 
 Garis rilis yang diputuskan pada 2026-09-19 menempatkan M7b, M10b, M11, dan M12 di v1.1.
 Bukan itu yang terjadi: yang ditandai v1.1.0 adalah bantuan di dalam aplikasi, dan v1.2.0
@@ -28,7 +29,7 @@ Garis selanjutnya, keputusan pemilik proyek 2026-09-25:
 |---|---|
 | ~~**v1.3 "Rapi"**~~ | **Selesai, ditandai `v1.3.0` pada 2026-09-27.** v1.3-a pemilihan fpcalc, v1.3-b dokumen dan pemeriksaan lisensi, v1.3-c empat bug dari pengujian, v1.3-d warna nada di keenam tema, **M13** pengelolaan folder sumber, **M14** panel Sedang diputar |
 | ~~**v1.4 "Unduhan penuh"**~~ | **Selesai, ditandai `v1.4.0` pada 2026-10-09.** v1.4-a paket Linux yang dibangun CI (selesai, 2026-09-28) — sebagian M12; lalu **M10b** (Deno, ffmpeg, antrean paralel, dan unduhan otomatis fpcalc) dan **M15** daftar sumber unduhan di Bantuan |
-| **v1.4.1** | **Sisa M10b**: antrean unduhan disimpan di DB, dan pertanyaan folder output di luar library. Dikerjakan sebelum M16 (keputusan pemilik proyek 2026-10-05) |
+| ~~**v1.4.1**~~ | **Selesai, ditandai `v1.4.1` pada 2026-10-11.** **Sisa M10b**: antrean unduhan disimpan di DB, dan pertanyaan folder output di luar library. Dikerjakan sebelum M16 (keputusan pemilik proyek 2026-10-05) |
 | **v1.5 "Tampilan"** | **M16**: skema tema baru, keenam tema dirombak, preset layout sebagai sumbu terpisah |
 | **v1.6 "Lirik & metadata"** | **M17** lirik lanjutan, lalu **M7b** (sisa pekerjaan sampul) |
 | **v1.7 "Video"** | **M11** (decoder Opus lebih dulu), lalu **M18** video |
@@ -2048,3 +2049,8 @@ penjelasan fpcalc di Bantuan ikut diluruskan.
 
 `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings`,
 `cargo test --workspace`, `npm run check`, dan tes UI bersih di Windows (`scripts/check.sh`).
+
+**Uji pemilik proyek (2026-10-11)** atas build 38014769295: checksum installer cocok dengan
+`windows-sha256.txt`, pengaturan lama aman sesudah memasang menimpa, antrean pulih, dan keempat
+langkah dengan pemilih folder sungguhan sesuai. Bagian yang di atas tercatat "tidak sepenuhnya
+terbukti" (dialog folder) kini terbukti oleh pemilik proyek. Ditandai `v1.4.1`.
