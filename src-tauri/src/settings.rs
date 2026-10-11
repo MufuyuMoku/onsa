@@ -485,6 +485,15 @@ pub struct DisplayPrefs {
     /// The layout presets of M16 arrange the same map.
     #[serde(default)]
     pub panels: BTreeMap<String, bool>,
+    /// Which layout the window is arranged by (SPEC M16): `classic`,
+    /// `gallery`, `fullscreen`, or `signature` for the theme's own. Nothing
+    /// means nobody chose, and the theme's own is used when it has one.
+    #[serde(default)]
+    pub layout: Option<String>,
+    /// The panel choices made in each layout but Klasik, which keeps
+    /// `panels` above. Layouts nobody arranged are not in here at all.
+    #[serde(default)]
+    pub panels_by: BTreeMap<String, BTreeMap<String, bool>>,
 }
 
 /// What the song list is ordered by until somebody says otherwise. The
@@ -504,6 +513,8 @@ impl Default for DisplayPrefs {
             sort: default_sort(),
             sort_descending: false,
             panels: BTreeMap::new(),
+            layout: None,
+            panels_by: BTreeMap::new(),
         }
     }
 }

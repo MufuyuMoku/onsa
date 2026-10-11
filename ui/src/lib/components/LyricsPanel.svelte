@@ -80,7 +80,17 @@
 		const index = active;
 		if (index < 0 || !box || Date.now() < theirsUntil) return;
 		const line = box.querySelector<HTMLElement>(`[data-line="${index}"]`);
-		line?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+		if (!line) return;
+		// Only the box of words moves. `scrollIntoView` would move every
+		// scrolling thing around it too, and a whole page that drifts each
+		// time a line changes is a page nobody can read.
+		const from = box.getBoundingClientRect();
+		const at = line.getBoundingClientRect();
+		const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+		box.scrollBy({
+			top: at.top - from.top - box.clientHeight / 2 + at.height / 2,
+			behavior: still ? 'auto' : 'smooth'
+		});
 	});
 
 	function jumpTo(atMs: number | null): void {

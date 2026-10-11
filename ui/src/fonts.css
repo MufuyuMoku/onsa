@@ -1,5 +1,5 @@
 /*
- * The fonts of the three built-in themes, bundled with the application and
+ * The fonts of the built-in themes, bundled with the application and
  * never loaded from the internet (SPEC sections 9.4 and 14). Sources, pinned
  * versions and licences: ui/static/fonts/ and docs/DECISIONS.md.
  *
@@ -92,6 +92,14 @@
 	font-family: 'Noto Sans JP';
 	src: url('/fonts/noto-sans-jp/NotoSansJP-VF.otf') format('opentype');
 	font-weight: 100 900;
+	font-style: normal;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'Saira Stencil One';
+	src: url('/fonts/saira-stencil-one/SairaStencilOne-Regular.ttf') format('truetype');
+	font-weight: 400;
 	font-style: normal;
 	font-display: swap;
 }

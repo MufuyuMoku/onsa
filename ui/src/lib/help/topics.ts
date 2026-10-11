@@ -339,6 +339,7 @@ export const TOPICS: HelpTopic[] = [
 		what: 'help.appearance.what',
 		controls: [
 			control('theme.label', 'help.says.themePick'),
+			control('layout.label', 'help.says.layoutPick'),
 			control('toneColor.label', 'help.says.tone'),
 			control('theme.openFolder', 'help.says.themeFolder'),
 			control('theme.copy', 'help.says.themeCopy'),

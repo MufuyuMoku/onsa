@@ -40,6 +40,7 @@ export function themeVariables(theme: Theme): Record<string, string> {
 		'--onsa-lit-needle': color.lit.needle,
 		'--onsa-lit-knob': color.lit.knob,
 		'--onsa-lit-led': color.lit.led,
+		'--onsa-lit-stripe': color.lit.stripe,
 
 		'--onsa-edge-light': color.edge.light,
 		'--onsa-edge-dark': color.edge.dark,
@@ -52,6 +53,8 @@ export function themeVariables(theme: Theme): Record<string, string> {
 		'--onsa-font-ui': fontStack(fonts.ui, fonts.cjkFallback),
 		'--onsa-font-label': fontStack(fonts.label, fonts.cjkFallback),
 		'--onsa-font-numeric': fontStack(fonts.numeric, fonts.cjkFallback, 'ui-monospace, monospace'),
+		'--onsa-font-display': fontStack(fonts.display, fonts.cjkFallback),
+		'--onsa-font-lyrics': fontStack(fonts.lyrics, fonts.cjkFallback),
 
 		'--onsa-grain': `${effects.grain}`,
 
@@ -94,7 +97,9 @@ export function themeAttributes(theme: Theme): Record<string, string> {
 		'data-onsa-label-case': theme.effects.labelCase,
 		'data-onsa-glow': String(theme.effects.glow),
 		'data-onsa-glass-reflection': String(theme.effects.glassReflection),
-		'data-onsa-tone-color': String(theme.toneColor.enabled)
+		'data-onsa-tone-color': String(theme.toneColor.enabled),
+		// A list, read with `~=` the way a class list is.
+		'data-onsa-decor': theme.decor.join(' ')
 	};
 }
 

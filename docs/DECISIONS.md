@@ -994,3 +994,61 @@ terlihat di referensi. Keputusan yang mengubah aturan yang sebelumnya terkunci:
   tetap berlaku: tema buatan pengguna dari skema lama terbaca atau ditolak dengan alasan jelas.
 - Dua pertanyaan Jendela Biru (bilah judul dan baris menu) diputuskan Claude Code dan dilaporkan
   ke pemilik proyek **sebelum** tema itu dikerjakan; keputusannya dicatat di sini saat itu.
+
+## 2026-10-11 · M16: skema, tiga preset standar, dan Kokpit Tua
+
+- **Tiga lapis skema baru (SPEC §9.3).** `fonts.display` (judul) dan `fonts.lyrics` (lirik)
+  menyusul `ui`, `label`, `numeric`; yang tidak disebut jatuh ke label dan ke ui. `ornament`
+  adalah daftar kunci kamus berbentuk `ornament.<tema>.<nama>`; kunci yang bentuknya lain
+  ditolak dengan peringatan. `decor` memilih dari daftar tertutup dekorasi yang bisa digambar
+  Onsa (sekarang `rivets`, `hazard-stripe`); tema tidak membawa gambar sendiri. `signature`
+  memuat id, nama, dan susunan (`Arrangement`) — bentuk yang **sama** dengan ketiga preset
+  standar, jadi jendela membaca nilai, bukan menanyakan nama tema. Tiap kolom susunan memilih
+  dari daftar tertutup (`nowPlaying: classic | immersive | instrument`, `cover`, `position`,
+  `chrome`, dan seterusnya); daftar itu bertambah satu per satu bersama tema yang memakainya,
+  dan tema mana pun — termasuk buatan pengguna — boleh memakai pilihan mana pun.
+- **Hanya font yang dibundel yang bisa disebut tema.** Nama keluarga lain diganti font bawaan
+  dan disebut sebagai peringatan, yang terbaca di halaman Tampilan. Daftar itu dan `fonts.css`
+  dijaga sejalan oleh tes, termasuk berkas dan lisensinya. Tema lama buatan pengguna yang
+  menyebut font yang kelak dihapus (Barlow dan lainnya) tetap terbaca, dengan peringatan itu.
+- **Pilihan susunan disimpan di pengaturan tampilan** (`layout`: `classic`, `gallery`,
+  `fullscreen`, atau `signature`). Memilih tema mengosongkannya, sehingga tema yang punya
+  susunan khas langsung memakainya dan tema tanpa susunan khas memakai Klasik; pengguna bisa
+  memilih preset lain sesudahnya. Tema tanpa susunan khas yang tersimpan `signature` dibaca
+  sebagai Klasik, jadi jendela selalu punya susunan.
+- **Pilihan panel Sedang diputar disimpan per susunan.** Klasik tetap memakai simpanan M14
+  (`panels`) supaya pilihan yang sudah ada tidak hilang; susunan lain punya simpanannya sendiri
+  (`panelsBy`) dan mulai dari panel yang ditunjukkan susunan itu (Layar penuh: sampul dan
+  lirik). Versi pertama menulis panel Layar penuh ke simpanan M14, sehingga spektrum ikut
+  hilang di susunan lain; itu ketahuan dari tangkapan layar dan diganti cara ini.
+- **Preset standar**: Klasik = susunan Onsa selama ini. Galeri = antrean selalu di atas konten,
+  transport satu bilah tanpa meter, tanpa strip jalur sinyal, dan halaman Album sebagai grid
+  sampul virtual (memuat per halaman seperti daftar). Layar penuh = menu di balik tombol,
+  transport hanya kontrol, posisi, dan volume, Sedang diputar dengan sampul besar dan lirik.
+  Volume tetap ada di Layar penuh: pemutar musik tanpa volume yang terlihat bukan "kontrol
+  minimum", melainkan kontrol yang hilang.
+- **Tema lama tetap ada sampai keenam tema baru selesai**, di belakang tema baru dalam daftar.
+  Pemetaan pilihan lama (SPEC §9.4) baru berlaku untuk id yang tidak lagi dikirim Onsa, jadi
+  selama masa peralihan tidak ada pilihan yang dipindah ke tema yang belum ada.
+- **Kokpit Tua.** Font: Saira Stencil One (label, judul, menu, pelat), B612 Mono (teks, angka,
+  lirik). Saira Stencil One diambil dari `google/fonts` commit
+  `bd8f81ddb5c74d5c8897b36ad88b440266245103` (`ofl/sairastencilone`), 109.944 byte,
+  SHA-256 `781496fdaf8e04cf6741b31025f6b4ba84f66021b097a8e0d85cbea2180cf223`, dengan `OFL.txt`-nya. Garis peringatan memakai warna
+  baru `lit.stripe` (`#E2B53A`), karena dokumen konsep membedakannya dari `caution`.
+  Dekorasi "brushed" tidak dijadikan dekorasi tersendiri: teksturnya sudah ada sebagai
+  `panelTexture: brushed`.
+- **Layout khas Panel Instrumen** mematikan panel rincian sinyal sebagai bawaannya dan
+  menggantinya dengan satu baris format di bawah judul, seperti di referensi; tabel lengkapnya
+  tetap bisa dinyalakan dengan tombol "Rincian sinyal". Tanpa itu, kotak lirik terjepit sampai
+  kosong pada 1280×800.
+- **Dial posisi hanya menunjukkan**, tidak bisa diseret: menyeret tetap tugas bilah posisi di
+  transport, dan dial tidak tampak seperti tombol (§9.1, tidak ada tombol palsu).
+- **Jarum VU memakai balistik ±300 ms** (transisi CSS), bukan lompatan 90 ms.
+- **Lirik hanya menggulir kotaknya sendiri.** `scrollIntoView` ikut menggulir setiap wadah di
+  sekitarnya, sehingga seluruh halaman Sedang diputar bergeser tiap baris berganti. Sekarang
+  kotak lirik digulir langsung, dan tanpa animasi saat gerak dikurangi.
+- **Pengujian visual tanpa bunyi.** Analisis spektrum dan meter membaca sinyal sesudah volume,
+  jadi membisukan Onsa juga membekukan visualnya. Profil uji mengarahkan output Onsa ke
+  perangkat virtual (VB-Audio Virtual Cable) lewat pengaturan output Onsa sendiri; tidak ada
+  yang terdengar di speaker. Library uji dibuat ffmpeg: nada sintetis, sampul gradien, lirik
+  karangan sendiri, dan satu album beraksara Jepang.

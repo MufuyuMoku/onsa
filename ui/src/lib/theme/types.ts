@@ -33,6 +33,10 @@ export interface Theme {
 		ui: string;
 		numeric: string;
 		label: string;
+		/** Titles and headings. */
+		display: string;
+		/** The words of a song. */
+		lyrics: string;
 		cjkFallback: string;
 	};
 	color: {
@@ -67,6 +71,8 @@ export interface Theme {
 			needle: string;
 			knob: string;
 			led: string;
+			/** Warning stripes, where a theme draws them. */
+			stripe: string;
 		};
 		/** The two sides of a raised or sunken edge. */
 		edge: {
@@ -112,4 +118,49 @@ export interface Theme {
 		/** Where bright sound leans. */
 		cool: string;
 	};
+	/** Ornament text, as dictionary keys (SPEC section 9.3, layer 7). */
+	ornament: string[];
+	/** Decorations, from the list Onsa knows how to draw. */
+	decor: Decoration[];
+	/** The theme's own arrangement of the window, if it has one. */
+	signature: Signature | null;
+}
+
+export type Decoration = 'rivets' | 'hazard-stripe';
+export type SidebarPlace = 'shown' | 'hidden';
+export type QueuePlace = 'docked' | 'floating';
+export type TransportStyle = 'full' | 'bar' | 'minimal';
+export type LibraryHome = 'tracks' | 'albums';
+export type NowPlayingStyle = 'classic' | 'immersive' | 'instrument';
+export type CoverFrame = 'plain' | 'instrument';
+export type PositionStyle = 'bar' | 'dial';
+export type Chrome = 'none' | 'window';
+
+/**
+ * What goes where in the window (SPEC M16).
+ *
+ * The standard presets are values of this shape written in the interface;
+ * a signature layout is one more, read from a theme. Nothing in it names a
+ * theme: each field chooses among pieces any theme may use.
+ */
+export interface Arrangement {
+	sidebar: SidebarPlace;
+	queue: QueuePlace;
+	transport: TransportStyle;
+	signal: boolean;
+	libraryHome: LibraryHome;
+	nowPlaying: NowPlayingStyle;
+	cover: CoverFrame;
+	position: PositionStyle;
+	chrome: Chrome;
+	plates: boolean;
+	/** Which Now Playing panels show, as `setPanels` takes them. */
+	panels: Record<string, boolean>;
+}
+
+/** A theme's own layout. */
+export interface Signature {
+	id: string;
+	name: { id: string; en: string };
+	arrangement: Arrangement;
 }

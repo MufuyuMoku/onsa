@@ -32,6 +32,10 @@ let menuOpen = $state(false);
 let helpOpen = $state(false);
 let helpTopic = $state<string | null>(null);
 let panelTab = $state<PanelTab>('queue');
+/** The arrangement keeps the navigation behind a button, whatever the width. */
+let sidebarAway = $state(false);
+/** The arrangement keeps the queue over the content, whatever the width. */
+let queueAway = $state(false);
 
 export const layout = {
 	/** Width of the window, in CSS pixels. */
@@ -40,9 +44,10 @@ export const layout = {
 	},
 	/** Whether the queue has a column of its own. */
 	get queueDocked() {
-		return width >= STEPS.queue;
+		return !queueAway && width >= STEPS.queue;
 	},
 	get sidebar(): SidebarMode {
+		if (sidebarAway) return 'hidden';
 		if (width >= STEPS.sidebar) return 'full';
 		return width >= STEPS.sidebarIcons ? 'icons' : 'hidden';
 	},
@@ -128,6 +133,17 @@ export function closeOverlays(): void {
 	menuOpen = false;
 }
 
+/**
+ * What the layout in force allows (SPEC M16): whether the navigation and
+ * the queue may have columns of their own at all. The width still decides
+ * the rest.
+ */
+export function followArrangement(sidebarHidden: boolean, queueFloating: boolean): void {
+	sidebarAway = sidebarHidden;
+	queueAway = queueFloating;
+	if (!sidebarHidden) menuOpen = false;
+}
+
 /** Follows the window's width. Call once, from the root. */
 export function followWidth(): void {
 	$effect(() => {
@@ -135,8 +151,8 @@ export function followWidth(): void {
 			width = window.innerWidth;
 			// A panel that covers the content has no business staying open
 			// once there is room for it beside the content again.
-			if (width >= STEPS.queue) queueOpen = false;
-			if (width >= STEPS.sidebarIcons) menuOpen = false;
+			if (width >= STEPS.queue && !queueAway) queueOpen = false;
+			if (width >= STEPS.sidebarIcons && !sidebarAway) menuOpen = false;
 		};
 		read();
 		window.addEventListener('resize', read);

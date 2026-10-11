@@ -6,17 +6,50 @@
 //! and a damaged theme never stops the window from opening.
 
 mod model;
-mod parse;
+pub(crate) mod parse;
 
 pub use model::Theme;
 pub use parse::{parse_theme, LoadedTheme};
 
 /// The theme a fresh installation starts with, until the first-run screen
 /// lets the user choose (SPEC §9.2).
-pub const DEFAULT_THEME_ID: &str = "kaca-asap";
+pub const DEFAULT_THEME_ID: &str = "kokpit-tua";
+
+/// Where each of the six themes Onsa shipped before M16 went (SPEC §9.4):
+/// somebody whose choice was one of them opens on the theme that took its
+/// place, not on a theme they never chose and no word of why.
+const REPLACED: [(&str, &str); 6] = [
+    ("kaca-asap", "laut-dalam"),
+    ("kokpit-kaca", "kokpit-tua"),
+    ("deck-malam", "kokpit-tua"),
+    ("kubikel-biru", "jendela-biru"),
+    ("kilau-milenium", "krom-saku"),
+    ("musim-dingin", "kokpit-tua"),
+];
+
+/// The theme a stored choice stands for now.
+///
+/// A choice that still names a built-in theme stands. One that names a
+/// built-in theme Onsa no longer ships is moved to the theme that replaced
+/// it, as long as that one is here. Anything else — a user's own theme, or
+/// nothing at all — is left as it was for the interface to look up.
+pub fn current_choice(stored: Option<String>) -> Option<String> {
+    let stored = stored?;
+    if builtin_source(&stored).is_some() {
+        return Some(stored);
+    }
+    match REPLACED.iter().find(|(old, _)| *old == stored) {
+        Some((_, new)) if builtin_source(new).is_some() => Some((*new).to_string()),
+        _ => Some(stored),
+    }
+}
 
 /// The three built-in themes, in the order the first-run screen shows them.
-const BUILTIN_SOURCES: [(&str, &str); 6] = [
+const BUILTIN_SOURCES: [(&str, &str); 7] = [
+    (
+        "kokpit-tua",
+        include_str!("../../../themes/kokpit-tua.json"),
+    ),
     ("kaca-asap", include_str!("../../../themes/kaca-asap.json")),
     (
         "kokpit-kaca",
@@ -220,30 +253,48 @@ mod tests {
         }
     }
 
+    /// The six themes of SPEC §1, in its order: the new ones are built one
+    /// at a time during M16 and stand in front of the old six until the
+    /// last of them is done, when the old ones go (DECISIONS 2026-10-11).
+    const NEW_SIX: [&str; 6] = [
+        "kokpit-tua",
+        "laut-dalam",
+        "jendela-biru",
+        "lorong-kuning",
+        "siang-mimpi",
+        "krom-saku",
+    ];
+    const OLD_SIX: [&str; 6] = [
+        "kaca-asap",
+        "kokpit-kaca",
+        "deck-malam",
+        "kubikel-biru",
+        "kilau-milenium",
+        "musim-dingin",
+    ];
+
     #[test]
     fn the_themes_of_the_specification_are_present() {
         let themes = builtin_themes();
         let ids: Vec<&str> = themes.iter().map(|theme| theme.id.as_str()).collect();
+        let built = ids.iter().filter(|id| NEW_SIX.contains(id)).count();
+        assert!(built >= 1, "Kokpit Tua comes first");
         assert_eq!(
-            ids,
-            [
-                "kaca-asap",
-                "kokpit-kaca",
-                "deck-malam",
-                "kubikel-biru",
-                "kilau-milenium",
-                "musim-dingin"
-            ],
-            "SPEC §1: three dark, then three light"
+            ids[..built],
+            NEW_SIX[..built],
+            "SPEC §1: the new themes, in the order SPEC gives them"
+        );
+        assert_eq!(
+            ids[built..],
+            OLD_SIX[..],
+            "the old six stay behind them until the new six are all here"
         );
         assert!(ids.contains(&DEFAULT_THEME_ID));
-        // The three dark ones come first, and Onsa opens on one of them.
-        let dark: Vec<&str> = themes
+        let kokpit = themes
             .iter()
-            .filter(|theme| theme.base == Base::Dark)
-            .map(|theme| theme.id.as_str())
-            .collect();
-        assert_eq!(dark, ["kaca-asap", "kokpit-kaca", "deck-malam"]);
+            .find(|theme| theme.id == "kokpit-tua")
+            .expect("Kokpit Tua");
+        assert_eq!(kokpit.base, Base::Dark, "Onsa opens on a dark theme");
     }
 
     #[test]
@@ -515,6 +566,40 @@ mod tests {
         }
     }
 
+    /// SPEC M16, criterion 3: the main text passes WCAG AA (4.5:1) on every
+    /// surface it is written on, and the labels and the words of a song not
+    /// being sung — the secondary text — keep at least 3:1. Checked for each
+    /// of the new themes as it arrives; the figures are what PROGRESS
+    /// reports.
+    #[test]
+    fn the_new_themes_can_be_read() {
+        for theme in builtin_themes()
+            .iter()
+            .filter(|one| NEW_SIX.contains(&one.id.as_str()))
+        {
+            let id = &theme.id;
+            let surface = &theme.color.surface;
+            for (name, ground) in [
+                ("body", &surface.body),
+                ("app", &surface.app),
+                ("raised", &surface.raised),
+                ("well", &surface.well),
+            ] {
+                let main = contrast(&theme.color.text.primary, ground);
+                assert!(main >= 4.5, "{id}: main text on {name} is {main:.2}:1");
+            }
+            for (name, colour, at_least) in [
+                ("secondary text", &theme.color.text.secondary, 3.0),
+                ("label", &theme.color.role.label, 3.0),
+                ("the line being sung", &theme.color.role.position, 3.0),
+                ("adjustable", &theme.color.role.adjustable, 3.0),
+            ] {
+                let seen = contrast(colour, &surface.body);
+                assert!(seen >= at_least, "{id}: {name} on the panel is {seen:.2}:1");
+            }
+        }
+    }
+
     /// Roughly how light a `#rrggbb` colour is, from 0 to 1.
     fn lightness(hex: &str) -> f32 {
         let hex = hex.trim_start_matches('#');
@@ -547,6 +632,77 @@ mod tests {
                     theme.id
                 );
             }
+        }
+    }
+
+    /// Every family a theme may name is one the window actually has: it is
+    /// declared in the stylesheet, its file is in `ui/static/fonts/`, and a
+    /// licence travels with it (SPEC §9.4, §14). And nothing the stylesheet
+    /// declares is left out of the list.
+    #[test]
+    fn every_font_a_theme_may_name_is_bundled_with_its_licence() {
+        let css = include_str!("../../../ui/src/fonts.css");
+        let fonts = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../ui/static/fonts");
+        let declared: Vec<String> = css
+            .split("font-family: '")
+            .skip(1)
+            .filter_map(|rest| rest.split('\'').next())
+            .map(str::to_string)
+            .collect();
+        for family in parse::BUNDLED_FONTS
+            .iter()
+            .filter(|one| **one != "system-ui")
+        {
+            assert!(
+                declared.iter().any(|one| one == family),
+                "{family} may be named by a theme but is not declared in fonts.css"
+            );
+        }
+        for family in &declared {
+            assert!(
+                parse::BUNDLED_FONTS.contains(&family.as_str()),
+                "fonts.css declares {family}, which no theme is allowed to name"
+            );
+        }
+        // Each file the stylesheet points at is there, beside a licence.
+        for url in css.split("url('/fonts/").skip(1) {
+            let Some(path) = url.split('\'').next() else {
+                continue;
+            };
+            let file = fonts.join(path);
+            assert!(file.is_file(), "{} is declared but missing", file.display());
+            let folder = file.parent().expect("a font lives in a folder");
+            let licensed = ["OFL.txt", "LICENSE", "LICENSE.txt"]
+                .iter()
+                .any(|name| folder.join(name).is_file());
+            assert!(licensed, "{} has no licence beside it", folder.display());
+        }
+    }
+
+    #[test]
+    fn a_choice_of_a_theme_that_has_gone_moves_to_the_one_that_replaced_it() {
+        // While a replaced theme is still shipped, the choice stands.
+        for (old, new) in REPLACED {
+            let moved = current_choice(Some(old.to_string()));
+            if builtin_source(old).is_some() {
+                assert_eq!(moved.as_deref(), Some(old), "{old} is still here");
+            } else if builtin_source(new).is_some() {
+                assert_eq!(moved.as_deref(), Some(new), "{old} moves to {new}");
+            }
+        }
+        assert_eq!(current_choice(None), None);
+        assert_eq!(
+            current_choice(Some("tema-saya".into())).as_deref(),
+            Some("tema-saya"),
+            "a user's own theme is not ours to move"
+        );
+        assert_eq!(
+            current_choice(Some("kokpit-tua".into())).as_deref(),
+            Some("kokpit-tua")
+        );
+        // Every theme a replaced one points at is one of the six of SPEC §1.
+        for (_, new) in REPLACED {
+            assert!(NEW_SIX.contains(&new), "{new} is not a theme of SPEC §1");
         }
     }
 

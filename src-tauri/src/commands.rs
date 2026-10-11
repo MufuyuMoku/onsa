@@ -204,7 +204,12 @@ pub fn app_state(
 ) -> Result<AppState, ErrorCode> {
     let (theme_id, locale, has_folders) = library.read(|library| {
         Ok((
-            settings::load::<Option<String>>(library, settings::THEME_KEY),
+            // A theme Onsa no longer ships is read as the one that took
+            // its place (SPEC §9.4).
+            theme::current_choice(settings::load::<Option<String>>(
+                library,
+                settings::THEME_KEY,
+            )),
             settings::load::<Option<String>>(library, settings::LOCALE_KEY),
             !library.folder_paths()?.is_empty(),
         ))

@@ -173,7 +173,10 @@
 		stroke-width: 1.3;
 		stroke-linecap: round;
 		transform-origin: 60px 68px;
-		transition: transform 90ms linear;
+		/* A needle has weight: it rises and falls over about 300 ms, the
+		   way a VU meter's ballistics are specified, rather than jumping
+		   to each peak. */
+		transition: transform 300ms cubic-bezier(0.3, 0.1, 0.3, 1);
 	}
 
 	.flags {

@@ -5,6 +5,10 @@
 	The play controls, the position and the volume are always there. As the
 	window narrows the meter goes first, then the cover, and the buttons
 	beside them move into a button of their own (SPEC section 9.2).
+
+	The layout in force says how much of it is drawn at all (SPEC M16): all
+	of it, one slim bar without the meters, or only what playing needs when
+	the picture already fills the window.
 -->
 <script lang="ts">
 	import { tonePosition } from '$lib/analysis.svelte';
@@ -18,6 +22,9 @@
 	import Icon from './Icon.svelte';
 	import Meter from './Meter.svelte';
 	import SleepTimer from './SleepTimer.svelte';
+	import type { TransportStyle } from '$lib/theme/types';
+
+	let { style = 'full' }: { style?: TransportStyle } = $props();
 
 	/** The volume slider's range; its bottom is silence. */
 	const VOLUME_FLOOR = -60;
@@ -31,11 +38,11 @@
 	/** Width of the transport itself. */
 	let width = $state(1200);
 	/** The meters have room beside everything else. */
-	const metered = $derived(width >= 1000);
+	const metered = $derived(style === 'full' && width >= 1000);
 	/** The extra buttons stand on their own rather than in a menu. */
 	const roomy = $derived(width >= 1120);
 	/** The cover is worth its 76 pixels. */
-	const covered = $derived(width >= 760);
+	const covered = $derived(style !== 'minimal' && width >= 760);
 
 	let extras = $state(false);
 	$effect(() => {
@@ -85,6 +92,8 @@
 	class:metered
 	class:roomy
 	class:covered
+	class:bar={style === 'bar'}
+	class:minimal={style === 'minimal'}
 	use:measure={(seen) => (width = seen)}
 >
 	{#if covered}
@@ -94,7 +103,9 @@
 	{/if}
 
 	<div class="info well">
-		{#if track}
+		{#if style === 'minimal'}
+			<!-- The title is already large on the screen above. -->
+		{:else if track}
 			<div class="title ellipsis">{track.title ?? fileName(track.path)}</div>
 			<div class="artist ellipsis">{track.artist ?? t('track.unknownArtist')}</div>
 		{:else}
@@ -232,6 +243,30 @@
 
 	.transport > * {
 		min-width: 0;
+	}
+
+	/* One slim bar (Galeri). */
+	.transport.bar {
+		padding: 8px 14px;
+		gap: 10px;
+	}
+
+	.transport.bar.covered {
+		grid-template-columns: 52px minmax(150px, 1.6fr) auto minmax(120px, 0.7fr) auto;
+	}
+
+	.transport.bar .art {
+		width: 52px;
+		height: 52px;
+	}
+
+	/* Only what playing needs (Layar penuh). */
+	.transport.minimal {
+		padding: 8px 16px;
+	}
+
+	.transport.minimal .info {
+		padding: 4px 10px;
 	}
 
 	.backdrop {

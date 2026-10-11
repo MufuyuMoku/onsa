@@ -1,0 +1,122 @@
+{
+  "$schema": "onsa-theme/1",
+  "id": "kokpit-tua",
+  "name": {
+    "id": "Kokpit Tua",
+    "en": "Old Cockpit"
+  },
+  "version": 1,
+  "builtin": true,
+  "base": "dark",
+  "fonts": {
+    "ui": "B612 Mono",
+    "numeric": "B612 Mono",
+    "label": "Saira Stencil One",
+    "display": "Saira Stencil One",
+    "lyrics": "B612 Mono",
+    "cjkFallback": "Noto Sans JP"
+  },
+  "color": {
+    "surface": {
+      "app": "#1C1F1A",
+      "body": "#2A2E26",
+      "bodyHighlight": "#33372E",
+      "well": "#0E0F0C",
+      "raised": "#24271F",
+      "line": "#3A3D33"
+    },
+    "text": {
+      "primary": "#F2E6C2",
+      "secondary": "#C9C2AE",
+      "silkscreen": "#EDE6D2"
+    },
+    "role": {
+      "label": "#C9C2AE",
+      "adjustable": "#EDE6D2",
+      "active": "#7BE07A",
+      "position": "#F2E6C2",
+      "caution": "#E8A23A",
+      "clip": "#C8401F"
+    },
+    "lit": {
+      "on": "#EDE6D2",
+      "ghost": "rgba(237,230,210,0.08)",
+      "glow": "rgba(237,230,210,0.25)",
+      "secondary": "#C9C2AE",
+      "meterFace": "#E9E0C6",
+      "needle": "#C8401F",
+      "knob": "#EDE6D2",
+      "led": "#7BE07A",
+      "stripe": "#E2B53A"
+    },
+    "edge": {
+      "light": "#5A5D50",
+      "dark": "#0B0C09"
+    }
+  },
+  "shape": {
+    "radius": {
+      "sm": 2,
+      "md": 3,
+      "lg": 4
+    },
+    "density": "comfortable",
+    "hairline": 1,
+    "control": "bevel",
+    "frame": "raised"
+  },
+  "variants": {
+    "meter": "needle",
+    "spectrum": "bar",
+    "panelTexture": "brushed",
+    "stageIndicator": "led",
+    "timeDisplay": "plain",
+    "rows": "lines",
+    "scrollbar": "classic",
+    "tooltip": "panel",
+    "dialog": "raised"
+  },
+  "effects": {
+    "glow": true,
+    "glassReflection": false,
+    "grain": 0.0,
+    "labelCase": "uppercase"
+  },
+  "toneColor": {
+    "enabled": true,
+    "targets": [
+      "spectrum"
+    ],
+    "warm": "#D9603A",
+    "cool": "#8FC7D8"
+  },
+  "motion": {
+    "fast": 100,
+    "slow": 150,
+    "ease": "snap"
+  },
+  "decor": [
+    "rivets",
+    "hazard-stripe"
+  ],
+  "signature": {
+    "id": "panel-instrumen",
+    "name": {
+      "id": "Panel Instrumen",
+      "en": "Instrument Panel"
+    },
+    "sidebar": "shown",
+    "queue": "floating",
+    "transport": "full",
+    "signal": true,
+    "libraryHome": "tracks",
+    "nowPlaying": "instrument",
+    "cover": "instrument",
+    "position": "dial",
+    "chrome": "none",
+    "plates": true,
+    "panels": {
+      "details": false
+    }
+  }
+}

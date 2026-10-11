@@ -12,7 +12,14 @@
 	import { currentLocale, LOCALES, t, type Locale } from '$lib/i18n/index.svelte';
 	import type { MessageKey } from '$lib/i18n/dictionary';
 	import { settings, updateDisplay } from '$lib/settings.svelte';
-	import { activeTheme, availableThemes, selectTheme } from '$lib/theme/index.svelte';
+	import { activeTheme, availableThemes } from '$lib/theme/index.svelte';
+	import { chooseLayout, layoutChoice, PRESETS, wearTheme, type Preset } from '$lib/arrangement.svelte';
+
+	const presetKeys: Record<Preset, MessageKey> = {
+		classic: 'layout.classic',
+		gallery: 'layout.gallery',
+		fullscreen: 'layout.fullscreen'
+	};
 
 	const languageKeys: Record<Locale, MessageKey> = { id: 'language.id', en: 'language.en' };
 
@@ -75,11 +82,36 @@
 					type="button"
 					class="chip"
 					aria-pressed={activeTheme()?.id === theme.id}
-					onclick={() => selectTheme(theme.id, document.documentElement)}
+					onclick={() => wearTheme(theme.id, document.documentElement)}
 					>{theme.name[currentLocale()]}</button
 				>
 			{/each}
 		</div>
+	</section>
+	<section>
+		<h2 class="label">{t('layout.label')}</h2>
+		<div class="chips">
+			<!-- The theme's own layout first, under its own name; only a theme
+			     that has one offers it. -->
+			{#if activeTheme()?.signature}
+				{@const own = activeTheme()?.signature}
+				<button
+					type="button"
+					class="chip"
+					aria-pressed={layoutChoice() === 'signature'}
+					onclick={() => chooseLayout('signature')}>{own?.name[currentLocale()]}</button
+				>
+			{/if}
+			{#each PRESETS as preset (preset)}
+				<button
+					type="button"
+					class="chip"
+					aria-pressed={layoutChoice() === preset}
+					onclick={() => chooseLayout(preset)}>{t(presetKeys[preset])}</button
+				>
+			{/each}
+		</div>
+		<p class="note muted">{t('layout.hint')}</p>
 	</section>
 	<section>
 		<h2 class="label">{t('toneColor.label')}</h2>

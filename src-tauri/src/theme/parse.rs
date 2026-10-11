@@ -8,11 +8,15 @@
 use anyhow::{anyhow, Context, Result};
 use serde_json::Value;
 
+use std::collections::BTreeMap;
+
 use super::model::{
-    Base, Colors, ControlShape, Density, DialogStyle, Easing, EdgeColors, Effects, Fonts,
-    FrameStyle, LabelCase, LitColors, LocalizedName, MeterVariant, Motion, PanelTexture, Radius,
-    RoleColors, RowStyle, Scrollbar, Shape, SpectrumVariant, StageIndicator, SurfaceColors,
-    TextColors, Theme, TimeDisplay, ToneColor, ToneTarget, TooltipStyle, Variants,
+    Arrangement, Base, Chrome, Colors, ControlShape, CoverFrame, Decoration, Density, DialogStyle,
+    Easing, EdgeColors, Effects, Fonts, FrameStyle, LabelCase, LibraryHome, LitColors,
+    LocalizedName, MeterVariant, Motion, NowPlayingStyle, PanelTexture, PositionStyle, QueuePlace,
+    Radius, RoleColors, RowStyle, Scrollbar, Shape, SidebarPlace, Signature, SpectrumVariant,
+    StageIndicator, SurfaceColors, TextColors, Theme, TimeDisplay, ToneColor, ToneTarget,
+    TooltipStyle, TransportStyle, Variants,
 };
 
 /// A theme as read from a file, together with what had to be corrected.
@@ -53,17 +57,23 @@ pub fn parse_theme(id_hint: &str, source: &str) -> Result<LoadedTheme> {
         en: cx.string(name_node, "en", "name.en", &id),
     };
 
+    // Only a family Onsa bundles can be named (SPEC §9.3, layer 6): the
+    // interface never loads a font from anywhere, so a family it does not
+    // carry would quietly turn into whatever the system has.
     let fonts_node = cx.child(root, "fonts", "fonts");
-    let ui_font = cx.string(fonts_node, "ui", "fonts.ui", DEFAULT_UI_FONT);
+    let ui_font = cx.font(fonts_node, "ui", "fonts.ui", DEFAULT_UI_FONT);
+    let label_font = cx.font(fonts_node, "label", "fonts.label", &ui_font);
     let fonts = Fonts {
-        numeric: cx.string(fonts_node, "numeric", "fonts.numeric", &ui_font),
-        label: cx.string(fonts_node, "label", "fonts.label", &ui_font),
-        cjk_fallback: cx.string(
+        numeric: cx.font(fonts_node, "numeric", "fonts.numeric", &ui_font),
+        display: cx.font(fonts_node, "display", "fonts.display", &label_font),
+        lyrics: cx.font(fonts_node, "lyrics", "fonts.lyrics", &ui_font),
+        cjk_fallback: cx.font(
             fonts_node,
             "cjkFallback",
             "fonts.cjkFallback",
             DEFAULT_CJK_FONT,
         ),
+        label: label_font,
         ui: ui_font,
     };
 
@@ -123,6 +133,7 @@ pub fn parse_theme(id_hint: &str, source: &str) -> Result<LoadedTheme> {
         needle: cx.color(lit_node, "needle", "color.lit.needle", &lit_secondary),
         knob: cx.color(lit_node, "knob", "color.lit.knob", &text_primary),
         led: cx.color(lit_node, "led", "color.lit.led", &role.active),
+        stripe: cx.color(lit_node, "stripe", "color.lit.stripe", &role.caution),
         on: lit_on,
         secondary: lit_secondary,
     };
@@ -209,6 +220,10 @@ pub fn parse_theme(id_hint: &str, source: &str) -> Result<LoadedTheme> {
         cool: cx.color(tone_node, "cool", "toneColor.cool", &lit.on),
     };
 
+    let ornament = cx.ornament(root, "ornament", "ornament");
+    let decor = cx.list::<Decoration>(root, "decor", "decor");
+    let signature = cx.signature(root, "signature", "signature");
+
     let theme = Theme {
         id,
         name,
@@ -228,6 +243,9 @@ pub fn parse_theme(id_hint: &str, source: &str) -> Result<LoadedTheme> {
         effects,
         motion,
         tone_color,
+        ornament,
+        decor,
+        signature,
     };
 
     Ok(LoadedTheme {
@@ -241,6 +259,37 @@ pub fn parse_theme(id_hint: &str, source: &str) -> Result<LoadedTheme> {
 const DEFAULT_UI_FONT: &str = "system-ui";
 /// Family used when a theme names no fallback for Japanese, Korean or Chinese.
 const DEFAULT_CJK_FONT: &str = "Noto Sans JP";
+
+/// Every family Onsa bundles in `ui/static/fonts/`, each with its licence
+/// (SPEC §9.4, §14), plus the system's own interface font. A test keeps
+/// this list and the stylesheet that declares them in step.
+pub(crate) const BUNDLED_FONTS: &[&str] = &[
+    "system-ui",
+    "Noto Sans JP",
+    "B612",
+    "B612 Mono",
+    "Barlow",
+    "Barlow Condensed",
+    "Chakra Petch",
+    "Share Tech Mono",
+    "Saira Stencil One",
+];
+
+/// How a key of ornament text has to look: `ornament.<theme>.<name>`, the
+/// same shape the dictionary uses, and nothing a key could hide in.
+fn is_ornament_key(key: &str) -> bool {
+    let mut parts = key.split('.');
+    let well_formed = |part: &str| {
+        !part.is_empty()
+            && part
+                .chars()
+                .all(|ch| ch.is_ascii_alphanumeric() || ch == '-')
+    };
+    matches!(
+        (parts.next(), parts.next(), parts.next(), parts.next()),
+        (Some("ornament"), Some(theme), Some(name), None) if well_formed(theme) && well_formed(name)
+    )
+}
 
 /// Collects the corrections made while reading one theme file.
 #[derive(Default)]
@@ -358,6 +407,130 @@ impl Cx {
         }
     }
 
+    /// Reads a font family, which has to be one Onsa bundles.
+    fn font(&mut self, parent: Option<&Value>, key: &str, path: &str, default: &str) -> String {
+        let family = self.string(parent, key, path, default);
+        if BUNDLED_FONTS.contains(&family.as_str()) {
+            return family;
+        }
+        self.warnings.push(format!(
+            "{path}: \"{family}\" is not a font Onsa carries, using {default}"
+        ));
+        default.to_string()
+    }
+
+    /// Reads a list of words from one of the closed vocabularies. An unknown
+    /// word is reported and left out; the rest stand.
+    fn list<T: ThemeEnum + PartialEq>(
+        &mut self,
+        parent: Option<&Value>,
+        key: &str,
+        path: &str,
+    ) -> Vec<T> {
+        let Some(value) = parent.and_then(|parent| parent.get(key)) else {
+            return Vec::new();
+        };
+        let Some(items) = value.as_array() else {
+            self.note(path, "not an array");
+            return Vec::new();
+        };
+        let mut found = Vec::with_capacity(items.len());
+        for (index, item) in items.iter().enumerate() {
+            match item.as_str().and_then(T::parse) {
+                Some(one) if !found.contains(&one) => found.push(one),
+                Some(_) => {}
+                None => self
+                    .warnings
+                    .push(format!("{path}[{index}]: unknown value, ignored")),
+            }
+        }
+        found
+    }
+
+    /// Reads the keys of ornament text. A key that is not shaped like one is
+    /// reported and left out.
+    fn ornament(&mut self, parent: Option<&Value>, key: &str, path: &str) -> Vec<String> {
+        let Some(value) = parent.and_then(|parent| parent.get(key)) else {
+            return Vec::new();
+        };
+        let Some(items) = value.as_array() else {
+            self.note(path, "not an array");
+            return Vec::new();
+        };
+        let mut keys: Vec<String> = Vec::new();
+        for (index, item) in items.iter().enumerate() {
+            match item.as_str() {
+                Some(text) if is_ornament_key(text) => {
+                    if !keys.iter().any(|one| one == text) {
+                        keys.push(text.to_string());
+                    }
+                }
+                _ => self
+                    .warnings
+                    .push(format!("{path}[{index}]: not an ornament key, ignored")),
+            }
+        }
+        keys
+    }
+
+    /// Reads a signature layout. A theme without one is an ordinary theme;
+    /// one with a broken one keeps what can be read of it.
+    fn signature(&mut self, parent: Option<&Value>, key: &str, path: &str) -> Option<Signature> {
+        let node = Some(self.child(parent, key, path)?);
+        let at = |field: &str| format!("{path}.{field}");
+        let id = self.string(node, "id", &at("id"), "");
+        if id.trim().is_empty() {
+            self.note(&at("id"), "missing, so there is no signature layout");
+            return None;
+        }
+        let name_node = self.child(node, "name", &at("name"));
+        let name = LocalizedName {
+            id: self.string(name_node, "id", &at("name.id"), &id),
+            en: self.string(name_node, "en", &at("name.en"), &id),
+        };
+        let arrangement = Arrangement {
+            sidebar: self.enumeration::<SidebarPlace>(node, "sidebar", &at("sidebar")),
+            queue: self.enumeration::<QueuePlace>(node, "queue", &at("queue")),
+            transport: self.enumeration::<TransportStyle>(node, "transport", &at("transport")),
+            signal: self.boolean(node, "signal", &at("signal"), true),
+            library_home: self.enumeration::<LibraryHome>(node, "libraryHome", &at("libraryHome")),
+            now_playing: self.enumeration::<NowPlayingStyle>(node, "nowPlaying", &at("nowPlaying")),
+            cover: self.enumeration::<CoverFrame>(node, "cover", &at("cover")),
+            position: self.enumeration::<PositionStyle>(node, "position", &at("position")),
+            chrome: self.enumeration::<Chrome>(node, "chrome", &at("chrome")),
+            plates: self.boolean(node, "plates", &at("plates"), false),
+            panels: self.panels(node, "panels", &at("panels")),
+        };
+        Some(Signature {
+            id,
+            name,
+            arrangement,
+        })
+    }
+
+    /// Reads which Now Playing panels a layout shows. Only the four panels
+    /// of M14 are known; anything else is reported and left out.
+    fn panels(&mut self, parent: Option<&Value>, key: &str, path: &str) -> BTreeMap<String, bool> {
+        const PANELS: [&str; 4] = ["cover", "details", "lyrics", "visualizer"];
+        let mut panels = BTreeMap::new();
+        let Some(node) = self.child(parent, key, path) else {
+            return panels;
+        };
+        if let Some(entries) = node.as_object() {
+            for (name, shown) in entries {
+                match (PANELS.contains(&name.as_str()), shown.as_bool()) {
+                    (true, Some(shown)) => {
+                        panels.insert(name.clone(), shown);
+                    }
+                    _ => self.warnings.push(format!(
+                        "{path}.{name}: not a panel shown or hidden, ignored"
+                    )),
+                }
+            }
+        }
+        panels
+    }
+
     fn tone_targets(&mut self, parent: Option<&Value>, key: &str, path: &str) -> Vec<ToneTarget> {
         let Some(value) = parent.and_then(|parent| parent.get(key)) else {
             return Vec::new();
@@ -401,7 +574,16 @@ macro_rules! impl_theme_enum {
 
 impl_theme_enum!(
     Base,
+    Chrome,
     ControlShape,
+    CoverFrame,
+    Decoration,
+    LibraryHome,
+    NowPlayingStyle,
+    PositionStyle,
+    QueuePlace,
+    SidebarPlace,
+    TransportStyle,
     Density,
     DialogStyle,
     Easing,
@@ -658,5 +840,110 @@ mod tests {
         assert_eq!(loaded.theme.shape.control, ControlShape::Soft);
         assert_eq!(loaded.theme.variants.rows, RowStyle::Plain);
         assert_eq!(loaded.warnings.len(), 2, "{:?}", loaded.warnings);
+    }
+
+    #[test]
+    fn a_theme_from_before_m16_reads_without_a_word_about_what_it_never_said() {
+        // An old user theme names its fonts and colours and nothing of the
+        // new layers. That is not a mistake to report.
+        let source = r##"{ "id": "lama", "fonts": { "ui": "B612" } }"##;
+        let loaded = parse_theme("lama", source).expect("an object");
+        assert!(loaded.warnings.is_empty(), "{:?}", loaded.warnings);
+        let theme = loaded.theme;
+        assert_eq!(
+            theme.fonts.display, "B612",
+            "titles fall back to the labels"
+        );
+        assert_eq!(theme.fonts.lyrics, "B612", "and the words to the interface");
+        assert!(theme.ornament.is_empty());
+        assert!(theme.decor.is_empty());
+        assert_eq!(theme.signature, None);
+    }
+
+    #[test]
+    fn a_font_onsa_does_not_carry_is_not_named() {
+        // The interface never loads a font from anywhere (SPEC §14), so a
+        // family that is not bundled would turn into whatever the system has.
+        let source = r##"{ "fonts": { "ui": "Comic Sans MS", "numeric": "B612 Mono" } }"##;
+        let loaded = parse_theme("x", source).expect("an object");
+        assert_eq!(loaded.theme.fonts.ui, DEFAULT_UI_FONT);
+        assert_eq!(loaded.theme.fonts.numeric, "B612 Mono");
+        assert_eq!(loaded.warnings.len(), 1, "{:?}", loaded.warnings);
+        assert!(loaded.warnings[0].contains("Comic Sans MS"));
+    }
+
+    #[test]
+    fn ornament_text_is_named_by_key_and_only_by_key() {
+        let source = r##"{ "ornament": [
+            "ornament.kokpit-tua.plate",
+            "ornament.kokpit-tua.plate",
+            "<b>not a key</b>",
+            "nav.downloads",
+            "ornament.a.b.c",
+            42
+        ] }"##;
+        let loaded = parse_theme("x", source).expect("an object");
+        assert_eq!(loaded.theme.ornament, ["ornament.kokpit-tua.plate"]);
+        assert_eq!(
+            loaded.warnings.len(),
+            4,
+            "the duplicate is quiet, the rest are reported: {:?}",
+            loaded.warnings
+        );
+    }
+
+    #[test]
+    fn decorations_come_from_the_list_onsa_knows_how_to_draw() {
+        let source = r##"{ "decor": ["rivets", "fireworks", "hazard-stripe", "rivets"] }"##;
+        let loaded = parse_theme("x", source).expect("an object");
+        assert_eq!(
+            loaded.theme.decor,
+            [Decoration::Rivets, Decoration::HazardStripe]
+        );
+        assert_eq!(loaded.warnings.len(), 1, "{:?}", loaded.warnings);
+    }
+
+    #[test]
+    fn a_signature_layout_is_read_as_data() {
+        let source = r##"{ "signature": {
+            "id": "panel-instrumen",
+            "name": { "id": "Panel Instrumen", "en": "Instrument Panel" },
+            "queue": "floating",
+            "nowPlaying": "instrument",
+            "cover": "instrument",
+            "position": "dial",
+            "plates": true,
+            "panels": { "details": false, "mixer": true }
+        } }"##;
+        let loaded = parse_theme("x", source).expect("an object");
+        let signature = loaded.theme.signature.expect("a signature layout");
+        assert_eq!(signature.id, "panel-instrumen");
+        assert_eq!(signature.name.en, "Instrument Panel");
+        let arrangement = signature.arrangement;
+        assert_eq!(arrangement.queue, QueuePlace::Floating);
+        assert_eq!(
+            arrangement.sidebar,
+            SidebarPlace::Shown,
+            "what it does not say is the default"
+        );
+        assert_eq!(arrangement.now_playing, NowPlayingStyle::Instrument);
+        assert_eq!(arrangement.cover, CoverFrame::Instrument);
+        assert_eq!(arrangement.position, PositionStyle::Dial);
+        assert!(arrangement.plates);
+        assert!(arrangement.signal);
+        assert_eq!(arrangement.panels.get("details"), Some(&false));
+        assert!(
+            !arrangement.panels.contains_key("mixer"),
+            "an unknown panel is left out"
+        );
+        assert_eq!(loaded.warnings.len(), 1, "{:?}", loaded.warnings);
+    }
+
+    #[test]
+    fn a_signature_without_a_name_to_call_it_by_is_no_signature() {
+        let source = r##"{ "signature": { "position": "dial" } }"##;
+        let loaded = parse_theme("x", source).expect("an object");
+        assert_eq!(loaded.theme.signature, None);
+        assert_eq!(loaded.warnings.len(), 1, "{:?}", loaded.warnings);
     }
 }

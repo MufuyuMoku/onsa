@@ -10,7 +10,8 @@
 	import { currentLocale, LOCALES, t, type Locale } from '$lib/i18n/index.svelte';
 	import type { MessageKey } from '$lib/i18n/dictionary';
 	import { library, scanSummary } from '$lib/library.svelte';
-	import { activeTheme, availableThemes, selectTheme } from '$lib/theme/index.svelte';
+	import { activeTheme, availableThemes } from '$lib/theme/index.svelte';
+	import { wearTheme } from '$lib/arrangement.svelte';
 
 	let folder = $state<string | null>(null);
 	let phase = $state<'setup' | 'scanning' | 'done'>('setup');
@@ -90,7 +91,7 @@
 						type="button"
 						class="theme"
 						aria-pressed={activeTheme()?.id === theme.id}
-						onclick={() => selectTheme(theme.id, document.documentElement)}
+						onclick={() => wearTheme(theme.id, document.documentElement)}
 					>
 						<span class="swatches" aria-hidden="true">
 							<i style:background={theme.color.surface.body}></i>

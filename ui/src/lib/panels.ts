@@ -29,15 +29,32 @@ export const SHOWN_BY_DEFAULT: Record<PanelId, boolean> = {
 /** What is stored: only the panels somebody has decided about. */
 export type PanelPrefs = Record<string, boolean>;
 
-/** Whether a panel is showing. */
-export function panelShown(stored: PanelPrefs | undefined, id: PanelId): boolean {
-	const said = stored?.[id];
+/**
+ * What a layout shows before anybody says otherwise (SPEC M16). Layar
+ * penuh starts with the cover and the words only; the others say nothing
+ * and show everything.
+ */
+export type LayoutPanels = Partial<Record<string, boolean>>;
+
+/** What a panel shows when nobody decided: the layout's word, then all. */
+function untouched(id: PanelId, layout: LayoutPanels): boolean {
+	const said = layout[id];
 	return typeof said === 'boolean' ? said : SHOWN_BY_DEFAULT[id];
 }
 
+/** Whether a panel is showing. */
+export function panelShown(
+	stored: PanelPrefs | undefined,
+	id: PanelId,
+	layout: LayoutPanels = {}
+): boolean {
+	const said = stored?.[id];
+	return typeof said === 'boolean' ? said : untouched(id, layout);
+}
+
 /** The panels that are showing, in the order they appear. */
-export function shownPanels(stored: PanelPrefs | undefined): PanelId[] {
-	return PANELS.filter((id) => panelShown(stored, id));
+export function shownPanels(stored: PanelPrefs | undefined, layout: LayoutPanels = {}): PanelId[] {
+	return PANELS.filter((id) => panelShown(stored, id, layout));
 }
 
 /**
@@ -46,18 +63,26 @@ export function shownPanels(stored: PanelPrefs | undefined): PanelId[] {
  * A panel put back the way it started leaves the map rather than sitting in
  * it as a copy of the default, so what is stored stays a record of choices.
  */
-export function withPanels(stored: PanelPrefs | undefined, patch: Partial<Record<PanelId, boolean>>): PanelPrefs {
+export function withPanels(
+	stored: PanelPrefs | undefined,
+	patch: Partial<Record<PanelId, boolean>>,
+	layout: LayoutPanels = {}
+): PanelPrefs {
 	const next: PanelPrefs = { ...(stored ?? {}) };
 	for (const [id, shown] of Object.entries(patch) as [PanelId, boolean][]) {
-		if (shown === SHOWN_BY_DEFAULT[id]) delete next[id];
+		if (shown === untouched(id, layout)) delete next[id];
 		else next[id] = shown;
 	}
 	return next;
 }
 
 /** The same, for one panel. */
-export const withPanel = (stored: PanelPrefs | undefined, id: PanelId, shown: boolean): PanelPrefs =>
-	withPanels(stored, { [id]: shown });
+export const withPanel = (
+	stored: PanelPrefs | undefined,
+	id: PanelId,
+	shown: boolean,
+	layout: LayoutPanels = {}
+): PanelPrefs => withPanels(stored, { [id]: shown }, layout);
 
 /**
  * Whether the analysis tap is needed by anything on this screen.
@@ -66,5 +91,5 @@ export const withPanel = (stored: PanelPrefs | undefined, id: PanelId, shown: bo
  * hiding it has to stop the tap and not merely hide the picture (SPEC
  * section 4.4, and the M5 rule M14 keeps).
  */
-export const needsAnalysis = (stored: PanelPrefs | undefined): boolean =>
-	panelShown(stored, 'visualizer');
+export const needsAnalysis = (stored: PanelPrefs | undefined, layout: LayoutPanels = {}): boolean =>
+	panelShown(stored, 'visualizer', layout);

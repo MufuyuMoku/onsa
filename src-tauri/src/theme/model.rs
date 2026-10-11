@@ -1,6 +1,8 @@
 //! The theme model: what a theme file can say, and what every field falls
 //! back to when the file does not say it (SPEC §9.3).
 
+use std::collections::BTreeMap;
+
 use serde::Serialize;
 
 /// A validated theme, ready to be handed to the user interface.
@@ -31,6 +33,61 @@ pub struct Theme {
     pub motion: Motion,
     /// Tone colour behaviour (SPEC §9.5).
     pub tone_color: ToneColor,
+    /// Ornament text, as dictionary keys (SPEC §9.3, layer 7). The words
+    /// themselves live in the dictionary, in both languages; a key the
+    /// dictionary does not know is simply not shown.
+    pub ornament: Vec<String>,
+    /// Decorations the theme draws (SPEC §9.1): named from a closed list,
+    /// so a theme chooses among what Onsa knows how to draw rather than
+    /// bringing pictures of its own.
+    pub decor: Vec<Decoration>,
+    /// The theme's own arrangement of the window, if it has one (SPEC §9.3,
+    /// layer 8). Data, in the same shape as the standard presets.
+    pub signature: Option<Signature>,
+}
+
+/// A theme's signature layout: a name, and an arrangement.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct Signature {
+    /// Stable identifier of the layout.
+    pub id: String,
+    /// Its name, as the layout picker shows it.
+    pub name: LocalizedName,
+    /// What goes where.
+    pub arrangement: Arrangement,
+}
+
+/// What goes where in the window (SPEC M16).
+///
+/// The three standard presets are values of this same shape, written in
+/// the interface; a signature layout is one more value, read from a theme.
+/// Nothing here names a theme: every field chooses from a closed list of
+/// pieces Onsa knows how to draw, and any theme may choose any of them.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Arrangement {
+    /// Whether the navigation has a column of its own.
+    pub sidebar: SidebarPlace,
+    /// Whether the queue may stand beside the content, or only over it.
+    pub queue: QueuePlace,
+    /// How much of the transport is drawn.
+    pub transport: TransportStyle,
+    /// Whether the signal path strip is shown.
+    pub signal: bool,
+    /// What the library opens on.
+    pub library_home: LibraryHome,
+    /// How the Now Playing screen is arranged.
+    pub now_playing: NowPlayingStyle,
+    /// How the cover is framed on it.
+    pub cover: CoverFrame,
+    /// How the play position is shown on it.
+    pub position: PositionStyle,
+    /// Whether the window is drawn as a window inside the window.
+    pub chrome: Chrome,
+    /// Whether parts of the screen carry name plates.
+    pub plates: bool,
+    /// Which Now Playing panels show, as `setPanels` takes them (M14).
+    pub panels: BTreeMap<String, bool>,
 }
 
 /// Display name of a theme in both user interface languages.
@@ -53,6 +110,10 @@ pub struct Fonts {
     pub numeric: String,
     /// Family for fixed labels; falls back to the interface family.
     pub label: String,
+    /// Family for titles and headings; falls back to the label family.
+    pub display: String,
+    /// Family for the words of a song; falls back to the interface family.
+    pub lyrics: String,
     /// Family used behind the others for Japanese, Korean and Chinese text.
     pub cjk_fallback: String,
 }
@@ -150,6 +211,8 @@ pub struct LitColors {
     pub needle: String,
     /// Metal of a knob; falls back to the primary text colour.
     pub knob: String,
+    /// Colour of warning stripes, where a theme draws them.
+    pub stripe: String,
     /// Indicator lamp; falls back to the active role.
     pub led: String,
 }
@@ -496,3 +559,100 @@ impl Easing {
         }
     }
 }
+
+theme_enum!(
+    /// Something a theme draws for its look alone (SPEC §9.1). The ones that
+    /// move stop in power saving and under reduced motion.
+    Decoration, default Rivets {
+        /// Rivets in the corners of a panel. Still.
+        Rivets => "rivets",
+        /// Warning stripes under the navigation, in the stripe colour and
+        /// the well. Still.
+        HazardStripe => "hazard-stripe",
+    }
+);
+
+theme_enum!(
+    /// Whether the navigation has a column of its own.
+    SidebarPlace, default Shown {
+        /// Beside the content, as wide as the window allows.
+        Shown => "shown",
+        /// Behind a button; it opens over the content.
+        Hidden => "hidden",
+    }
+);
+
+theme_enum!(
+    /// Where the queue goes.
+    QueuePlace, default Docked {
+        /// In a column of its own when the window is wide enough.
+        Docked => "docked",
+        /// Always over the content, opened by a button.
+        Floating => "floating",
+    }
+);
+
+theme_enum!(
+    /// How much of the transport is drawn.
+    TransportStyle, default Full {
+        /// Everything: cover, title, controls, position, volume, meters.
+        Full => "full",
+        /// One slim bar: cover, title, controls, position, volume.
+        Bar => "bar",
+        /// Only what playing needs: the controls and the position.
+        Minimal => "minimal",
+    }
+);
+
+theme_enum!(
+    /// What the library opens on.
+    LibraryHome, default Tracks {
+        /// The list of songs.
+        Tracks => "tracks",
+        /// The grid of album covers.
+        Albums => "albums",
+    }
+);
+
+theme_enum!(
+    /// How the Now Playing screen is arranged.
+    NowPlayingStyle, default Classic {
+        /// The panels side by side, as Onsa has always drawn them.
+        Classic => "classic",
+        /// A large cover and the words, and little else.
+        Immersive => "immersive",
+        /// Cover in a frame beside the title and words, with the position
+        /// and the spectrum as instruments underneath.
+        Instrument => "instrument",
+    }
+);
+
+theme_enum!(
+    /// How the cover is framed on the Now Playing screen.
+    CoverFrame, default Plain {
+        /// Just the picture.
+        Plain => "plain",
+        /// In a thick instrument bezel, with a crosshair over it.
+        Instrument => "instrument",
+    }
+);
+
+theme_enum!(
+    /// How the play position is shown on the Now Playing screen.
+    PositionStyle, default Bar {
+        /// A horizontal bar.
+        Bar => "bar",
+        /// A round dial with a hand that goes round once per song.
+        Dial => "dial",
+    }
+);
+
+theme_enum!(
+    /// Whether the window is drawn as a window inside the window.
+    Chrome, default None {
+        /// No; the operating system's frame is the only frame.
+        None => "none",
+        /// Yes: a title bar, a menu bar, a task panel and a task bar.
+        Window => "window",
+    }
+);

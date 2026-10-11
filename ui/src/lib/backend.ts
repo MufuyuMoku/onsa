@@ -372,6 +372,10 @@ export interface DisplayPrefs {
 	sortDescending: boolean;
 	/** Which panels on Now Playing are showing; only the decided ones. */
 	panels: Record<string, boolean>;
+	/** Which layout arranges the window (SPEC M16); null when nobody chose. */
+	layout: string | null;
+	/** The panel choices made in each layout but Klasik, by layout. */
+	panelsBy: Record<string, Record<string, boolean>>;
 }
 
 /** Where one list was left standing, and under which ordering. */

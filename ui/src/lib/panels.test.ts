@@ -43,3 +43,16 @@ test('hiding the visualizer is what stops the analysis', () => {
 	assert.equal(needsAnalysis({ lyrics: false }), true, 'the other panels cost no sound');
 	assert.equal(needsAnalysis({ visualizer: false }), false);
 });
+
+test('a layout may start with fewer panels, and the choices made in it are its own', () => {
+	const immersive = { cover: true, lyrics: true, details: false, visualizer: false };
+	// Nobody decided anything in it yet: the layout's word stands.
+	assert.equal(panelShown(undefined, 'visualizer', immersive), false);
+	assert.equal(panelShown(undefined, 'lyrics', immersive), true);
+	// Turned on there, it is recorded against the layout's own start.
+	const on = withPanel(undefined, 'visualizer', true, immersive);
+	assert.deepEqual(on, { visualizer: true });
+	assert.equal(panelShown(on, 'visualizer', immersive), true);
+	// And turned back off, the record empties again.
+	assert.deepEqual(withPanel(on, 'visualizer', false, immersive), {});
+});

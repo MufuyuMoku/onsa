@@ -415,3 +415,112 @@ input[type='checkbox'] {
 	background: transparent;
 	box-shadow: none;
 }
+
+/* ------------------------------------------------------------ decorations
+   What a theme draws for its look alone (SPEC section 9.1). Each is named
+   in the theme's `decor` list and drawn here from the theme's own colours;
+   none of them is a control, none of them takes the pointer, and the ones
+   that move stop in power saving and under reduced motion. */
+
+/* Rivets in the corners of the navigation and of the content panel. */
+:root[data-onsa-decor~='rivets'] .shell > .sidebar,
+:root[data-onsa-decor~='rivets'] .shell > .content {
+	position: relative;
+}
+
+:root[data-onsa-decor~='rivets'] .shell > .sidebar::before,
+:root[data-onsa-decor~='rivets'] .shell > .content::before {
+	content: '';
+	position: absolute;
+	inset: 5px;
+	z-index: 1;
+	pointer-events: none;
+	--rivet: radial-gradient(
+		circle closest-side at 40% 35%,
+		var(--onsa-edge-light),
+		var(--onsa-edge-dark) 85%,
+		transparent 100%
+	);
+	background:
+		var(--rivet) left top / 7px 7px no-repeat,
+		var(--rivet) right top / 7px 7px no-repeat,
+		var(--rivet) left bottom / 7px 7px no-repeat,
+		var(--rivet) right bottom / 7px 7px no-repeat;
+}
+
+/* Warning stripes along the foot of the navigation. */
+:root[data-onsa-decor~='hazard-stripe'] .shell > .sidebar::after {
+	content: '';
+	flex: none;
+	order: 99;
+	height: 14px;
+	/* At the foot, after every entry: on a window tall enough it sits at
+	   the bottom of the panel, and on a short one it comes after the last
+	   entry rather than over any of them. */
+	margin: auto 10px 10px;
+	border-radius: 2px;
+	pointer-events: none;
+	background: repeating-linear-gradient(
+		-45deg,
+		var(--onsa-lit-stripe) 0 8px,
+		var(--onsa-surface-well) 8px 16px
+	);
+}
+
+/* The navigation speaks in the theme's label face, as a menu printed on a
+   panel does; a theme that writes its labels in capitals writes these so. */
+.sidebar .item .text {
+	font-family: var(--onsa-font-label);
+}
+
+:root[data-onsa-label-case='uppercase'] .sidebar .item .text {
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+}
+
+/* A theme whose stages are marked by lamps marks the page you are on the
+   same way: a lamp at the end of each entry, lit on the current one. It is
+   part of the entry, which is already the control; it is not one itself. */
+:root[data-onsa-stage-indicator='led'] .sidebar[data-mode='full'] .item::after {
+	content: '';
+	flex: none;
+	width: 9px;
+	height: 9px;
+	margin-left: auto;
+	border: 1px solid var(--onsa-edge-dark);
+	border-radius: 50%;
+	background: var(--onsa-surface-well);
+}
+
+:root[data-onsa-stage-indicator='led'] .sidebar[data-mode='full'] .item[aria-current='true']::after {
+	background: var(--onsa-lit-led);
+	box-shadow: 0 0 6px var(--onsa-lit-led);
+}
+
+/* A theme whose panels stand out of the surface draws the navigation and
+   the content as two plates on it, with the window's ground between them. */
+:root[data-onsa-frame='raised'] .shell {
+	background: var(--onsa-surface-app);
+}
+
+:root[data-onsa-frame='raised'] .shell > .sidebar,
+:root[data-onsa-frame='raised'] .shell > .content,
+:root[data-onsa-frame='raised'] .shell > .side {
+	margin: 8px 0 8px 8px;
+	border: var(--onsa-hairline) solid var(--onsa-surface-line);
+	border-radius: var(--onsa-radius-lg);
+	background: var(--onsa-surface-body);
+	box-shadow:
+		inset 1px 1px 0 var(--onsa-edge-light),
+		inset -1px -1px 0 var(--onsa-edge-dark);
+}
+
+:root[data-onsa-frame='raised'] .shell > .content,
+:root[data-onsa-frame='raised'] .shell > .side {
+	margin-right: 8px;
+}
+
+/* The name of the application in the theme's display face. */
+.sidebar .mark {
+	font-family: var(--onsa-font-display);
+}

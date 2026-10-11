@@ -151,6 +151,12 @@ const id = {
 	'lyrics.writeBesideHint': 'Dengan begitu liriknya jadi milikmu, dan tetap ada walau tanpa internet.',
 	'nowPlaying.open': 'Sedang diputar',
 	'nowPlaying.close': 'Kembali ke library',
+	'nowPlaying.dialUnit': 'Menit',
+	'nowPlaying.dialLabel': 'Posisi putar {percent} persen, {time}',
+	'plate.cover': 'Sampul',
+	'plate.position': 'Posisi',
+	'plate.spectrum': 'Spektrum · 20 Hz – 20 kHz',
+	'plate.track': 'Trek {n}',
 	'nowPlaying.format': 'Format',
 	'nowPlaying.output': 'Output',
 	'panel.title': 'Panel',
@@ -323,6 +329,12 @@ const id = {
 		'Mencatat lebih rinci. Nyalakan, ulangi masalahnya, lalu kirim file log terbaru dari folder log.',
 
 	'theme.label': 'Tema',
+	'layout.label': 'Susunan',
+	'layout.classic': 'Klasik',
+	'layout.gallery': 'Galeri',
+	'layout.fullscreen': 'Layar penuh',
+	'layout.hint':
+		'Tema mengatur rupa, susunan mengatur letak. Memilih tema memakai susunan khasnya, bila ada; susunan lain tetap bisa dipilih sesudahnya.',
 	'toneColor.label': 'Warna nada',
 	'toneColor.off': 'Mati',
 	'toneColor.subtle': 'Halus',
@@ -922,6 +934,8 @@ const id = {
 	'help.says.stop':
 		'Menghentikan satu unduhan yang sedang berjalan. Berkas setengah jadi dibuang.',
 	'help.says.stopAll': 'Menghentikan semua yang sedang berjalan dan yang masih menunggu.',
+	'help.says.layoutPick':
+		'Memilih susunan jendela. Klasik adalah susunan Onsa yang biasa; Galeri menampilkan album sebagai grid sampul dengan satu bilah pemutar; Layar penuh menampilkan sampul besar dan lirik dengan kontrol seperlunya. Tema yang punya susunan khas menampilkannya di depan dengan namanya sendiri. Tiap susunan mengingat panel Sedang diputar-nya sendiri.',
 	'help.says.chooseOutput':
 		'Memilih folder tempat hasil unduhan disimpan. Kalau folder itu di luar library, Onsa bertanya apakah folder itu mau ditambahkan ke library.',
 	'help.says.outputDefault':
@@ -1376,6 +1390,12 @@ const en: Record<MessageKey, string> = {
 	'lyrics.writeBesideHint': 'Then they are yours, and they are still there without the internet.',
 	'nowPlaying.open': 'Now Playing',
 	'nowPlaying.close': 'Back to the library',
+	'nowPlaying.dialUnit': 'Minutes',
+	'nowPlaying.dialLabel': 'Play position {percent} percent, {time}',
+	'plate.cover': 'Cover',
+	'plate.position': 'Position',
+	'plate.spectrum': 'Spectrum · 20 Hz – 20 kHz',
+	'plate.track': 'Track {n}',
 	'nowPlaying.format': 'Format',
 	'nowPlaying.output': 'Output',
 	'panel.title': 'Panels',
@@ -1548,6 +1568,12 @@ const en: Record<MessageKey, string> = {
 		'Records more detail. Switch it on, repeat the problem, then send the newest file from the log folder.',
 
 	'theme.label': 'Theme',
+	'layout.label': 'Layout',
+	'layout.classic': 'Classic',
+	'layout.gallery': 'Gallery',
+	'layout.fullscreen': 'Full screen',
+	'layout.hint':
+		'The theme sets the look, the layout sets where things go. Choosing a theme brings its own layout, when it has one; another layout can still be chosen afterwards.',
 	'toneColor.label': 'Tone colour',
 	'toneColor.off': 'Off',
 	'toneColor.subtle': 'Subtle',
@@ -2145,6 +2171,8 @@ const en: Record<MessageKey, string> = {
 	'help.says.fetch': 'Starts fetching what was found into your music folder.',
 	'help.says.stop': 'Stops one download that is running. A half-finished file is thrown away.',
 	'help.says.stopAll': 'Stops everything that is running and everything still waiting.',
+	'help.says.layoutPick':
+		'Chooses how the window is arranged. Classic is Onsa as usual; Gallery shows albums as a grid of covers with one player bar; Full screen shows the cover large with the words and only the controls playing needs. A theme with a layout of its own shows it first, under its own name. Each layout remembers its own Now Playing panels.',
 	'help.says.chooseOutput':
 		'Chooses the folder downloads are saved in. If that folder is outside the library, Onsa asks whether to add it to the library.',
 	'help.says.outputDefault':

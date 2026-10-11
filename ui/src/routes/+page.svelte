@@ -7,9 +7,11 @@
 	import { nextTrack, previousTrack, seek, togglePlay } from '$lib/backend';
 	import { followTone } from '$lib/analysis.svelte';
 	import { app, navigate, setMiniPlayer } from '$lib/app.svelte';
+	import { arrangement, layoutChoice } from '$lib/arrangement.svelte';
 	import { carry } from '$lib/carry.svelte';
 	import {
 		closeOverlays,
+		followArrangement,
 		followWidth,
 		layout,
 		toggleHelp,
@@ -23,6 +25,7 @@
 	import { player } from '$lib/player.svelte';
 	import { settings, updateDsp } from '$lib/settings.svelte';
 	import { themeFailure } from '$lib/theme/index.svelte';
+	import AlbumGrid from '$lib/components/AlbumGrid.svelte';
 	import AlbumList from '$lib/components/AlbumList.svelte';
 	import AlbumView from '$lib/components/AlbumView.svelte';
 	import BrowseView from '$lib/components/BrowseView.svelte';
@@ -52,6 +55,14 @@
 
 	const fault = $derived(app.failure ?? themeFailure());
 	const view = $derived(app.view);
+	/** What goes where: a standard preset, or the theme's own (SPEC M16). */
+	const arranged = $derived(arrangement());
+
+	// The layout decides whether the navigation and the queue may have
+	// columns of their own; the window's width decides the rest.
+	$effect(() => {
+		followArrangement(arranged.sidebar === 'hidden', arranged.queue === 'floating');
+	});
 	let searchField: HTMLInputElement | undefined = $state();
 
 	// The hue follows the sound while tone colour is on (SPEC section 9.5).
@@ -144,7 +155,10 @@
 	<div
 		class="shell"
 		data-sidebar={layout.sidebar}
+		data-layout={layoutChoice()}
+		data-transport={arranged.transport}
 		class:with-queue={layout.queueDocked}
+		class:no-signal={!arranged.signal}
 	>
 		{#if layout.sidebar !== 'hidden'}
 			<Sidebar mode={layout.sidebar} />
@@ -206,7 +220,9 @@
 				{:else if view.kind === 'tracks'}
 					<TrackList source={{ kind: 'library' }} view="tracks" />
 				{:else if view.kind === 'albums'}
-					<AlbumList />
+					<!-- A layout that opens the library on its covers shows them
+					     as covers (Galeri); the others list them. -->
+					{#if arranged.libraryHome === 'albums'}<AlbumGrid />{:else}<AlbumList />{/if}
 				{:else if view.kind === 'album'}
 					<AlbumView id={view.id} />
 				{:else if view.kind === 'artists'}
@@ -256,8 +272,10 @@
 		{#if layout.queueDocked}
 			<SidePanel />
 		{/if}
-		<div class="transport"><Transport /></div>
-		<div class="signal"><SignalPath /></div>
+		<div class="transport"><Transport style={arranged.transport} /></div>
+		{#if arranged.signal}
+			<div class="signal"><SignalPath /></div>
+		{/if}
 	</div>
 
 	{#if carry.what && carry.at}
