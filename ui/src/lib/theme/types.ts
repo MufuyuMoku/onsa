@@ -8,12 +8,19 @@
 
 export type Base = 'dark' | 'light';
 export type MeterVariant = 'bar' | 'segment' | 'needle' | 'line';
-export type SpectrumVariant = 'bar' | 'segment' | 'soft' | 'dots';
+export type SpectrumVariant = 'bar' | 'segment' | 'soft' | 'dots' | 'grass';
+export type ProgressStyle = 'plain' | 'stars' | 'blocks';
 export type PanelTexture = 'glass' | 'bezel' | 'brushed';
-export type StageIndicator = 'glow-chip' | 'outline-chip' | 'led' | 'glow-text' | 'brackets';
+export type StageIndicator =
+	| 'glow-chip'
+	| 'outline-chip'
+	| 'led'
+	| 'glow-text'
+	| 'brackets'
+	| 'text';
 export type TimeDisplay = 'ghost-segment' | 'plain';
 export type LabelCase = 'as-written' | 'uppercase';
-export type ControlShape = 'soft' | 'square' | 'pill' | 'bevel' | 'ring';
+export type ControlShape = 'soft' | 'square' | 'pill' | 'bevel' | 'ring' | 'box';
 export type FrameStyle = 'hairline' | 'inset' | 'raised' | 'none' | 'card';
 export type RowStyle = 'lines' | 'stripes' | 'plain';
 export type Scrollbar = 'thin' | 'classic' | 'hidden';
@@ -81,6 +88,11 @@ export interface Theme {
 			highlight: string;
 			/** The floor under the transport, where a theme draws one. */
 			ground: string;
+			/** Ornament text; never the clip colour. */
+			ornament: string;
+			/** Something pale standing in a scene, and its edge. */
+			paper: string;
+			paperEdge: string;
 		};
 		/** The two sides of a raised or sunken edge. */
 		edge: {
@@ -105,6 +117,8 @@ export interface Theme {
 		scrollbar: Scrollbar;
 		tooltip: TooltipStyle;
 		dialog: DialogStyle;
+		/** How the position bar of the transport is drawn. */
+		progress: ProgressStyle;
 	};
 	effects: {
 		glow: boolean;
@@ -141,15 +155,24 @@ export type Decoration =
 	| 'lure'
 	| 'wallpaper'
 	| 'carpet'
-	| 'exit-sign';
+	| 'exit-sign'
+	| 'clouds'
+	| 'sparkles'
+	| 'sky-eye';
 export type SidebarPlace = 'shown' | 'hidden';
 export type QueuePlace = 'docked' | 'floating';
 export type TransportStyle = 'full' | 'bar' | 'minimal';
 export type LibraryHome = 'tracks' | 'albums';
-export type NowPlayingStyle = 'classic' | 'immersive' | 'instrument' | 'dive' | 'memo';
-export type CoverFrame = 'plain' | 'instrument' | 'lit' | 'photo';
+export type NowPlayingStyle =
+	| 'classic'
+	| 'immersive'
+	| 'instrument'
+	| 'dive'
+	| 'memo'
+	| 'meadow';
+export type CoverFrame = 'plain' | 'instrument' | 'lit' | 'photo' | 'door';
 export type PositionStyle = 'bar' | 'dial' | 'depth';
-export type Chrome = 'none' | 'window' | 'corridor';
+export type Chrome = 'none' | 'window' | 'corridor' | 'meadow';
 
 /**
  * What goes where in the window (SPEC M16).

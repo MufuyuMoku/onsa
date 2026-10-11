@@ -1,0 +1,137 @@
+{
+  "$schema": "onsa-theme/1",
+  "id": "siang-mimpi",
+  "name": {
+    "id": "Siang Mimpi",
+    "en": "Daydream"
+  },
+  "version": 1,
+  "builtin": true,
+  "base": "light",
+  "fonts": {
+    "ui": "Pixelify Sans",
+    "numeric": "Pixelify Sans",
+    "label": "Pixelify Sans",
+    "display": "Gloock",
+    "lyrics": "Gloock",
+    "cjkFallback": "Noto Sans JP"
+  },
+  "color": {
+    "surface": {
+      "app": "#A9CFF5",
+      "body": "#FFFFFF",
+      "bodyHighlight": "#FFF6C9",
+      "well": "#F7FBFF",
+      "raised": "#EEF4FF",
+      "line": "#2B2B5A",
+      "backdrop": [
+        "#7FB2EC",
+        "#A9CFF5",
+        "#E4F1FF",
+        "#F7FBFF"
+      ]
+    },
+    "text": {
+      "primary": "#2B2B5A",
+      "secondary": "#4A5A8A",
+      "silkscreen": "#4A5A8A"
+    },
+    "role": {
+      "label": "#4A5A8A",
+      "adjustable": "#2B2B5A",
+      "active": "#2E8A2E",
+      "position": "#3A55B0",
+      "caution": "#E0A21F",
+      "clip": "#D0312D"
+    },
+    "lit": {
+      "on": "#7CC45A",
+      "ghost": "rgba(43,43,90,0.06)",
+      "glow": "rgba(255,255,255,0.9)",
+      "secondary": "#4A5A8A",
+      "meterFace": "#FFFFFF",
+      "needle": "#D0312D",
+      "knob": "#2B2B5A",
+      "led": "#2E8A2E",
+      "highlight": "#FFF6C9",
+      "ground": "#6CB04A",
+      "ornament": "#A8326E",
+      "paper": "#F4EEDF",
+      "paperEdge": "#C8BCA0"
+    },
+    "edge": {
+      "light": "#FFFFFF",
+      "dark": "#2B2B5A"
+    }
+  },
+  "shape": {
+    "radius": {
+      "sm": 0,
+      "md": 0,
+      "lg": 0
+    },
+    "density": "comfortable",
+    "hairline": 1,
+    "control": "box",
+    "frame": "card"
+  },
+  "variants": {
+    "meter": "bar",
+    "spectrum": "grass",
+    "panelTexture": "bezel",
+    "stageIndicator": "text",
+    "timeDisplay": "plain",
+    "rows": "lines",
+    "scrollbar": "classic",
+    "tooltip": "panel",
+    "dialog": "raised",
+    "progress": "stars"
+  },
+  "effects": {
+    "glow": false,
+    "glassReflection": false,
+    "grain": 0.0,
+    "labelCase": "as-written"
+  },
+  "toneColor": {
+    "enabled": true,
+    "targets": [
+      "spectrum"
+    ],
+    "warm": "#C7801F",
+    "cool": "#2A9A8C"
+  },
+  "motion": {
+    "fast": 160,
+    "slow": 280,
+    "ease": "soft"
+  },
+  "decor": [
+    "clouds",
+    "sparkles",
+    "sky-eye"
+  ],
+  "ornament": [
+    "ornament.siang-mimpi.title"
+  ],
+  "signature": {
+    "id": "padang",
+    "name": {
+      "id": "Padang",
+      "en": "Meadow"
+    },
+    "sidebar": "shown",
+    "queue": "floating",
+    "transport": "full",
+    "signal": true,
+    "libraryHome": "tracks",
+    "nowPlaying": "meadow",
+    "cover": "door",
+    "position": "bar",
+    "chrome": "meadow",
+    "plates": false,
+    "panels": {
+      "details": false
+    }
+  }
+}

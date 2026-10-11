@@ -45,7 +45,7 @@ pub fn current_choice(stored: Option<String>) -> Option<String> {
 }
 
 /// The three built-in themes, in the order the first-run screen shows them.
-const BUILTIN_SOURCES: [(&str, &str); 9] = [
+const BUILTIN_SOURCES: [(&str, &str); 10] = [
     (
         "kokpit-tua",
         include_str!("../../../themes/kokpit-tua.json"),
@@ -57,6 +57,10 @@ const BUILTIN_SOURCES: [(&str, &str); 9] = [
     (
         "lorong-kuning",
         include_str!("../../../themes/lorong-kuning.json"),
+    ),
+    (
+        "siang-mimpi",
+        include_str!("../../../themes/siang-mimpi.json"),
     ),
     ("kaca-asap", include_str!("../../../themes/kaca-asap.json")),
     (
@@ -603,14 +607,29 @@ mod tests {
                 let main = contrast(&theme.color.text.primary, ground);
                 assert!(main >= 4.5, "{id}: main text on {name} is {main:.2}:1");
             }
-            for (name, colour, at_least) in [
-                ("secondary text", &theme.color.text.secondary, 3.0),
-                ("label", &theme.color.role.label, 3.0),
-                ("the line being sung", &theme.color.role.position, 3.0),
-                ("adjustable", &theme.color.role.adjustable, 3.0),
-            ] {
-                let seen = contrast(colour, &surface.body);
-                assert!(seen >= at_least, "{id}: {name} on the panel is {seen:.2}:1");
+            // Text is also written straight on the window's ground where a
+            // theme draws one, so each colour of the gradient is a ground.
+            let grounds: Vec<(&str, &String)> = std::iter::once(("panel", &surface.body))
+                .chain(surface.backdrop.iter().map(|stop| ("backdrop", stop)))
+                .collect();
+            for (where_, ground) in &grounds {
+                let main = contrast(&theme.color.text.primary, ground);
+                assert!(
+                    main >= 4.5,
+                    "{id}: main text on the {where_} {ground} is {main:.2}:1"
+                );
+                for (name, colour, at_least) in [
+                    ("secondary text", &theme.color.text.secondary, 3.0),
+                    ("label", &theme.color.role.label, 3.0),
+                    ("the line being sung", &theme.color.role.position, 3.0),
+                    ("adjustable", &theme.color.role.adjustable, 3.0),
+                ] {
+                    let seen = contrast(colour, ground);
+                    assert!(
+                        seen >= at_least,
+                        "{id}: {name} on the {where_} {ground} is {seen:.2}:1"
+                    );
+                }
             }
         }
     }

@@ -13,10 +13,10 @@ use std::collections::BTreeMap;
 use super::model::{
     Arrangement, Base, Chrome, Colors, ControlShape, CoverFrame, Decoration, Density, DialogStyle,
     Easing, EdgeColors, Effects, Fonts, FrameStyle, LabelCase, LibraryHome, LitColors,
-    LocalizedName, MeterVariant, Motion, NowPlayingStyle, PanelTexture, PositionStyle, QueuePlace,
-    Radius, RoleColors, RowStyle, Scrollbar, Shape, SidebarPlace, Signature, SpectrumVariant,
-    StageIndicator, SurfaceColors, TextColors, Theme, TimeDisplay, ToneColor, ToneTarget,
-    TooltipStyle, TransportStyle, Variants,
+    LocalizedName, MeterVariant, Motion, NowPlayingStyle, PanelTexture, PositionStyle,
+    ProgressStyle, QueuePlace, Radius, RoleColors, RowStyle, Scrollbar, Shape, SidebarPlace,
+    Signature, SpectrumVariant, StageIndicator, SurfaceColors, TextColors, Theme, TimeDisplay,
+    ToneColor, ToneTarget, TooltipStyle, TransportStyle, Variants,
 };
 
 /// A theme as read from a file, together with what had to be corrected.
@@ -140,6 +140,9 @@ pub fn parse_theme(id_hint: &str, source: &str) -> Result<LoadedTheme> {
         stripe: cx.color(lit_node, "stripe", "color.lit.stripe", &role.caution),
         highlight: cx.color(lit_node, "highlight", "color.lit.highlight", "transparent"),
         ground: cx.color(lit_node, "ground", "color.lit.ground", &raised_surface),
+        ornament: cx.color(lit_node, "ornament", "color.lit.ornament", &role.label),
+        paper: cx.color(lit_node, "paper", "color.lit.paper", &surface.body),
+        paper_edge: cx.color(lit_node, "paperEdge", "color.lit.paperEdge", &surface.line),
         on: lit_on,
         secondary: lit_secondary,
     };
@@ -194,6 +197,7 @@ pub fn parse_theme(id_hint: &str, source: &str) -> Result<LoadedTheme> {
         scrollbar: cx.enumeration::<Scrollbar>(variants_node, "scrollbar", "variants.scrollbar"),
         tooltip: cx.enumeration::<TooltipStyle>(variants_node, "tooltip", "variants.tooltip"),
         dialog: cx.enumeration::<DialogStyle>(variants_node, "dialog", "variants.dialog"),
+        progress: cx.enumeration::<ProgressStyle>(variants_node, "progress", "variants.progress"),
     };
 
     let effects_node = cx.child(root, "effects", "effects");
@@ -283,6 +287,8 @@ pub(crate) const BUNDLED_FONTS: &[&str] = &[
     "Martian Mono",
     "Courier Prime",
     "VT323",
+    "Gloock",
+    "Pixelify Sans",
 ];
 
 /// How a key of ornament text has to look: `ornament.<theme>.<name>`, the
@@ -616,6 +622,7 @@ impl_theme_enum!(
     LibraryHome,
     NowPlayingStyle,
     PositionStyle,
+    ProgressStyle,
     QueuePlace,
     SidebarPlace,
     TransportStyle,

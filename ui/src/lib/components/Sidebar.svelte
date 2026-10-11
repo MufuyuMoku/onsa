@@ -313,7 +313,7 @@
 		font-size: 10px;
 		line-height: 1.7;
 		letter-spacing: 0.06em;
-		color: var(--onsa-role-label);
+		color: var(--onsa-lit-ornament);
 		text-transform: uppercase;
 	}
 </style>

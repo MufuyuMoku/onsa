@@ -345,6 +345,16 @@
 		text-shadow: 0 0 8px var(--onsa-role-active);
 	}
 
+	/* Only the colour of the name changes. */
+	:global(:root[data-onsa-stage-indicator='text']) .stage {
+		border-color: transparent;
+		padding: 3px 2px;
+	}
+
+	:global(:root[data-onsa-stage-indicator='text']) .stage.on {
+		color: var(--onsa-role-active);
+	}
+
 	/* The name in square brackets, like a memo typed in a hurry. */
 	:global(:root[data-onsa-stage-indicator='brackets']) .stage {
 		border-color: transparent;
@@ -394,7 +404,7 @@
 		min-width: 0;
 		margin-left: auto;
 		padding-left: 12px;
-		color: var(--onsa-role-label);
+		color: var(--onsa-lit-ornament);
 		font-size: 11px;
 	}
 </style>

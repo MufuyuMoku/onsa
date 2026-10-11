@@ -531,7 +531,7 @@
 		font-family: var(--onsa-font-label);
 		font-size: 10px;
 		letter-spacing: 0.2em;
-		color: var(--onsa-role-label);
+		color: var(--onsa-lit-ornament);
 		text-transform: uppercase;
 	}
 
@@ -707,8 +707,122 @@
 		font-family: var(--onsa-font-label);
 		font-size: 11px;
 		letter-spacing: 0.14em;
-		color: var(--onsa-role-label);
+		color: var(--onsa-lit-ornament);
 		text-transform: uppercase;
+	}
+
+	/* Padang: the title and the words floating in the sky, the cover seen
+	   through a door standing on the ground, and the spectrum growing out of
+	   the ground as grass. */
+	.now[data-arrangement='meadow'] {
+		align-content: stretch;
+		grid-template-columns: minmax(0, 1fr) auto;
+		grid-template-areas:
+			'bar bar'
+			'text cover'
+			'words cover'
+			'viz viz';
+		grid-template-rows: auto auto minmax(110px, 1fr) auto;
+		gap: 10px 40px;
+		padding-bottom: 0;
+	}
+
+	.now[data-arrangement='meadow'] > .bar {
+		grid-area: bar;
+	}
+
+	.now[data-arrangement='meadow'] > .text {
+		grid-area: text;
+		align-self: start;
+	}
+
+	.now[data-arrangement='meadow'] > .words {
+		grid-area: words;
+		height: auto;
+		min-height: 0;
+		font-size: 19px;
+	}
+
+	.now[data-arrangement='meadow'] > .cover {
+		grid-area: cover;
+		align-self: end;
+		margin-right: 70px;
+	}
+
+	/* The ground, and the grass growing from it. */
+	.now[data-arrangement='meadow'] > .visualizer {
+		grid-area: viz;
+		margin: 0 -24px;
+		padding: 0 24px;
+		background: linear-gradient(
+			180deg,
+			color-mix(in srgb, var(--onsa-lit-ground) 55%, white) 0%,
+			var(--onsa-lit-ground) 100%
+		);
+	}
+
+	.now[data-arrangement='meadow'] h1 {
+		font-size: clamp(36px, 5cqw, 58px);
+		font-weight: 400;
+		line-height: 1;
+		text-shadow: 0 0 18px rgb(255 255 255 / 0.9);
+	}
+
+	.now[data-arrangement='meadow'] .artist {
+		color: var(--onsa-text-primary);
+	}
+
+	.now[data-arrangement='meadow'].wide {
+		grid-template-areas:
+			'bar bar'
+			'text text'
+			'words words'
+			'viz viz';
+	}
+
+	/* A door standing open on its own: the frame round the picture, the
+	   leaf swung out to one side, and its shadow on the grass. */
+	.now[data-cover='door'] .cover {
+		position: relative;
+	}
+
+	.now[data-cover='door'] .art {
+		width: min(156px, 16cqw);
+		height: min(256px, 26cqw);
+		padding: 12px;
+		border: 2px solid var(--onsa-lit-paper-edge);
+		border-radius: 0;
+		background: var(--onsa-lit-paper);
+		box-shadow: 12px 6px 0 color-mix(in srgb, var(--onsa-lit-ground) 35%, transparent);
+	}
+
+	.now[data-cover='door'] .art img {
+		box-shadow: inset 0 0 30px rgb(255 255 255 / 0.9);
+	}
+
+	.now[data-cover='door'] .cover::before {
+		content: '';
+		position: absolute;
+		right: calc(100% - 2px);
+		bottom: 30px;
+		width: 30%;
+		height: 88%;
+		border: 2px solid var(--onsa-lit-paper-edge);
+		background: linear-gradient(90deg, color-mix(in srgb, var(--onsa-lit-paper) 85%, black), var(--onsa-lit-paper));
+		transform: skewY(-14deg);
+		transform-origin: right bottom;
+		pointer-events: none;
+	}
+
+	.now[data-cover='door'] .cover::after {
+		content: '';
+		width: 110%;
+		height: 8px;
+		margin-top: -6px;
+		border-radius: 50%;
+		background: color-mix(in srgb, var(--onsa-lit-ground) 60%, black);
+		opacity: 0.35;
+		filter: blur(2px);
 	}
 
 	/* Layar penuh: the picture large, the title over the words beside it. */

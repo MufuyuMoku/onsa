@@ -228,6 +228,14 @@ pub struct LitColors {
     /// The floor, for a theme that draws one under the transport (a
     /// carpet, a meadow); falls back to the raised surface.
     pub ground: String,
+    /// Ornament text (SPEC §9.3, layer 7); falls back to the label role.
+    /// Never the clip colour: ornament is not an error.
+    pub ornament: String,
+    /// Something pale standing in a scene — a door, a frame of plaster —
+    /// and its edge; fall back to the panel and its hairline.
+    pub paper: String,
+    /// The edge of [`LitColors::paper`].
+    pub paper_edge: String,
 }
 
 /// Radii, density and hairline width.
@@ -278,6 +286,8 @@ pub struct Variants {
     pub tooltip: TooltipStyle,
     /// How a dialog is drawn.
     pub dialog: DialogStyle,
+    /// How the position bar of the transport is drawn.
+    pub progress: ProgressStyle,
 }
 
 /// How long things take to move, and how they move (SPEC §9.1).
@@ -404,6 +414,8 @@ theme_enum!(
         Soft => "soft",
         /// Columns of points of light, some in the secondary colour.
         Dots => "dots",
+        /// Blades of grass that grow with the sound.
+        Grass => "grass",
     }
 );
 
@@ -432,6 +444,8 @@ theme_enum!(
         GlowText => "glow-text",
         /// The name in square brackets, in the active colour when on.
         Brackets => "brackets",
+        /// Only the colour of the name changes.
+        Text => "text",
     }
 );
 
@@ -492,6 +506,9 @@ theme_enum!(
         Bevel => "bevel",
         /// A thin ring and nothing inside it.
         Ring => "ring",
+        /// A box with a dark edge and a hard shadow, the way an old web
+        /// page drew one.
+        Box => "box",
     }
 );
 
@@ -605,6 +622,13 @@ theme_enum!(
         /// A sign at the foot of the navigation, in the active colour, with
         /// the theme's `sign` ornament on it. A sign, not a button. Still.
         ExitSign => "exit-sign",
+        /// Soft clouds drifting very slowly across the sky. Moves.
+        Clouds => "clouds",
+        /// A few small sparkles in the sky. Moves, gently.
+        Sparkles => "sparkles",
+        /// One small eye in the sky, drawn simply and faintly. Still: it
+        /// never blinks and never follows the pointer.
+        SkyEye => "sky-eye",
     }
 );
 
@@ -666,6 +690,9 @@ theme_enum!(
         /// The cover beside one card holding the title and the words, and
         /// the spectrum on a card of its own under them.
         Memo => "memo",
+        /// The title and the words floating in the sky, the cover standing
+        /// on the ground to the right, the spectrum along the ground.
+        Meadow => "meadow",
     }
 );
 
@@ -681,6 +708,8 @@ theme_enum!(
         Lit => "lit",
         /// A photograph stuck on: a paper border and a hard shadow.
         Photo => "photo",
+        /// Seen through a door standing open on its own, with its shadow.
+        Door => "door",
     }
 );
 
@@ -709,5 +738,20 @@ theme_enum!(
         /// slowly now and then; it stops in power saving and under reduced
         /// motion.
         Corridor => "corridor",
+        /// The window as a landscape: ground along the bottom of the
+        /// content, and the navigation as boxes in the sky.
+        Meadow => "meadow",
+    }
+);
+
+theme_enum!(
+    /// How the position bar of the transport is drawn.
+    ProgressStyle, default Plain {
+        /// The system's slider in the position colour.
+        Plain => "plain",
+        /// Striped, with a small star marking where the song is.
+        Stars => "stars",
+        /// A row of blocks, the way an old progress bar fills.
+        Blocks => "blocks",
     }
 );

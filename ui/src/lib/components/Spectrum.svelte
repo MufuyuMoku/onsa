@@ -187,4 +187,29 @@
 		display: none;
 	}
 
+	/* Blades of grass growing from the ground with the sound. */
+	.spectrum[data-variant='grass'] {
+		background: none;
+	}
+
+	.spectrum[data-variant='grass'] .columns {
+		gap: 3px;
+		padding: 0;
+	}
+
+	.spectrum[data-variant='grass'] .bar {
+		background: linear-gradient(
+			0deg,
+			color-mix(in srgb, var(--onsa-tone-lit, var(--onsa-lit-on)) 60%, black),
+			var(--onsa-tone-lit, var(--onsa-lit-on)) 80%,
+			color-mix(in srgb, var(--onsa-tone-lit, var(--onsa-lit-on)) 40%, white)
+		);
+		clip-path: polygon(50% calc(100% - var(--level, 0%)), 100% 100%, 0 100%);
+		transition: clip-path 90ms linear;
+	}
+
+	.spectrum[data-variant='grass'] .peak {
+		display: none;
+	}
+
 </style>

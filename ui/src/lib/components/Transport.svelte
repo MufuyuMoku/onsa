@@ -127,6 +127,7 @@
 			<input
 				class="seek"
 				style:accent-color={tonePosition()}
+				style:--fill="{duration ? Math.min(100, (shown / duration) * 100) : 0}%"
 				type="range"
 				min="0"
 				max={duration || 1}

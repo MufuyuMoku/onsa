@@ -307,6 +307,84 @@ input[type='checkbox'] {
 	box-shadow: 0 0 18px color-mix(in srgb, var(--onsa-role-active) 25%, transparent);
 }
 
+/* A box with a dark edge and a hard shadow, pressed in when pressed. */
+:root[data-onsa-control='box'] .btn,
+:root[data-onsa-control='box'] .chip,
+:root[data-onsa-control='box'] .icon-btn {
+	border-radius: 0;
+	border-color: var(--onsa-edge-dark);
+	background: var(--onsa-surface-body);
+	box-shadow: 2px 2px 0 color-mix(in srgb, var(--onsa-edge-dark) 30%, transparent);
+}
+
+:root[data-onsa-control='box'] .btn:active:not(:disabled),
+:root[data-onsa-control='box'] .icon-btn:active:not(:disabled),
+:root[data-onsa-control='box'] .chip[aria-pressed='true'] {
+	background: var(--onsa-lit-highlight);
+	box-shadow: none;
+	transform: translate(1px, 1px);
+}
+
+:root[data-onsa-control='box'] .field {
+	border-radius: 0;
+	border-color: var(--onsa-edge-dark);
+}
+
+/* --- the position bar: how it fills -------------------------------------- */
+
+/* The transport's slider draws its own track when the theme asks for one:
+   the part played is `--fill` of it. */
+:root[data-onsa-progress='stars'] input.seek,
+:root[data-onsa-progress='blocks'] input.seek {
+	appearance: none;
+	height: 12px;
+	border: var(--onsa-hairline) solid var(--onsa-edge-dark);
+	border-radius: 0;
+	background-color: var(--onsa-surface-body);
+	background-repeat: no-repeat;
+	background-size: var(--fill, 0%) 100%;
+}
+
+/* Stripes in two shades of the position colour, and a small star where the
+   song is, in the ornament colour. */
+:root[data-onsa-progress='stars'] input.seek {
+	background-image: repeating-linear-gradient(
+		90deg,
+		color-mix(in srgb, var(--onsa-role-position) 55%, white) 0 6px,
+		color-mix(in srgb, var(--onsa-role-position) 30%, white) 6px 12px
+	);
+}
+
+:root[data-onsa-progress='stars'] input.seek::-webkit-slider-thumb {
+	appearance: none;
+	width: 16px;
+	height: 16px;
+	border: 0;
+	background: var(--onsa-lit-ornament);
+	clip-path: polygon(50% 0, 61% 38%, 100% 50%, 61% 62%, 50% 100%, 39% 62%, 0 50%, 39% 38%);
+}
+
+/* Blocks of the active colour filling a sunken box, the way an old
+   progress bar fills. */
+:root[data-onsa-progress='blocks'] input.seek {
+	box-shadow: inset 1px 1px 0 var(--onsa-edge-dark);
+	background-image: repeating-linear-gradient(
+		90deg,
+		var(--onsa-role-position) 0 8px,
+		transparent 8px 10px
+	);
+	background-origin: content-box;
+	padding: 2px;
+}
+
+:root[data-onsa-progress='blocks'] input.seek::-webkit-slider-thumb {
+	appearance: none;
+	width: 4px;
+	height: 12px;
+	border: 0;
+	background: transparent;
+}
+
 /* --- panels: how they are framed ----------------------------------------- */
 
 :root[data-onsa-frame='inset'] .panel {
@@ -638,6 +716,34 @@ input[type='checkbox'] {
    arrangement), the content is not a card itself: the ground shows
    between them. */
 :root[data-onsa-frame='card'] .shell > .content:has(.now[data-arrangement='memo']) {
+	border-color: transparent;
+	background: transparent;
+	box-shadow: none;
+}
+
+/* The window as a landscape (chrome `meadow`): the navigation is a stack of
+   boxes floating in the sky, and the regions stand on the sky itself. */
+:root[data-onsa-frame] .shell.meadow > .sidebar {
+	border-color: transparent;
+	background: transparent;
+	box-shadow: none;
+}
+
+.shell.meadow > .sidebar .item {
+	border: var(--onsa-hairline) solid var(--onsa-edge-dark);
+	border-radius: 0;
+	background: var(--onsa-surface-body);
+	box-shadow: 3px 3px 0 color-mix(in srgb, var(--onsa-edge-dark) 25%, transparent);
+	margin-bottom: 6px;
+}
+
+.shell.meadow > .sidebar .item[aria-current='true'] {
+	background: var(--onsa-lit-highlight);
+}
+
+/* In a landscape the content and the queue stand on the sky too. */
+:root[data-onsa-frame] .shell.meadow > .content,
+:root[data-onsa-frame] .shell.meadow > .side {
 	border-color: transparent;
 	background: transparent;
 	box-shadow: none;

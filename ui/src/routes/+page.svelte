@@ -27,6 +27,8 @@
 	import { themeFailure } from '$lib/theme/index.svelte';
 	import AlbumGrid from '$lib/components/AlbumGrid.svelte';
 	import Ceiling from '$lib/components/Ceiling.svelte';
+	import Sky from '$lib/components/Sky.svelte';
+	import { activeTheme } from '$lib/theme/index.svelte';
 	import AlbumList from '$lib/components/AlbumList.svelte';
 	import AlbumView from '$lib/components/AlbumView.svelte';
 	import BrowseView from '$lib/components/BrowseView.svelte';
@@ -58,6 +60,10 @@
 	const view = $derived(app.view);
 	/** What goes where: a standard preset, or the theme's own (SPEC M16). */
 	const arranged = $derived(arrangement());
+	/** Whether the theme draws anything in its sky (SPEC section 9.1). */
+	const skyDrawn = $derived(
+		(activeTheme()?.decor ?? []).some((one) => ['clouds', 'sparkles', 'sky-eye'].includes(one))
+	);
 
 	// Power saving stills whatever moves for its look alone (SPEC 9.1).
 	$effect(() => {
@@ -168,7 +174,11 @@
 		class:with-queue={layout.queueDocked}
 		class:no-signal={!arranged.signal}
 		class:corridor={arranged.chrome === 'corridor'}
+		class:meadow={arranged.chrome === 'meadow'}
 	>
+		{#if skyDrawn}
+			<Sky />
+		{/if}
 		{#if arranged.chrome === 'corridor'}
 			<Ceiling />
 		{/if}
@@ -326,6 +336,8 @@
 
 	.shell {
 		position: relative;
+		/* Whatever a theme draws behind everything stays inside the window. */
+		isolation: isolate;
 		display: grid;
 		grid-template-columns: 190px minmax(0, 1fr);
 		grid-template-rows: minmax(0, 1fr) auto auto;

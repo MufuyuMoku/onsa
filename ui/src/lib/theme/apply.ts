@@ -49,6 +49,9 @@ export function themeVariables(theme: Theme): Record<string, string> {
 		'--onsa-lit-stripe': color.lit.stripe,
 		'--onsa-lit-highlight': color.lit.highlight,
 		'--onsa-lit-ground': color.lit.ground,
+		'--onsa-lit-ornament': color.lit.ornament,
+		'--onsa-lit-paper': color.lit.paper,
+		'--onsa-lit-paper-edge': color.lit.paperEdge,
 
 		'--onsa-edge-light': color.edge.light,
 		'--onsa-edge-dark': color.edge.dark,
@@ -103,6 +106,7 @@ export function themeAttributes(theme: Theme): Record<string, string> {
 		'data-onsa-scrollbar': theme.variants.scrollbar,
 		'data-onsa-tooltip': theme.variants.tooltip,
 		'data-onsa-dialog': theme.variants.dialog,
+		'data-onsa-progress': theme.variants.progress,
 		'data-onsa-label-case': theme.effects.labelCase,
 		'data-onsa-glow': String(theme.effects.glow),
 		'data-onsa-glass-reflection': String(theme.effects.glassReflection),
