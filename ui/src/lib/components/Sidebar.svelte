@@ -7,6 +7,8 @@
 	is drawn.
 -->
 <script lang="ts">
+	import { ornament } from '$lib/ornament.svelte';
+	const footNote = $derived(ornament('sidebar'));
 	import { app, navigate, type SettingsSection, type View } from '$lib/app.svelte';
 	import { t } from '$lib/i18n/index.svelte';
 	import type { MessageKey } from '$lib/i18n/dictionary';
@@ -177,6 +179,11 @@
 
 	{@render group('nav.settings', [...settingsPages, helpPage])}
 
+	{#if mode === 'full' && footNote}
+		<!-- Ornament text at the foot of the panel, for the look alone. -->
+		<p class="foot-note" aria-hidden="true">{footNote}</p>
+	{/if}
+
 	{#if library.scan.running}
 		{#if mode === 'full'}
 			<p class="scan numeric ellipsis">{scanSummary()}</p>
@@ -288,5 +295,15 @@
 	.scan.dot {
 		margin: auto 0 0;
 		font-size: 10px;
+	}
+
+	.foot-note {
+		margin: auto 10px 10px;
+		font-family: var(--onsa-font-label);
+		font-size: 10px;
+		line-height: 1.7;
+		letter-spacing: 0.06em;
+		color: var(--onsa-role-label);
+		text-transform: uppercase;
 	}
 </style>

@@ -202,4 +202,14 @@
 		border-color: var(--onsa-role-caution);
 		color: var(--onsa-role-caution);
 	}
+
+	/* A thin line that glows, for a theme with no panels to put a meter in. */
+	.meter[data-variant='line'] .lane {
+		height: 3px;
+		border-radius: 0;
+	}
+
+	.meter[data-variant='line'] .lane i {
+		box-shadow: 0 0 6px var(--onsa-role-active);
+	}
 </style>

@@ -45,10 +45,14 @@ pub fn current_choice(stored: Option<String>) -> Option<String> {
 }
 
 /// The three built-in themes, in the order the first-run screen shows them.
-const BUILTIN_SOURCES: [(&str, &str); 7] = [
+const BUILTIN_SOURCES: [(&str, &str); 8] = [
     (
         "kokpit-tua",
         include_str!("../../../themes/kokpit-tua.json"),
+    ),
+    (
+        "laut-dalam",
+        include_str!("../../../themes/laut-dalam.json"),
     ),
     ("kaca-asap", include_str!("../../../themes/kaca-asap.json")),
     (

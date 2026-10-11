@@ -163,6 +163,10 @@ pub struct SurfaceColors {
     pub raised: String,
     /// Hairline separator.
     pub line: String,
+    /// A ground the whole window stands on, top to bottom, when the theme
+    /// draws one: two to six colours of a vertical gradient. Empty means
+    /// the window is the plain application surface.
+    pub backdrop: Vec<String>,
 }
 
 /// Text colours.
@@ -375,6 +379,8 @@ theme_enum!(
         Segment => "segment",
         /// A VU needle.
         Needle => "needle",
+        /// A thin line that glows.
+        Line => "line",
     }
 );
 
@@ -387,6 +393,8 @@ theme_enum!(
         Segment => "segment",
         /// Soft gradient bars.
         Soft => "soft",
+        /// Columns of points of light, some in the secondary colour.
+        Dots => "dots",
     }
 );
 
@@ -411,6 +419,8 @@ theme_enum!(
         OutlineChip => "outline-chip",
         /// A small indicator lamp next to the label.
         Led => "led",
+        /// The label itself lights up.
+        GlowText => "glow-text",
     }
 );
 
@@ -469,6 +479,8 @@ theme_enum!(
         Pill => "pill",
         /// A moulded edge: lit on one side, shaded on the other.
         Bevel => "bevel",
+        /// A thin ring and nothing inside it.
+        Ring => "ring",
     }
 );
 
@@ -569,6 +581,10 @@ theme_enum!(
         /// Warning stripes under the navigation, in the stripe colour and
         /// the well. Still.
         HazardStripe => "hazard-stripe",
+        /// Specks drifting very slowly down the Now Playing screen. Moves.
+        MarineSnow => "marine-snow",
+        /// A lure of light hanging from above on its line. Still.
+        Lure => "lure",
     }
 );
 
@@ -624,6 +640,9 @@ theme_enum!(
         /// Cover in a frame beside the title and words, with the position
         /// and the spectrum as instruments underneath.
         Instrument => "instrument",
+        /// Cover and a large title side by side, the words under them, the
+        /// spectrum along the bottom, and the position down the right.
+        Dive => "dive",
     }
 );
 
@@ -634,6 +653,9 @@ theme_enum!(
         Plain => "plain",
         /// In a thick instrument bezel, with a crosshair over it.
         Instrument => "instrument",
+        /// Lit from one corner, darkening towards the far one — never by
+        /// more than half, so the picture stays clear.
+        Lit => "lit",
     }
 );
 
@@ -644,6 +666,9 @@ theme_enum!(
         Bar => "bar",
         /// A round dial with a hand that goes round once per song.
         Dial => "dial",
+        /// A depth scale down the side: the start of the song at the top,
+        /// its end at the bottom. It seeks, the way a bar does.
+        Depth => "depth",
     }
 );
 

@@ -45,4 +45,15 @@ export function t(key: MessageKey, values?: Record<string, string | number>): st
 	return text;
 }
 
+/**
+ * Text for a key that came from somewhere other than the code — a theme's
+ * ornament text (SPEC section 9.3, layer 7) — or nothing when the
+ * dictionary does not know it. A theme can name a key; only the dictionary
+ * can give it words.
+ */
+export function textFor(key: string): string | null {
+	const table = dictionaries[locale] as Record<string, string>;
+	return Object.prototype.hasOwnProperty.call(table, key) ? table[key] : null;
+}
+
 export { LOCALES, isLocale, type Locale, type MessageKey } from './dictionary';

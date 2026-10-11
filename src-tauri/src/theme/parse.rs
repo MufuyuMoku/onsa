@@ -92,6 +92,7 @@ pub fn parse_theme(id_hint: &str, source: &str) -> Result<LoadedTheme> {
         well: cx.color(surface_node, "well", "color.surface.well", "#06080E"),
         raised: cx.color(surface_node, "raised", "color.surface.raised", "#232A3A"),
         line: cx.color(surface_node, "line", "color.surface.line", "#2A3242"),
+        backdrop: cx.backdrop(surface_node, "backdrop", "color.surface.backdrop"),
     };
 
     let text_node = cx.child(color_node, "text", "color.text");
@@ -273,6 +274,8 @@ pub(crate) const BUNDLED_FONTS: &[&str] = &[
     "Chakra Petch",
     "Share Tech Mono",
     "Saira Stencil One",
+    "Cormorant Garamond",
+    "Martian Mono",
 ];
 
 /// How a key of ornament text has to look: `ornament.<theme>.<name>`, the
@@ -404,6 +407,31 @@ impl Cx {
                 T::default()
             }
             None => T::default(),
+        }
+    }
+
+    /// Reads the colours of a backdrop: two to six of them, each a colour
+    /// Onsa writes. Anything else leaves the window without one.
+    fn backdrop(&mut self, parent: Option<&Value>, key: &str, path: &str) -> Vec<String> {
+        let Some(value) = parent.and_then(|parent| parent.get(key)) else {
+            return Vec::new();
+        };
+        let colours: Option<Vec<String>> = value.as_array().and_then(|items| {
+            items
+                .iter()
+                .map(|item| {
+                    item.as_str()
+                        .filter(|text| is_css_color(text))
+                        .map(str::to_string)
+                })
+                .collect()
+        });
+        match colours {
+            Some(colours) if (2..=6).contains(&colours.len()) => colours,
+            _ => {
+                self.note(path, "not two to six colours");
+                Vec::new()
+            }
         }
     }
 

@@ -103,3 +103,30 @@
 	font-style: normal;
 	font-display: swap;
 }
+
+/* Cormorant Garamond and Martian Mono are published only as variable
+   fonts; the official files are bundled as they are, renamed without the
+   brackets of their axis names (DECISIONS 2026-10-11). */
+@font-face {
+	font-family: 'Cormorant Garamond';
+	src: url('/fonts/cormorant-garamond/CormorantGaramond-VF.ttf') format('truetype');
+	font-weight: 300 700;
+	font-style: normal;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'Cormorant Garamond';
+	src: url('/fonts/cormorant-garamond/CormorantGaramond-Italic-VF.ttf') format('truetype');
+	font-weight: 300 700;
+	font-style: italic;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'Martian Mono';
+	src: url('/fonts/martian-mono/MartianMono-VF.ttf') format('truetype');
+	font-weight: 100 800;
+	font-style: normal;
+	font-display: swap;
+}

@@ -160,4 +160,31 @@
 		filter: drop-shadow(0 0 4px var(--onsa-lit-glow));
 	}
 
+	/* Points of light rising in columns, with no well behind them; every
+	   few columns glow in the theme's second colour. */
+	.spectrum[data-variant='dots'] {
+		background: none;
+	}
+
+	.spectrum[data-variant='dots'] .columns {
+		gap: 5px;
+	}
+
+	.spectrum[data-variant='dots'] .bar {
+		background: radial-gradient(
+				circle,
+				var(--onsa-tone-lit, var(--onsa-lit-on)) 0 1.6px,
+				transparent 2.2px
+			)
+			center bottom / 9px 9px;
+	}
+
+	.spectrum[data-variant='dots'] .column:nth-child(7n + 4) .bar {
+		background-image: radial-gradient(circle, var(--onsa-lit-secondary) 0 1.6px, transparent 2.2px);
+	}
+
+	.spectrum[data-variant='dots'] .peak {
+		display: none;
+	}
+
 </style>

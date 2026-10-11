@@ -329,6 +329,15 @@
 		text-shadow: 0 0 6px var(--onsa-lit-glow);
 	}
 
+	/* The label lights up, and nothing else is drawn round it. */
+	:global(:root[data-onsa-stage-indicator='glow-text']) .stage {
+		border-color: transparent;
+	}
+
+	:global(:root[data-onsa-stage-indicator='glow-text']) .stage.on {
+		text-shadow: 0 0 8px var(--onsa-role-active);
+	}
+
 	/* LEDs (Deck malam): no border, a lamp before the name. */
 	:global(:root[data-onsa-stage-indicator='led']) .stage {
 		border-color: transparent;

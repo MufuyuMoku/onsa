@@ -7,13 +7,13 @@
  */
 
 export type Base = 'dark' | 'light';
-export type MeterVariant = 'bar' | 'segment' | 'needle';
-export type SpectrumVariant = 'bar' | 'segment' | 'soft';
+export type MeterVariant = 'bar' | 'segment' | 'needle' | 'line';
+export type SpectrumVariant = 'bar' | 'segment' | 'soft' | 'dots';
 export type PanelTexture = 'glass' | 'bezel' | 'brushed';
-export type StageIndicator = 'glow-chip' | 'outline-chip' | 'led';
+export type StageIndicator = 'glow-chip' | 'outline-chip' | 'led' | 'glow-text';
 export type TimeDisplay = 'ghost-segment' | 'plain';
 export type LabelCase = 'as-written' | 'uppercase';
-export type ControlShape = 'soft' | 'square' | 'pill' | 'bevel';
+export type ControlShape = 'soft' | 'square' | 'pill' | 'bevel' | 'ring';
 export type FrameStyle = 'hairline' | 'inset' | 'raised' | 'none';
 export type RowStyle = 'lines' | 'stripes' | 'plain';
 export type Scrollbar = 'thin' | 'classic' | 'hidden';
@@ -47,6 +47,8 @@ export interface Theme {
 			well: string;
 			raised: string;
 			line: string;
+			/** A vertical gradient under the whole window; empty when there is none. */
+			backdrop: string[];
 		};
 		text: {
 			primary: string;
@@ -126,14 +128,14 @@ export interface Theme {
 	signature: Signature | null;
 }
 
-export type Decoration = 'rivets' | 'hazard-stripe';
+export type Decoration = 'rivets' | 'hazard-stripe' | 'marine-snow' | 'lure';
 export type SidebarPlace = 'shown' | 'hidden';
 export type QueuePlace = 'docked' | 'floating';
 export type TransportStyle = 'full' | 'bar' | 'minimal';
 export type LibraryHome = 'tracks' | 'albums';
-export type NowPlayingStyle = 'classic' | 'immersive' | 'instrument';
-export type CoverFrame = 'plain' | 'instrument';
-export type PositionStyle = 'bar' | 'dial';
+export type NowPlayingStyle = 'classic' | 'immersive' | 'instrument' | 'dive';
+export type CoverFrame = 'plain' | 'instrument' | 'lit';
+export type PositionStyle = 'bar' | 'dial' | 'depth';
 export type Chrome = 'none' | 'window';
 
 /**

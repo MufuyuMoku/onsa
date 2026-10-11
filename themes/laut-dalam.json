@@ -1,0 +1,131 @@
+{
+  "$schema": "onsa-theme/1",
+  "id": "laut-dalam",
+  "name": {
+    "id": "Laut Dalam",
+    "en": "Deep Sea"
+  },
+  "version": 1,
+  "builtin": true,
+  "base": "dark",
+  "fonts": {
+    "ui": "Martian Mono",
+    "numeric": "Martian Mono",
+    "label": "Martian Mono",
+    "display": "Cormorant Garamond",
+    "lyrics": "Cormorant Garamond",
+    "cjkFallback": "Noto Sans JP"
+  },
+  "color": {
+    "surface": {
+      "app": "#071826",
+      "body": "#071826",
+      "bodyHighlight": "#0E2C42",
+      "well": "#010306",
+      "raised": "#0A2133",
+      "line": "#1C3A4C",
+      "backdrop": [
+        "#0E2C42",
+        "#071826",
+        "#030B12",
+        "#010306"
+      ]
+    },
+    "text": {
+      "primary": "#E8F4F8",
+      "secondary": "#8FB0C0",
+      "silkscreen": "#5C7A8C"
+    },
+    "role": {
+      "label": "#5C7A8C",
+      "adjustable": "#9FD8EA",
+      "active": "#7FE3FF",
+      "position": "#DFFBFF",
+      "caution": "#FFC56B",
+      "clip": "#FF5A4A"
+    },
+    "lit": {
+      "on": "#7FE3FF",
+      "ghost": "rgba(127,227,255,0.06)",
+      "glow": "rgba(127,227,255,0.35)",
+      "secondary": "#D59BFF",
+      "meterFace": "#0E2230",
+      "needle": "#7FE3FF",
+      "knob": "#9FD8EA",
+      "led": "#7FE3FF"
+    },
+    "edge": {
+      "light": "#1C3A4C",
+      "dark": "#010306"
+    }
+  },
+  "shape": {
+    "radius": {
+      "sm": 2,
+      "md": 2,
+      "lg": 0
+    },
+    "density": "comfortable",
+    "hairline": 1,
+    "control": "ring",
+    "frame": "none"
+  },
+  "variants": {
+    "meter": "line",
+    "spectrum": "dots",
+    "panelTexture": "glass",
+    "stageIndicator": "glow-text",
+    "timeDisplay": "plain",
+    "rows": "plain",
+    "scrollbar": "thin",
+    "tooltip": "plain",
+    "dialog": "flat"
+  },
+  "effects": {
+    "glow": true,
+    "glassReflection": false,
+    "grain": 0.0,
+    "labelCase": "uppercase"
+  },
+  "toneColor": {
+    "enabled": true,
+    "targets": [
+      "spectrum"
+    ],
+    "warm": "#D59BFF",
+    "cool": "#A8FFE0"
+  },
+  "motion": {
+    "fast": 160,
+    "slow": 280,
+    "ease": "soft"
+  },
+  "decor": [
+    "marine-snow",
+    "lure"
+  ],
+  "ornament": [
+    "ornament.laut-dalam.sidebar",
+    "ornament.laut-dalam.title"
+  ],
+  "signature": {
+    "id": "menyelam",
+    "name": {
+      "id": "Menyelam",
+      "en": "Dive"
+    },
+    "sidebar": "shown",
+    "queue": "floating",
+    "transport": "full",
+    "signal": true,
+    "libraryHome": "tracks",
+    "nowPlaying": "dive",
+    "cover": "lit",
+    "position": "depth",
+    "chrome": "none",
+    "plates": false,
+    "panels": {
+      "details": false
+    }
+  }
+}

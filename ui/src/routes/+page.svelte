@@ -58,6 +58,13 @@
 	/** What goes where: a standard preset, or the theme's own (SPEC M16). */
 	const arranged = $derived(arrangement());
 
+	// Power saving stills whatever moves for its look alone (SPEC 9.1).
+	$effect(() => {
+		document.documentElement.dataset.onsaStill = String(
+			settings.value?.playback.powerSave ?? false
+		);
+	});
+
 	// The layout decides whether the navigation and the queue may have
 	// columns of their own; the window's width decides the rest.
 	$effect(() => {

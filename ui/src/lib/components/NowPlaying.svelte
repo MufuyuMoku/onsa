@@ -25,12 +25,20 @@
 	import { PANELS, shown, togglePanel, type PanelId } from '$lib/panels.svelte';
 	import Icon from './Icon.svelte';
 	import LyricsPanel from './LyricsPanel.svelte';
+	import DepthScale from './DepthScale.svelte';
 	import PositionDial from './PositionDial.svelte';
+	import { ornament } from '$lib/ornament.svelte';
+	import { activeTheme } from '$lib/theme/index.svelte';
 	import Spectrum from './Spectrum.svelte';
 
 	const arranged = $derived(arrangement());
 	/** Whether the position is a dial of its own rather than the bar. */
 	const dialled = $derived(arranged.position === 'dial');
+	/** Whether it is a depth down the side, which seeks as the bar does. */
+	const sounded = $derived(arranged.position === 'depth');
+	/** What the theme draws here for its look alone (SPEC section 9.1). */
+	const decor = $derived(activeTheme()?.decor ?? []);
+	const overTitle = $derived(ornament('title'));
 
 	/** The words on each toggle, which the help quotes as they are. */
 	const panelName = (id: PanelId) => t(`panel.${id}` as never);
@@ -64,6 +72,12 @@
 	class:plated={arranged.plates}
 	class:dialled
 >
+	{#if decor.includes('marine-snow')}
+		<!-- Specks drifting down, for the look alone: hidden from screen
+		     readers, and still in power saving and under reduced motion. -->
+		<div class="snow drifts" aria-hidden="true"><i></i><i></i></div>
+	{/if}
+
 	<div class="bar">
 		<button type="button" class="back label" onclick={() => navigate({ kind: 'tracks' })}>
 			<Icon name="back" />{t('nowPlaying.close')}
@@ -86,8 +100,23 @@
 	{#if track}
 		{#if shown('cover')}
 			<figure class="cover">
+				{#if decor.includes('lure')}
+					<!-- A lure of light on its line, hanging over the cover's top
+					     corner, the light the corner is lit by. -->
+					<svg class="lure" viewBox="0 0 260 120" aria-hidden="true">
+						<path d="M170 0 C 178 22, 184 42, 188 63" />
+						<circle class="halo wide" cx="188" cy="70" r="44" />
+						<circle class="halo" cx="188" cy="70" r="22" />
+						<circle class="bulb" cx="188" cy="70" r="7" />
+					</svg>
+				{/if}
 				<div class="art">
 					{#if track.coverId !== null}<img src={coverUrl(track.coverId, 512)} alt="" />{/if}
+					{#if arranged.cover === 'lit'}
+						<!-- Lit from the top corner; the far corner is darkened by
+						     half at the most, so the picture stays clear. -->
+						<span class="shade" aria-hidden="true"></span>
+					{/if}
 					{#if arranged.cover === 'instrument'}
 						<!-- The crosshair of an instrument's glass; a drawing over
 						     the picture, not a part of it. -->
@@ -101,6 +130,9 @@
 			{#if arranged.plates && track.trackNumber}
 				<span class="plate">{t('plate.track', { n: track.trackNumber })}</span>
 			{/if}
+			{#if overTitle}
+				<span class="over-title" aria-hidden="true">{overTitle}</span>
+			{/if}
 			<h1 class="ellipsis">{track.title ?? fileName(track.path)}</h1>
 			<p class="artist ellipsis">{track.artist ?? t('track.unknownArtist')}</p>
 			{#if track.album}
@@ -112,7 +144,10 @@
 				<p class="numeric format-line ellipsis">{format}</p>
 			{/if}
 
-			<div class="timeline" class:away={dialled || arranged.nowPlaying === 'immersive'}>
+			<div
+				class="timeline"
+				class:away={dialled || sounded || arranged.nowPlaying === 'immersive'}
+			>
 				<span class="numeric position">{clock(player.position)}</span>
 				<input
 					class="seek"
@@ -166,6 +201,9 @@
 				<h2 class="label">{t('lyrics.title')}</h2>
 				<LyricsPanel large />
 			</section>
+		{/if}
+		{#if sounded}
+			<div class="depth-box"><DepthScale position={player.position} {duration} /></div>
 		{/if}
 		{#if dialled}
 			<figure class="dial-box">
@@ -377,7 +415,6 @@
 
 	.now[data-arrangement='instrument'] > .words {
 		grid-area: words;
-		grid-column: auto;
 		/* The row takes what is left; the words scroll inside it. */
 		height: auto;
 		min-height: 90px;
@@ -389,7 +426,6 @@
 
 	.now[data-arrangement='instrument'] > .visualizer {
 		grid-area: viz;
-		grid-column: auto;
 	}
 
 	.now[data-arrangement='instrument'] .art {
@@ -410,6 +446,180 @@
 			'text text'
 			'words words'
 			'dial viz';
+	}
+
+	/* Menyelam: the cover and a large title side by side, the words under
+	   them, the spectrum along the bottom, and the depth down the right. */
+	.now[data-arrangement='dive'] {
+		align-content: stretch;
+		grid-template-columns: auto minmax(0, 1fr) 130px;
+		grid-template-areas:
+			'bar bar bar'
+			'cover text depth'
+			'words words depth'
+			'viz viz depth';
+		grid-template-rows: auto auto minmax(110px, 1fr) auto;
+		gap: 18px 30px;
+	}
+
+	.now[data-arrangement='dive'] > .bar {
+		grid-area: bar;
+	}
+
+	.now[data-arrangement='dive'] > .cover {
+		grid-area: cover;
+		margin-top: 40px;
+	}
+
+	.now[data-arrangement='dive'] > .text {
+		grid-area: text;
+		align-self: end;
+	}
+
+	.now[data-arrangement='dive'] > .words {
+		grid-area: words;
+		height: auto;
+		min-height: 0;
+	}
+
+	.now[data-arrangement='dive'] > .visualizer {
+		grid-area: viz;
+	}
+
+	.now[data-arrangement='dive'] > .depth-box {
+		grid-area: depth;
+		min-height: 0;
+	}
+
+	.now[data-arrangement='dive'] .art {
+		width: min(220px, 24cqw);
+		height: min(220px, 24cqw);
+		border-radius: 0;
+		box-shadow: none;
+	}
+
+	.now[data-arrangement='dive'] h1 {
+		font-size: clamp(36px, 5cqw, 60px);
+		font-weight: 300;
+		line-height: 0.95;
+	}
+
+	.now[data-arrangement='dive'] .artist {
+		font-family: var(--onsa-font-display);
+		font-style: italic;
+		font-size: 22px;
+		color: var(--onsa-text-secondary);
+	}
+
+	.now[data-arrangement='dive'] .words {
+		font-size: 19px;
+	}
+
+	.now[data-arrangement='dive'].wide {
+		grid-template-areas:
+			'bar bar depth'
+			'text text depth'
+			'words words depth'
+			'viz viz depth';
+	}
+
+	.over-title {
+		font-family: var(--onsa-font-label);
+		font-size: 10px;
+		letter-spacing: 0.2em;
+		color: var(--onsa-role-label);
+		text-transform: uppercase;
+	}
+
+	.now {
+		position: relative;
+		isolation: isolate;
+	}
+
+	/* Specks of marine snow: two layers of points drifting down at two
+	   speeds, so they read as depth rather than as a pattern. */
+	.snow {
+		position: absolute;
+		inset: 0;
+		z-index: -1;
+		pointer-events: none;
+		overflow: hidden;
+	}
+
+	.snow i {
+		position: absolute;
+		inset: -600px 0 0;
+		background-image:
+			radial-gradient(1.5px 1.5px at 12% 18%, rgb(191 239 255 / 0.4), transparent),
+			radial-gradient(2px 2px at 38% 42%, rgb(191 239 255 / 0.25), transparent),
+			radial-gradient(1.5px 1.5px at 61% 9%, rgb(191 239 255 / 0.3), transparent),
+			radial-gradient(1.5px 1.5px at 84% 33%, rgb(191 239 255 / 0.2), transparent),
+			radial-gradient(2.5px 2.5px at 72% 71%, rgb(191 239 255 / 0.12), transparent),
+			radial-gradient(1.5px 1.5px at 27% 83%, rgb(191 239 255 / 0.3), transparent);
+		background-size: 100% 600px;
+		animation: drift 90s linear infinite;
+	}
+
+	.snow i + i {
+		background-size: 70% 420px;
+		opacity: 0.6;
+		animation-duration: 140s;
+	}
+
+	@keyframes drift {
+		to {
+			transform: translateY(600px);
+		}
+	}
+
+	.cover {
+		position: relative;
+	}
+
+	/* The bulb sits on the cover's top right corner: the drawing is moved
+	   so its centre (188, 70) lands there. */
+	.lure {
+		position: absolute;
+		top: -70px;
+		right: -72px;
+		width: 260px;
+		height: 120px;
+		pointer-events: none;
+		z-index: 2;
+	}
+
+	.lure path {
+		fill: none;
+		stroke: var(--onsa-surface-line);
+		stroke-width: 1.5;
+	}
+
+	.lure .bulb {
+		fill: var(--onsa-role-position);
+	}
+
+	.lure .halo {
+		fill: var(--onsa-role-active);
+		opacity: 0.18;
+	}
+
+	.lure .halo.wide {
+		opacity: 0.06;
+	}
+
+	.now[data-cover='lit'] .art {
+		position: relative;
+	}
+
+	.shade {
+		position: absolute;
+		inset: 0;
+		pointer-events: none;
+		background: radial-gradient(
+			circle at 92% 0%,
+			transparent 0 30%,
+			color-mix(in srgb, var(--onsa-surface-well) 50%, transparent) 78%
+		);
 	}
 
 	/* Layar penuh: the picture large, the title over the words beside it. */
@@ -439,7 +649,6 @@
 
 	.now[data-arrangement='immersive'] > .words {
 		grid-area: words;
-		grid-column: auto;
 		height: auto;
 		min-height: 120px;
 	}

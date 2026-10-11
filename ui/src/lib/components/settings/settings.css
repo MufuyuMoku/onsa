@@ -1,4 +1,10 @@
-/* Layout shared by the settings pages. */
+/*
+ * Layout shared by the settings pages.
+ *
+ * Every rule is held to `.page`: this file is imported into each settings
+ * component, and an import is not scoped the way a component's own style
+ * is, so a bare `section` here once painted every section in the window.
+ */
 
 .page {
 	display: grid;
@@ -15,7 +21,7 @@
 	}
 }
 
-section {
+.page section {
 	display: grid;
 	gap: 10px;
 	padding: 14px 16px;
@@ -24,13 +30,13 @@ section {
 	box-shadow: inset 0 var(--onsa-hairline) 0 var(--onsa-surface-body-highlight);
 }
 
-h2 {
+.page h2 {
 	margin: 0 0 2px;
 	font-size: 11px;
 	font-weight: 500;
 }
 
-.field-row {
+.page .field-row {
 	display: grid;
 	grid-template-columns: minmax(0, 200px) minmax(0, 1fr) auto;
 	align-items: center;
@@ -38,7 +44,7 @@ h2 {
 	font-size: 13px;
 }
 
-.field-row > span:first-child {
+.page .field-row > span:first-child {
 	min-width: 0;
 	overflow: hidden;
 	text-overflow: ellipsis;
@@ -46,56 +52,56 @@ h2 {
 
 /* Too narrow for a label beside its control: the label sits above it. */
 @container content (max-width: 520px) {
-	.field-row {
+	.page .field-row {
 		grid-template-columns: minmax(0, 1fr) auto;
 	}
 
-	.field-row > span:first-child {
+	.page .field-row > span:first-child {
 		grid-column: 1 / -1;
 		white-space: normal;
 	}
 }
 
-.field-row > span:first-child {
+.page .field-row > span:first-child {
 	color: var(--onsa-text-secondary);
 }
 
-.field-row select,
-.field-row input[type='range'] {
+.page .field-row select,
+.page .field-row input[type='range'] {
 	width: 100%;
 }
 
-.chips {
+.page .chips {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 6px;
 }
 
-.value {
+.page .value {
 	min-width: 64px;
 	font-size: 12.5px;
 	color: var(--onsa-role-adjustable);
 	text-align: right;
 }
 
-.check {
+.page .check {
 	display: flex;
 	align-items: flex-start;
 	gap: 8px;
 	font-size: 13px;
 }
 
-.check input {
+.page .check input {
 	flex: none;
 	margin-top: 2px;
 }
 
-.note {
+.page .note {
 	margin: 0;
 	font-size: 12px;
 }
 
-.actions {
+.page .actions {
 	display: flex;
 	flex-wrap: wrap;
 	align-items: center;

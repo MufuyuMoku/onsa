@@ -20,6 +20,12 @@ export function themeVariables(theme: Theme): Record<string, string> {
 		'--onsa-surface-well': color.surface.well,
 		'--onsa-surface-raised': color.surface.raised,
 		'--onsa-surface-line': color.surface.line,
+		// The window's ground: a vertical gradient when the theme draws one,
+		// the application surface when it does not.
+		'--onsa-backdrop':
+			color.surface.backdrop.length > 1
+				? `linear-gradient(180deg, ${color.surface.backdrop.join(', ')})`
+				: color.surface.app,
 
 		'--onsa-text-primary': color.text.primary,
 		'--onsa-text-secondary': color.text.secondary,
@@ -99,7 +105,8 @@ export function themeAttributes(theme: Theme): Record<string, string> {
 		'data-onsa-glass-reflection': String(theme.effects.glassReflection),
 		'data-onsa-tone-color': String(theme.toneColor.enabled),
 		// A list, read with `~=` the way a class list is.
-		'data-onsa-decor': theme.decor.join(' ')
+		'data-onsa-decor': theme.decor.join(' '),
+		'data-onsa-backdrop': String(theme.color.surface.backdrop.length > 1)
 	};
 }
 

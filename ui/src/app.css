@@ -293,6 +293,20 @@ input[type='checkbox'] {
 	box-shadow: inset 1px 1px 0 var(--onsa-edge-dark);
 }
 
+/* A thin ring and nothing inside it. */
+:root[data-onsa-control='ring'] .btn,
+:root[data-onsa-control='ring'] .chip,
+:root[data-onsa-control='ring'] .icon-btn {
+	border-radius: 999px;
+	background: transparent;
+}
+
+:root[data-onsa-control='ring'] .icon-btn.large {
+	border-color: var(--onsa-role-active);
+	color: var(--onsa-role-position);
+	box-shadow: 0 0 18px color-mix(in srgb, var(--onsa-role-active) 25%, transparent);
+}
+
 /* --- panels: how they are framed ----------------------------------------- */
 
 :root[data-onsa-frame='inset'] .panel {
@@ -523,4 +537,37 @@ input[type='checkbox'] {
 /* The name of the application in the theme's display face. */
 .sidebar .mark {
 	font-family: var(--onsa-font-display);
+}
+
+/* A theme that draws a ground under the whole window: the regions stand
+   on it rather than each painting a panel of its own. The transport keeps
+   a veil of the well, so its controls read against whatever is behind. */
+:root[data-onsa-backdrop='true'] .shell {
+	background: var(--onsa-backdrop);
+}
+
+:root[data-onsa-backdrop='true'] .shell > .sidebar,
+:root[data-onsa-backdrop='true'] .shell > .content,
+:root[data-onsa-backdrop='true'] .shell > .side,
+:root[data-onsa-backdrop='true'] .shell .signal,
+:root[data-onsa-backdrop='true'] .shell .signal > * {
+	background: transparent;
+}
+
+:root[data-onsa-backdrop='true'] .shell .transport > footer {
+	background: color-mix(in srgb, var(--onsa-surface-well) 60%, transparent);
+}
+
+/* Anything that moves for its look alone stops in power saving and under
+   reduced motion (SPEC section 9.1). Marked with the class `drifts`. */
+:root[data-onsa-still='true'] .drifts,
+:root[data-onsa-still='true'] .drifts * {
+	animation: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.drifts,
+	.drifts * {
+		animation: none !important;
+	}
 }
