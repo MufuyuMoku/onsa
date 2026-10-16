@@ -1,0 +1,157 @@
+{
+  "$schema": "onsa-theme/1",
+  "id": "jendela-biru",
+  "name": {
+    "id": "Jendela Biru",
+    "en": "Blue Window"
+  },
+  "version": 1,
+  "builtin": true,
+  "base": "light",
+  "fonts": {
+    "ui": "DejaVu Sans Condensed",
+    "numeric": "DejaVu Sans Condensed",
+    "label": "DejaVu Sans Condensed",
+    "display": "DejaVu Sans Condensed",
+    "lyrics": "DejaVu Sans Condensed",
+    "cjkFallback": "Noto Sans JP"
+  },
+  "color": {
+    "surface": {
+      "app": "#ECE9D8",
+      "body": "#ECE9D8",
+      "bodyHighlight": "#F4F3EA",
+      "well": "#FFFFFF",
+      "raised": "#ECEBE6",
+      "line": "#ACA899"
+    },
+    "text": {
+      "primary": "#000000",
+      "secondary": "#555555",
+      "silkscreen": "#555555"
+    },
+    "role": {
+      "label": "#555555",
+      "adjustable": "#0046D5",
+      "active": "#3EBE3F",
+      "position": "#2A7F2A",
+      "caution": "#E0A21F",
+      "clip": "#C33A1C"
+    },
+    "lit": {
+      "on": "#57A0FF",
+      "ghost": "rgba(0,0,0,0.12)",
+      "glow": "transparent",
+      "secondary": "#333333",
+      "meterFace": "#FFFFFF",
+      "needle": "#C33A1C",
+      "knob": "#000000",
+      "led": "#3EBE3F",
+      "highlight": "#316AC5",
+      "highlightText": "#FFFFFF",
+      "lcd": "#000B2E",
+      "lcdInk": "#57A0FF",
+      "lcdEdge": "#808080"
+    },
+    "edge": {
+      "light": "#FFFFFF",
+      "dark": "#808080"
+    },
+    "chrome": {
+      "outer": "#3A6EA5",
+      "frame": "#0831D9",
+      "title": [
+        "#0A5DE8",
+        "#0055E5",
+        "#0647D4",
+        "#0638B0"
+      ],
+      "titleText": "#FFFFFF",
+      "pane": [
+        "#7BA2E7",
+        "#6375D6"
+      ],
+      "paneBox": "#D6DFF7",
+      "paneText": "#215DC6",
+      "taskbar": [
+        "#3168D5",
+        "#2157D7",
+        "#1941A5"
+      ],
+      "taskbarText": "#FFFFFF",
+      "start": [
+        "#3C9A3C",
+        "#2E7B2E"
+      ],
+      "tray": [
+        "#0C59B9",
+        "#0E6FC8",
+        "#0B5AB0"
+      ]
+    }
+  },
+  "shape": {
+    "radius": {
+      "sm": 3,
+      "md": 3,
+      "lg": 4
+    },
+    "density": "comfortable",
+    "hairline": 1,
+    "control": "glossy",
+    "frame": "inset"
+  },
+  "variants": {
+    "meter": "bar",
+    "spectrum": "sunken",
+    "panelTexture": "bezel",
+    "stageIndicator": "check",
+    "timeDisplay": "plain",
+    "rows": "lines",
+    "scrollbar": "classic",
+    "tooltip": "panel",
+    "dialog": "titled",
+    "progress": "blocks"
+  },
+  "effects": {
+    "glow": false,
+    "glassReflection": false,
+    "grain": 0.0,
+    "labelCase": "as-written"
+  },
+  "toneColor": {
+    "enabled": true,
+    "targets": [
+      "spectrum"
+    ],
+    "warm": "#F0A030",
+    "cool": "#5FE0C0"
+  },
+  "motion": {
+    "fast": 90,
+    "slow": 140,
+    "ease": "snap"
+  },
+  "decor": [],
+  "ornament": [],
+  "signature": {
+    "id": "jendela",
+    "name": {
+      "id": "Jendela",
+      "en": "Window"
+    },
+    "sidebar": "shown",
+    "queue": "floating",
+    "transport": "full",
+    "signal": true,
+    "libraryHome": "tracks",
+    "nowPlaying": "classic",
+    "cover": "plain",
+    "position": "bar",
+    "chrome": "window",
+    "plates": false,
+    "panels": {
+      "details": false
+    }
+  }
+}

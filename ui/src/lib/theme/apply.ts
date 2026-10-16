@@ -11,6 +11,11 @@ import type { Theme } from './types';
  *
  * Exported on its own so it can be read without a document.
  */
+/** A list of colours as a top-to-bottom gradient; one colour stays flat. */
+function gradient(colours: string[]): string {
+	return colours.length > 1 ? `linear-gradient(180deg, ${colours.join(', ')})` : (colours[0] ?? 'transparent');
+}
+
 export function themeVariables(theme: Theme): Record<string, string> {
 	const { color, shape, fonts, effects, motion } = theme;
 	return {
@@ -48,6 +53,7 @@ export function themeVariables(theme: Theme): Record<string, string> {
 		'--onsa-lit-led': color.lit.led,
 		'--onsa-lit-stripe': color.lit.stripe,
 		'--onsa-lit-highlight': color.lit.highlight,
+		'--onsa-lit-highlight-text': color.lit.highlightText,
 		'--onsa-lit-ground': color.lit.ground,
 		'--onsa-lit-ornament': color.lit.ornament,
 		'--onsa-lit-paper': color.lit.paper,
@@ -58,6 +64,18 @@ export function themeVariables(theme: Theme): Record<string, string> {
 
 		'--onsa-edge-light': color.edge.light,
 		'--onsa-edge-dark': color.edge.dark,
+
+		'--onsa-chrome-outer': color.chrome.outer,
+		'--onsa-chrome-frame': color.chrome.frame,
+		'--onsa-chrome-title': gradient(color.chrome.title),
+		'--onsa-chrome-title-text': color.chrome.titleText,
+		'--onsa-chrome-pane': gradient(color.chrome.pane),
+		'--onsa-chrome-pane-box': color.chrome.paneBox,
+		'--onsa-chrome-pane-text': color.chrome.paneText,
+		'--onsa-chrome-taskbar': gradient(color.chrome.taskbar),
+		'--onsa-chrome-taskbar-text': color.chrome.taskbarText,
+		'--onsa-chrome-start': gradient(color.chrome.start),
+		'--onsa-chrome-tray': gradient(color.chrome.tray),
 
 		'--onsa-radius-sm': `${shape.radius.sm}px`,
 		'--onsa-radius-md': `${shape.radius.md}px`,

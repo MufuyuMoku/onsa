@@ -59,6 +59,6 @@ Bila ragu apakah sesuatu aman untuk real-time, anggap tidak aman dan pindahkan k
 ## Referensi di repo
 
 - `docs/SPEC.md`: spesifikasi lengkap
-- `docs/design/palet-preview.html`: referensi visual tiga tema bawaan (buka di browser)
+- `docs/design/konsep-tema.md` dan `docs/design/konsep-tema/referensi/`: konsep dan referensi visual keenam tema bawaan (buka di browser)
 - `themes/*.json`: tema bawaan, juga contoh skema tema (SPEC §9.3)
 - `assets/icon.svg`: ikon placeholder

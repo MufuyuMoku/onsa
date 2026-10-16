@@ -216,6 +216,27 @@
 		display: none;
 	}
 
+	/* Bars in a gradient of the lit colour, in a sunken box. */
+	.spectrum[data-variant='sunken'] {
+		border: 2px solid;
+		border-color: var(--onsa-edge-dark) var(--onsa-edge-light) var(--onsa-edge-light) var(--onsa-edge-dark);
+		border-radius: 0;
+		background: var(--onsa-lit-lcd);
+	}
+
+	.spectrum[data-variant='sunken'] .bar {
+		background: linear-gradient(
+			0deg,
+			color-mix(in srgb, var(--onsa-tone-lit) 60%, black),
+			var(--onsa-tone-lit) 70%,
+			color-mix(in srgb, var(--onsa-tone-lit) 40%, white)
+		);
+	}
+
+	.spectrum[data-variant='sunken'] .peak {
+		background: color-mix(in srgb, var(--onsa-tone-lit) 40%, white);
+	}
+
 	/* Dark segments on a liquid crystal display, the dead ones faintly
 	   there behind them. */
 	.spectrum[data-variant='lcd'] {

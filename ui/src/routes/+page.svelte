@@ -27,6 +27,9 @@
 	import { themeFailure } from '$lib/theme/index.svelte';
 	import AlbumGrid from '$lib/components/AlbumGrid.svelte';
 	import Ceiling from '$lib/components/Ceiling.svelte';
+	import MenuBar from '$lib/components/MenuBar.svelte';
+	import Taskbar from '$lib/components/Taskbar.svelte';
+	import TitleBar from '$lib/components/TitleBar.svelte';
 	import Sky from '$lib/components/Sky.svelte';
 	import { activeTheme } from '$lib/theme/index.svelte';
 	import AlbumList from '$lib/components/AlbumList.svelte';
@@ -175,12 +178,17 @@
 		class:no-signal={!arranged.signal}
 		class:corridor={arranged.chrome === 'corridor'}
 		class:meadow={arranged.chrome === 'meadow'}
+		class:window={arranged.chrome === 'window'}
 	>
 		{#if skyDrawn}
 			<Sky />
 		{/if}
 		{#if arranged.chrome === 'corridor'}
 			<Ceiling />
+		{/if}
+		{#if arranged.chrome === 'window'}
+			<div class="titlebar-cell"><TitleBar /></div>
+			<div class="menubar-cell"><MenuBar /></div>
 		{/if}
 		{#if layout.sidebar !== 'hidden'}
 			<Sidebar mode={layout.sidebar} />
@@ -298,6 +306,9 @@
 		{#if arranged.signal}
 			<div class="signal"><SignalPath /></div>
 		{/if}
+		{#if arranged.chrome === 'window'}
+			<Taskbar />
+		{/if}
 	</div>
 
 	{#if carry.what && carry.at}
@@ -388,6 +399,61 @@
 		left: 0;
 		right: 0;
 		z-index: 3;
+	}
+
+	/* A window inside the window (SPEC M16, Jendela Biru): a frame with a
+	   title bar and a menu bar at the top, the task panel down the left,
+	   the signal path as its status bar, and a task bar under it all. */
+	.shell.window {
+		padding: 13px 13px 47px;
+		background: var(--onsa-chrome-outer);
+		grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+		grid-template-areas:
+			'title title'
+			'menu menu'
+			'sidebar content'
+			'transport transport'
+			'signal signal';
+	}
+
+	.shell.window.with-queue {
+		grid-template-areas:
+			'title title title'
+			'menu menu menu'
+			'sidebar content queue'
+			'transport transport transport'
+			'signal signal signal';
+	}
+
+	.shell.window[data-sidebar='hidden'] {
+		grid-template-areas:
+			'title'
+			'menu'
+			'content'
+			'transport'
+			'signal';
+	}
+
+	/* The frame: three pixels of it round everything but the task bar. */
+	.shell.window::before {
+		content: '';
+		position: absolute;
+		inset: 10px 10px 44px;
+		z-index: -1;
+		border-radius: 8px 8px 0 0;
+		background: var(--onsa-chrome-frame);
+		box-shadow: 0 4px 18px rgb(0 0 0 / 0.35);
+	}
+
+	.titlebar-cell {
+		grid-area: title;
+		min-width: 0;
+		margin: -3px -3px 0;
+	}
+
+	.menubar-cell {
+		grid-area: menu;
+		min-width: 0;
 	}
 
 	/* Panels that cover the content rather than sit beside it. */

@@ -255,7 +255,7 @@
 	/* The line being sung. Its colour is the one that means "here", the
 	   same as the position everywhere else in the window. */
 	.line.on {
-		color: var(--onsa-role-position);
+		color: var(--onsa-lit-highlight-text);
 		font-weight: 500;
 		/* Transparent unless the theme marks the line as if with a pen. */
 		background: var(--onsa-lit-highlight);
@@ -293,6 +293,6 @@
 	}
 
 	.large .line.on {
-		color: var(--onsa-role-position);
+		color: var(--onsa-lit-highlight-text);
 	}
 </style>

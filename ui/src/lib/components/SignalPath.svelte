@@ -331,7 +331,7 @@
 		opacity: 1;
 	}
 
-	/* Glow chips (Kaca asap). */
+	/* Glow chips. */
 	:global(:root[data-onsa-stage-indicator='glow-chip']) .stage.on {
 		text-shadow: 0 0 6px var(--onsa-lit-glow);
 	}
@@ -343,6 +343,20 @@
 
 	:global(:root[data-onsa-stage-indicator='glow-text']) .stage.on {
 		text-shadow: 0 0 8px var(--onsa-role-active);
+	}
+
+	/* A tick in a sunken box when the stage is on; the name stays
+	   the colour of the text. */
+	:global(:root[data-onsa-stage-indicator='check']) .stage {
+		border: 1px solid;
+		border-color: var(--onsa-edge-dark) var(--onsa-edge-light) var(--onsa-edge-light) var(--onsa-edge-dark);
+		border-radius: 0;
+		color: var(--onsa-text-primary);
+	}
+
+	:global(:root[data-onsa-stage-indicator='check']) .stage.on::before {
+		content: '\2714\00a0';
+		color: color-mix(in srgb, var(--onsa-role-active) 70%, black);
 	}
 
 	/* Only the colour of the name changes. */
@@ -373,7 +387,7 @@
 		color: var(--onsa-role-active);
 	}
 
-	/* LEDs (Deck malam): no border, a lamp before the name. */
+	/* LEDs: no border, a lamp before the name. */
 	:global(:root[data-onsa-stage-indicator='led']) .stage {
 		border-color: transparent;
 		padding: 3px 4px;

@@ -55,6 +55,10 @@ const BUILTIN_SOURCES: [(&str, &str); 6] = [
         include_str!("../../../themes/laut-dalam.json"),
     ),
     (
+        "jendela-biru",
+        include_str!("../../../themes/jendela-biru.json"),
+    ),
+    (
         "lorong-kuning",
         include_str!("../../../themes/lorong-kuning.json"),
     ),
@@ -63,10 +67,6 @@ const BUILTIN_SOURCES: [(&str, &str); 6] = [
         include_str!("../../../themes/siang-mimpi.json"),
     ),
     ("krom-saku", include_str!("../../../themes/krom-saku.json")),
-    (
-        "kubikel-biru",
-        include_str!("../../../themes/kubikel-biru.json"),
-    ),
 ];
 
 /// Reads every built-in theme.
@@ -276,7 +276,7 @@ pub fn builtin_theme(id: &str) -> Option<Theme> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::theme::model::Base;
+    use crate::theme::model::{Base, SpectrumVariant};
 
     #[test]
     fn every_builtin_theme_reads_without_a_single_correction() {
@@ -305,18 +305,16 @@ mod tests {
         "siang-mimpi",
         "krom-saku",
     ];
-    /// The old themes still shipped: only the one whose replacement is not
-    /// built yet stays (DECISIONS 2026-10-16).
-    const OLD_STILL_HERE: [&str; 1] = ["kubikel-biru"];
+    /// The old themes still shipped: none, now that all six are here
+    /// (DECISIONS 2026-10-16).
+    const OLD_STILL_HERE: [&str; 0] = [];
 
     #[test]
     fn the_themes_of_the_specification_are_present() {
         let themes = builtin_themes();
         let ids: Vec<&str> = themes.iter().map(|theme| theme.id.as_str()).collect();
         let built = ids.iter().filter(|id| NEW_SIX.contains(id)).count();
-        assert!(built >= 1, "Kokpit Tua comes first");
-        // Built one at a time, so not every one of them is here yet; the
-        // ones that are stand in SPEC's order.
+        assert_eq!(built, NEW_SIX.len(), "all six of SPEC §1 are here");
         let in_order: Vec<&str> = NEW_SIX
             .iter()
             .copied()
@@ -607,11 +605,15 @@ mod tests {
                 }
             }
             // Where the tone leans a display's backlight, what has to stay
-            // legible is the display's ink on that light; everywhere else
-            // it is the lit colour on the well.
+            // legible is the display's ink on that light; where the bars
+            // stand in a sunken display, it is the lit colour on that
+            // display; everywhere else it is the lit colour on the well.
             let backlit = tone.targets == [ToneTarget::Backlight];
+            let sunken = theme.variants.spectrum == SpectrumVariant::Sunken;
             let against = if backlit {
                 &theme.color.lit.lcd_ink
+            } else if sunken {
+                &theme.color.lit.lcd
             } else {
                 &theme.color.surface.well
             };
@@ -622,6 +624,8 @@ mod tests {
                     "theme {id}: its {which} end sits at {seen:.1}:1 against {}",
                     if backlit {
                         "its display's ink"
+                    } else if sunken {
+                        "its display"
                     } else {
                         "its own well"
                     }
@@ -668,6 +672,11 @@ mod tests {
                     ("label", &theme.color.role.label, 3.0),
                     ("the line being sung", &theme.color.role.position, 3.0),
                     ("adjustable", &theme.color.role.adjustable, 3.0),
+                    (
+                        "the artist (lit secondary)",
+                        &theme.color.lit.secondary,
+                        3.0,
+                    ),
                 ] {
                     let seen = contrast(colour, ground);
                     assert!(
@@ -782,6 +791,66 @@ mod tests {
         // Every theme a replaced one points at is one of the six of SPEC §1.
         for (_, new) in REPLACED {
             assert!(NEW_SIX.contains(&new), "{new} is not a theme of SPEC §1");
+        }
+    }
+
+    /// SPEC M16, criterion 3, for the window drawn inside the window: the
+    /// title, the words on the task bar and its clock, and the entries of
+    /// the task panel are all text, and pass AA on every colour of the
+    /// gradient they sit on. The button at the start of the task bar is
+    /// written large and bold, so 3:1 holds for it. And where a theme
+    /// marks the line being sung, it is legible on the mark.
+    #[test]
+    fn the_window_inside_the_window_can_be_read() {
+        use crate::theme::model::Chrome;
+        let themes = builtin_themes();
+        let windowed: Vec<&Theme> = themes
+            .iter()
+            .filter(|theme| {
+                theme
+                    .signature
+                    .as_ref()
+                    .is_some_and(|own| own.arrangement.chrome == Chrome::Window)
+            })
+            .collect();
+        assert!(!windowed.is_empty(), "Jendela Biru draws a window");
+        for theme in windowed {
+            let id = &theme.id;
+            let chrome = &theme.color.chrome;
+            for stop in &chrome.title {
+                let seen = contrast(&chrome.title_text, stop);
+                assert!(seen >= 4.5, "{id}: the title on {stop} is {seen:.2}:1");
+            }
+            for stop in chrome.taskbar.iter().chain(&chrome.tray) {
+                let seen = contrast(&chrome.taskbar_text, stop);
+                assert!(
+                    seen >= 4.5,
+                    "{id}: the task bar's words on {stop} are {seen:.2}:1"
+                );
+            }
+            for stop in &chrome.start {
+                let seen = contrast(&chrome.taskbar_text, stop);
+                assert!(
+                    seen >= 3.0,
+                    "{id}: the start button's word on {stop} is {seen:.2}:1"
+                );
+            }
+            let seen = contrast(&chrome.pane_text, &chrome.pane_box);
+            assert!(
+                seen >= 4.5,
+                "{id}: the task panel's entries are {seen:.2}:1"
+            );
+        }
+        for theme in &themes {
+            let mark = &theme.color.lit.highlight;
+            if mark.starts_with('#') {
+                let seen = contrast(&theme.color.lit.highlight_text, mark);
+                assert!(
+                    seen >= 4.5,
+                    "{}: the line being sung is {seen:.2}:1 on its mark",
+                    theme.id
+                );
+            }
         }
     }
 

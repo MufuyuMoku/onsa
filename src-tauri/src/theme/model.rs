@@ -134,6 +134,39 @@ pub struct Colors {
     pub lit: LitColors,
     /// The two sides of a raised or sunken edge.
     pub edge: EdgeColors,
+    /// The window drawn inside the window, where a layout draws one
+    /// (`chrome: window`).
+    pub chrome: ChromeColors,
+}
+
+/// Colours of a window drawn inside the window: its frame, title bar, task
+/// panel and task bar. Each gradient is one to six colours, top to bottom.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ChromeColors {
+    /// Around the window; falls back to the application surface.
+    pub outer: String,
+    /// The frame; falls back to the dark edge.
+    pub frame: String,
+    /// The title bar; falls back to the adjustable colour.
+    pub title: Vec<String>,
+    /// The title written on it; falls back to the panel colour.
+    pub title_text: String,
+    /// The task panel; falls back to the raised surface.
+    pub pane: Vec<String>,
+    /// A box on the task panel; falls back to the panel colour.
+    pub pane_box: String,
+    /// The heading of a box, and its entries; fall back to the adjustable
+    /// colour.
+    pub pane_text: String,
+    /// The task bar; falls back to the raised surface.
+    pub taskbar: Vec<String>,
+    /// Words on it; fall back to the main text.
+    pub taskbar_text: String,
+    /// The button at its start; falls back to the active colour.
+    pub start: Vec<String>,
+    /// The corner with the clock; falls back to the task bar.
+    pub tray: Vec<String>,
 }
 
 /// The two sides of an edge that catches light.
@@ -210,7 +243,7 @@ pub struct LitColors {
     pub ghost: String,
     /// Glow around a lit element.
     pub glow: String,
-    /// Second lit colour, such as the amber filter of Kaca asap.
+    /// Second lit colour; the artist is written in it.
     pub secondary: String,
     /// Face of a needle meter; falls back to the lit colour.
     pub meter_face: String,
@@ -225,6 +258,9 @@ pub struct LitColors {
     /// Behind the line being sung, where a theme marks it as if with a
     /// highlighter; transparent when it does not.
     pub highlight: String,
+    /// The line being sung, written on the highlight; falls back to the
+    /// position colour.
+    pub highlight_text: String,
     /// The floor, for a theme that draws one under the transport (a
     /// carpet, a meadow); falls back to the raised surface.
     pub ground: String,
@@ -427,6 +463,9 @@ theme_enum!(
         Grass => "grass",
         /// Dark segments on a liquid crystal display.
         Lcd => "lcd",
+        /// Bars in a gradient of the lit colour, in a sunken box the colour
+        /// of a display.
+        Sunken => "sunken",
     }
 );
 
@@ -457,6 +496,8 @@ theme_enum!(
         Brackets => "brackets",
         /// Only the colour of the name changes.
         Text => "text",
+        /// A tick in a sunken box when the stage is on.
+        Check => "check",
     }
 );
 
@@ -524,6 +565,9 @@ theme_enum!(
         Box => "box",
         /// Round and chromed; the play button is clear coloured plastic.
         Chrome => "chrome",
+        /// Glossy cream boxes with a dark edge and slightly rounded
+        /// corners; the play button round, green and glossy.
+        Glossy => "glossy",
     }
 );
 

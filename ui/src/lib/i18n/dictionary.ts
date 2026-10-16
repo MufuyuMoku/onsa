@@ -345,6 +345,14 @@ const id = {
 
 	'theme.label': 'Tema',
 	'layout.label': 'Susunan',
+	'menu.bar': 'Menu',
+	'menu.file': '&Berkas',
+	'menu.play': '&Putar',
+	'menu.view': '&Tampilan',
+	'menu.tools': '&Alat',
+	'menu.help': 'Bant&uan',
+	'menu.keySpace': 'Spasi',
+	'menu.toPlaying': 'Ke lagu yang diputar',
 	'layout.classic': 'Klasik',
 	'layout.gallery': 'Galeri',
 	'layout.fullscreen': 'Layar penuh',
@@ -1079,7 +1087,7 @@ const id = {
 	'help.says.lyricsBeside':
 		'Kalau dinyalakan, lirik yang datang dari internet disimpan sebagai berkas teks kecil berakhiran .lrc di sebelah berkas lagunya, sehingga tetap ada nanti tanpa internet.',
 	'help.says.themePick':
-		'Kumpulan warna untuk seluruh jendela. Enam tema bawaan: "Kaca asap", "Kokpit kaca", "Deck malam", "Kubikel biru", "Kilau milenium", dan "Musim dingin utara"; tema buatanmu sendiri muncul di baris yang sama. Tampilan langsung berganti saat kamu memilih; tidak ada yang perlu disimpan.',
+		'Kumpulan warna untuk seluruh jendela. Enam tema bawaan: "Kokpit Tua", "Laut Dalam", "Jendela Biru", "Lorong Kuning", "Siang Mimpi", dan "Krom Saku"; tema buatanmu sendiri muncul di baris yang sama. Memilih tema juga memakai susunan khasnya, yang bisa diganti di "Susunan". Tampilan langsung berganti saat kamu memilih; tidak ada yang perlu disimpan.',
 	'help.says.tone':
 		'Seberapa kuat warna jendela ikut bergerak mengikuti bunyi yang sedang diputar, dengan empat pilihan: "Mati", "Halus", "Sedang", dan "Kuat". Mati berarti warnanya diam saja.',
 	'help.says.themeFolder':
@@ -1606,6 +1614,14 @@ const en: Record<MessageKey, string> = {
 
 	'theme.label': 'Theme',
 	'layout.label': 'Layout',
+	'menu.bar': 'Menu',
+	'menu.file': '&File',
+	'menu.play': '&Play',
+	'menu.view': '&View',
+	'menu.tools': '&Tools',
+	'menu.help': '&Help',
+	'menu.keySpace': 'Space',
+	'menu.toPlaying': 'Go to what is playing',
 	'layout.classic': 'Classic',
 	'layout.gallery': 'Gallery',
 	'layout.fullscreen': 'Full screen',
@@ -2337,7 +2353,7 @@ const en: Record<MessageKey, string> = {
 	'help.says.lyricsBeside':
 		'Switched on, words that came from the internet are kept as a small text file ending in .lrc beside the song file, so they are still there later without the internet.',
 	'help.says.themePick':
-		'A set of colours for the whole window. Six come with Onsa: "Smoked Glass", "Glass Cockpit", "Night Deck", "Blue Cubicle", "Millennium Shine" and "Northern Winter"; themes you make yourself appear in the same row. The window changes as you choose; there is nothing to save.',
+		'A set of colours for the whole window. Six come with Onsa: "Old Cockpit", "Deep Sea", "Blue Window", "Yellow Hallway", "Daydream" and "Pocket Chrome"; themes you make yourself appear in the same row. Choosing a theme also puts on its own layout, which "Layout" can change. The window changes as you choose; there is nothing to save.',
 	'help.says.tone':
 		"How strongly the window's colour moves with the sound that is playing, with four choices: \"Off\", \"Gentle\", \"Middling\" and \"Strong\". Off means the colour stays still.",
 	'help.says.themeFolder':

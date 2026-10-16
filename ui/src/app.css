@@ -365,6 +365,55 @@ input[type='checkbox'] {
 		0 6px 16px color-mix(in srgb, var(--onsa-role-adjustable) 25%, transparent);
 }
 
+/* Glossy cream boxes with a dark edge and slightly rounded corners; the
+   play button round, green and glossy. */
+:root[data-onsa-control='glossy'] .btn,
+:root[data-onsa-control='glossy'] .chip,
+:root[data-onsa-control='glossy'] .icon-btn {
+	border-radius: 3px;
+	border-color: color-mix(in srgb, var(--onsa-role-adjustable) 45%, black);
+	background: linear-gradient(
+		180deg,
+		var(--onsa-edge-light),
+		var(--onsa-surface-raised) 85%,
+		color-mix(in srgb, var(--onsa-edge-dark) 25%, var(--onsa-surface-raised))
+	);
+	color: var(--onsa-text-primary);
+}
+
+:root[data-onsa-control='glossy'] .btn:active:not(:disabled),
+:root[data-onsa-control='glossy'] .icon-btn:active:not(:disabled),
+:root[data-onsa-control='glossy'] .chip[aria-pressed='true'] {
+	background: linear-gradient(
+		180deg,
+		color-mix(in srgb, var(--onsa-edge-dark) 25%, var(--onsa-surface-raised)),
+		var(--onsa-surface-raised)
+	);
+}
+
+:root[data-onsa-control='glossy'] .chip[aria-pressed='true'] {
+	border-color: var(--onsa-role-adjustable);
+	box-shadow: inset 0 0 0 1px var(--onsa-role-adjustable);
+}
+
+:root[data-onsa-control='glossy'] .icon-btn.large {
+	border-radius: 50%;
+	border-color: color-mix(in srgb, var(--onsa-role-active) 45%, black);
+	background: radial-gradient(
+		circle at 40% 30%,
+		color-mix(in srgb, var(--onsa-role-active) 30%, white),
+		var(--onsa-role-active) 45%,
+		color-mix(in srgb, var(--onsa-role-active) 70%, black)
+	);
+	box-shadow: inset 0 -3px 6px rgb(0 0 0 / 0.25);
+	color: #fff;
+}
+
+:root[data-onsa-control='glossy'] .field {
+	border-radius: 0;
+	border-color: color-mix(in srgb, var(--onsa-role-adjustable) 35%, var(--onsa-edge-dark));
+}
+
 /* --- the position bar: how it fills -------------------------------------- */
 
 /* The transport's slider draws its own track when the theme asks for one:
@@ -848,4 +897,52 @@ input[type='checkbox'] {
 	box-shadow: inset 0 2px 6px rgb(0 0 0 / 0.25);
 	color: var(--onsa-lit-lcd-ink);
 	font-family: var(--onsa-font-numeric);
+}
+
+/* The task panel of a window inside the window (SPEC M16, Jendela Biru):
+   the navigation's groups as boxes on a panel, each with its heading. */
+:root .shell.window > .sidebar {
+	gap: 12px;
+	padding: 12px 10px;
+	border: 0;
+	background: var(--onsa-chrome-pane);
+}
+
+:root .shell.window > .sidebar .mark {
+	display: none;
+}
+
+:root .shell.window > .sidebar .group {
+	display: block;
+	overflow: hidden;
+	padding-bottom: 4px;
+	border-radius: 3px 3px 0 0;
+	background: var(--onsa-chrome-pane-box);
+	box-shadow: 0 1px 2px rgb(0 0 60 / 0.25);
+}
+
+:root .shell.window > .sidebar .group h2 {
+	margin: 0 0 4px;
+	padding: 6px 10px;
+	background: linear-gradient(90deg, var(--onsa-edge-light), var(--onsa-chrome-pane-box));
+	color: var(--onsa-chrome-pane-text);
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 0;
+	text-transform: none;
+}
+
+:root .shell.window > .sidebar .group .item {
+	border-radius: 0;
+	background: none;
+	color: var(--onsa-chrome-pane-text);
+}
+
+:root .shell.window > .sidebar .group .item:hover {
+	text-decoration: underline;
+}
+
+:root .shell.window > .sidebar .group .item[aria-current='true'] {
+	color: var(--onsa-chrome-pane-text);
+	font-weight: 700;
 }

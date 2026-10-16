@@ -8,7 +8,7 @@
 
 export type Base = 'dark' | 'light';
 export type MeterVariant = 'bar' | 'segment' | 'needle' | 'line' | 'lcd';
-export type SpectrumVariant = 'bar' | 'segment' | 'soft' | 'dots' | 'grass' | 'lcd';
+export type SpectrumVariant = 'bar' | 'segment' | 'soft' | 'dots' | 'grass' | 'lcd' | 'sunken';
 export type ProgressStyle = 'plain' | 'stars' | 'blocks';
 export type PanelTexture = 'glass' | 'bezel' | 'brushed';
 export type StageIndicator =
@@ -17,10 +17,11 @@ export type StageIndicator =
 	| 'led'
 	| 'glow-text'
 	| 'brackets'
-	| 'text';
+	| 'text'
+	| 'check';
 export type TimeDisplay = 'ghost-segment' | 'plain';
 export type LabelCase = 'as-written' | 'uppercase';
-export type ControlShape = 'soft' | 'square' | 'pill' | 'bevel' | 'ring' | 'box' | 'chrome';
+export type ControlShape = 'soft' | 'square' | 'pill' | 'bevel' | 'ring' | 'box' | 'chrome' | 'glossy';
 export type FrameStyle = 'hairline' | 'inset' | 'raised' | 'none' | 'card' | 'candy';
 export type RowStyle = 'lines' | 'stripes' | 'plain';
 export type Scrollbar = 'thin' | 'classic' | 'hidden';
@@ -86,6 +87,8 @@ export interface Theme {
 			stripe: string;
 			/** Behind the line being sung; transparent when not marked. */
 			highlight: string;
+			/** The line being sung, written on the highlight. */
+			highlightText: string;
 			/** The floor under the transport, where a theme draws one. */
 			ground: string;
 			/** Ornament text; never the clip colour. */
@@ -102,6 +105,21 @@ export interface Theme {
 		edge: {
 			light: string;
 			dark: string;
+		};
+		/** A window drawn inside the window (`chrome: window`); each list is a
+		 *  gradient, top to bottom. */
+		chrome: {
+			outer: string;
+			frame: string;
+			title: string[];
+			titleText: string;
+			pane: string[];
+			paneBox: string;
+			paneText: string;
+			taskbar: string[];
+			taskbarText: string;
+			start: string[];
+			tray: string[];
 		};
 	};
 	shape: {

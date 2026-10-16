@@ -2,7 +2,7 @@
 
 Onsa (音叉, garpu tala) adalah music player desktop untuk Windows dan Linux. Tampilannya simpel dan mudah dipakai, sistemnya efisien, dan hampir semua aspek bisa dikustomisasi: tampilan maupun kualitas/spek pemutaran. Identitas visualnya adalah **panel instrumen**: aplikasi tampil seperti alat ukur yang jujur dan menunjukkan apa yang sebenarnya terjadi pada sinyal audio.
 
-Dokumen ini adalah sumber kebenaran proyek. Aturan kerja ada di `CLAUDE.md`. Referensi visual ada di `docs/design/palet-preview.html` (buka di browser).
+Dokumen ini adalah sumber kebenaran proyek. Aturan kerja ada di `CLAUDE.md`. Referensi visual ada di `docs/design/konsep-tema.md` dan `docs/design/konsep-tema/referensi/` (buka di browser).
 
 ---
 

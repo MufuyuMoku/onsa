@@ -1120,3 +1120,83 @@ terlihat di referensi. Keputusan yang mengubah aturan yang sebelumnya terkunci:
   Tampilan", tetapi peringatan itu ternyata hanya masuk log. Pemeriksaan kriteria 9 menemukannya.
   Sekarang halaman Tampilan punya kelompok "Tema yang dipakai dengan perbaikan", terpisah dari
   "Berkas tema yang tidak terpakai".
+
+## 2026-10-16 · M16: Jendela Biru, tema lama terakhir, dan pergantian tema yang tidak dijelaskan
+
+- **Dua pertanyaan Jendela Biru** (diusulkan Claude Code, disetujui pemilik proyek 2026-10-16):
+  bilah judul **hiasan** di dalam aplikasi tanpa tombol perkecil, perbesar, atau tutup; bingkai
+  sistem operasi tetap, dan dialah yang menyeret dan menutup jendela. Alasannya: jendela tanpa
+  bingkai menghilangkan Snap Layouts Windows 11 dan bayangan jendela, membuat ukuran jendela
+  bergeser setiap kali tema berganti, dan di Linux (Wayland, GNOME, KDE, tiling WM) mengubah
+  ukuran serta urutan tombolnya tidak bisa diandalkan. **Baris menu berfungsi penuh**, hanya di
+  layout Jendela. Polanya menubar ARIA: panah, Home/End, Enter/Spasi, Esc, dan Alt+huruf yang
+  digarisbawahi. Alt sendirian tidak dipakai, karena window manager Linux memakainya. Setiap
+  entri memanggil aksi yang sudah ada; tidak ada entri tanpa aksi. Tombol "onsa" di bilah tugas
+  membuka menu Berkas, nama lagu di bilah tugas membuka Sedang diputar, dan jamnya jam sungguhan
+  yang berganti tepat di pergantian menit.
+- **Skema bertambah untuk jendela di dalam jendela**: kelompok warna `color.chrome` (`outer`,
+  `frame`, `title`, `titleText`, `pane`, `paneBox`, `paneText`, `taskbar`, `taskbarText`,
+  `start`, `tray`). Warna yang ditulis sebagai daftar menjadi gradien tegak berisi 1–6 warna.
+  Setiap token jatuh ke peran warna yang sudah ada, jadi tema lama tetap terbaca. Selain itu
+  ada `lit.highlightText` (baris lirik yang dinyanyikan, ditulis di atas sorotan; bawaannya
+  warna posisi), kontrol `glossy`, penanda tahap `check`, dan spektrum `sunken` (batang di kotak
+  cekung berwarna `lit.lcd`). Spektrum tidak bisa memakai `surface.well`, karena well juga latar
+  kolom pencarian yang teksnya hitam.
+- **Tes kontras untuk jendela di dalam jendela**: judul di atas setiap warna gradien bilah
+  judul, kata-kata dan jam di atas setiap warna bilah tugas minimal 4,5:1, entri panel tugas
+  4,5:1, dan tombol "onsa" 3:1 (ditulis 19 px tebal). Tes warna nada untuk spektrum `sunken`
+  mengukur ujung warnanya terhadap kotak itu, bukan terhadap well. **`lit.secondary` kini ikut
+  diukur** (minimal 3:1): warna itu dipakai untuk nama artis, dan selama ini tidak diperiksa.
+- **Warna konsep Jendela Biru yang diubah** supaya lolos tes itu (angka WCAG):
+  - posisi `#3EBE3F` → `#2A7F2A` (1,99:1 → 4,13:1 di krem); `active` tetap `#3EBE3F` untuk
+    lampu dan centang;
+  - pita terang `#3D95FF` di puncak gradien bilah judul dihapus (teks putih 3,03:1) dan diganti
+    kilau tipis `box-shadow`; sisa gradiennya 5,61:1 sampai 9,54:1;
+  - pita `#4993E6` di bilah tugas dihapus (3,18:1) dan juga diganti kilau; sisa gradiennya
+    minimal 5,16:1;
+  - gradien jam `#139EE9`/`#18B9ED` (2,96:1 / 2,28:1) → `#0C59B9`, `#0E6FC8`, `#0B5AB0`
+    (minimal 5,09:1);
+  - tombol "onsa" tanpa `#59B858` (2,49:1): `#3C9A3C` → `#2E7B2E`, minimal 3,57:1, ditulis
+    19 px tebal sehingga terhitung teks besar;
+  - nama artis memakai `#333333` (10,36:1) seperti di referensi, bukan `caution`.
+
+  Teks panel tugas `#215DC6` tetap seperti di konsep: 4,57:1 di atas `#D6DFF7`.
+- **DejaVu Sans Condensed 2.37**, dari rilis resmi `dejavu-fonts/dejavu-fonts` tag
+  `version_2_37` (`dejavu-fonts-ttf-2.37.zip`, 5.522.795 byte, SHA-256
+  `7576310b219e04159d35ff61dd4a4ec4cdba4f35c00e002a136f00e96a908b0a`). Yang dibundel hanya
+  Regular (680.264 byte, `8550cd5c…c5e549`), Bold (665.028 byte, `38098d0b…766d20`), dan
+  BoldOblique (611.836 byte, `43f9fd6b…e128f`) untuk bilah tugas, beserta `LICENSE`. Lisensinya
+  Bitstream Vera, dengan perubahan DejaVu di domain publik dan glif Arev berlisensi serupa: bebas
+  dibundel dan didistribusikan selama berkasnya tidak diubah atau diganti nama dengan kata
+  "Bitstream"/"Vera", dan pemberitahuannya disertakan. Lisensi ini **bukan OFL**. Berkasnya
+  dibundel apa adanya.
+- **Tema lama terakhir pergi**: Kubikel Biru dihapus, bersama Barlow dan Barlow Condensed, dan
+  `docs/design/palet-preview.html`. Pilihan `kubikel-biru` yang tersimpan kini dibuka sebagai
+  Jendela Biru.
+- **Alasan penolakan berkas tema diterjemahkan.** Setiap masalah membawa kode alasan (`builtinName`,
+  `unreadable`, `notJson`, `notObject`, `mended`) yang dikatakan lewat kamus. Kalimat parser yang
+  asli, dalam bahasa Inggris, ada di balik "Lihat detail", seperti kegagalan unduhan.
+- **Pergantian tema di profil uji yang tidak dijelaskan** (dilaporkan 2026-10-16). Pemilik proyek
+  tidak menyentuh jendelanya. Riwayat WAL SQLite di profil itu menunjukkan sembilan penulisan
+  pilihan tema di antara 02:19:58 dan 06:28:49 UTC: kubikel, krom, siang, lorong, laut, kokpit,
+  lorong, laut, lorong. Pada rentang itu transkrip sesi Claude Code tidak menjalankan satu
+  perintah pun. **Yang sudah disingkirkan:**
+  1. *Penulisan pengaturan tampilan yang digabung tidak bisa menulis tema.* Tema adalah kunci
+     tersendiri (`theme`), dan `display` tidak memuatnya. WAL juga tidak menunjukkan penulisan
+     `display` di sela-sela itu.
+  2. *Pemeriksa tata letak tidak pernah berjalan di profil itu.* Profil tersebut disalin sesudah
+     putaran terakhir pemeriksa, dan semua frame WAL berada dalam satu generasi sesudah salinan.
+  3. *Urutannya bukan urutan pemeriksa mana pun.* Kedua pemeriksa berjalan maju menurut daftar;
+     yang tercatat sebagian mundur lalu bolak-balik.
+  4. *Satu-satunya penulis* adalah perintah `set_theme`, yang hanya dipanggil `selectTheme` saat
+     chip tema diaktifkan (klik atau Enter). Pemuatan tema saat start tidak menulis apa pun,
+     tidak ada pintasan keyboard yang mengganti tema, dan Spasi dicegat pintasan putar/jeda.
+  5. *Tidak ada sesi Claude lain* yang menyentuh port debugging 9241 hari itu (transkrip dan
+     scratchpad sesi lain diperiksa).
+
+  Sebabnya **tidak ketemu**. Yang tersisa hanya masukan yang mencapai jendela tanpa tercatat
+  (jendela uji yang dibuka `Start-Process` merebut fokus), atau proses lokal lain yang memakai
+  port debugging yang terbuka. Yang diubah: setiap pergantian tema kini dicatat di log dengan
+  waktunya (`theme chosen`); kedua pemeriksa memilih ulang tema dan susunan pengguna saat
+  selesai; dan jendela uji ditutup sesudah setiap langkah, tidak dibiarkan menyala tanpa
+  pengawasan.

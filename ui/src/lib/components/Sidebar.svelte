@@ -121,64 +121,70 @@
 	{/if}
 
 	{#snippet group(heading: MessageKey, entries: Entry[])}
-		{#if mode === 'full'}
-			<h2 class="label">{t(heading)}</h2>
-		{:else}
-			<div class="rule" role="presentation"></div>
-		{/if}
-		{#each entries as entry (entry.label)}
-			<button
-				type="button"
-				class="item"
-				aria-current={current(entry)}
-				title={t(entry.label)}
-				aria-label={t(entry.label)}
-				onclick={() => go(entry)}
-			>
-				<Icon name={entry.icon} />
-				{#if mode === 'full'}<span class="text ellipsis">{t(entry.label)}</span>{/if}
-			</button>
-		{/each}
+		<!-- A box of its own only where a layout draws one (a task panel);
+		     everywhere else the group leaves no box behind. -->
+		<div class="group">
+			{#if mode === 'full'}
+				<h2 class="label">{t(heading)}</h2>
+			{:else}
+				<div class="rule" role="presentation"></div>
+			{/if}
+			{#each entries as entry (entry.label)}
+				<button
+					type="button"
+					class="item"
+					aria-current={current(entry)}
+					title={t(entry.label)}
+					aria-label={t(entry.label)}
+					onclick={() => go(entry)}
+				>
+					<Icon name={entry.icon} />
+					{#if mode === 'full'}<span class="text ellipsis">{t(entry.label)}</span>{/if}
+				</button>
+			{/each}
+		</div>
 	{/snippet}
 
 	{@render group('nav.library', libraryPages)}
 
 	{#if mode === 'full' && playlists.all.length > 0}
-		<h2 class="label">{t('nav.playlists')}</h2>
-		{#each recent as playlist (playlist.id)}
-			<button
-				type="button"
-				class="item playlist"
-				class:over={carry.over === `playlist:${playlist.id}`}
-				aria-current={view.kind === 'playlist' && view.id === playlist.id}
-				title={playlist.name}
-				use:dropTarget={{
-					key: `playlist:${playlist.id}`,
-					accept: (what) => accept(playlist.id, what)
-				}}
-				onclick={() => {
-					setQuery('');
-					navigate({ kind: 'playlist', id: playlist.id });
-					closeOverlays();
-				}}
-			>
-				<Icon name={playlist.kind === 'smart' ? 'eq' : 'playlist'} />
-				<span class="text ellipsis">{playlist.name}</span>
-			</button>
-		{/each}
-		{#if more}
-			<button
-				type="button"
-				class="item all"
-				onclick={() => {
-					setQuery('');
-					navigate({ kind: 'playlists' });
-					closeOverlays();
-				}}
-			>
-				<span class="text ellipsis">{t('nav.allPlaylists')}</span>
-			</button>
-		{/if}
+		<div class="group">
+			<h2 class="label">{t('nav.playlists')}</h2>
+			{#each recent as playlist (playlist.id)}
+				<button
+					type="button"
+					class="item playlist"
+					class:over={carry.over === `playlist:${playlist.id}`}
+					aria-current={view.kind === 'playlist' && view.id === playlist.id}
+					title={playlist.name}
+					use:dropTarget={{
+						key: `playlist:${playlist.id}`,
+						accept: (what) => accept(playlist.id, what)
+					}}
+					onclick={() => {
+						setQuery('');
+						navigate({ kind: 'playlist', id: playlist.id });
+						closeOverlays();
+					}}
+				>
+					<Icon name={playlist.kind === 'smart' ? 'eq' : 'playlist'} />
+					<span class="text ellipsis">{playlist.name}</span>
+				</button>
+			{/each}
+			{#if more}
+				<button
+					type="button"
+					class="item all"
+					onclick={() => {
+						setQuery('');
+						navigate({ kind: 'playlists' });
+						closeOverlays();
+					}}
+				>
+					<span class="text ellipsis">{t('nav.allPlaylists')}</span>
+				</button>
+			{/if}
+		</div>
 	{/if}
 
 	{@render group('nav.settings', [...settingsPages, helpPage])}
@@ -204,6 +210,10 @@
 </nav>
 
 <style>
+	.group {
+		display: contents;
+	}
+
 	.sidebar {
 		display: flex;
 		flex-direction: column;

@@ -11,8 +11,8 @@ use serde_json::Value;
 use std::collections::BTreeMap;
 
 use super::model::{
-    Arrangement, Base, Chrome, Colors, ControlShape, CoverFrame, Decoration, Density, DialogStyle,
-    Easing, EdgeColors, Effects, Fonts, FrameStyle, LabelCase, LibraryHome, LitColors,
+    Arrangement, Base, Chrome, ChromeColors, Colors, ControlShape, CoverFrame, Decoration, Density,
+    DialogStyle, Easing, EdgeColors, Effects, Fonts, FrameStyle, LabelCase, LibraryHome, LitColors,
     LocalizedName, MeterVariant, Motion, NowPlayingStyle, PanelTexture, PositionStyle,
     ProgressStyle, QueuePlace, Radius, RoleColors, RowStyle, Scrollbar, Shape, SidebarPlace,
     Signature, SpectrumVariant, StageIndicator, SurfaceColors, TextColors, Theme, TimeDisplay,
@@ -140,6 +140,12 @@ pub fn parse_theme(id_hint: &str, source: &str) -> Result<LoadedTheme> {
         led: cx.color(lit_node, "led", "color.lit.led", &role.active),
         stripe: cx.color(lit_node, "stripe", "color.lit.stripe", &role.caution),
         highlight: cx.color(lit_node, "highlight", "color.lit.highlight", "transparent"),
+        highlight_text: cx.color(
+            lit_node,
+            "highlightText",
+            "color.lit.highlightText",
+            &role.position,
+        ),
         ground: cx.color(lit_node, "ground", "color.lit.ground", &raised_surface),
         ornament: cx.color(lit_node, "ornament", "color.lit.ornament", &role.label),
         paper: cx.color(lit_node, "paper", "color.lit.paper", &surface.body),
@@ -162,6 +168,50 @@ pub fn parse_theme(id_hint: &str, source: &str) -> Result<LoadedTheme> {
             "rgba(255,255,255,0.10)",
         ),
         dark: cx.color(edge_node, "dark", "color.edge.dark", "rgba(0,0,0,0.45)"),
+    };
+
+    let chrome_node = cx.child(color_node, "chrome", "color.chrome");
+    let taskbar = cx.gradient(
+        chrome_node,
+        "taskbar",
+        "color.chrome.taskbar",
+        &surface.raised,
+    );
+    let chrome = ChromeColors {
+        outer: cx.color(chrome_node, "outer", "color.chrome.outer", &surface.app),
+        frame: cx.color(chrome_node, "frame", "color.chrome.frame", &edge.dark),
+        title: cx.gradient(chrome_node, "title", "color.chrome.title", &role.adjustable),
+        title_text: cx.color(
+            chrome_node,
+            "titleText",
+            "color.chrome.titleText",
+            &surface.body,
+        ),
+        pane: cx.gradient(chrome_node, "pane", "color.chrome.pane", &surface.raised),
+        pane_box: cx.color(
+            chrome_node,
+            "paneBox",
+            "color.chrome.paneBox",
+            &surface.body,
+        ),
+        pane_text: cx.color(
+            chrome_node,
+            "paneText",
+            "color.chrome.paneText",
+            &role.adjustable,
+        ),
+        taskbar_text: cx.color(
+            chrome_node,
+            "taskbarText",
+            "color.chrome.taskbarText",
+            &text.primary,
+        ),
+        start: cx.gradient(chrome_node, "start", "color.chrome.start", &role.active),
+        tray: match chrome_node.and_then(|node| node.get("tray")) {
+            Some(_) => cx.gradient(chrome_node, "tray", "color.chrome.tray", &surface.raised),
+            None => taskbar.clone(),
+        },
+        taskbar,
     };
 
     let shape_node = cx.child(root, "shape", "shape");
@@ -251,6 +301,7 @@ pub fn parse_theme(id_hint: &str, source: &str) -> Result<LoadedTheme> {
             role,
             lit,
             edge,
+            chrome,
         },
         shape,
         variants,
@@ -281,8 +332,6 @@ pub(crate) const BUNDLED_FONTS: &[&str] = &[
     "system-ui",
     "Noto Sans JP",
     "B612 Mono",
-    "Barlow",
-    "Barlow Condensed",
     "Saira Stencil One",
     "Cormorant Garamond",
     "Martian Mono",
@@ -292,6 +341,7 @@ pub(crate) const BUNDLED_FONTS: &[&str] = &[
     "Pixelify Sans",
     "Orbitron",
     "Exo 2",
+    "DejaVu Sans Condensed",
 ];
 
 /// How a key of ornament text has to look: `ornament.<theme>.<name>`, the
@@ -423,6 +473,40 @@ impl Cx {
                 T::default()
             }
             None => T::default(),
+        }
+    }
+
+    /// Reads a gradient: one colour, or a list of one to six. Anything
+    /// else is reported and the default stands alone.
+    fn gradient(
+        &mut self,
+        parent: Option<&Value>,
+        key: &str,
+        path: &str,
+        default: &str,
+    ) -> Vec<String> {
+        let Some(value) = parent.and_then(|parent| parent.get(key)) else {
+            return vec![default.to_string()];
+        };
+        if let Some(one) = value.as_str().filter(|text| is_css_color(text)) {
+            return vec![one.to_string()];
+        }
+        let colours: Option<Vec<String>> = value.as_array().and_then(|items| {
+            items
+                .iter()
+                .map(|item| {
+                    item.as_str()
+                        .filter(|text| is_css_color(text))
+                        .map(str::to_string)
+                })
+                .collect()
+        });
+        match colours {
+            Some(colours) if (1..=6).contains(&colours.len()) => colours,
+            _ => {
+                self.note(path, "not one to six colours");
+                vec![default.to_string()]
+            }
         }
     }
 

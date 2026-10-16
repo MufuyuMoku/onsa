@@ -2054,3 +2054,40 @@ penjelasan fpcalc di Bantuan ikut diluruskan.
 `windows-sha256.txt`, pengaturan lama aman sesudah memasang menimpa, antrean pulih, dan keempat
 langkah dengan pemilih folder sungguhan sesuai. Bagian yang di atas tercatat "tidak sepenuhnya
 terbukti" (dialog folder) kini terbukti oleh pemilik proyek. Ditandai `v1.4.1`.
+
+## 2026-10-16 · M16: tampilan — siap diuji, belum ditandai
+
+**Selesai**: skema tema yang diperdalam (font per tema, teks hiasan, dekorasi, layout khas
+sebagai data, warna jendela-di-dalam-jendela), tiga preset standar (Klasik, Galeri, Layar
+penuh), dan keenam tema baru — Kokpit Tua, Laut Dalam, Jendela Biru, Lorong Kuning, Siang
+Mimpi, Krom Saku — masing-masing dengan layout khasnya. Keenam tema lama dan font yang hanya
+mereka pakai (Chakra Petch, Share Tech Mono, B612 biasa, Barlow, Barlow Condensed) sudah
+dihapus, begitu juga `palet-preview.html`. Rinciannya di `docs/DECISIONS.md` 2026-10-10,
+2026-10-11, dan 2026-10-16.
+
+**Kriteria selesai (bagian 10 konsep), cara verifikasinya di Windows:**
+
+| # | Kriteria | Bukti |
+|---|---|---|
+| 1 | Tampil sesuai konsep di layout khasnya | Tangkapan layar keenam tema dikirim ke pemilik proyek untuk dinilai |
+| 2 | 18 susunan preset + 6 layout khas bersih | `scripts/layout-check.mjs`: 192 tampilan (6 tema × 4 susunan × 4 halaman × 1280×800 dan 820×600), 0 temuan; `--self-test` menangkap keenam jenis cacat yang ditanam |
+| 3 | Kontras | `the_new_themes_can_be_read`, `the_window_inside_the_window_can_be_read`; warna yang diubah tercatat di DECISIONS |
+| 4 | Warna nada | `a_theme_that_leans_leans_somewhere_you_can_see` (CIEDE2000, beda rona, keterbacaan di latar sebenarnya) |
+| 5 | Dekorasi bergerak berhenti, tak berkedip >1/detik | `scripts/motion-check.mjs`: semua animasi berhenti di hemat daya (lewat kotak centangnya sendiri) dan gerak dikurangi; yang tercepat 6 detik |
+| 6 | Font dibundel dengan lisensi | `every_font_a_theme_may_name_is_bundled_with_its_licence` |
+| 7 | Pilihan tema lama berpindah | tes `a_choice_of_a_theme_that_has_gone_…`; di aplikasi: `kaca-asap` → Laut Dalam, `kubikel-biru` → Jendela Biru |
+| 8 | Tidak ada tombol palsu | pemeriksa tata letak: tiap tombol punya aksi, kursor tangan hanya di yang bisa ditekan; bilah judul Jendela Biru tanpa tombol |
+| 9 | Tema pengguna skema lama terbaca atau ditolak dengan alasan jelas | tes `a_theme_written_before_m16_…`; di aplikasi: tema lama terbaca dengan perbaikan yang disebut, berkas rusak ditolak dengan alasan berbahasa Indonesia dan "Lihat detail" |
+
+Baris menu Jendela Biru diuji lewat port debugging Onsa sendiri: Alt+B ↓↓ Enter membuka Playlist,
+Alt+T → Enter membuka Rapikan, Esc mengembalikan fokus, tombol "onsa" membuka Berkas, Putar >
+Jeda menjeda dan memutar lagi, Alt sendirian tidak membuka apa pun. Pengujian itu menemukan satu
+bug (menu terbuka sendiri saat layout dipasang ulang), yang sudah diperbaiki.
+
+**Belum terbukti / tertunda:**
+- **Linux**: kedua pemeriksa hanya jalan di Windows (WebKitGTK tidak punya port debugging seperti
+  WebView2). Pemilik proyek menguji paket Linux di WSL.
+- **Jendela Biru pada 1280×800**: lirik dan spektrum ada di bawah lipatan halaman Sedang diputar,
+  karena susunan Klasik memakai sampul 340 px sedangkan referensi 190 px.
+- **Pergantian tema di profil uji** pada 2026-10-16 tidak ketemu sebabnya; yang sudah
+  disingkirkan tercatat di DECISIONS, dan setiap pergantian tema kini dicatat di log.
