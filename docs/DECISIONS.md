@@ -1200,3 +1200,54 @@ terlihat di referensi. Keputusan yang mengubah aturan yang sebelumnya terkunci:
   waktunya (`theme chosen`); kedua pemeriksa memilih ulang tema dan susunan pengguna saat
   selesai; dan jendela uji ditutup sesudah setiap langkah, tidak dibiarkan menyala tanpa
   pengawasan.
+
+## 2026-10-17 · M16: ukuran milik layout, port debugging, dan dugaan soal pergantian tema
+
+- **Layout khas boleh mengatur ukurannya sendiri** (keputusan pemilik proyek). Susunan mendapat
+  `sizes` yang semuanya opsional: `cover` (lebar sampul, 96–480 px), `title` (ukuran judul lagu,
+  16–64 px), `lyrics` (tinggi kotak lirik, 96–480 px), dan `spectrum` (tinggi spektrum, 60–400
+  px). Ukuran yang tidak disebut tetap memakai ukuran gaya susunannya, dan nilai di luar
+  rentang dibawa ke batasnya dengan peringatan. Ukuran sampul tetap mengecil di jendela sempit
+  (paling besar 32% lebar konten, atau 60% saat konten bertumpuk).
+- **Jendela Biru** memakai sampul 190 px dan judul 22 px seperti referensi. Kotak lirik dan
+  spektrum ikut diatur (spektrum 100 px). Susunan Sedang diputar-nya diganti dari `classic` ke
+  `instrument`, dengan pelat dan dial dimatikan: yang menaruh judul, format, dan lirik di samping
+  sampul dan spektrum di bawahnya memang susunan itu, sama seperti referensi. Dengan Klasik dan
+  sampul 190 px, lirik dan spektrum tetap jatuh di bawah lipatan pada 1280×800, karena Klasik
+  menumpuk semuanya ke bawah.
+- **Port debugging diputuskan di `src-tauri/src/inspection.rs`.** Sebelum ini tidak diputuskan di
+  mana pun: WebView2 membuka port bila variabel lingkungan `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS`
+  memintanya, **termasuk di installer rilis**, dan WebKitGTK membuka inspector bila
+  `WEBKIT_INSPECTOR_SERVER` atau `WEBKIT_INSPECTOR_HTTP_SERVER` ada. Sekarang:
+  - langkah pertama `run()`, sebelum jendela ada, membuang `--remote-debugging-port`,
+    `--remote-debugging-pipe`, dan `--remote-debugging-address` dari argumen WebView2, menghapus
+    kedua variabel WebKitGTK, lalu mencatat penolakannya di log;
+  - pengecualian hanya untuk build dengan fitur cargo `test-harness` (`src-tauri/Cargo.toml`),
+    yang tidak pernah dipakai workflow rilis;
+  - **CI** (`release-build.yml`) menjalankan biner yang baru dikemas dengan port diminta, dan
+    gagal kalau port menjawab atau kalau log tidak menyebut penolakan
+    (`scripts/port-check.mjs closed`; di Linux lewat `xvfb-run`). Sesudahnya CI membuat build
+    `test-harness` dan menuntut port **terbuka** (`… open`), supaya hasil "tertutup" tadi tidak
+    bisa lulus hanya karena WebView gagal jalan;
+  - clippy kini juga dijalankan untuk build `test-harness`.
+
+  Yang tidak tertutup oleh ini: kebijakan WebView2 yang dipasang administrator lewat registry
+  (`HKLM\Software\Policies\Microsoft\Edge\WebView2\AdditionalBrowserArguments`). Itu butuh hak
+  admin di mesin itu, dan Onsa tidak bisa menimpanya.
+- **Jendela uji dibuka tanpa merebut fokus.** Build `test-harness` yang dijalankan dengan
+  `ONSA_TEST_BACKGROUND=1` membuat jendelanya dengan `focus: false`. Sudah dicoba: jendela yang
+  memegang fokus sebelum dan delapan detik sesudah Onsa uji menyala tetap sama (dibaca dengan
+  `GetForegroundWindow`, tanpa menyentuh jendela mana pun).
+- **Pergantian tema 2026-10-16: dugaan, bukan kepastian.** Pemilik proyek menduga ketikannya
+  sendiri masuk ke jendela uji yang merebut fokus dan dibiarkan menyala empat jam. Dugaan itu
+  cocok dengan bukti: jendela uji dibuka dengan `Start-Process`, yang memberinya fokus;
+  penulisan tema datang dalam rentang waktu yang panjang, bukan berderet; dan tidak ada
+  penulis lain yang ditemukan. Satu koreksi dari kode: **tombol panah tidak berpindah di antara
+  chip tema**. Panah kiri/kanan adalah pintasan mundur/maju posisi lagu, dan chip-chip itu tombol
+  biasa tanpa navigasi panah. Yang bisa mengganti tema dari keyboard adalah Tab atau Shift+Tab
+  untuk memindah fokus, lalu Enter. Ini dicoba di aplikasi (lewat port debugging Onsa sendiri):
+  tiga kali panah kiri dan tiga kali panah kanan pada chip tema tidak mengubah tema maupun
+  fokus, sedangkan Shift+Tab lalu Enter, atau Tab lalu Enter, menggantinya. Urutan yang tercatat (mundur, lalu bolak-balik) cocok dengan
+  Shift+Tab dan Tab yang diselingi Enter. Kesimpulan ini **tidak terbukti**. Yang diubah supaya
+  tidak terulang: jendela uji tidak lagi merebut fokus, setiap pergantian tema dicatat di log
+  beserta waktunya, dan jendela uji ditutup sesudah setiap langkah.

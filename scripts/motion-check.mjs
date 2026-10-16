@@ -4,8 +4,9 @@
 // reduced motion, and nothing changes faster than once a second.
 //
 // Like layout-check.mjs it drives a running Onsa through WebView2's
-// debugging port and touches nothing outside Onsa's page; start Onsa the
-// same way, with a track playing so that whatever turns while a song plays
+// debugging port and touches nothing outside Onsa's page; start the same
+// test build the same way (see the top of layout-check.mjs), with a track
+// playing so that whatever turns while a song plays
 // is turning. Power saving is switched on and back off through the Output
 // page's own checkbox; reduced motion is emulated by the debugging port.
 //

@@ -15,8 +15,8 @@ use super::model::{
     DialogStyle, Easing, EdgeColors, Effects, Fonts, FrameStyle, LabelCase, LibraryHome, LitColors,
     LocalizedName, MeterVariant, Motion, NowPlayingStyle, PanelTexture, PositionStyle,
     ProgressStyle, QueuePlace, Radius, RoleColors, RowStyle, Scrollbar, Shape, SidebarPlace,
-    Signature, SpectrumVariant, StageIndicator, SurfaceColors, TextColors, Theme, TimeDisplay,
-    ToneColor, ToneTarget, TooltipStyle, TransportStyle, Variants,
+    Signature, Sizes, SpectrumVariant, StageIndicator, SurfaceColors, TextColors, Theme,
+    TimeDisplay, ToneColor, ToneTarget, TooltipStyle, TransportStyle, Variants,
 };
 
 /// A theme as read from a file, together with what had to be corrected.
@@ -628,12 +628,33 @@ impl Cx {
             chrome: self.enumeration::<Chrome>(node, "chrome", &at("chrome")),
             plates: self.boolean(node, "plates", &at("plates"), false),
             panels: self.panels(node, "panels", &at("panels")),
+            sizes: self.sizes(node, "sizes", &at("sizes")),
         };
         Some(Signature {
             id,
             name,
             arrangement,
         })
+    }
+
+    /// Reads the sizes a layout sets. Each is optional; one out of range is
+    /// brought into it and reported.
+    fn sizes(&mut self, parent: Option<&Value>, key: &str, path: &str) -> Sizes {
+        let Some(node) = self.child(parent, key, path) else {
+            return Sizes::default();
+        };
+        let node = Some(node);
+        let mut size = |name: &str, min: f32, max: f32| -> Option<u32> {
+            node.and_then(|node| node.get(name))?;
+            let at = format!("{path}.{name}");
+            Some(self.number(node, name, &at, min, min, max).round() as u32)
+        };
+        Sizes {
+            cover: size("cover", 96.0, 480.0),
+            title: size("title", 16.0, 64.0),
+            lyrics: size("lyrics", 96.0, 480.0),
+            spectrum: size("spectrum", 60.0, 400.0),
+        }
     }
 
     /// Reads which Now Playing panels a layout shows. Only the four panels
@@ -1069,6 +1090,29 @@ mod tests {
             "an unknown panel is left out"
         );
         assert_eq!(loaded.warnings.len(), 1, "{:?}", loaded.warnings);
+    }
+
+    #[test]
+    fn a_layout_sets_its_own_sizes_within_bounds() {
+        let source = r##"{ "signature": {
+            "id": "jendela", "name": { "id": "Jendela", "en": "Window" },
+            "sizes": { "cover": 190, "title": 200 }
+        } }"##;
+        let loaded = parse_theme("x", source).expect("an object");
+        let sizes = loaded.theme.signature.expect("a layout").arrangement.sizes;
+        assert_eq!(sizes.cover, Some(190));
+        assert_eq!(sizes.title, Some(64), "too large is brought into range");
+        assert_eq!(loaded.warnings.len(), 1, "{:?}", loaded.warnings);
+
+        let plain = r##"{ "signature": { "id": "x", "name": { "id": "X", "en": "X" } } }"##;
+        let sizes = parse_theme("x", plain)
+            .expect("an object")
+            .theme
+            .signature
+            .expect("a layout")
+            .arrangement
+            .sizes;
+        assert_eq!(sizes, Sizes::default(), "no sizes: the style's own stand");
     }
 
     #[test]

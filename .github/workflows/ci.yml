@@ -120,6 +120,9 @@ jobs:
       - name: cargo clippy
         run: cargo clippy --workspace --all-targets -- -D warnings
 
+      - name: cargo clippy (test-harness build)
+        run: cargo clippy -p onsa --all-targets --features test-harness -- -D warnings
+
       - name: cargo test
         run: cargo test --workspace
 

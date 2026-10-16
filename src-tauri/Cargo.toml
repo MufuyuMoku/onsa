@@ -14,6 +14,13 @@ path = "src/lib.rs"
 name = "onsa"
 path = "src/main.rs"
 
+[features]
+# Builds that the layout and motion checkers drive: a debugging port asked
+# for in the environment stays open, and ONSA_TEST_BACKGROUND opens the
+# window without taking the focus. Never in a release (see src/inspection.rs;
+# CI starts the release build and fails if the port answers).
+test-harness = []
+
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 

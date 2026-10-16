@@ -145,13 +145,18 @@
     "transport": "full",
     "signal": true,
     "libraryHome": "tracks",
-    "nowPlaying": "classic",
+    "nowPlaying": "instrument",
     "cover": "plain",
     "position": "bar",
     "chrome": "window",
     "plates": false,
     "panels": {
       "details": false
+    },
+    "sizes": {
+      "cover": 190,
+      "title": 22,
+      "spectrum": 100
     }
   }
 }

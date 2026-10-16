@@ -36,6 +36,7 @@ Invoke-Step 'build interface (ui)' $ui 'npm' @('run', 'build')
 
 Invoke-Step 'cargo fmt --check' $root 'cargo' @('fmt', '--all', '--', '--check')
 Invoke-Step 'cargo clippy' $root 'cargo' @('clippy', '--workspace', '--all-targets', '--', '-D', 'warnings')
+Invoke-Step 'cargo clippy (test-harness build)' $root 'cargo' @('clippy', '-p', 'onsa', '--all-targets', '--features', 'test-harness', '--', '-D', 'warnings')
 Invoke-Step 'cargo test' $root 'cargo' @('test', '--workspace')
 
 Write-Host ""

@@ -41,6 +41,7 @@ Bila ragu apakah sesuatu aman untuk real-time, anggap tidak aman dan pindahkan k
 - **Jangan meng-commit file musik berhak cipta.** Fixture audio dibuat saat tes berjalan (sinus, sweep, noise, hening).
 - Tes mesin audio memakai sink offline, bukan perangkat audio sungguhan.
 - Tes yang butuh jaringan memakai contoh respons yang direkam. CI tidak boleh bergantung pada internet selain untuk mengunduh dependensi.
+- **Port debugging hanya ada di build uji.** Build biasa (termasuk installer dan paket rilis) membuang permintaan port debugging dari lingkungannya (`src-tauri/src/inspection.rs`). Build untuk pemeriksa dibuat dengan `--features test-harness` dan dijalankan dengan `ONSA_TEST_BACKGROUND=1`, supaya jendelanya tidak merebut fokus. Jendela uji ditutup sesudah setiap langkah.
 - **Jangan mengendalikan dialog sistem, jendela, atau aplikasi di luar Onsa** dengan keyboard atau mouse (SendKeys, AppActivate, klik di layar, dan sejenisnya). Yang boleh dikendalikan hanya halaman Onsa sendiri lewat port debugging webview. Kalau sebuah uji butuh dialog sungguhan (pemilih folder/berkas, dialog OS), tulis langkahnya untuk pemilik proyek dan biarkan pemilik proyek yang mencobanya. (Aturan sejak 2026-10-10: ketikan ke dialog folder pernah meleset dan memilih folder milik pemilik mesin.)
 - Sebelum menyatakan milestone selesai, jalankan:
   ```

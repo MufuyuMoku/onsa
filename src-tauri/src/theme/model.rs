@@ -88,6 +88,24 @@ pub struct Arrangement {
     pub plates: bool,
     /// Which Now Playing panels show, as `setPanels` takes them (M14).
     pub panels: BTreeMap<String, bool>,
+    /// Sizes that set the layout apart from the style it is drawn in;
+    /// what is not given keeps that style's own.
+    pub sizes: Sizes,
+}
+
+/// Sizes a layout may set on Now Playing, in CSS pixels. Each is the most
+/// it takes: a narrow window still shrinks it.
+#[derive(Debug, Clone, Default, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Sizes {
+    /// The width of the cover, 96 to 480.
+    pub cover: Option<u32>,
+    /// The size of the song's title, 16 to 64.
+    pub title: Option<u32>,
+    /// The height of the box the words scroll in, 96 to 480.
+    pub lyrics: Option<u32>,
+    /// The height of the spectrum, 60 to 400.
+    pub spectrum: Option<u32>,
 }
 
 /// Display name of a theme in both user interface languages.

@@ -2087,7 +2087,20 @@ bug (menu terbuka sendiri saat layout dipasang ulang), yang sudah diperbaiki.
 **Belum terbukti / tertunda:**
 - **Linux**: kedua pemeriksa hanya jalan di Windows (WebKitGTK tidak punya port debugging seperti
   WebView2). Pemilik proyek menguji paket Linux di WSL.
-- **Jendela Biru pada 1280×800**: lirik dan spektrum ada di bawah lipatan halaman Sedang diputar,
-  karena susunan Klasik memakai sampul 340 px sedangkan referensi 190 px.
-- **Pergantian tema di profil uji** pada 2026-10-16 tidak ketemu sebabnya; yang sudah
-  disingkirkan tercatat di DECISIONS, dan setiap pergantian tema kini dicatat di log.
+- **Pergantian tema di profil uji** pada 2026-10-16: dugaannya ketikan yang masuk ke jendela uji
+  yang merebut fokus (DECISIONS 2026-10-17), tidak terbukti. Jendela uji kini dibuka tanpa
+  fokus, dan setiap pergantian tema dicatat di log.
+
+**Sebelum tag v1.5 (2026-10-17, permintaan pemilik proyek):**
+- **Ukuran milik layout**: susunan mendapat `sizes` (sampul, judul, kotak lirik, spektrum).
+  Jendela Biru memakai sampul 190 px dan susunan `instrument` tanpa pelat dan dial, sehingga
+  judul, format, lirik, dan spektrum terlihat tanpa gulir pada 1280×800. Pemeriksa tata letak
+  dijalankan ulang: 192 tampilan, 0 temuan; pemeriksa gerak: 0 kesalahan.
+- **Port debugging hanya di build uji** (`src-tauri/src/inspection.rs`, fitur cargo
+  `test-harness`). Sebelumnya installer rilis pun membuka port kalau variabel lingkungannya ada.
+  CI menjalankan build rilis dengan port diminta dan gagal kalau port menjawab; build uji
+  dipakai sebagai kontrol bahwa port memang bisa terlihat (`scripts/port-check.mjs`). Di mesin
+  ini kontrol positifnya sudah dicoba (build uji menjawab); pemeriksaan "tertutup" berjalan di
+  CI.
+- **Jendela uji tanpa merebut fokus** (`ONSA_TEST_BACKGROUND`, hanya di build uji): jendela
+  yang memegang fokus tidak berubah sesudah Onsa uji menyala.

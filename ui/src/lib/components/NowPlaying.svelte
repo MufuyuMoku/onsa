@@ -32,6 +32,10 @@
 	import Spectrum from './Spectrum.svelte';
 
 	const arranged = $derived(arrangement());
+	/** Sizes the layout sets for itself, if any (SPEC M16). */
+	const coverSize = $derived(arranged.sizes?.cover ?? null);
+	const titleSize = $derived(arranged.sizes?.title ?? null);
+	const lyricsSize = $derived(arranged.sizes?.lyrics ?? null);
 	/** Whether the position is a dial of its own rather than the bar. */
 	const dialled = $derived(arranged.position === 'dial');
 	/** Whether it is a depth down the side, which seeks as the bar does. */
@@ -73,6 +77,12 @@
 	class:wide={!shown('cover')}
 	data-arrangement={arranged.nowPlaying}
 	data-cover={arranged.cover}
+	class:sized-cover={coverSize != null}
+	class:sized-title={titleSize != null}
+	style:--np-cover={coverSize != null ? `${coverSize}px` : undefined}
+	style:--np-title={titleSize != null ? `${titleSize}px` : undefined}
+	class:sized-lyrics={lyricsSize != null}
+	style:--np-lyrics={lyricsSize != null ? `${lyricsSize}px` : undefined}
 	class:plated={arranged.plates}
 	class:dialled
 	class:playing
@@ -230,7 +240,10 @@
 				{#if overSpectrum}
 					<span class="over-spectrum" aria-hidden="true">{overSpectrum}</span>
 				{/if}
-				<Spectrum height={['instrument', 'memo'].includes(arranged.nowPlaying) ? 120 : 170} />
+				<Spectrum
+					height={arranged.sizes?.spectrum ??
+						(['instrument', 'memo'].includes(arranged.nowPlaying) ? 120 : 170)}
+				/>
 				{#if arranged.plates}<figcaption class="plate">{t('plate.spectrum')}</figcaption>{/if}
 			</figure>
 		{/if}
@@ -1039,6 +1052,22 @@
 			'viz viz';
 	}
 
+	/* A layout's own sizes win over the style it is drawn in (SPEC M16):
+	   the most the cover takes, and the size of the title. A narrow window
+	   still shrinks the cover. */
+	.now.sized-cover[data-arrangement][data-cover] .art {
+		width: min(var(--np-cover), 32cqw);
+		height: min(var(--np-cover), 32cqw);
+	}
+
+	.now.sized-title[data-arrangement] h1 {
+		font-size: var(--np-title);
+	}
+
+	.now.sized-lyrics[data-arrangement] .words {
+		height: min(42vh, var(--np-lyrics));
+	}
+
 	/* Narrow, every arrangement stacks: one column, in reading order. */
 	@container content (max-width: 700px) {
 		.now[data-arrangement] {
@@ -1054,6 +1083,11 @@
 		.now[data-arrangement] .art {
 			width: min(240px, 60cqw);
 			height: min(240px, 60cqw);
+		}
+
+		.now.sized-cover[data-arrangement][data-cover] .art {
+			width: min(var(--np-cover), 60cqw);
+			height: min(var(--np-cover), 60cqw);
 		}
 	}
 

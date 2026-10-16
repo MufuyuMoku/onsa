@@ -30,6 +30,9 @@ cargo fmt --all -- --check
 step "cargo clippy"
 cargo clippy --workspace --all-targets -- -D warnings
 
+step "cargo clippy (test-harness build)"
+cargo clippy -p onsa --all-targets --features test-harness -- -D warnings
+
 step "cargo test"
 cargo test --workspace
 

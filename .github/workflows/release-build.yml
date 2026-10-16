@@ -200,6 +200,35 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+      # The binary just packaged is started with a debugging port asked for
+      # in its environment (WebView2's argument on Windows, WebKitGTK's
+      # inspector on Linux). A release build must refuse it and say so in
+      # its log; the job fails if the port answers (src/inspection.rs).
+      - name: A release build opens no debugging port
+        shell: bash
+        run: |
+          set -eu
+          if [ "$RUNNER_OS" = Windows ]; then
+            node scripts/port-check.mjs target/release/onsa.exe closed
+          else
+            sudo apt-get install -y xvfb > /dev/null
+            dbus-run-session -- xvfb-run -a node scripts/port-check.mjs target/release/onsa closed
+          fi
+
+      # And the other way round, so that "closed" above means something: a
+      # test build, which the checkers drive, does open it on this runner.
+      # Built last, after everything that is kept has been uploaded.
+      - name: A test build does open it
+        shell: bash
+        run: |
+          set -eu
+          ./ui/node_modules/.bin/tauri build --no-bundle --features test-harness
+          if [ "$RUNNER_OS" = Windows ]; then
+            node scripts/port-check.mjs target/release/onsa.exe open
+          else
+            dbus-run-session -- xvfb-run -a node scripts/port-check.mjs target/release/onsa open
+          fi
+
       # The same rule as the installer below: what reaches somebody is the
       # file this workflow built. The release is created by whichever of the
       # two jobs gets there first, so both know how to make it.

@@ -8,11 +8,14 @@
 // It drives a running Onsa through WebView2's debugging port the way a
 // listener would: the Appearance page to pick a theme and a layout, the
 // sidebar (or its drawer) to move between pages. Nothing outside Onsa's own
-// page is touched. Start Onsa with the port open, preferably on a test
-// profile with a few tracks playing:
+// page is touched. Only a test build opens the port (any other build
+// refuses it; src-tauri/src/inspection.rs), so build one first, then start
+// it on a test profile, behind whatever has the focus, with a few tracks
+// playing:
 //
+//   ui/node_modules/.bin/tauri build --no-bundle --features test-harness
 //   WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS=--remote-debugging-port=9241 \
-//   ONSA_DATA_DIR=<test profile> target/release/onsa.exe
+//   ONSA_DATA_DIR=<test profile> ONSA_TEST_BACKGROUND=1 target/release/onsa.exe
 //
 // then:  node scripts/layout-check.mjs [--port 9241] [--shots <folder>] [--only <theme>]
 //        node scripts/layout-check.mjs --self-test   (plants faults, expects to find them)

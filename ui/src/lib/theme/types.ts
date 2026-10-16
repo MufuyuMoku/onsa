@@ -219,6 +219,14 @@ export interface Arrangement {
 	plates: boolean;
 	/** Which Now Playing panels show, as `setPanels` takes them. */
 	panels: Record<string, boolean>;
+	/** Sizes that set a layout apart from the style it is drawn in, in CSS
+	 *  pixels; what is not given keeps the style's own. */
+	sizes?: {
+		cover?: number | null;
+		title?: number | null;
+		lyrics?: number | null;
+		spectrum?: number | null;
+	};
 }
 
 /** A theme's own layout. */

@@ -13,6 +13,7 @@ mod dto;
 mod editor;
 mod error;
 mod folders;
+mod inspection;
 mod keys;
 mod library;
 mod logging;
@@ -47,6 +48,9 @@ use crate::session::WindowMode;
 /// Starts the application: sets up logging, the library and the player,
 /// builds the window and runs until the user closes it.
 pub fn run() -> Result<()> {
+    // Before anything else, and before the window: whether something
+    // outside Onsa may open a debugging port into it (see `inspection`).
+    inspection::close();
     tauri::Builder::default()
         // A second Onsa hands its files to the one already running (SPEC §13).
         .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
@@ -199,7 +203,7 @@ pub fn run() -> Result<()> {
             editor::track_apply,
             editor::track_write,
         ])
-        .run(tauri::generate_context!())
+        .run(context())
         .context("the application window could not be started")
 }
 
@@ -212,6 +216,24 @@ pub struct Folders {
     pub data: std::path::PathBuf,
     /// The covers, and anything else that can be thrown away.
     pub cache: std::path::PathBuf,
+}
+
+/// The application as `tauri.conf.json` describes it.
+///
+/// A test build started with `ONSA_TEST_BACKGROUND` opens its window
+/// without taking the focus from whatever the person at the machine is
+/// typing into: a test window left open once took nine theme changes
+/// meant for somewhere else (DECISIONS 2026-10-16).
+fn context() -> tauri::Context<tauri::Wry> {
+    #[allow(unused_mut)]
+    let mut context = tauri::generate_context!();
+    #[cfg(feature = "test-harness")]
+    if std::env::var_os("ONSA_TEST_BACKGROUND").is_some() {
+        for window in &mut context.config_mut().app.windows {
+            window.focus = false;
+        }
+    }
+    context
 }
 
 /// A whole set of folders somewhere else, when `ONSA_DATA_DIR` names one.
@@ -258,6 +280,7 @@ fn setup(app: &mut tauri::App) -> Result<()> {
         data = %data_dir.display(),
         "Onsa starting"
     );
+    inspection::report();
 
     let database = data_dir.join("library.db");
     let library = match LibraryService::start(app.handle().clone(), &database, &cache_dir)
