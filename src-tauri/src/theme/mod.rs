@@ -45,7 +45,7 @@ pub fn current_choice(stored: Option<String>) -> Option<String> {
 }
 
 /// The three built-in themes, in the order the first-run screen shows them.
-const BUILTIN_SOURCES: [(&str, &str); 10] = [
+const BUILTIN_SOURCES: [(&str, &str); 11] = [
     (
         "kokpit-tua",
         include_str!("../../../themes/kokpit-tua.json"),
@@ -62,6 +62,7 @@ const BUILTIN_SOURCES: [(&str, &str); 10] = [
         "siang-mimpi",
         include_str!("../../../themes/siang-mimpi.json"),
     ),
+    ("krom-saku", include_str!("../../../themes/krom-saku.json")),
     ("kaca-asap", include_str!("../../../themes/kaca-asap.json")),
     (
         "kokpit-kaca",
@@ -559,6 +560,7 @@ mod tests {
                     ToneTarget::Spectrum => &theme.color.lit.on,
                     ToneTarget::Progress => &theme.color.role.position,
                     ToneTarget::CoverGlow => &theme.color.lit.glow,
+                    ToneTarget::Backlight => &theme.color.lit.lcd,
                     ToneTarget::Meter => continue,
                 };
                 for (which, end) in [("warm", &tone.warm), ("cool", &tone.cool)] {
@@ -575,11 +577,25 @@ mod tests {
                     );
                 }
             }
+            // Where the tone leans a display's backlight, what has to stay
+            // legible is the display's ink on that light; everywhere else
+            // it is the lit colour on the well.
+            let backlit = tone.targets == [ToneTarget::Backlight];
+            let against = if backlit {
+                &theme.color.lit.lcd_ink
+            } else {
+                &theme.color.surface.well
+            };
             for (which, end) in [("warm", &tone.warm), ("cool", &tone.cool)] {
-                let seen = contrast(end, &theme.color.surface.well);
+                let seen = contrast(end, against);
                 assert!(
                     seen >= tone::ON_WELL,
-                    "theme {id}: its {which} end sits at {seen:.1}:1 against its own well"
+                    "theme {id}: its {which} end sits at {seen:.1}:1 against {}",
+                    if backlit {
+                        "its display's ink"
+                    } else {
+                        "its own well"
+                    }
                 );
             }
         }

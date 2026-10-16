@@ -125,6 +125,7 @@ pub fn parse_theme(id_hint: &str, source: &str) -> Result<LoadedTheme> {
     let lit_node = cx.child(color_node, "lit", "color.lit");
     let lit_on = cx.color(lit_node, "on", "color.lit.on", &role.active);
     let lit_secondary = cx.color(lit_node, "secondary", "color.lit.secondary", &role.caution);
+    let meter_face = cx.color(lit_node, "meterFace", "color.lit.meterFace", &lit_on);
     let lit = LitColors {
         ghost: cx.color(
             lit_node,
@@ -133,7 +134,7 @@ pub fn parse_theme(id_hint: &str, source: &str) -> Result<LoadedTheme> {
             "rgba(255,255,255,0.06)",
         ),
         glow: cx.color(lit_node, "glow", "color.lit.glow", "rgba(0,0,0,0)"),
-        meter_face: cx.color(lit_node, "meterFace", "color.lit.meterFace", &lit_on),
+        meter_face: meter_face.clone(),
         needle: cx.color(lit_node, "needle", "color.lit.needle", &lit_secondary),
         knob: cx.color(lit_node, "knob", "color.lit.knob", &text_primary),
         led: cx.color(lit_node, "led", "color.lit.led", &role.active),
@@ -143,6 +144,9 @@ pub fn parse_theme(id_hint: &str, source: &str) -> Result<LoadedTheme> {
         ornament: cx.color(lit_node, "ornament", "color.lit.ornament", &role.label),
         paper: cx.color(lit_node, "paper", "color.lit.paper", &surface.body),
         paper_edge: cx.color(lit_node, "paperEdge", "color.lit.paperEdge", &surface.line),
+        lcd: cx.color(lit_node, "lcd", "color.lit.lcd", &meter_face),
+        lcd_ink: cx.color(lit_node, "lcdInk", "color.lit.lcdInk", &surface.well),
+        lcd_edge: cx.color(lit_node, "lcdEdge", "color.lit.lcdEdge", &surface.line),
         on: lit_on,
         secondary: lit_secondary,
     };
@@ -289,6 +293,8 @@ pub(crate) const BUNDLED_FONTS: &[&str] = &[
     "VT323",
     "Gloock",
     "Pixelify Sans",
+    "Orbitron",
+    "Exo 2",
 ];
 
 /// How a key of ornament text has to look: `ornament.<theme>.<name>`, the

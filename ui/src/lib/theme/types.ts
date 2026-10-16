@@ -7,8 +7,8 @@
  */
 
 export type Base = 'dark' | 'light';
-export type MeterVariant = 'bar' | 'segment' | 'needle' | 'line';
-export type SpectrumVariant = 'bar' | 'segment' | 'soft' | 'dots' | 'grass';
+export type MeterVariant = 'bar' | 'segment' | 'needle' | 'line' | 'lcd';
+export type SpectrumVariant = 'bar' | 'segment' | 'soft' | 'dots' | 'grass' | 'lcd';
 export type ProgressStyle = 'plain' | 'stars' | 'blocks';
 export type PanelTexture = 'glass' | 'bezel' | 'brushed';
 export type StageIndicator =
@@ -20,15 +20,15 @@ export type StageIndicator =
 	| 'text';
 export type TimeDisplay = 'ghost-segment' | 'plain';
 export type LabelCase = 'as-written' | 'uppercase';
-export type ControlShape = 'soft' | 'square' | 'pill' | 'bevel' | 'ring' | 'box';
-export type FrameStyle = 'hairline' | 'inset' | 'raised' | 'none' | 'card';
+export type ControlShape = 'soft' | 'square' | 'pill' | 'bevel' | 'ring' | 'box' | 'chrome';
+export type FrameStyle = 'hairline' | 'inset' | 'raised' | 'none' | 'card' | 'candy';
 export type RowStyle = 'lines' | 'stripes' | 'plain';
 export type Scrollbar = 'thin' | 'classic' | 'hidden';
 export type TooltipStyle = 'plain' | 'panel';
 export type DialogStyle = 'flat' | 'raised' | 'titled';
 export type Easing = 'standard' | 'linear' | 'snap' | 'soft';
 export type Density = 'comfortable' | 'compact';
-export type ToneTarget = 'spectrum' | 'meter' | 'progress' | 'cover-glow';
+export type ToneTarget = 'spectrum' | 'meter' | 'progress' | 'cover-glow' | 'backlight';
 
 export interface Theme {
 	id: string;
@@ -93,6 +93,10 @@ export interface Theme {
 			/** Something pale standing in a scene, and its edge. */
 			paper: string;
 			paperEdge: string;
+			/** A liquid crystal display: its backlight, pixels and frame. */
+			lcd: string;
+			lcdInk: string;
+			lcdEdge: string;
 		};
 		/** The two sides of a raised or sunken edge. */
 		edge: {
@@ -158,7 +162,9 @@ export type Decoration =
 	| 'exit-sign'
 	| 'clouds'
 	| 'sparkles'
-	| 'sky-eye';
+	| 'sky-eye'
+	| 'brushed-lines'
+	| 'hologram';
 export type SidebarPlace = 'shown' | 'hidden';
 export type QueuePlace = 'docked' | 'floating';
 export type TransportStyle = 'full' | 'bar' | 'minimal';
@@ -169,8 +175,9 @@ export type NowPlayingStyle =
 	| 'instrument'
 	| 'dive'
 	| 'memo'
-	| 'meadow';
-export type CoverFrame = 'plain' | 'instrument' | 'lit' | 'photo' | 'door';
+	| 'meadow'
+	| 'pocket';
+export type CoverFrame = 'plain' | 'instrument' | 'lit' | 'photo' | 'door' | 'disc';
 export type PositionStyle = 'bar' | 'dial' | 'depth';
 export type Chrome = 'none' | 'window' | 'corridor' | 'meadow';
 

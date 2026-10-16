@@ -330,6 +330,41 @@ input[type='checkbox'] {
 	border-color: var(--onsa-edge-dark);
 }
 
+/* Round and chromed; the play button is clear coloured plastic. */
+:root[data-onsa-control='chrome'] .btn,
+:root[data-onsa-control='chrome'] .chip,
+:root[data-onsa-control='chrome'] .icon-btn {
+	border-radius: 999px;
+	border-color: var(--onsa-edge-dark);
+	background: linear-gradient(
+		180deg,
+		var(--onsa-edge-light) 0%,
+		color-mix(in srgb, var(--onsa-edge-dark) 30%, var(--onsa-edge-light)) 45%,
+		color-mix(in srgb, var(--onsa-edge-dark) 55%, var(--onsa-edge-light)) 52%,
+		color-mix(in srgb, var(--onsa-edge-dark) 15%, var(--onsa-edge-light)) 100%
+	);
+	box-shadow: inset 0 1px 0 var(--onsa-edge-light);
+	color: var(--onsa-text-primary);
+}
+
+:root[data-onsa-control='chrome'] .chip[aria-pressed='true'] {
+	background: color-mix(in srgb, var(--onsa-role-adjustable) 25%, var(--onsa-edge-light));
+}
+
+:root[data-onsa-control='chrome'] .icon-btn.large {
+	border-color: color-mix(in srgb, var(--onsa-role-adjustable) 60%, white);
+	background: radial-gradient(
+		circle at 40% 30%,
+		color-mix(in srgb, var(--onsa-role-adjustable) 30%, white),
+		color-mix(in srgb, var(--onsa-role-adjustable) 80%, white) 55%,
+		var(--onsa-role-adjustable)
+	);
+	color: #fff;
+	box-shadow:
+		inset 0 2px 0 rgb(255 255 255 / 0.7),
+		0 6px 16px color-mix(in srgb, var(--onsa-role-adjustable) 25%, transparent);
+}
+
 /* --- the position bar: how it fills -------------------------------------- */
 
 /* The transport's slider draws its own track when the theme asks for one:
@@ -747,4 +782,70 @@ input[type='checkbox'] {
 	border-color: transparent;
 	background: transparent;
 	box-shadow: none;
+}
+
+/* Clear coloured plastic with large rounded corners: the panels are the
+   adjustable colour, seen through, with light caught along the top. */
+:root[data-onsa-frame='candy'] .shell > .sidebar,
+:root[data-onsa-frame='candy'] .shell > .content,
+:root[data-onsa-frame='candy'] .shell > .side {
+	margin: 12px 0 12px 12px;
+	border: 1px solid rgb(255 255 255 / 0.8);
+	border-radius: 26px;
+	background: linear-gradient(
+		160deg,
+		color-mix(in srgb, var(--onsa-role-adjustable) 32%, transparent),
+		color-mix(in srgb, var(--onsa-role-adjustable) 14%, transparent)
+	);
+	box-shadow:
+		inset 0 2px 0 rgb(255 255 255 / 0.7),
+		inset 0 -8px 16px color-mix(in srgb, var(--onsa-role-adjustable) 18%, transparent),
+		0 6px 16px rgb(30 60 120 / 0.18);
+}
+
+:root[data-onsa-frame='candy'] .shell > .content,
+:root[data-onsa-frame='candy'] .shell > .side {
+	margin-right: 12px;
+}
+
+/* Fine horizontal lines over the ground, like brushed metal. */
+:root[data-onsa-decor~='brushed-lines'] .shell {
+	background-image:
+		repeating-linear-gradient(0deg, rgb(255 255 255 / 0.35) 0 1px, transparent 1px 3px),
+		var(--onsa-backdrop);
+}
+
+:root[data-onsa-decor~='brushed-lines'] .shell .transport > footer {
+	background: linear-gradient(
+		180deg,
+		var(--onsa-edge-light) 0%,
+		color-mix(in srgb, var(--onsa-edge-dark) 30%, var(--onsa-edge-light)) 45%,
+		color-mix(in srgb, var(--onsa-edge-dark) 55%, var(--onsa-edge-light)) 52%,
+		color-mix(in srgb, var(--onsa-edge-dark) 15%, var(--onsa-edge-light)) 100%
+	);
+}
+
+/* The application's name on a holographic sticker. */
+:root[data-onsa-decor~='hologram'] .sidebar .mark {
+	align-self: center;
+	margin: 4px 6px 12px;
+	padding: 6px 14px;
+	border-radius: 10px;
+	background: linear-gradient(115deg, #ffd6f5, #c9f2ff 30%, #e9ffc9 55%, #ffe3b8 80%, #e3c9ff);
+	box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.8);
+	color: #2a2a40;
+	font-family: var(--onsa-font-numeric);
+	font-weight: 700;
+	letter-spacing: 0.15em;
+	text-transform: uppercase;
+}
+
+/* A liquid crystal display: a sunken backlit window. The backlight is
+   `--onsa-lcd-lit`, which a component leans with the tone. */
+.lcd {
+	border: 2px solid var(--onsa-lit-lcd-edge);
+	background: var(--onsa-lcd-lit, var(--onsa-lit-lcd));
+	box-shadow: inset 0 2px 6px rgb(0 0 0 / 0.25);
+	color: var(--onsa-lit-lcd-ink);
+	font-family: var(--onsa-font-numeric);
 }

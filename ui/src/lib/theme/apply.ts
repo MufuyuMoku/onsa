@@ -52,6 +52,9 @@ export function themeVariables(theme: Theme): Record<string, string> {
 		'--onsa-lit-ornament': color.lit.ornament,
 		'--onsa-lit-paper': color.lit.paper,
 		'--onsa-lit-paper-edge': color.lit.paperEdge,
+		'--onsa-lit-lcd': color.lit.lcd,
+		'--onsa-lit-lcd-ink': color.lit.lcdInk,
+		'--onsa-lit-lcd-edge': color.lit.lcdEdge,
 
 		'--onsa-edge-light': color.edge.light,
 		'--onsa-edge-dark': color.edge.dark,

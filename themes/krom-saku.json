@@ -1,0 +1,134 @@
+{
+  "$schema": "onsa-theme/1",
+  "id": "krom-saku",
+  "name": {
+    "id": "Krom Saku",
+    "en": "Pocket Chrome"
+  },
+  "version": 1,
+  "builtin": true,
+  "base": "light",
+  "fonts": {
+    "ui": "Exo 2",
+    "numeric": "Orbitron",
+    "label": "Exo 2",
+    "display": "Exo 2",
+    "lyrics": "Exo 2",
+    "cjkFallback": "Noto Sans JP"
+  },
+  "color": {
+    "surface": {
+      "app": "#E7EAF0",
+      "body": "#B5C7E8",
+      "bodyHighlight": "#D6E2F5",
+      "well": "#F4F6F9",
+      "raised": "#DCE3EE",
+      "line": "#7E8794",
+      "backdrop": [
+        "#E7EAF0",
+        "#CFD5DE",
+        "#EEF0F4"
+      ]
+    },
+    "text": {
+      "primary": "#18305A",
+      "secondary": "#3E5B8C",
+      "silkscreen": "#3E5B8C"
+    },
+    "role": {
+      "label": "#3E5B8C",
+      "adjustable": "#1E5FD0",
+      "active": "#1A8A4A",
+      "position": "#C2207A",
+      "caution": "#E08A1A",
+      "clip": "#D8232A"
+    },
+    "lit": {
+      "on": "#1F2A14",
+      "ghost": "rgba(31,42,20,0.08)",
+      "glow": "rgba(0,0,0,0)",
+      "secondary": "#3E5B8C",
+      "meterFace": "#B4C49B",
+      "needle": "#D8232A",
+      "knob": "#18305A",
+      "led": "#1A8A4A",
+      "ornament": "#4A6390",
+      "lcd": "#B4C49B",
+      "lcdInk": "#1F2A14",
+      "lcdEdge": "#6E7B5C"
+    },
+    "edge": {
+      "light": "#FFFFFF",
+      "dark": "#7E8794"
+    }
+  },
+  "shape": {
+    "radius": {
+      "sm": 6,
+      "md": 12,
+      "lg": 26
+    },
+    "density": "comfortable",
+    "hairline": 1,
+    "control": "chrome",
+    "frame": "candy"
+  },
+  "variants": {
+    "meter": "lcd",
+    "spectrum": "lcd",
+    "panelTexture": "glass",
+    "stageIndicator": "text",
+    "timeDisplay": "plain",
+    "rows": "plain",
+    "scrollbar": "thin",
+    "tooltip": "panel",
+    "dialog": "raised",
+    "progress": "plain"
+  },
+  "effects": {
+    "glow": false,
+    "glassReflection": false,
+    "grain": 0.0,
+    "labelCase": "as-written"
+  },
+  "toneColor": {
+    "enabled": true,
+    "targets": [
+      "backlight"
+    ],
+    "warm": "#E8C9A0",
+    "cool": "#9CCFD8"
+  },
+  "motion": {
+    "fast": 120,
+    "slow": 180,
+    "ease": "standard"
+  },
+  "decor": [
+    "brushed-lines",
+    "hologram"
+  ],
+  "ornament": [
+    "ornament.krom-saku.sidebar"
+  ],
+  "signature": {
+    "id": "pemutar-saku",
+    "name": {
+      "id": "Pemutar Saku",
+      "en": "Pocket Player"
+    },
+    "sidebar": "shown",
+    "queue": "floating",
+    "transport": "full",
+    "signal": true,
+    "libraryHome": "tracks",
+    "nowPlaying": "pocket",
+    "cover": "disc",
+    "position": "bar",
+    "chrome": "none",
+    "plates": false,
+    "panels": {
+      "details": false
+    }
+  }
+}

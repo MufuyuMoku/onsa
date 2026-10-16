@@ -28,6 +28,8 @@
 	// Tone colour leans the lit colour towards the theme's warm or cool end
 	// (SPEC section 9.5); everything else in here is drawn from it.
 	const lit = $derived(toneColor('spectrum', theme?.color.lit.on ?? '#ffffff'));
+	// A display's backlight leans instead of its pixels (Krom Saku).
+	const backlight = $derived(toneColor('backlight', theme?.color.lit.lcd ?? '#B4C49B'));
 
 	// The frames stop while nothing plays, and the bands come back empty
 	// while no spectrum is wanted; the panel then says so instead of
@@ -44,6 +46,8 @@
 	style:--height="{height}px"
 	style:--segments={SEGMENTS}
 	style:--onsa-tone-lit={lit}
+	style:--onsa-lcd-lit={backlight}
+	class:lcd={variant === 'lcd'}
 	role="img"
 	aria-label={t('spectrum.label')}
 >
@@ -210,6 +214,31 @@
 
 	.spectrum[data-variant='grass'] .peak {
 		display: none;
+	}
+
+	/* Dark segments on a liquid crystal display, the dead ones faintly
+	   there behind them. */
+	.spectrum[data-variant='lcd'] {
+		border: 2px solid var(--onsa-lit-lcd-edge);
+		border-radius: 12px;
+		background: var(--onsa-lcd-lit, var(--onsa-lit-lcd));
+		box-shadow: inset 0 2px 6px rgb(0 0 0 / 0.25);
+	}
+
+	.spectrum[data-variant='lcd'] .column {
+		background: repeating-linear-gradient(
+			0deg,
+			color-mix(in srgb, var(--onsa-lit-lcd-ink) 8%, transparent) 0 5px,
+			transparent 5px 7px
+		);
+	}
+
+	.spectrum[data-variant='lcd'] .bar {
+		background: repeating-linear-gradient(0deg, var(--onsa-lit-lcd-ink) 0 5px, transparent 5px 7px);
+	}
+
+	.spectrum[data-variant='lcd'] .peak {
+		background: var(--onsa-lit-lcd-ink);
 	}
 
 </style>

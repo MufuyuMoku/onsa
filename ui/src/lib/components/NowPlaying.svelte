@@ -15,7 +15,7 @@
 	the arrangement, never a question about which theme is being worn.
 -->
 <script lang="ts">
-	import { tonePosition } from '$lib/analysis.svelte';
+	import { toneColor, tonePosition } from '$lib/analysis.svelte';
 	import { coverUrl, seek } from '$lib/backend';
 	import { navigate } from '$lib/app.svelte';
 	import { clock, db, fileName, rate } from '$lib/format';
@@ -40,6 +40,9 @@
 	const decor = $derived(activeTheme()?.decor ?? []);
 	const overTitle = $derived(ornament('title'));
 	const overSpectrum = $derived(ornament('spectrum'));
+	/** A display's backlight, leaned with the tone where the theme asks. */
+	const backlight = $derived(toneColor('backlight', activeTheme()?.color.lit.lcd ?? '#B4C49B'));
+	const playing = $derived(player.snapshot?.state === 'playing');
 
 	/** The words on each toggle, which the help quotes as they are. */
 	const panelName = (id: PanelId) => t(`panel.${id}` as never);
@@ -72,6 +75,7 @@
 	data-cover={arranged.cover}
 	class:plated={arranged.plates}
 	class:dialled
+	class:playing
 >
 	{#if decor.includes('marine-snow')}
 		<!-- Specks drifting down, for the look alone: hidden from screen
@@ -111,7 +115,7 @@
 						<circle class="bulb" cx="188" cy="70" r="7" />
 					</svg>
 				{/if}
-				<div class="art">
+				<div class="art" class:drifts={arranged.cover === 'disc'}>
 					{#if track.coverId !== null}<img src={coverUrl(track.coverId, 512)} alt="" />{/if}
 					{#if arranged.cover === 'lit'}
 						<!-- Lit from the top corner; the far corner is darkened by
@@ -126,6 +130,15 @@
 				</div>
 				{#if arranged.plates}<figcaption class="plate">{t('plate.cover')}</figcaption>{/if}
 			</figure>
+		{/if}
+		{#if arranged.nowPlaying === 'pocket'}
+			<!-- The display of a pocket player: the track, the time, the
+			     format. The same facts the transport says, on a screen. -->
+			<div class="lcd lcd-box" style:--onsa-lcd-lit={backlight}>
+				<span class="lcd-small">{track.trackNumber ? t('lcd.track', { n: String(track.trackNumber).padStart(2, '0') }) : ''}</span>
+				<span class="lcd-time numeric">{clock(player.position)}</span>
+				<span class="lcd-small">{signal?.source?.codec?.toUpperCase() ?? ''} {signal?.source ? rate(signal.source.sampleRate) : ''}</span>
+			</div>
 		{/if}
 		<div class="text">
 			{#if arranged.plates && track.trackNumber}
@@ -823,6 +836,155 @@
 		background: color-mix(in srgb, var(--onsa-lit-ground) 60%, black);
 		opacity: 0.35;
 		filter: blur(2px);
+	}
+
+	/* Pemutar Saku: the disc to one side; the display, the title and the
+	   words beside it; the spectrum on a wide display along the bottom. */
+	.now[data-arrangement='pocket'] {
+		align-content: stretch;
+		grid-template-columns: auto minmax(0, 1fr);
+		grid-template-areas:
+			'bar bar'
+			'cover lcd'
+			'cover text'
+			'cover words'
+			'viz viz';
+		grid-template-rows: auto auto auto minmax(100px, 1fr) auto;
+		gap: 10px 24px;
+	}
+
+	.now[data-arrangement='pocket'] > .bar {
+		grid-area: bar;
+	}
+
+	.now[data-arrangement='pocket'] > .cover {
+		grid-area: cover;
+		align-self: center;
+	}
+
+	.now[data-arrangement='pocket'] > .lcd-box {
+		grid-area: lcd;
+	}
+
+	.now[data-arrangement='pocket'] > .text {
+		grid-area: text;
+	}
+
+	/* The words in a box of clear pink plastic. */
+	.now[data-arrangement='pocket'] > .words {
+		grid-area: words;
+		height: auto;
+		min-height: 0;
+		padding: 8px 6px 4px;
+		border: 1px solid rgb(255 255 255 / 0.8);
+		border-radius: 14px;
+		background: linear-gradient(
+			160deg,
+			color-mix(in srgb, var(--onsa-role-position) 30%, white),
+			color-mix(in srgb, var(--onsa-role-position) 14%, white)
+		);
+		box-shadow: inset 0 2px 0 rgb(255 255 255 / 0.7);
+	}
+
+	.now[data-arrangement='pocket'] > .visualizer {
+		grid-area: viz;
+	}
+
+	.now[data-arrangement='pocket'] h1 {
+		font-size: 38px;
+		font-weight: 700;
+	}
+
+	.now[data-arrangement='pocket'] .artist {
+		color: var(--onsa-text-secondary);
+		font-weight: 600;
+	}
+
+	.now[data-arrangement='pocket'].wide {
+		grid-template-areas:
+			'bar bar'
+			'lcd lcd'
+			'text text'
+			'words words'
+			'viz viz';
+	}
+
+	.lcd-box {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 12px;
+		padding: 10px 14px;
+		border-radius: 8px;
+	}
+
+	.lcd-small {
+		font-size: 12px;
+		letter-spacing: 0.12em;
+		white-space: nowrap;
+	}
+
+	.lcd-time {
+		font-size: 34px;
+		font-weight: 700;
+		letter-spacing: 0.08em;
+	}
+
+	/* The label of a disc in a chromed ring: the cover itself, with a hole
+	   in the middle and a rainbow across its face. It turns slowly while
+	   the song plays, and stops when it pauses. */
+	.now[data-cover='disc'] .art {
+		position: relative;
+		width: min(236px, 26cqw);
+		height: min(236px, 26cqw);
+		padding: 15px;
+		border: 1px solid var(--onsa-edge-dark);
+		border-radius: 50%;
+		background: linear-gradient(
+			180deg,
+			var(--onsa-edge-light) 0%,
+			color-mix(in srgb, var(--onsa-edge-dark) 30%, var(--onsa-edge-light)) 45%,
+			color-mix(in srgb, var(--onsa-edge-dark) 55%, var(--onsa-edge-light)) 52%,
+			color-mix(in srgb, var(--onsa-edge-dark) 15%, var(--onsa-edge-light)) 100%
+		);
+		box-shadow: inset 0 1px 0 var(--onsa-edge-light);
+		overflow: visible;
+	}
+
+	.now[data-cover='disc'] .art img {
+		border-radius: 50%;
+		mask: radial-gradient(circle, transparent 0 9%, #000 9.5%);
+	}
+
+	.now.playing[data-cover='disc'] .art img {
+		animation: turn 12s linear infinite;
+	}
+
+	@keyframes turn {
+		to {
+			transform: rotate(360deg);
+		}
+	}
+
+	/* The rainbow and the gloss lie on the disc's face; they do not turn. */
+	.now[data-cover='disc'] .art::after {
+		content: '';
+		position: absolute;
+		inset: 15px;
+		border-radius: 50%;
+		pointer-events: none;
+		background:
+			linear-gradient(125deg, rgb(255 255 255 / 0.5) 0 30%, transparent 45%),
+			conic-gradient(
+				from 20deg,
+				rgb(230 240 255 / 0.25),
+				rgb(255 217 243 / 0.25),
+				rgb(217 255 244 / 0.25),
+				rgb(255 244 201 / 0.25),
+				rgb(226 217 255 / 0.25),
+				rgb(230 240 255 / 0.25)
+			);
+		mask: radial-gradient(circle, transparent 0 9%, #000 9.5%);
 	}
 
 	/* Layar penuh: the picture large, the title over the words beside it. */

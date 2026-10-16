@@ -171,3 +171,21 @@
 	font-style: normal;
 	font-display: swap;
 }
+
+/* Orbitron and Exo 2 are published only as variable fonts; bundled as
+   they are, renamed. */
+@font-face {
+	font-family: 'Orbitron';
+	src: url('/fonts/orbitron/Orbitron-VF.ttf') format('truetype');
+	font-weight: 400 900;
+	font-style: normal;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'Exo 2';
+	src: url('/fonts/exo-2/Exo2-VF.ttf') format('truetype');
+	font-weight: 100 900;
+	font-style: normal;
+	font-display: swap;
+}

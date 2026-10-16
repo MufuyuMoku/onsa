@@ -236,6 +236,13 @@ pub struct LitColors {
     pub paper: String,
     /// The edge of [`LitColors::paper`].
     pub paper_edge: String,
+    /// The backlight of a liquid crystal display, where a theme draws
+    /// one; falls back to the meter face.
+    pub lcd: String,
+    /// Its pixels; fall back to the well.
+    pub lcd_ink: String,
+    /// The frame round it; falls back to the hairline.
+    pub lcd_edge: String,
 }
 
 /// Radii, density and hairline width.
@@ -400,6 +407,8 @@ theme_enum!(
         Needle => "needle",
         /// A thin line that glows.
         Line => "line",
+        /// Dark segments on a liquid crystal display.
+        Lcd => "lcd",
     }
 );
 
@@ -416,6 +425,8 @@ theme_enum!(
         Dots => "dots",
         /// Blades of grass that grow with the sound.
         Grass => "grass",
+        /// Dark segments on a liquid crystal display.
+        Lcd => "lcd",
     }
 );
 
@@ -490,6 +501,8 @@ theme_enum!(
         Progress => "progress",
         /// Glow around the cover art.
         CoverGlow => "cover-glow",
+        /// The backlight of a liquid crystal display; never its pixels.
+        Backlight => "backlight",
     }
 );
 
@@ -509,6 +522,8 @@ theme_enum!(
         /// A box with a dark edge and a hard shadow, the way an old web
         /// page drew one.
         Box => "box",
+        /// Round and chromed; the play button is clear coloured plastic.
+        Chrome => "chrome",
     }
 );
 
@@ -523,6 +538,8 @@ theme_enum!(
         Raised => "raised",
         /// A card laid on it, with a hard shadow.
         Card => "card",
+        /// Clear coloured plastic with large rounded corners.
+        Candy => "candy",
         /// Nothing at all.
         None => "none",
     }
@@ -629,6 +646,11 @@ theme_enum!(
         /// One small eye in the sky, drawn simply and faintly. Still: it
         /// never blinks and never follows the pointer.
         SkyEye => "sky-eye",
+        /// Fine horizontal lines over the window's ground, like brushed
+        /// metal. Still.
+        BrushedLines => "brushed-lines",
+        /// The application's name on a holographic sticker. Still.
+        Hologram => "hologram",
     }
 );
 
@@ -693,6 +715,10 @@ theme_enum!(
         /// The title and the words floating in the sky, the cover standing
         /// on the ground to the right, the spectrum along the ground.
         Meadow => "meadow",
+        /// A large disc to one side, a display with the track and the time
+        /// beside it, the title and the words under the display, and the
+        /// spectrum on a wide display along the bottom.
+        Pocket => "pocket",
     }
 );
 
@@ -710,6 +736,9 @@ theme_enum!(
         Photo => "photo",
         /// Seen through a door standing open on its own, with its shadow.
         Door => "door",
+        /// The label of a disc in a chromed ring, with a hole in the middle
+        /// and a rainbow on its face. It turns slowly while the song plays.
+        Disc => "disc",
     }
 );
 

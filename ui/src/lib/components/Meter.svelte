@@ -212,4 +212,25 @@
 	.meter[data-variant='line'] .lane i {
 		box-shadow: 0 0 6px var(--onsa-role-active);
 	}
+
+	/* Segments on a small liquid crystal display. */
+	.meter[data-variant='lcd'] .lanes {
+		padding: 6px 8px;
+		border: 2px solid var(--onsa-lit-lcd-edge);
+		border-radius: 6px;
+		background: var(--onsa-lit-lcd);
+		box-shadow: inset 0 2px 6px rgb(0 0 0 / 0.25);
+	}
+
+	.meter[data-variant='lcd'] .lane {
+		background: none;
+	}
+
+	.meter[data-variant='lcd'] .lane i {
+		background: repeating-linear-gradient(90deg, var(--onsa-lit-lcd-ink) 0 5px, transparent 5px 7px);
+	}
+
+	.meter[data-variant='lcd'] .channel .label {
+		color: var(--onsa-lit-lcd-ink);
+	}
 </style>
