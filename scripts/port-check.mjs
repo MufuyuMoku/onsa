@@ -12,7 +12,7 @@
 // profile (ONSA_DATA_DIR) and is stopped at the end. On Linux run it under
 // a display, e.g. `xvfb-run -a node scripts/port-check.mjs …`.
 
-import { spawn } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -74,6 +74,35 @@ while (Date.now() < until && exited === null) {
 const said = log();
 // Whether it stopped on its own, before this script stops it.
 const early = exited;
+// What the machine looks like while it is still running, for a failure to
+// be read by: is there a web view at all, and what is listening.
+const look = (file, args) => {
+	try {
+		return execFileSync(file, args, { encoding: 'utf8', timeout: 15_000 });
+	} catch (error) {
+		return `(${file}: ${String(error.message).split('\n')[0]})`;
+	}
+};
+const runtimeKey = [
+	'HKLM',
+	'SOFTWARE',
+	'WOW6432Node',
+	'Microsoft',
+	'EdgeUpdate',
+	'Clients',
+	'{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}'
+].join(String.fromCharCode(92));
+const machine =
+	process.platform === 'win32'
+		? [
+				look('tasklist', ['/FI', 'IMAGENAME eq msedgewebview2.exe']),
+				look('netstat', ['-ano', '-p', 'tcp'])
+					.split('\n')
+					.filter((line) => line.includes('LISTENING'))
+					.join('\n'),
+				look('reg', ['query', runtimeKey, '/v', 'pv'])
+			].join('\n')
+		: look('sh', ['-c', 'ps -eo pid,comm | grep -i -E "webkit|onsa"; ss -ltn']);
 child.kill();
 await wait(1500);
 try {
@@ -95,6 +124,8 @@ if (expect === 'closed') {
 if (problems.length) {
 	for (const problem of problems) console.error(`FAIL: ${problem}`);
 	console.error(said.split('\n').slice(-30).join('\n'));
+	console.error('--- the machine while Onsa ran');
+	console.error(machine);
 	process.exit(1);
 }
 console.log(expect === 'closed' ? `ok: port ${PORT} stayed closed, and the log says why` : `ok: port ${PORT} answered in the test build`);
