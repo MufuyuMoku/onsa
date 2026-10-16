@@ -601,9 +601,14 @@ export const themeOpenFolder = () => call<void>('theme_open_folder');
  *  with something in it replaced by the default (`used`). */
 export interface ThemeTrouble {
 	file: string;
+	/** Why, for the window to say in the listener's language. */
+	why: ThemeTroubleWhy;
+	/** The parser's own words, behind "see the detail". */
 	said: string;
 	used: boolean;
 }
+
+export type ThemeTroubleWhy = 'builtinName' | 'unreadable' | 'notJson' | 'notObject' | 'mended';
 
 export const themeTroubles = () => call<ThemeTrouble[]>('theme_troubles');
 /** Copies a built-in theme into the theme folder; answers with the path. */

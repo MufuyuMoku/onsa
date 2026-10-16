@@ -117,9 +117,34 @@ if (state !== 'playing') {
 	process.exit(2);
 }
 
+const toAppearance = async () => {
+	await onsa.evaluate(goTo(APPEARANCE_ITEM));
+	await wait(600);
+};
+/** The theme and the layout the listener had, to give back at the end. */
+const PRESET_ORDER = ['classic', 'gallery', 'fullscreen'];
+const remember = async () => {
+	await toAppearance();
+	const theme = await onsa.evaluate(`${chips(0)}.findIndex((c) => c.getAttribute('aria-pressed') === 'true')`);
+	const layout = await onsa.evaluate(
+		`window.__TAURI_INTERNALS__.invoke('settings_get').then((s) => s?.display?.layout ?? null, () => null)`
+	);
+	return { theme, layout };
+};
+const giveBack = async ({ theme, layout }) => {
+	await toAppearance();
+	if (theme >= 0) await onsa.evaluate(`${chips(0)}[${theme}]?.click()`);
+	await wait(600);
+	if (layout) {
+		const own = (await onsa.evaluate(`${chips(1)}.length`)) > PRESET_ORDER.length ? 1 : 0;
+		const at = layout === 'signature' ? 0 : PRESET_ORDER.indexOf(layout) + own;
+		await onsa.evaluate(`${chips(1)}[${at}]?.click()`);
+		await wait(400);
+	}
+};
+
 await onsa.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 800, deviceScaleFactor: 1, mobile: false });
-await onsa.evaluate(goTo(APPEARANCE_ITEM));
-await wait(600);
+const before = await remember();
 const themes = JSON.parse(await onsa.evaluate(`JSON.stringify(${chips(0)}.map((c) => c.textContent.trim()))`));
 let faults = 0;
 for (const [themeAt, theme] of themes.entries()) {
@@ -159,6 +184,7 @@ for (const [themeAt, theme] of themes.entries()) {
 		faults += saving.length;
 	}
 }
+await giveBack(before);
 await onsa.send('Emulation.clearDeviceMetricsOverride');
 onsa.ws.close();
 console.log(`\n${faults} fault(s).`);

@@ -6,6 +6,7 @@
 		themeOpenFolder,
 		themeTroubles,
 		type ThemeTrouble,
+		type ThemeTroubleWhy,
 		type ToneStrength
 	} from '$lib/backend';
 	import { chooseLocale } from '$lib/app.svelte';
@@ -37,6 +38,14 @@
 	/** Files left out of the list, and themes in it with something replaced. */
 	const refused = $derived(troubles.filter((trouble) => !trouble.used));
 	const mended = $derived(troubles.filter((trouble) => trouble.used));
+	/** What each kind of trouble says, in the listener's language. */
+	const whyKeys: Record<ThemeTroubleWhy, MessageKey> = {
+		builtinName: 'theme.why.builtinName',
+		unreadable: 'theme.why.unreadable',
+		notJson: 'theme.why.notJson',
+		notObject: 'theme.why.notObject',
+		mended: 'theme.why.mended'
+	};
 	/** Where the copy landed, once one has been made. */
 	let copied = $state<string | null>(null);
 	let copying = $state(false);
@@ -166,7 +175,11 @@
 				{#each mended as trouble (trouble.file)}
 					<li>
 						<span class="numeric">{trouble.file}</span>
-						<span class="muted said">{trouble.said}</span>
+						<span class="muted">{t(whyKeys[trouble.why])}</span>
+						<details class="detail">
+							<summary>{t('downloads.seeDetail')}</summary>
+							<p class="numeric said">{trouble.said}</p>
+						</details>
 					</li>
 				{/each}
 			</ul>
@@ -178,7 +191,11 @@
 				{#each refused as trouble (trouble.file)}
 					<li>
 						<span class="numeric">{trouble.file}</span>
-						<span class="muted said">{trouble.said}</span>
+						<span class="muted">{t(whyKeys[trouble.why])}</span>
+						<details class="detail">
+							<summary>{t('downloads.seeDetail')}</summary>
+							<p class="numeric said">{trouble.said}</p>
+						</details>
 					</li>
 				{/each}
 			</ul>
@@ -222,9 +239,17 @@
 		font-size: 12px;
 	}
 
-	/* The parser's own words, which can be long. */
+	/* The parser's own words, behind "see the detail": they can be long,
+	   and they are in English. */
+	.detail summary {
+		color: var(--onsa-role-adjustable);
+		cursor: pointer;
+	}
+
 	.said {
+		margin: 4px 0 0;
 		font-size: 11.5px;
+		color: var(--onsa-text-secondary);
 		overflow-wrap: anywhere;
 	}
 </style>

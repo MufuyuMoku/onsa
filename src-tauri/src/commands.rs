@@ -228,6 +228,10 @@ pub fn app_state(
 }
 
 /// Remembers the chosen theme.
+///
+/// Logged, because this is the one way a stored theme changes: a test
+/// profile once changed theme nine times with nobody at it, and without a
+/// time on each change there was nothing to set them against.
 #[tauri::command]
 pub fn set_theme(
     app: AppHandle,
@@ -235,6 +239,7 @@ pub fn set_theme(
     id: String,
 ) -> Result<(), ErrorCode> {
     theme_get(app, id.clone())?;
+    tracing::info!(theme = %id, "theme chosen");
     library.read(|library| settings::save(library, settings::THEME_KEY, &id))
 }
 

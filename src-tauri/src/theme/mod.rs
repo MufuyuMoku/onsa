@@ -110,11 +110,30 @@ pub fn user_dir(config_dir: &std::path::Path) -> std::path::PathBuf {
 pub struct Trouble {
     /// The file, by name.
     pub file: String,
-    /// What was wrong with it, in the parser's own words.
+    /// What was wrong, for the window to say in the listener's language.
+    pub why: TroubleWhy,
+    /// What was wrong with it, in the parser's own words: the detail
+    /// behind the sentence.
     pub said: String,
     /// The theme is in the list all the same, with what was wrong replaced
     /// by the default.
     pub used: bool,
+}
+
+/// Why a theme file was left out, or used with something replaced.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum TroubleWhy {
+    /// A built-in theme already has the file's name.
+    BuiltinName,
+    /// The file cannot be read at all.
+    Unreadable,
+    /// The text is not JSON.
+    NotJson,
+    /// The text is JSON, but not an object.
+    NotObject,
+    /// Read, with what could not be used replaced by the default.
+    Mended,
 }
 
 /// The user's themes, and the files that could not be read.
@@ -148,6 +167,7 @@ fn user_themes_reporting(dir: &std::path::Path, troubles: &mut Vec<Trouble>) -> 
             tracing::warn!(theme = id, "user theme uses a built-in name, skipped");
             troubles.push(Trouble {
                 file: file_name(&path),
+                why: TroubleWhy::BuiltinName,
                 said: "a built-in theme already has that name".to_string(),
                 used: false,
             });
@@ -162,6 +182,7 @@ fn user_themes_reporting(dir: &std::path::Path, troubles: &mut Vec<Trouble>) -> 
                     if !loaded.warnings.is_empty() {
                         troubles.push(Trouble {
                             file: file_name(&path),
+                            why: TroubleWhy::Mended,
                             said: loaded.warnings.join("; "),
                             used: true,
                         });
@@ -170,8 +191,15 @@ fn user_themes_reporting(dir: &std::path::Path, troubles: &mut Vec<Trouble>) -> 
                 }
                 Err(error) => {
                     tracing::warn!(theme = id, "user theme cannot be read: {error:#}");
+                    // The parser fails only on these two.
+                    let why = if serde_json::from_str::<serde_json::Value>(&source).is_err() {
+                        TroubleWhy::NotJson
+                    } else {
+                        TroubleWhy::NotObject
+                    };
                     troubles.push(Trouble {
                         file: file_name(&path),
+                        why,
                         said: format!("{error:#}"),
                         used: false,
                     });
@@ -181,6 +209,7 @@ fn user_themes_reporting(dir: &std::path::Path, troubles: &mut Vec<Trouble>) -> 
                 tracing::warn!(file = %path.display(), "theme cannot be read: {error}");
                 troubles.push(Trouble {
                     file: file_name(&path),
+                    why: TroubleWhy::Unreadable,
                     said: error.to_string(),
                     used: false,
                 });
@@ -790,13 +819,18 @@ mod tests {
             .find(|trouble| trouble.file == "asap-saya.json")
             .expect("and the page says so");
         assert!(said.used);
+        assert_eq!(said.why, TroubleWhy::Mended);
         assert!(said.said.contains("Chakra Petch") && said.said.contains("Share Tech Mono"));
-        for file in ["rusak.json", "bukan-tema.json"] {
+        for (file, why) in [
+            ("rusak.json", TroubleWhy::NotJson),
+            ("bukan-tema.json", TroubleWhy::NotObject),
+        ] {
             let refused = troubles
                 .iter()
                 .find(|trouble| trouble.file == file)
                 .unwrap_or_else(|| panic!("{file} is refused"));
             assert!(!refused.used && !refused.said.is_empty());
+            assert_eq!(refused.why, why, "{file}");
             assert!(!themes
                 .iter()
                 .any(|theme| format!("{}.json", theme.id) == file));
