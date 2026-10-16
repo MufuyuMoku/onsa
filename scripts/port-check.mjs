@@ -30,6 +30,10 @@ const child = spawn(binary, [], {
 	env: {
 		...process.env,
 		ONSA_DATA_DIR: profile,
+		// A web view browser left from an earlier run that shares the data
+		// folder would be reused with its own arguments, and this run's would
+		// be ignored: each run has a folder of its own.
+		WEBVIEW2_USER_DATA_FOLDER: join(profile, 'webview'),
 		WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: `--remote-debugging-port=${PORT}`,
 		WEBKIT_INSPECTOR_HTTP_SERVER: `127.0.0.1:${PORT}`,
 		// A test build opens behind whatever has the focus; a release build
@@ -103,7 +107,10 @@ const machine =
 				look('reg', ['query', runtimeKey, '/v', 'pv'])
 			].join('\n')
 		: look('sh', ['-c', 'ps -eo pid,comm | grep -i -E "webkit|onsa"; ss -ltn']);
-child.kill();
+// With the web view's own processes, which outlive Onsa otherwise; only
+// this Onsa's tree, never anybody else's web views.
+if (process.platform === 'win32') look('taskkill', ['/PID', String(child.pid), '/T', '/F']);
+else child.kill();
 await wait(1500);
 try {
 	rmSync(profile, { recursive: true, force: true });
