@@ -280,12 +280,9 @@ const DEFAULT_CJK_FONT: &str = "Noto Sans JP";
 pub(crate) const BUNDLED_FONTS: &[&str] = &[
     "system-ui",
     "Noto Sans JP",
-    "B612",
     "B612 Mono",
     "Barlow",
     "Barlow Condensed",
-    "Chakra Petch",
-    "Share Tech Mono",
     "Saira Stencil One",
     "Cormorant Garamond",
     "Martian Mono",
@@ -681,7 +678,7 @@ mod tests {
             "version": 1,
             "builtin": false,
             "base": "dark",
-            "fonts": { "ui": "B612", "numeric": "B612 Mono", "cjkFallback": "Noto Sans JP" },
+            "fonts": { "ui": "Courier Prime", "numeric": "B612 Mono", "cjkFallback": "Noto Sans JP" },
             "color": {
                 "role": { "clip": "#FF4A4A" },
                 "lit": { "on": "rgba(92,242,207,0.6)" }
@@ -705,7 +702,7 @@ mod tests {
             vec![ToneTarget::Spectrum, ToneTarget::Meter]
         );
         // A font the file leaves out follows the interface font.
-        assert_eq!(loaded.theme.fonts.label, "B612");
+        assert_eq!(loaded.theme.fonts.label, "Courier Prime");
     }
 
     #[test]
@@ -894,15 +891,18 @@ mod tests {
     fn a_theme_from_before_m16_reads_without_a_word_about_what_it_never_said() {
         // An old user theme names its fonts and colours and nothing of the
         // new layers. That is not a mistake to report.
-        let source = r##"{ "id": "lama", "fonts": { "ui": "B612" } }"##;
+        let source = r##"{ "id": "lama", "fonts": { "ui": "Courier Prime" } }"##;
         let loaded = parse_theme("lama", source).expect("an object");
         assert!(loaded.warnings.is_empty(), "{:?}", loaded.warnings);
         let theme = loaded.theme;
         assert_eq!(
-            theme.fonts.display, "B612",
+            theme.fonts.display, "Courier Prime",
             "titles fall back to the labels"
         );
-        assert_eq!(theme.fonts.lyrics, "B612", "and the words to the interface");
+        assert_eq!(
+            theme.fonts.lyrics, "Courier Prime",
+            "and the words to the interface"
+        );
         assert!(theme.ornament.is_empty());
         assert!(theme.decor.is_empty());
         assert_eq!(theme.signature, None);

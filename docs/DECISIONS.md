@@ -1052,3 +1052,50 @@ terlihat di referensi. Keputusan yang mengubah aturan yang sebelumnya terkunci:
   perangkat virtual (VB-Audio Virtual Cable) lewat pengaturan output Onsa sendiri; tidak ada
   yang terdengar di speaker. Library uji dibuat ffmpeg: nada sintetis, sampul gradien, lirik
   karangan sendiri, dan satu album beraksara Jepang.
+
+## 2026-10-16 · M16: Laut Dalam, Lorong Kuning, Siang Mimpi, Krom Saku, dan tema lama yang pergi
+
+- **Font keempat tema**, semuanya dari `google/fonts` commit
+  `bd8f81ddb5c74d5c8897b36ad88b440266245103`, masing-masing dengan `OFL.txt`-nya:
+
+  | Tema | Font | Berkas | Byte | SHA-256 |
+  |---|---|---|---|---|
+  | Laut Dalam | Cormorant Garamond (judul, lirik) | `CormorantGaramond-VF.ttf` | 1.195.560 | `b20b7d9626dd956b2c5e558692ad328b1f19e3275e2782db4fa07670d83f35e0` |
+  | | | `CormorantGaramond-Italic-VF.ttf` | 715.644 | `0f48ea6abb2084537854f7174c470991a463b13036309e3b50a81511611c530d` |
+  | | Martian Mono (teks, angka) | `MartianMono-VF.ttf` | 148.460 | `c3467843ec1c2574b05fbcfd7147c7bfbcf63ddca8fc2bcb9d117f1bfb1b22e7` |
+  | Lorong Kuning | Courier Prime | `CourierPrime-Regular.ttf` | 71.188 | `72f793376f8e2841656bf21d77a5de010f2929bd6956a22ee848ad0c7eb978af` |
+  | | | `CourierPrime-Bold.ttf` | 72.856 | `ff1f38786c849d1c41fa8e447960abdb2bd75fdfb0cfcdeb524fad65a5af3638` |
+  | | VT323 (aksen: cap waktu, papan) | `VT323-Regular.ttf` | 153.116 | `cf4de751ada78ceac033dbe16a687742939995b77bc2a052ae17a4957958594d` |
+  | Siang Mimpi | Pixelify Sans (teks) | `PixelifySans-VF.ttf` | 79.160 | `9ba86cd010a4de309d263ceff8e8044092c9db7efda869620cb9ff1c4389e8a5` |
+  | | Gloock (judul, lirik) | `Gloock-Regular.ttf` | 98.096 | `c3a67e0212f7da01764796ae721cb9bab3e122d142354f97cf9c63fb763e6d77` |
+  | Krom Saku | Exo 2 (teks) | `Exo2-VF.ttf` | 303.940 | `205a448676a2586f9c57c25f3d5c58ca8db7e6cf5edf7506783a010c6fe2bfb5` |
+  | | Orbitron (angka, layar) | `Orbitron-VF.ttf` | 38.576 | `f42db2dd16e642258e35782916eceb1dcdbea06fb958d77ad71dc5963587e8fd` |
+
+  Total 2.911.824 byte. **Font variabel dibundel apa adanya** (disetujui pemilik proyek
+  2026-10-16): Cormorant Garamond, Martian Mono, Pixelify Sans, Orbitron, dan Exo 2 hanya
+  diterbitkan `google/fonts` sebagai font variabel, jadi aturan "hanya bobot yang dipakai" tidak
+  bisa dipenuhi tanpa membuat ulang berkasnya sendiri.
+- **Warna konsep yang diubah supaya lolos kriteria 3** (disetujui pemilik proyek 2026-10-16;
+  tes `the_new_themes_can_be_read` mengukurnya terhadap panel dan tiap warna gradien latar):
+  Siang Mimpi posisi `#5A7FD8` → `#3A55B0`, ujung warna nada `#E89A3A` → `#C7801F` dan
+  `#3FB8A8` → `#2A9A8C`; Krom Saku posisi `#FF5FA8` → `#C2207A`; Lorong Kuning teks kedua
+  `#6B5E2A`; Laut Dalam lirik yang tidak sedang dinyanyikan `#8FB0C0` (referensinya `#2E4A5A`,
+  sekitar 1,6:1).
+- **Kosakata skema yang bertambah bersama keempat tema** (semuanya bisa dipakai tema mana pun):
+  latar `surface.backdrop` (gradien tegak 2–6 warna); warna `lit.highlight`, `ground`,
+  `ornament`, `paper`, `paperEdge`, `lcd`, `lcdInk`, `lcdEdge`; bentuk kontrol `ring`, `box`,
+  `chrome`; bingkai `card`, `candy`; meter `line`, `lcd`; spektrum `dots`, `grass`, `lcd`;
+  penanda tahap `glow-text`, `brackets`, `text`; isian posisi `stars`, `blocks`; sasaran warna
+  nada `backlight` (lampu latar layar, tidak pernah pikselnya — tesnya mengukur ujung warna
+  nada terhadap `lcdInk`); dekorasi `marine-snow`, `lure`, `wallpaper`, `carpet`, `exit-sign`,
+  `clouds`, `sparkles`, `sky-eye`, `brushed-lines`, `hologram`; susunan `dive`, `memo`,
+  `meadow`, `pocket`, sampul `photo`, `door`, `disc`, posisi `depth`, bingkai jendela
+  `corridor`, `meadow`.
+- **Tema lama pergi begitu penggantinya ada**, bukan menunggu keenamnya: Kaca Asap, Kokpit Kaca,
+  Deck Malam, Kilau Milenium, dan Musim Dingin dihapus, sehingga pemetaan pilihan lama (SPEC
+  §9.4) kini benar-benar berlaku untuk kelimanya. Kubikel Biru tetap sampai Jendela Biru
+  selesai, supaya pilihannya tidak dipindah ke tema yang belum ada. Font yang hanya dipakai
+  tema yang pergi ikut dihapus: Chakra Petch, Share Tech Mono, dan B612 biasa (B612 Mono tetap
+  untuk Kokpit Tua). Barlow dan Barlow Condensed menyusul bersama Kubikel Biru. Tema buatan
+  pengguna yang menyebut font yang dihapus tetap terbaca: font itu diganti font bawaan dengan
+  peringatan.

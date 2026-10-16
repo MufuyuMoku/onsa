@@ -8,46 +8,6 @@
  */
 
 @font-face {
-	font-family: 'Chakra Petch';
-	src: url('/fonts/chakra-petch/ChakraPetch-Regular.ttf') format('truetype');
-	font-weight: 400;
-	font-style: normal;
-	font-display: swap;
-}
-
-@font-face {
-	font-family: 'Chakra Petch';
-	src: url('/fonts/chakra-petch/ChakraPetch-SemiBold.ttf') format('truetype');
-	font-weight: 600;
-	font-style: normal;
-	font-display: swap;
-}
-
-@font-face {
-	font-family: 'Share Tech Mono';
-	src: url('/fonts/share-tech-mono/ShareTechMono-Regular.ttf') format('truetype');
-	font-weight: 400;
-	font-style: normal;
-	font-display: swap;
-}
-
-@font-face {
-	font-family: 'B612';
-	src: url('/fonts/b612/B612-Regular.ttf') format('truetype');
-	font-weight: 400;
-	font-style: normal;
-	font-display: swap;
-}
-
-@font-face {
-	font-family: 'B612';
-	src: url('/fonts/b612/B612-Bold.ttf') format('truetype');
-	font-weight: 700;
-	font-style: normal;
-	font-display: swap;
-}
-
-@font-face {
 	font-family: 'B612 Mono';
 	src: url('/fonts/b612-mono/B612Mono-Regular.ttf') format('truetype');
 	font-weight: 400;

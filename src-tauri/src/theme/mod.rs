@@ -44,8 +44,8 @@ pub fn current_choice(stored: Option<String>) -> Option<String> {
     }
 }
 
-/// The three built-in themes, in the order the first-run screen shows them.
-const BUILTIN_SOURCES: [(&str, &str); 11] = [
+/// The built-in themes, in the order the first-run screen shows them.
+const BUILTIN_SOURCES: [(&str, &str); 6] = [
     (
         "kokpit-tua",
         include_str!("../../../themes/kokpit-tua.json"),
@@ -63,26 +63,9 @@ const BUILTIN_SOURCES: [(&str, &str); 11] = [
         include_str!("../../../themes/siang-mimpi.json"),
     ),
     ("krom-saku", include_str!("../../../themes/krom-saku.json")),
-    ("kaca-asap", include_str!("../../../themes/kaca-asap.json")),
-    (
-        "kokpit-kaca",
-        include_str!("../../../themes/kokpit-kaca.json"),
-    ),
-    (
-        "deck-malam",
-        include_str!("../../../themes/deck-malam.json"),
-    ),
     (
         "kubikel-biru",
         include_str!("../../../themes/kubikel-biru.json"),
-    ),
-    (
-        "kilau-milenium",
-        include_str!("../../../themes/kilau-milenium.json"),
-    ),
-    (
-        "musim-dingin",
-        include_str!("../../../themes/musim-dingin.json"),
     ),
 ];
 
@@ -267,8 +250,8 @@ mod tests {
     }
 
     /// The six themes of SPEC §1, in its order: the new ones are built one
-    /// at a time during M16 and stand in front of the old six until the
-    /// last of them is done, when the old ones go (DECISIONS 2026-10-11).
+    /// at a time during M16. An old one goes once the theme that replaced it
+    /// is here (DECISIONS 2026-10-11, 2026-10-16).
     const NEW_SIX: [&str; 6] = [
         "kokpit-tua",
         "laut-dalam",
@@ -277,14 +260,9 @@ mod tests {
         "siang-mimpi",
         "krom-saku",
     ];
-    const OLD_SIX: [&str; 6] = [
-        "kaca-asap",
-        "kokpit-kaca",
-        "deck-malam",
-        "kubikel-biru",
-        "kilau-milenium",
-        "musim-dingin",
-    ];
+    /// The old themes still shipped: only the one whose replacement is not
+    /// built yet stays (DECISIONS 2026-10-16).
+    const OLD_STILL_HERE: [&str; 1] = ["kubikel-biru"];
 
     #[test]
     fn the_themes_of_the_specification_are_present() {
@@ -306,9 +284,15 @@ mod tests {
         );
         assert_eq!(
             ids[built..],
-            OLD_SIX[..],
-            "the old six stay behind them until the new six are all here"
+            OLD_STILL_HERE[..],
+            "an old theme stays behind them only until its replacement is here"
         );
+        for (old, new) in REPLACED {
+            assert!(
+                !(ids.contains(&old) && ids.contains(&new)),
+                "{old} should have gone now that {new} is here"
+            );
+        }
         assert!(ids.contains(&DEFAULT_THEME_ID));
         let kokpit = themes
             .iter()
@@ -758,7 +742,8 @@ mod tests {
 
     #[test]
     fn an_unknown_identifier_has_no_theme() {
-        assert!(builtin_theme("kaca-asap").is_some());
+        assert!(builtin_theme("kokpit-tua").is_some());
+        assert!(builtin_theme("kaca-asap").is_none(), "replaced and gone");
         assert!(builtin_theme("tema-yang-tidak-ada").is_none());
     }
 }
