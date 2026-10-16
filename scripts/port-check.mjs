@@ -72,6 +72,8 @@ while (Date.now() < until && exited === null) {
 	await wait(1000);
 }
 const said = log();
+// Whether it stopped on its own, before this script stops it.
+const early = exited;
 child.kill();
 await wait(1500);
 try {
@@ -82,7 +84,7 @@ try {
 
 const problems = [];
 if (!said.includes('Onsa starting')) problems.push('Onsa never got as far as starting');
-if (exited !== null && !answered) problems.push(`Onsa exited early (code ${exited})`);
+if (early !== null && !answered) problems.push(`Onsa exited on its own (code ${early})`);
 if (expect === 'closed') {
 	if (answered) problems.push(`a release build answered on port ${PORT}`);
 	if (!said.includes('debugging port refused')) problems.push('the log does not say the port was refused');
