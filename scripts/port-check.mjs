@@ -99,12 +99,19 @@ const runtimeKey = [
 const machine =
 	process.platform === 'win32'
 		? [
-				look('tasklist', ['/FI', 'IMAGENAME eq msedgewebview2.exe']),
 				look('netstat', ['-ano', '-p', 'tcp'])
 					.split('\n')
 					.filter((line) => line.includes('LISTENING'))
 					.join('\n'),
-				look('reg', ['query', runtimeKey, '/v', 'pv'])
+				look('reg', ['query', runtimeKey, '/v', 'pv']),
+				// Whether the argument reached the web view at all, and whether
+				// a policy on the machine turns remote debugging off.
+				look('powershell', [
+					'-NoProfile',
+					'-Command',
+					"Get-CimInstance Win32_Process -Filter \"Name='msedgewebview2.exe'\" | Where-Object { $_.CommandLine -match 'webview-exe-name=onsa.exe' -and $_.CommandLine -notmatch '--type=' } | ForEach-Object { $_.CommandLine }"
+				]),
+				look('reg', ['query', ['HKLM', 'SOFTWARE', 'Policies', 'Microsoft', 'Edge'].join(String.fromCharCode(92)), '/s'])
 			].join('\n')
 		: look('sh', ['-c', 'ps -eo pid,comm | grep -i -E "webkit|onsa"; ss -ltn']);
 // With the web view's own processes, which outlive Onsa otherwise; only

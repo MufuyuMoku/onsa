@@ -1231,6 +1231,15 @@ terlihat di referensi. Keputusan yang mengubah aturan yang sebelumnya terkunci:
     bisa lulus hanya karena WebView gagal jalan;
   - clippy kini juga dijalankan untuk build `test-harness`.
 
+  Kontrol positif itu langsung berguna. Pada putaran CI pertamanya, build uji di runner Windows
+  **tidak** membuka port, padahal lognya menyatakan permintaan port dibiarkan. Penyebabnya:
+  proses browser WebView2 dari pemeriksaan sebelumnya masih hidup (mematikan Onsa tidak
+  mematikan proses web view anaknya) dan memegang folder data web view yang sama. WebView2 lalu
+  memakai ulang proses itu beserta argumennya sendiri. Sekarang setiap pemeriksaan memakai folder
+  data web view sendiri (`WEBVIEW2_USER_DATA_FOLDER`) dan mematikan pohon prosesnya sendiri,
+  bukan web view milik aplikasi lain. Tanpa kontrol positif, "tertutup" di Windows akan lulus
+  untuk alasan yang salah.
+
   Yang tidak tertutup oleh ini: kebijakan WebView2 yang dipasang administrator lewat registry
   (`HKLM\Software\Policies\Microsoft\Edge\WebView2\AdditionalBrowserArguments`). Itu butuh hak
   admin di mesin itu, dan Onsa tidak bisa menimpanya.
