@@ -597,10 +597,12 @@ export const setCloseToTray = (enabled: boolean) => call<void>('set_close_to_tra
 export const setMini = (mini: boolean) => call<boolean>('window_set_mini', { mini });
 export const themeOpenFolder = () => call<void>('theme_open_folder');
 
-/** A theme file that is in the folder but could not be used. */
+/** A theme file that is in the folder but could not be used, or was used
+ *  with something in it replaced by the default (`used`). */
 export interface ThemeTrouble {
 	file: string;
 	said: string;
+	used: boolean;
 }
 
 export const themeTroubles = () => call<ThemeTrouble[]>('theme_troubles');

@@ -1099,3 +1099,24 @@ terlihat di referensi. Keputusan yang mengubah aturan yang sebelumnya terkunci:
   untuk Kokpit Tua). Barlow dan Barlow Condensed menyusul bersama Kubikel Biru. Tema buatan
   pengguna yang menyebut font yang dihapus tetap terbaca: font itu diganti font bawaan dengan
   peringatan.
+- **Pemeriksa tata letak dan pemeriksa gerak kini ada di repo** (`scripts/layout-check.mjs`,
+  `scripts/motion-check.mjs`). Pemeriksa tata letak yang dipakai sejak M3 hanya pernah hidup di
+  scratchpad sesi lama dan sudah hilang, padahal kriteria 2 M16 menyebutnya "yang sudah ada".
+  Keduanya mengendalikan halaman Onsa sendiri lewat port debugging WebView2 dan tidak menyentuh
+  apa pun di luar Onsa. Pemeriksa tata letak melewati setiap tema × setiap susunan yang
+  ditawarkannya × empat halaman × dua ukuran (1280×800 dan ukuran minimum 820×600). Ia mencari
+  lima hal: gulir ke samping, teks terpotong tanpa elipsis, teks menindih teks, kontrol tertutup
+  sesuatu, dan **tombol palsu** (tombol tanpa penangan, atau kursor tangan di atas sesuatu yang
+  tidak bisa ditekan). Mode `--self-test` menanam satu cacat dari tiap jenis dan gagal kalau ada
+  yang lolos, supaya hasil "0 temuan" berarti sesuatu. Pemeriksa gerak menolak berjalan kalau
+  tidak ada lagu yang diputar, karena cakram Krom Saku hanya berputar selama lagu berjalan.
+  Keduanya hanya untuk Windows: WebKitGTK tidak punya port semacam itu.
+- **`ONSA_DATA_DIR` ikut memindahkan folder tema pengguna** (ke `<root>/config/themes`). Selama
+  ini variabel itu memindahkan database, sampul, dan log, tetapi tema pengguna tetap dibaca dari
+  folder konfigurasi Onsa yang sungguhan. Akibatnya, menguji tema buatan pengguna berarti menulis
+  ke folder milik pemilik mesin. Folder konfigurasi tidak dipakai untuk hal lain.
+- **Tema pengguna yang terbaca dengan perbaikan disebut di halaman Tampilan.** Entri 2026-10-11
+  menyatakan bahwa font yang tidak dibundel "disebut sebagai peringatan, yang terbaca di halaman
+  Tampilan", tetapi peringatan itu ternyata hanya masuk log. Pemeriksaan kriteria 9 menemukannya.
+  Sekarang halaman Tampilan punya kelompok "Tema yang dipakai dengan perbaikan", terpisah dari
+  "Berkas tema yang tidak terpakai".

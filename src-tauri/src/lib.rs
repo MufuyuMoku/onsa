@@ -220,15 +220,23 @@ pub struct Folders {
 /// keep things. This is the way past that, and it exists for two reasons:
 /// trying something out against a library that can be thrown away without
 /// going anywhere near the real one, and a portable build later (SPEC §15,
-/// M12). One variable moves the database, the covers and the log together,
-/// because a library without its covers is not the same library.
+/// M12). One variable moves the database, the covers, the log and the
+/// user's own themes together, because a library without its covers is not
+/// the same library, and a trial that writes themes into the real folder
+/// has gone near the real one.
 fn folders_from_env() -> Option<(std::path::PathBuf, std::path::PathBuf, std::path::PathBuf)> {
-    let root = std::env::var_os("ONSA_DATA_DIR")?;
-    let root = std::path::PathBuf::from(root);
-    if root.as_os_str().is_empty() {
-        return None;
-    }
+    let root = data_root_from_env()?;
     Some((root.join("data"), root.join("cache"), root.join("logs")))
+}
+
+/// Where the settings folder is when `ONSA_DATA_DIR` moves everything.
+pub(crate) fn config_dir_from_env() -> Option<std::path::PathBuf> {
+    Some(data_root_from_env()?.join("config"))
+}
+
+fn data_root_from_env() -> Option<std::path::PathBuf> {
+    let root = std::path::PathBuf::from(std::env::var_os("ONSA_DATA_DIR")?);
+    (!root.as_os_str().is_empty()).then_some(root)
 }
 
 /// Everything that needs the application's folders: logging, the library

@@ -97,11 +97,14 @@ pub fn user_dir(config_dir: &std::path::Path) -> std::path::PathBuf {
     config_dir.join("themes")
 }
 
-/// A theme file that could not be used, and why.
+/// A theme file that could not be used, or was used only after something
+/// in it was replaced, and why.
 ///
 /// The log has said this since M4, which helps whoever reads logs. The
 /// window needs it too: somebody who writes a theme and mistypes one
-/// bracket should not have to guess why their theme never appears.
+/// bracket should not have to guess why their theme never appears, and
+/// somebody whose theme names a font Onsa no longer carries should not
+/// have to guess why it looks different.
 #[derive(Debug, Clone, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Trouble {
@@ -109,6 +112,9 @@ pub struct Trouble {
     pub file: String,
     /// What was wrong with it, in the parser's own words.
     pub said: String,
+    /// The theme is in the list all the same, with what was wrong replaced
+    /// by the default.
+    pub used: bool,
 }
 
 /// The user's themes, and the files that could not be read.
@@ -143,6 +149,7 @@ fn user_themes_reporting(dir: &std::path::Path, troubles: &mut Vec<Trouble>) -> 
             troubles.push(Trouble {
                 file: file_name(&path),
                 said: "a built-in theme already has that name".to_string(),
+                used: false,
             });
             continue;
         }
@@ -152,6 +159,13 @@ fn user_themes_reporting(dir: &std::path::Path, troubles: &mut Vec<Trouble>) -> 
                     for warning in &loaded.warnings {
                         tracing::info!(theme = id, "user theme: {warning}");
                     }
+                    if !loaded.warnings.is_empty() {
+                        troubles.push(Trouble {
+                            file: file_name(&path),
+                            said: loaded.warnings.join("; "),
+                            used: true,
+                        });
+                    }
                     themes.push(loaded.theme);
                 }
                 Err(error) => {
@@ -159,6 +173,7 @@ fn user_themes_reporting(dir: &std::path::Path, troubles: &mut Vec<Trouble>) -> 
                     troubles.push(Trouble {
                         file: file_name(&path),
                         said: format!("{error:#}"),
+                        used: false,
                     });
                 }
             },
@@ -167,6 +182,7 @@ fn user_themes_reporting(dir: &std::path::Path, troubles: &mut Vec<Trouble>) -> 
                 troubles.push(Trouble {
                     file: file_name(&path),
                     said: error.to_string(),
+                    used: false,
                 });
             }
         }
@@ -737,6 +753,53 @@ mod tests {
         // Every theme a replaced one points at is one of the six of SPEC §1.
         for (_, new) in REPLACED {
             assert!(NEW_SIX.contains(&new), "{new} is not a theme of SPEC §1");
+        }
+    }
+
+    /// SPEC M16: a theme somebody wrote for the schema before M16 is read,
+    /// and what it names that Onsa no longer carries is said on the page;
+    /// a file that is not a theme at all is refused, with why.
+    #[test]
+    fn a_theme_written_before_m16_is_read_and_what_was_replaced_is_said() {
+        let dir =
+            std::env::temp_dir().join(format!("onsa user themes {} テーマ", std::process::id()));
+        std::fs::create_dir_all(&dir).expect("temporary folder");
+        let old = r##"{
+            "$schema": "onsa-theme/1", "id": "asap-saya", "name": "Asap",
+            "base": "dark",
+            "fonts": { "ui": "Chakra Petch", "numeric": "Share Tech Mono" },
+            "color": { "role": { "position": "#3CC8E6" } }
+        }"##;
+        std::fs::write(dir.join("asap-saya.json"), old).expect("old theme");
+        std::fs::write(dir.join("rusak.json"), r#"{ "id": "rusak", "color": { "#).expect("broken");
+        std::fs::write(dir.join("bukan-tema.json"), "[1, 2, 3]").expect("not a theme");
+
+        let (themes, troubles) = read_user_dir(&dir);
+        std::fs::remove_dir_all(&dir).ok();
+
+        let asap = themes
+            .iter()
+            .find(|theme| theme.id == "asap-saya")
+            .expect("read");
+        assert_eq!(
+            asap.fonts.ui, "system-ui",
+            "a font no longer carried is replaced"
+        );
+        let said = troubles
+            .iter()
+            .find(|trouble| trouble.file == "asap-saya.json")
+            .expect("and the page says so");
+        assert!(said.used);
+        assert!(said.said.contains("Chakra Petch") && said.said.contains("Share Tech Mono"));
+        for file in ["rusak.json", "bukan-tema.json"] {
+            let refused = troubles
+                .iter()
+                .find(|trouble| trouble.file == file)
+                .unwrap_or_else(|| panic!("{file} is refused"));
+            assert!(!refused.used && !refused.said.is_empty());
+            assert!(!themes
+                .iter()
+                .any(|theme| format!("{}.json", theme.id) == file));
         }
     }
 

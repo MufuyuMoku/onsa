@@ -63,9 +63,8 @@ pub fn app_info() -> AppInfo {
 
 /// The folder the user's own themes live in.
 fn theme_dir(app: &AppHandle) -> Option<PathBuf> {
-    app.path()
-        .app_config_dir()
-        .ok()
+    crate::config_dir_from_env()
+        .or_else(|| app.path().app_config_dir().ok())
         .map(|dir| theme::user_dir(&dir))
 }
 

@@ -34,6 +34,9 @@
 	let failure = $state<MessageKey | null>(null);
 	/** Theme files in the folder that could not be used, and why. */
 	let troubles = $state<ThemeTrouble[]>([]);
+	/** Files left out of the list, and themes in it with something replaced. */
+	const refused = $derived(troubles.filter((trouble) => !trouble.used));
+	const mended = $derived(troubles.filter((trouble) => trouble.used));
 	/** Where the copy landed, once one has been made. */
 	let copied = $state<string | null>(null);
 	let copying = $state(false);
@@ -156,11 +159,23 @@
 			<p class="note">{t('theme.copied', { file: copied })}</p>
 		{/if}
 
-		{#if troubles.length > 0}
+		{#if mended.length > 0}
+			<h3 class="label">{t('theme.mended')}</h3>
+			<p class="note muted">{t('theme.mendedHint')}</p>
+			<ul class="troubles">
+				{#each mended as trouble (trouble.file)}
+					<li>
+						<span class="numeric">{trouble.file}</span>
+						<span class="muted said">{trouble.said}</span>
+					</li>
+				{/each}
+			</ul>
+		{/if}
+		{#if refused.length > 0}
 			<h3 class="label">{t('theme.troubles')}</h3>
 			<p class="note muted">{t('theme.troublesHint')}</p>
 			<ul class="troubles">
-				{#each troubles as trouble (trouble.file)}
+				{#each refused as trouble (trouble.file)}
 					<li>
 						<span class="numeric">{trouble.file}</span>
 						<span class="muted said">{trouble.said}</span>
