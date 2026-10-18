@@ -64,6 +64,32 @@ pub fn report() {
     }
 }
 
+/// The browser arguments a test build hands its window, when the
+/// environment asks for a debugging port; `None` otherwise.
+///
+/// The environment alone is not enough: Tauri gives WebView2 browser
+/// arguments of its own, and the WebView2 on CI's Windows runner (154)
+/// then never saw the port asked for in `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS`.
+/// So the test build passes them the way Tauri does, with the arguments
+/// wry would otherwise pass by itself. It does not exist in any other
+/// build.
+#[cfg(feature = "test-harness")]
+pub fn test_browser_args() -> Option<String> {
+    let asked = std::env::var(WEBVIEW2_ARGUMENTS).ok()?;
+    let (_, debugging) = without_debugging(&asked);
+    if debugging.is_empty() {
+        return None;
+    }
+    Some(format!("{WRY_DEFAULTS} {}", asked.trim()))
+}
+
+/// What wry passes when nothing else is given (wry `webview2/mod.rs`).
+#[cfg(feature = "test-harness")]
+const WRY_DEFAULTS: &str = concat!(
+    "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection",
+    " --autoplay-policy=no-user-gesture-required"
+);
+
 /// The variable WebView2 reads its extra browser arguments from.
 const WEBVIEW2_ARGUMENTS: &str = "WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS";
 
@@ -122,6 +148,27 @@ mod tests {
             assert!(kept.is_empty(), "{asked} was kept");
             assert_eq!(dropped.len(), 1, "{asked}");
         }
+    }
+
+    /// The other place a port could be asked for: the window's own browser
+    /// arguments in `tauri.conf.json`, which every build carries.
+    #[test]
+    fn the_configuration_asks_for_no_debugging_port() {
+        let config: serde_json::Value =
+            serde_json::from_str(include_str!("../tauri.conf.json")).expect("valid JSON");
+        let windows = config["app"]["windows"].as_array().expect("windows");
+        assert!(!windows.is_empty());
+        for window in windows {
+            let args = window["additionalBrowserArgs"].as_str().unwrap_or("");
+            assert!(
+                without_debugging(args).1.is_empty(),
+                "tauri.conf.json asks for a debugging port: {args}"
+            );
+        }
+        assert!(
+            config["app"]["windows"][0]["devtools"].as_bool() != Some(true),
+            "devtools are not turned on for every build"
+        );
     }
 
     #[test]

@@ -228,9 +228,16 @@ fn context() -> tauri::Context<tauri::Wry> {
     #[allow(unused_mut)]
     let mut context = tauri::generate_context!();
     #[cfg(feature = "test-harness")]
-    if std::env::var_os("ONSA_TEST_BACKGROUND").is_some() {
+    {
+        let background = std::env::var_os("ONSA_TEST_BACKGROUND").is_some();
+        let browser_args = inspection::test_browser_args();
         for window in &mut context.config_mut().app.windows {
-            window.focus = false;
+            if background {
+                window.focus = false;
+            }
+            if browser_args.is_some() {
+                window.additional_browser_args.clone_from(&browser_args);
+            }
         }
     }
     context
