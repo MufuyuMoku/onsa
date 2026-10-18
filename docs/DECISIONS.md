@@ -1240,6 +1240,22 @@ terlihat di referensi. Keputusan yang mengubah aturan yang sebelumnya terkunci:
   bukan web view milik aplikasi lain. Tanpa kontrol positif, "tertutup" di Windows akan lulus
   untuk alasan yang salah.
 
+  Itu belum cukup. Diagnosis berikutnya membaca baris perintah proses web view Onsa di runner:
+  `--user-data-dir` dari lingkungan sampai, tetapi `--remote-debugging-port` tidak. WebView2 154
+  di runner tidak memakai `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS` begitu Tauri memberinya argumen
+  browser sendiri, sedangkan WebView2 155 di mesin pengembang memakainya. Karena itu build
+  `test-harness` kini meneruskan permintaan port lewat `additionalBrowserArgs` jendelanya
+  (`inspection::test_browser_args`, ditambah argumen bawaan wry supaya tidak hilang). Fungsi itu
+  tidak ada di build lain. Sebuah tes juga memastikan `tauri.conf.json` sendiri tidak meminta
+  port dan tidak menyalakan devtools.
+
+  **Batas yang tersisa:** di runner Windows, build rilis pun tidak akan membuka port dari
+  variabel lingkungan, dengan atau tanpa `inspection::close`. Jadi langkah "tertutup" di Windows
+  CI membuktikan penolakan lewat lognya, bukan lewat port. Bukti lewat port untuk Windows ada di
+  mesin dengan WebView2 yang memakai variabel itu: di mesin pengembang, build uji yang sama
+  membuka port dari variabel lingkungan. Pemilik proyek bisa memeriksanya pada installer (lihat
+  laporan 2026-10-18). Di Linux, kedua arah terbukti lewat port di CI.
+
   Yang tidak tertutup oleh ini: kebijakan WebView2 yang dipasang administrator lewat registry
   (`HKLM\Software\Policies\Microsoft\Edge\WebView2\AdditionalBrowserArguments`). Itu butuh hak
   admin di mesin itu, dan Onsa tidak bisa menimpanya.
