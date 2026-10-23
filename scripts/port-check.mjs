@@ -75,6 +75,11 @@ while (Date.now() < until && exited === null) {
 	// A release build is given the whole time to open it, if it would.
 	await wait(1000);
 }
+// Onsa writes its log without blocking, so a port that answers quickly can
+// be ahead of the log on disk: give the log a moment to catch up.
+for (let tries = 0; tries < 10 && exited === null && !log().includes('Onsa starting'); tries++) {
+	await wait(1000);
+}
 const said = log();
 // Whether it stopped on its own, before this script stops it.
 const early = exited;
