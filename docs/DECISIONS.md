@@ -1312,3 +1312,22 @@ aplikasi.
 - **Tangkapan layar dan ikon** disediakan pemilik proyek. Sampai saat itu ada placeholder
   bertuliskan nama berkas dan ukurannya (daftar di `site/README.md`), dan ikonnya salinan ikon
   placeholder aplikasi.
+
+## 2026-10-24 · Tangkapan layar situs
+
+- **Konteks**: pemilik proyek meminta tangkapan keenam tema dari profil uji M16 dipakai di
+  situs, asal tidak memuat jalur dengan nama akun, nama mesin, atau data pribadi lain.
+- **Temuan**: tangkapan M16 tidak memuat jalur, nama akun, atau nama mesin, tetapi strip jalur
+  sinyal menulis nama perangkat audio mesin pemilik ("CABLE Input (VB-Audio Virtual Cable)
+  [Speaker] via S/PDIF"). Profil uji M16 sendiri ternyata juga memuat lagu sungguhan berhak
+  cipta di library-nya, jadi tidak boleh dipakai untuk gambar publik.
+- **Keputusan**: tangkapan diambil ulang dengan build uji v1.5.0 (`--features test-harness`,
+  jendela di latar) dan **profil baru** yang hanya berisi library contoh sintetis, di Sedang
+  diputar, tiap tema dengan susunan khasnya. Sebelum tiap tangkapan, nama perangkat di halaman
+  diganti teks "Speakers"; selain itu tidak ada yang diubah. `og.png` adalah tangkapan Kokpit
+  Tua yang diperkecil ke lebar 1200 dan dipotong setinggi 630. Aturan untuk tangkapan
+  berikutnya ditulis di `site/README.md`.
+- **Alasan**: nama perangkat bukan rahasia besar, tetapi tetap milik mesin pemilik, dan aturan
+  pemilik proyek meminta gambar publik bebas data mesin. Library contoh menjamin tidak ada
+  lagu atau sampul pihak lain di situs.
+

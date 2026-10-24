@@ -2122,5 +2122,9 @@ browser, lebar 375 px tidak menggulir ke samping di ketiga bahasa, mode terang d
 dicoba, dan pemilih bahasa diklik (Indonesia → Jepang → Inggris). Tautan keluar dicek dengan
 `curl`: repo, rilis, dan Issues 200, dan `releases/latest` sampai di v1.5.0.
 
-**Tertunda**: tangkapan layar keenam tema, gambar pratinjau tautan, dan ikon final dari pemilik
-proyek (daftar di `site/README.md`).
+**Tertunda**: ikon final (lihat di bawah).
+
+**Sesudahnya (2026-10-24)**: tangkapan keenam tema dan `og.png` dipasang (DECISIONS
+2026-10-24, "Tangkapan layar situs"); README menyebut dua tema gelap dan empat terang,
+ringkasan v1.5, dan tautan ke situs; kolom Homepage repo kini ke situs. Ikon final dibuat dari
+sketsa pemilik proyek: tiga varian dikirim untuk dipilih, belum dipasang.

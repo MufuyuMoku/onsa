@@ -35,10 +35,14 @@ of the lists, may hold a little HTML (`<code>`, `<em>`, `<strong>`, links).
 The download button always points at `releases/latest` on GitHub, so a new release needs
 no change here. No version number is written in the pages; `check.mjs` fails if one is.
 
-## Images to replace
+## Images
 
-The files in `public/` are placeholders with their name and size written on them.
-Replace each with a file of the **same name and size**:
+The six screenshots and `og.png` were taken from a test build of v1.5.0 with a fresh
+profile holding only the synthetic sample library (no real songs, no real cover art), on
+Now Playing, each theme in its own layout. The audio device's name was replaced on the page
+with "Speakers" before each capture, because the real one belongs to the machine it was
+taken on. Nothing else was changed. A new screenshot should follow the same rules: sample
+library only, no folder path, account name, machine name or device name in the picture.
 
 | File | Size | What it shows |
 |---|---|---|
@@ -48,8 +52,8 @@ Replace each with a file of the **same name and size**:
 | `public/screens/lorong-kuning.png` | 1280 × 800 | Lorong Kuning, Lorong |
 | `public/screens/siang-mimpi.png` | 1280 × 800 | Siang Mimpi, Padang |
 | `public/screens/krom-saku.png` | 1280 × 800 | Krom Saku, Pemutar Saku |
-| `public/og.png` | 1200 × 630 | The picture shown when a link to the site is shared |
-| `public/icon.svg` | square, any size (SVG) | The icon: a copy of the placeholder `assets/icon.svg` |
+| `public/og.png` | 1200 × 630 | The picture shown when a link to the site is shared: the Kokpit Tua screenshot, cropped |
+| `public/icon.svg` | square, any size (SVG) | The icon: still a copy of the placeholder `assets/icon.svg`, until the final icon is chosen |
 
 ## Fonts
 
