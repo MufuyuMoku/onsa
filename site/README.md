@@ -53,7 +53,8 @@ library only, no folder path, account name, machine name or device name in the p
 | `public/screens/siang-mimpi.png` | 1280 × 800 | Siang Mimpi, Padang |
 | `public/screens/krom-saku.png` | 1280 × 800 | Krom Saku, Pemutar Saku |
 | `public/og.png` | 1200 × 630 | The picture shown when a link to the site is shared: the Kokpit Tua screenshot, cropped |
-| `public/icon.svg` | square, any size (SVG) | The icon: still a copy of the placeholder `assets/icon.svg`, until the final icon is chosen |
+| `public/icon.svg` | square, any size (SVG) | The icon, a copy of `assets/icon.svg`; used for the logo on high-density screens |
+| `public/icon-32.png`, `public/icon-16.png`, `public/favicon.ico` | 32 and 16 px | The hand-drawn small icons, copies of `assets/icon-32.png` and `assets/icon-16.png`; the tab icon and the logo at normal density. Never replace them with the SVG scaled down |
 
 ## Fonts
 

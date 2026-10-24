@@ -31,7 +31,10 @@ for (const page of pages) {
 	if (/<iframe\b/i.test(html)) say(page, 'has an iframe');
 	if (/open[\s-]?source|sumber terbuka|オープンソース/i.test(html)) say(page, 'calls Onsa open source');
 
-	const addresses = [...html.matchAll(/\b(?:href|src)="([^"]+)"/g)].map((m) => m[1]);
+	const addresses = [
+		...[...html.matchAll(/\b(?:href|src)="([^"]+)"/g)].map((m) => m[1]),
+		...[...html.matchAll(/\bsrcset="([^"]+)"/g)].flatMap((m) => m[1].split(',').map((c) => c.trim().split(/\s+/)[0]))
+	];
 	for (const address of addresses) {
 		if (/^(mailto:|#)/.test(address)) continue;
 		if (/^https?:\/\//.test(address)) {
