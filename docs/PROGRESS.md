@@ -4,7 +4,7 @@ Status tiap milestone dari `SPEC.md` §15. Diperbarui di akhir setiap milestone.
 
 ---
 
-## Garis rilis (diperbarui 2026-10-23)
+## Garis rilis (diperbarui 2026-10-24)
 
 Yang benar-benar ditandai:
 
@@ -18,6 +18,7 @@ Yang benar-benar ditandai:
 | `v1.4.0` | (lihat tagnya) | 2026-10-09 | **v1.4 "Unduhan penuh", selesai.** **M10b** (ffmpeg, Deno, fpcalc diunduh Onsa sendiri; unduhan paralel bawaan 2; berkas antara di luar library), **M15** daftar situs di Bantuan, paket Linux dari CI. Sisa M10b ke v1.4.1. |
 | `v1.4.1` | (lihat tagnya) | 2026-10-11 | **Sisa M10b**: antrean unduhan disimpan di DB, folder output bisa dipilih beserta pertanyaan §7.3, tombol halaman resmi sesudah pemasangan gagal, `windows-sha256.txt`. |
 | `v1.5.0` | (lihat tagnya) | 2026-10-23 | **v1.5 "Tampilan", selesai.** **M16**: skema tema yang diperdalam, tiga preset susunan, keenam tema baru dengan susunan khasnya (pilihan tema lama dipetakan), ukuran milik susunan, dan port debugging yang hanya terbuka di build uji (build sebelumnya membukanya bila diminta lewat variabel lingkungan). |
+| `v1.5.1` | (lihat tagnya) | 2026-10-24 | **Ikon final** dari sketsa pemilik proyek (16 dan 32 px digambar terpisah) dan perbaikan dokumen. Tanpa fitur baru. |
 
 Garis rilis yang diputuskan pada 2026-09-19 menempatkan M7b, M10b, M11, dan M12 di v1.1.
 Bukan itu yang terjadi: yang ditandai v1.1.0 adalah bantuan di dalam aplikasi, dan v1.2.0
@@ -2128,3 +2129,7 @@ dicoba, dan pemilih bahasa diklik (Indonesia → Jepang → Inggris). Tautan kel
 2026-10-24, "Tangkapan layar situs"); README menyebut dua tema gelap dan empat terang,
 ringkasan v1.5, dan tautan ke situs; kolom Homepage repo kini ke situs. Ikon final dibuat dari
 sketsa pemilik proyek dan dipasang di aplikasi dan situs (DECISIONS 2026-10-24, "Ikon final").
+
+**Ditandai `v1.5.1` (2026-10-24)**: ikon final dan perbaikan dokumen sejak `v1.5.0`, tanpa fitur
+baru (keputusan pemilik proyek). Berikutnya v1.6 "Lirik & metadata" (M17, lalu M7b), dimulai
+sesudah pemilik proyek mengonfirmasi.

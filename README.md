@@ -52,6 +52,9 @@ pengguna. Pilihan tema lama berpindah sendiri ke tema baru. Dari sisi keamanan, 
 kini menolak permintaan port debugging web view dari variabel lingkungan, dan CI
 menggagalkan rilis yang membukanya. Diuji di Windows, dan sisi Linux di WSL.
 
+**v1.5.1** hanya membawa ikon final, yang digambar dari sketsa pemilik proyek, dan perbaikan
+dokumen. Tidak ada fitur baru.
+
 Garis berikutnya ada di [`docs/SPEC.md`](docs/SPEC.md) §15 dan
 [`docs/PROGRESS.md`](docs/PROGRESS.md): v1.6 "Lirik & metadata", v1.7 "Video".
 
@@ -65,15 +68,15 @@ belum dirilis bisa diambil dari artifact **onsa-linux-packages** di jalannya CI 
 **.deb** (Debian, Ubuntu, dan turunannya) — `apt` yang mengurus dependensinya:
 
 ```sh
-sudo apt install ./Onsa_1.5.0_amd64.deb
+sudo apt install ./Onsa_1.5.1_amd64.deb
 onsa
 ```
 
 **AppImage** — satu berkas, jalan di tempatnya diletakkan:
 
 ```sh
-chmod +x Onsa_1.5.0_amd64.AppImage
-./Onsa_1.5.0_amd64.AppImage
+chmod +x Onsa_1.5.1_amd64.AppImage
+./Onsa_1.5.1_amd64.AppImage
 ```
 
 AppImage butuh FUSE untuk memasang dirinya sendiri. Di sistem yang tidak punya (`libfuse2`
@@ -99,7 +102,7 @@ lalu di dalam Ubuntu-nya:
 
 ```sh
 sudo apt update
-sudo apt install ./Onsa_1.5.0_amd64.deb
+sudo apt install ./Onsa_1.5.1_amd64.deb
 onsa
 ```
 
