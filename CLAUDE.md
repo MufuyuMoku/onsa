@@ -62,4 +62,4 @@ Bila ragu apakah sesuatu aman untuk real-time, anggap tidak aman dan pindahkan k
 - `docs/SPEC.md`: spesifikasi lengkap
 - `docs/design/konsep-tema.md` dan `docs/design/konsep-tema/referensi/`: konsep dan referensi visual keenam tema bawaan (buka di browser)
 - `themes/*.json`: tema bawaan, juga contoh skema tema (SPEC §9.3)
-- `assets/icon.svg`: ikon placeholder
+- `assets/icon.svg`: ikon aplikasi; `assets/icon-16.png` dan `assets/icon-32.png` digambar terpisah per piksel, jangan diganti hasil perkecilan SVG

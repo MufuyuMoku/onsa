@@ -2122,9 +2122,9 @@ browser, lebar 375 px tidak menggulir ke samping di ketiga bahasa, mode terang d
 dicoba, dan pemilih bahasa diklik (Indonesia → Jepang → Inggris). Tautan keluar dicek dengan
 `curl`: repo, rilis, dan Issues 200, dan `releases/latest` sampai di v1.5.0.
 
-**Tertunda**: ikon final (lihat di bawah).
+**Tertunda**: tidak ada.
 
 **Sesudahnya (2026-10-24)**: tangkapan keenam tema dan `og.png` dipasang (DECISIONS
 2026-10-24, "Tangkapan layar situs"); README menyebut dua tema gelap dan empat terang,
 ringkasan v1.5, dan tautan ke situs; kolom Homepage repo kini ke situs. Ikon final dibuat dari
-sketsa pemilik proyek: tiga varian dikirim untuk dipilih, belum dipasang.
+sketsa pemilik proyek dan dipasang di aplikasi dan situs (DECISIONS 2026-10-24, "Ikon final").

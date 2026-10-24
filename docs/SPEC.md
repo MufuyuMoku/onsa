@@ -521,7 +521,7 @@ Urutannya pernah diubah dua kali, atas keputusan pemilik proyek. Alasannya beser
 | v1.6 "Lirik & metadata" | **M17** dan **M7b** |
 | v1.7 "Video" | **M11** (decoder Opus lebih dulu), lalu **M18** |
 
-M9 (scrobble) tetap dilewati dan belum punya tanggal. Sisa M12 — ikon final, halaman Tentang beserta daftar lisensi pihak ketiga, dan lisensi proyek — menunggu keputusan pemilik proyek (§16).
+M9 (scrobble) tetap dilewati dan belum punya tanggal. Sisa M12 — halaman Tentang beserta daftar lisensi pihak ketiga, dan lisensi proyek — menunggu keputusan pemilik proyek (§16). Ikon final sudah ada (2026-10-24, §16).
 
 Laporan dari tester tidak menjadi gerbang bagi rilis mana pun: laporan yang datang masuk ke rilis patch berikutnya (v1.x.y).
 
@@ -660,6 +660,6 @@ Pemutaran video musik lokal dan unduhan video lewat yt-dlp.
 Hal-hal di bawah tidak menghalangi milestone M0–M11. Tanyakan ke pemilik proyek saat sampai di titik yang membutuhkannya.
 
 - **Lisensi proyek: ditahan** (keputusan pemilik proyek, 2026-09-25). Repo sengaja dibiarkan tanpa berkas lisensi, supaya semua pilihan tetap terbuka termasuk versi tertutup. **Jangan menambahkan `LICENSE`, dan jangan mengisi field `license` di `Cargo.toml` atau `package.json`.** Yang menjaga pilihan itu tetap terbuka adalah pemeriksaan lisensi dependensi di CI (`deny.toml`): hanya lisensi permisif dan MPL-2.0 yang diizinkan, GPL/LGPL/AGPL ditolak.
-- **Ikon final dibuat pemilik proyek** (keputusan pemilik proyek, 2026-09-25). Versi 16 dan 32 px diserahkan terpisah dan **tidak diturunkan dari gambar besar**, karena ikon sekecil itu digambar ulang, bukan diperkecil. Sampai diserahkan, pakai placeholder `assets/icon.svg` (garpu tala sederhana).
+- **Ikon final: selesai** (2026-10-24). Ikon final dibuat Claude Code dari sketsa pemilik proyek, atas keputusan pemilik proyek (keputusan 2026-09-25 bahwa pemilik proyek sendiri yang membuatnya diganti pemilik proyek pada 2026-10-24). Bentuknya: dua not berbalok yang naik ke kanan, mahkota berarsir silang yang dipakai tangkai kiri, dan quaver berkepala bolong di dalamnya; pemilik proyek memilih varian "padat" (tinta di atas gading). Gambar besar ada di `assets/icon.svg`. Versi 16 dan 32 px (`assets/icon-16.png`, `assets/icon-32.png`) digambar terpisah per piksel dan **tidak diturunkan dari gambar besar**; di 16 px arsiran mahkota dihilangkan dan quaver kecilnya tanpa bendera. Keduanya dipakai di `icon.ico` aplikasi, `src-tauri/icons/32x32.png`, dan favicon situs.
 - Distribusi tambahan: Flatpak/Flathub, AUR, winget.
 - Analisis loudness EBU R128 dan ListenBrainz.

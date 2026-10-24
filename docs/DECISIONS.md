@@ -1331,3 +1331,29 @@ aplikasi.
   pemilik proyek meminta gambar publik bebas data mesin. Library contoh menjamin tidak ada
   lagu atau sampul pihak lain di situs.
 
+## 2026-10-24 · Ikon final
+
+- **Konteks**: SPEC §16 menyerahkan ikon final kepada pemilik proyek. Pada 2026-10-24 pemilik
+  proyek mengubah keputusannya: **ikon final dibuat Claude Code dari sketsa pemilik proyek, atas
+  keputusan pemilik proyek**. Sketsanya: dua not berbalok yang naik ke kanan, mahkota sederhana
+  berarsir di kiri, dan quaver berkepala bolong di dalamnya.
+- **Jalannya**: putaran pertama digambar dari deskripsi dan ditolak karena tidak mengikuti
+  sketsa. Putaran kedua dijiplak dari foto sketsa (koordinat dibaca dari foto yang diberi kisi,
+  dan jiplakannya ditumpuk di atas foto untuk dibandingkan). Atas permintaan pemilik proyek,
+  mahkotanya dipindah ke ujung atas tangkai kiri, diperkecil, dan diarsir silang; baloknya satu
+  dan padat; dan goresannya tetap bergaya tangan, dengan tangkai yang sedikit melengkung dan
+  ujung yang meruncing. Dari tiga varian (garis tipis, padat, Kokpit Tua), pemilik proyek
+  memilih **padat**: tinta `#121310` di atas gading `#FBFAF6`.
+- **Ukuran kecil**: 32 dan 16 px digambar per piksel di kisinya sendiri, tidak diperkecil dari
+  SVG. Di 32 px kisi mahkota menjadi papan catur abu-abu, karena lubang sungguhan terbaca
+  seperti mata. Di 16 px mahkotanya padat dengan dua puncak, dan quaver kecilnya berupa cincin
+  empat piksel dengan tangkai, tanpa bendera.
+- **Pemasangan**: `src-tauri/icons` dibuat dengan `tauri icon` dari render 1024 px (yang
+  disalin hanya berkas yang dirujuk `tauri.conf.json`). Lalu `32x32.png` diganti gambar tangan,
+  dan `icon.ico` disusun ulang supaya entri 16 dan 32 px-nya gambar tangan; entri 24, 48, 64,
+  dan 256 tetap dari gambar besar. Di situs, favicon (`favicon.ico`, `icon-16.png`,
+  `icon-32.png`) memakai gambar tangan, dan logo di kepala halaman memakai `icon-32.png`
+  di layar biasa serta `icon.svg` di layar rapat. `site/check.mjs` kini juga memeriksa `srcset`.
+- **Orisinalitas**: bentuknya dari sketsa pemilik proyek. Tidak ada logo aplikasi musik yang
+  dijadikan acuan.
+
