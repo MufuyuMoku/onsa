@@ -1276,3 +1276,39 @@ terlihat di referensi. Keputusan yang mengubah aturan yang sebelumnya terkunci:
   Shift+Tab dan Tab yang diselingi Enter. Kesimpulan ini **tidak terbukti**. Yang diubah supaya
   tidak terulang: jendela uji tidak lagi merebut fokus, setiap pergantian tema dicatat di log
   beserta waktunya, dan jendela uji ditutup sesudah setiap langkah.
+
+## 2026-10-24 · Situs promosi Onsa (`site/`)
+
+Permintaan pemilik proyek: halaman promosi tiga bahasa di GitHub Pages, terpisah dari kode
+aplikasi.
+
+- **HTML biasa yang dirakit skrip Node tanpa dependensi** (`site/build.mjs`), bukan Astro.
+  Satu template (`site/src/page.html`), satu berkas teks per bahasa (`site/i18n/*.json`), dan
+  hasilnya `site/dist/`. Tidak ada `npm install`, tidak ada framework yang harus diperbarui,
+  dan halaman jadinya tidak memuat JavaScript sama sekali. Build berhenti kalau satu bahasa
+  kekurangan kunci yang ada di bahasa lain.
+- **Bahasa Inggris di akar situs** (`/`), bahasa Indonesia di `/id/`, bahasa Jepang di `/ja/`,
+  dengan `hreflang` di setiap halaman. Inggris dipilih untuk akar karena dibaca paling banyak
+  orang, dan tidak ada pengalihan otomatis berdasarkan bahasa browser (itu butuh JavaScript).
+  Halaman Jepang memakai nama tema dalam bahasa Inggris, seperti yang tampil di aplikasi, dan
+  menyebut terus terang bahwa Onsa belum berbahasa Jepang.
+- **Tombol unduh selalu ke `releases/latest`**; nomor versi tidak ditulis di halaman.
+  `site/check.mjs` gagal kalau ada nomor versi, kalau tombol unduh mengarah ke tempat lain,
+  kalau ada tautan atau gambar yang tidak ada, kalau ada tautan keluar selain ke repo Onsa,
+  kalau ada `<script>`, `<iframe>`, atau sumber pihak ketiga, kalau ada berkas lisensi, atau
+  kalau halaman menyebut Onsa "open source" dalam bahasa apa pun.
+- **Hanya fitur yang sudah rilis di v1.5.0** yang ditulis sebagai fitur, dicocokkan dengan SPEC,
+  PROGRESS, catatan rilis, dan kode. Yang belum ada ditulis di kotak "Belum ada" dengan
+  rilisnya: menempel lirik dan sinkron dengan mengetuk (v1.6), Opus dan video (v1.7), dan
+  scrobble Last.fm (belum dijadwalkan). Pencocokan lewat sidik suara disebut butuh API key
+  AcoustID milik pengguna, karena build rilis tidak membawa kunci.
+- **Rupa diambil dari Kokpit Tua**: warnanya dari `themes/kokpit-tua.json`, dan fontnya (Saira
+  Stencil One dan B612 Mono) disalin dari bundel aplikasi beserta berkas OFL-nya. Teks Jepang
+  memakai font sistem pembaca, supaya halaman tetap ringan. Mode terang mengikuti
+  `prefers-color-scheme` dan memakai krem muka meter tema yang sama.
+- **Deploy** lewat `.github/workflows/site.yml`, yang hanya berjalan kalau `site/**` (atau
+  workflow itu sendiri) berubah di `main`, atau dijalankan manual. GitHub Pages repo ini memakai
+  sumber "GitHub Actions". `site/dist/` tidak di-commit.
+- **Tangkapan layar dan ikon** disediakan pemilik proyek. Sampai saat itu ada placeholder
+  bertuliskan nama berkas dan ukurannya (daftar di `site/README.md`), dan ikonnya salinan ikon
+  placeholder aplikasi.

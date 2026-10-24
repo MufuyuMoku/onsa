@@ -1,0 +1,174 @@
+{
+	"meta": {
+		"languageName": "English",
+		"title": "Onsa (音叉) — a desktop music player for your own music files",
+		"description": "Onsa is a desktop music player for Windows and Linux. It plays the music files you already have, shows every step the sound goes through, and comes with six themes, each with a layout of its own."
+	},
+	"nav": {
+		"skip": "Skip to content",
+		"home": "Onsa, home",
+		"sections": "Sections",
+		"language": "Language",
+		"themes": "Themes",
+		"features": "Features",
+		"programs": "Helpers",
+		"faq": "FAQ"
+	},
+	"hero": {
+		"plate": "Music player · Windows · Linux",
+		"lede": "A desktop music player for the music files you already have — not a streaming service. Onsa shows you every step your music goes through, from the file to your speakers, and dresses it in six themes that each arrange the window their own way.",
+		"download": "Download for Windows",
+		"github": "View on GitHub",
+		"note": "Free. No account, no ads, no telemetry. Linux packages (<code>.deb</code> and AppImage) are on the same release page.",
+		"shotAlt": "Onsa in its opening theme, Old Cockpit: the cover in an instrument frame, the lyrics beside it, a position dial and a spectrum, with VU meters along the bottom."
+	},
+	"themes": {
+		"plate": "Six themes",
+		"title": "One player, six instruments",
+		"intro": "A theme in Onsa is more than colours. Each of the six built-in themes has its own fonts, materials, meters and a <strong>layout of its own</strong>. Choose a theme and its layout comes with it — or keep the theme and pick one of the three standard layouts: <em>Classic</em>, <em>Gallery</em> (albums as a grid of covers) or <em>Full screen</em>. You can also write your own theme as a JSON file.",
+		"list": {
+			"kokpit-tua": {
+				"name": "Old Cockpit",
+				"layout": "Instrument Panel",
+				"text": "The opening theme. An old aircraft instrument panel: riveted metal, stencilled plates, VU needles on cream faces, and the play position as a clock dial.",
+				"alt": "Old Cockpit theme: the cover in a cross-hair frame, lyrics beside it, a position dial labelled MINUTES and a spectrum."
+			},
+			"laut-dalam": {
+				"name": "Deep Sea",
+				"layout": "Dive",
+				"text": "A dive into the deep. The song is a descent on a depth scale, from 0 metres at the start to the sea floor at the end, with marine snow drifting past.",
+				"alt": "Deep Sea theme: a dark blue scene with a vertical depth scale on the right and the cover lit by a lure of light."
+			},
+			"jendela-biru": {
+				"name": "Blue Window",
+				"layout": "Window",
+				"text": "An early-2000s desktop: a glossy blue title bar, a working menu bar (Alt and the underlined letter), a task pane, and a task bar with a real clock.",
+				"alt": "Blue Window theme: the player drawn as a desktop window with a blue title bar, a menu bar, a blue task pane and a task bar."
+			},
+			"lorong-kuning": {
+				"name": "Yellow Hallway",
+				"layout": "Hallway",
+				"text": "An empty office that is a little too quiet: striped yellow wallpaper, fluorescent lights, damp carpet, and the song's details on memo paper.",
+				"alt": "Yellow Hallway theme: yellow striped wallpaper, fluorescent lights along the top, the cover pinned up like a photo and notes on memo paper."
+			},
+			"siang-mimpi": {
+				"name": "Daydream",
+				"layout": "Meadow",
+				"text": "A daydream that feels familiar and slightly wrong: a sky that is too bright, a meadow, and the cover seen through a door standing on its own.",
+				"alt": "Daydream theme: a bright sky with clouds over a meadow, the title floating in the sky and the cover behind an open door."
+			},
+			"krom-saku": {
+				"name": "Pocket Chrome",
+				"layout": "Pocket Player",
+				"text": "A pocket CD player from around 2000: chrome, clear blue plastic, a grey-green LCD, and your cover as the label of a disc that turns while the song plays.",
+				"alt": "Pocket Chrome theme: a large disc in a chrome ring showing the cover as its label, beside an LCD with the track and time."
+			}
+		}
+	},
+	"features": {
+		"plate": "What it does",
+		"title": "What Onsa does",
+		"list": [
+			{
+				"title": "Player and library",
+				"text": "Gapless playback, crossfade, a queue you can reorder, playlists and smart playlists, a sleep timer and a mini player. Onsa watches your music folders and keeps up with changes; browse by album, artist, genre or folder, and search everything at once."
+			},
+			{
+				"title": "Sound you can see",
+				"text": "Every step is on screen, from the file's format to your output device: ReplayGain, a 10-band or parametric EQ (it can import AutoEQ presets), a limiter, peak meters and a spectrum."
+			},
+			{
+				"title": "Synced lyrics",
+				"text": "From a <code>.lrc</code> file next to the song, from the song's tags, or from LRCLIB. The line being sung lights up, click a line to jump there, and nudge the timing per song."
+			},
+			{
+				"title": "Downloads through yt-dlp",
+				"text": "Paste a link, see what is in it, and choose. Several downloads run at once, the queue survives closing Onsa, and finished songs appear in your library. Onsa fetches the programs it needs itself, with your consent."
+			},
+			{
+				"title": "Tidy metadata",
+				"text": "Edit tags for one song or many. Edits stay in Onsa until you write them to the file, and every run can be undone. Rename files by pattern with a preview, and — if you turn it on — look songs up on MusicBrainz and AcoustID."
+			},
+			{
+				"title": "Your files, carefully",
+				"text": "Stop using a folder without touching the files, follow a folder that moved to another drive, exclude subfolders, and move or delete files from inside Onsa. Deleting always goes to the Recycle Bin or Trash, never for good."
+			},
+			{
+				"title": "Help on every page",
+				"text": "A question mark in the same corner of every page explains that page and each of its controls."
+			},
+			{
+				"title": "Private by default",
+				"text": "No telemetry. Every internet feature — lyrics, metadata lookups, downloads — is off until you turn it on, and can be turned off again at any time."
+			}
+		],
+		"soon": {
+			"title": "Not there yet",
+			"list": [
+				{ "when": "v1.6", "text": "Pasting lyrics yourself (cleaned up automatically), tap-to-sync for lyrics without timing, and fetching lyrics for a whole album at once." },
+				{ "when": "v1.7", "text": "Opus playback and music videos." },
+				{ "when": "later", "text": "Last.fm scrobbling. It is planned, but has no date yet." }
+			]
+		}
+	},
+	"programs": {
+		"plate": "Helpers",
+		"title": "Programs Onsa can use",
+		"intro": "Onsa plays music on its own. For downloads and for recognising songs by their sound it uses a few well-known programs. <strong>You do not need to find them yourself</strong>: Onsa lists what it would download — name, source and size — and fetches it from the program's official release only after you agree, checking each file against a published or built-in checksum.",
+		"program": "Program",
+		"purpose": "What it is for",
+		"list": [
+			{ "name": "yt-dlp", "text": "Downloads audio from the sites it supports. Onsa's Help page lists them, straight from the yt-dlp you have." },
+			{ "name": "ffmpeg", "text": "Embeds tags and covers in downloaded songs, and converts to MP3 or FLAC if you ask. Without it, downloads still work, but arrive as they are." },
+			{ "name": "Deno", "text": "Lets yt-dlp handle YouTube fully." },
+			{ "name": "fpcalc", "text": "From Chromaprint. Makes the sound fingerprint that AcoustID uses to recognise a song whose tags are empty." }
+		],
+		"after": "If Onsa cannot install a program — the release cannot be reached, or the download fails — it offers a button to the program's official release page so you can get it yourself. If yt-dlp or ffmpeg is already installed on your system (common on Linux), Onsa can use that copy instead. Recognising songs by their sound also needs a free AcoustID API key of your own, entered in Settings."
+	},
+	"platforms": {
+		"plate": "Platforms",
+		"title": "Where it runs",
+		"windows": {
+			"title": "Windows 10 and 11 (64-bit)",
+			"text": "An installer, built and published by the project's CI. It is not yet digitally signed, so Windows may show <em>“Windows protected your PC”</em>: choose <em>More info</em>, then <em>Run anyway</em>. A <code>windows-sha256.txt</code> on the release page lets you check the file."
+		},
+		"linux": {
+			"title": "Linux (x86_64)",
+			"text": "A <code>.deb</code> package and an AppImage, also built by CI, with <code>linux-sha256.txt</code>. They are tested on Ubuntu under WSL; other distributions and desktops have not been tested yet. The AppImage needs FUSE (<code>libfuse2</code>).",
+			"button": "Linux packages"
+		},
+		"languages": "Onsa itself speaks Indonesian and English, and follows your system's language. There is no macOS version."
+	},
+	"faq": {
+		"plate": "Questions",
+		"title": "Questions",
+		"list": [
+			{
+				"q": "Is Onsa free?",
+				"a": "<p>Yes. Downloading and using Onsa costs nothing, and there is no account, subscription or advertising.</p>"
+			},
+			{
+				"q": "Where does Onsa keep my data?",
+				"a": "<p>On your computer only. Your music files stay where they are; Onsa keeps its library, settings and covers in its own folder — on Windows <code>%APPDATA%\\io.github.mufuyumoku.onsa</code>, on Linux <code>~/.local/share/io.github.mufuyumoku.onsa</code>.</p><p>Nothing is sent anywhere unless you turn on an internet feature, and Onsa has no telemetry.</p>"
+			},
+			{
+				"q": "Is it a streaming service?",
+				"a": "<p>No. Onsa has no catalogue of songs. It plays files you already have, and can download audio through yt-dlp — you are responsible for the rights to what you download.</p>"
+			},
+			{
+				"q": "I found a bug. Where do I report it?",
+				"a": "<p>In <a href=\"https://github.com/MufuyuMoku/onsa/issues\">GitHub Issues</a>. Say which version and system you use, what you did and what happened. Onsa's log helps: Settings → About has a button that opens the log folder.</p>"
+			},
+			{
+				"q": "Which audio formats does it play?",
+				"a": "<p>FLAC, MP3, AAC (M4A/MP4), ALAC, Ogg Vorbis, WAV and AIFF. Opus is not supported yet; downloads prefer M4A until it is.</p>"
+			}
+		]
+	},
+	"footer": {
+		"made": "Made by Mufuyu Moku / Pyonkuro.",
+		"releases": "Releases",
+		"issues": "Report a bug",
+		"privacy": "This page has no analytics, trackers or cookies."
+	}
+}

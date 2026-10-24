@@ -43,3 +43,6 @@ dist-test/
 
 # The theme concept as it was handed over; the documents live in docs/design.
 /konsep-tema-onsa.zip
+
+# The built site; GitHub Actions builds it again from site/.
+/site/dist/

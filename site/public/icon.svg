@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Placeholder icon for Onsa: a simple tuning fork (音叉). Replace with the final icon in M12. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#262a31"/>
+      <stop offset="1" stop-color="#121418"/>
+    </linearGradient>
+    <linearGradient id="fork" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f4f1ea"/>
+      <stop offset="1" stop-color="#c9c4ba"/>
+    </linearGradient>
+  </defs>
+  <rect x="48" y="48" width="928" height="928" rx="200" fill="url(#bg)"/>
+  <rect x="48.5" y="48.5" width="927" height="927" rx="199.5" fill="none" stroke="#ffffff" stroke-opacity=".08"/>
+  <path d="M404 236 V560 A108 108 0 0 0 620 560 V236" fill="none" stroke="url(#fork)" stroke-width="64" stroke-linecap="round"/>
+  <line x1="512" y1="668" x2="512" y2="818" stroke="url(#fork)" stroke-width="56" stroke-linecap="round"/>
+  <g fill="none" stroke="#ffb224" stroke-linecap="round" stroke-width="22">
+    <path d="M700 300 A130 130 0 0 1 700 480" stroke-opacity=".95"/>
+    <path d="M760 250 A200 200 0 0 1 760 530" stroke-opacity=".55"/>
+    <path d="M324 300 A130 130 0 0 0 324 480" stroke-opacity=".95"/>
+    <path d="M264 250 A200 200 0 0 0 264 530" stroke-opacity=".55"/>
+  </g>
+</svg>

@@ -1,0 +1,174 @@
+{
+	"meta": {
+		"languageName": "Indonesia",
+		"title": "Onsa (音叉) — pemutar musik desktop untuk berkas musikmu sendiri",
+		"description": "Onsa adalah pemutar musik desktop untuk Windows dan Linux. Ia memutar berkas musik yang sudah kamu punya, menunjukkan setiap tahap yang dilewati suaranya, dan membawa enam tema yang masing-masing punya susunan jendela sendiri."
+	},
+	"nav": {
+		"skip": "Lompat ke isi",
+		"home": "Onsa, beranda",
+		"sections": "Bagian",
+		"language": "Bahasa",
+		"themes": "Tema",
+		"features": "Fitur",
+		"programs": "Program pendukung",
+		"faq": "Tanya jawab"
+	},
+	"hero": {
+		"plate": "Pemutar musik · Windows · Linux",
+		"lede": "Pemutar musik desktop untuk berkas musik yang sudah kamu punya — bukan layanan streaming. Onsa menunjukkan setiap tahap yang dilewati musikmu, dari berkas sampai speaker, dan membungkusnya dalam enam tema yang masing-masing menyusun jendela dengan caranya sendiri.",
+		"download": "Unduh untuk Windows",
+		"github": "Lihat di GitHub",
+		"note": "Gratis. Tanpa akun, tanpa iklan, tanpa telemetri. Paket Linux (<code>.deb</code> dan AppImage) ada di halaman rilis yang sama.",
+		"shotAlt": "Onsa dengan tema pembukanya, Kokpit Tua: sampul dalam bingkai instrumen, lirik di sebelahnya, dial posisi dan spektrum, serta meter VU di bagian bawah."
+	},
+	"themes": {
+		"plate": "Enam tema",
+		"title": "Satu pemutar, enam instrumen",
+		"intro": "Tema di Onsa lebih dari sekadar warna. Keenam tema bawaan masing-masing punya font, material, meter, dan <strong>susunan khasnya sendiri</strong>. Pilih sebuah tema dan susunannya ikut terpasang — atau pertahankan temanya dan pilih salah satu dari tiga susunan standar: <em>Klasik</em>, <em>Galeri</em> (album sebagai grid sampul), atau <em>Layar penuh</em>. Kamu juga bisa menulis tema sendiri sebagai berkas JSON.",
+		"list": {
+			"kokpit-tua": {
+				"name": "Kokpit Tua",
+				"layout": "Panel Instrumen",
+				"text": "Tema pembuka. Panel instrumen pesawat tua: logam berpaku keling, pelat label berstensil, jarum VU di atas muka meter krem, dan posisi putar sebagai jam berjarum.",
+				"alt": "Tema Kokpit Tua: sampul dalam bingkai bergaris silang, lirik di sebelahnya, dial posisi berlabel MENIT, dan spektrum."
+			},
+			"laut-dalam": {
+				"name": "Laut Dalam",
+				"layout": "Menyelam",
+				"text": "Menyelam ke laut dalam. Lagu adalah turunan di skala kedalaman, dari 0 meter di awal sampai dasar laut di akhir, dengan salju laut yang melayang lewat.",
+				"alt": "Tema Laut Dalam: pemandangan biru gelap dengan skala kedalaman tegak di kanan dan sampul yang diterangi umpan cahaya."
+			},
+			"jendela-biru": {
+				"name": "Jendela Biru",
+				"layout": "Jendela",
+				"text": "Desktop awal 2000-an: bilah judul biru mengilap, baris menu yang benar-benar berfungsi (Alt dan huruf yang digarisbawahi), panel tugas, dan bilah tugas dengan jam sungguhan.",
+				"alt": "Tema Jendela Biru: pemutar digambar sebagai jendela desktop dengan bilah judul biru, baris menu, panel tugas biru, dan bilah tugas."
+			},
+			"lorong-kuning": {
+				"name": "Lorong Kuning",
+				"layout": "Lorong",
+				"text": "Kantor kosong yang terlalu tenang: kertas dinding kuning bergaris, lampu neon, karpet lembap, dan keterangan lagu di atas kertas memo.",
+				"alt": "Tema Lorong Kuning: kertas dinding kuning bergaris, lampu neon di atas, sampul tertempel seperti foto, dan catatan di kertas memo."
+			},
+			"siang-mimpi": {
+				"name": "Siang Mimpi",
+				"layout": "Padang",
+				"text": "Mimpi siang hari yang terasa akrab tapi janggal: langit yang terlalu terang, padang rumput, dan sampul yang terlihat di balik pintu yang berdiri sendirian.",
+				"alt": "Tema Siang Mimpi: langit terang berawan di atas padang rumput, judul melayang di langit, dan sampul di balik pintu yang terbuka."
+			},
+			"krom-saku": {
+				"name": "Krom Saku",
+				"layout": "Pemutar Saku",
+				"text": "Pemutar CD saku sekitar tahun 2000: krom, plastik biru bening, layar LCD hijau-abu, dan sampulmu sebagai label cakram yang berputar selama lagu diputar.",
+				"alt": "Tema Krom Saku: cakram besar dalam cincin krom dengan sampul sebagai labelnya, di samping layar LCD berisi nomor trek dan waktu."
+			}
+		}
+	},
+	"features": {
+		"plate": "Yang bisa dilakukan",
+		"title": "Yang dilakukan Onsa",
+		"list": [
+			{
+				"title": "Pemutar dan library",
+				"text": "Pemutaran gapless, crossfade, antrean yang bisa diurutkan ulang, playlist biasa dan playlist pintar, sleep timer, dan mini player. Onsa mengikuti folder musikmu dan perubahannya; jelajahi per album, artis, genre, atau folder, dan cari semuanya sekaligus."
+			},
+			{
+				"title": "Suara yang terlihat",
+				"text": "Setiap tahap tampil di layar, dari format berkas sampai perangkat output: ReplayGain, EQ 10 band atau parametrik (bisa mengimpor preset AutoEQ), limiter, meter puncak, dan spektrum."
+			},
+			{
+				"title": "Lirik sinkron",
+				"text": "Dari berkas <code>.lrc</code> di sebelah lagu, dari tag lagunya, atau dari LRCLIB. Baris yang sedang dinyanyikan menyala, klik sebuah baris untuk melompat ke sana, dan geser waktunya per lagu."
+			},
+			{
+				"title": "Unduhan lewat yt-dlp",
+				"text": "Tempel tautan, lihat isinya, lalu pilih. Beberapa unduhan berjalan sekaligus, antreannya tetap ada sesudah Onsa ditutup, dan lagu yang selesai langsung muncul di library. Onsa mengambil sendiri program yang dibutuhkannya, setelah kamu setuju."
+			},
+			{
+				"title": "Metadata yang rapi",
+				"text": "Sunting tag satu lagu atau banyak sekaligus. Editan tetap di Onsa sampai kamu menuliskannya ke berkas, dan setiap jalannya bisa dibatalkan. Ganti nama berkas berdasarkan pola dengan pratinjau, dan — kalau kamu nyalakan — cari lagu di MusicBrainz dan AcoustID."
+			},
+			{
+				"title": "Berkasmu, dengan hati-hati",
+				"text": "Berhenti memakai sebuah folder tanpa menyentuh berkasnya, ikuti folder yang pindah ke drive lain, kecualikan subfolder, dan pindahkan atau hapus berkas dari dalam Onsa. Menghapus selalu ke Recycle Bin atau Trash, tidak pernah permanen."
+			},
+			{
+				"title": "Bantuan di setiap halaman",
+				"text": "Tanda tanya di sudut yang sama pada setiap halaman menjelaskan halaman itu beserta setiap kontrolnya."
+			},
+			{
+				"title": "Privat dari awal",
+				"text": "Tanpa telemetri. Setiap fitur internet — lirik, pencarian metadata, unduhan — mati sampai kamu menyalakannya, dan bisa dimatikan lagi kapan saja."
+			}
+		],
+		"soon": {
+			"title": "Belum ada",
+			"list": [
+				{ "when": "v1.6", "text": "Menempel lirik sendiri (dirapikan otomatis), sinkron dengan mengetuk untuk lirik tanpa waktu, dan mengambil lirik satu album sekaligus." },
+				{ "when": "v1.7", "text": "Pemutaran Opus dan video musik." },
+				{ "when": "nanti", "text": "Scrobble Last.fm. Sudah direncanakan, tapi belum punya jadwal." }
+			]
+		}
+	},
+	"programs": {
+		"plate": "Program pendukung",
+		"title": "Program yang bisa dipakai Onsa",
+		"intro": "Onsa memutar musik sendiri. Untuk unduhan dan untuk mengenali lagu dari suaranya, ia memakai beberapa program yang sudah dikenal. <strong>Kamu tidak perlu mencarinya sendiri</strong>: Onsa menampilkan apa yang akan diunduh — nama, sumber, dan ukuran — lalu mengambilnya dari rilis resmi program itu hanya setelah kamu setuju, dan memeriksa setiap berkas dengan checksum yang diterbitkan atau yang tertanam di Onsa.",
+		"program": "Program",
+		"purpose": "Untuk apa",
+		"list": [
+			{ "name": "yt-dlp", "text": "Mengunduh audio dari situs yang didukungnya. Halaman Bantuan di Onsa mendaftarnya, langsung dari yt-dlp yang terpasang." },
+			{ "name": "ffmpeg", "text": "Menanamkan tag dan sampul ke lagu yang diunduh, dan mengonversi ke MP3 atau FLAC bila diminta. Tanpanya unduhan tetap jalan, hanya saja apa adanya." },
+			{ "name": "Deno", "text": "Membuat yt-dlp bisa menangani YouTube sepenuhnya." },
+			{ "name": "fpcalc", "text": "Dari Chromaprint. Membuat sidik suara yang dipakai AcoustID untuk mengenali lagu yang tagnya kosong." }
+		],
+		"after": "Kalau Onsa tidak bisa memasang sebuah program — rilisnya tidak terjangkau atau unduhannya gagal — ia menyediakan tombol ke halaman rilis resmi program itu supaya kamu bisa mengambilnya sendiri. Kalau yt-dlp atau ffmpeg sudah terpasang di sistemmu (biasa di Linux), Onsa bisa memakai salinan itu. Mengenali lagu dari suaranya juga butuh API key AcoustID milikmu sendiri (gratis), yang dimasukkan di Pengaturan."
+	},
+	"platforms": {
+		"plate": "Platform",
+		"title": "Jalan di mana",
+		"windows": {
+			"title": "Windows 10 dan 11 (64-bit)",
+			"text": "Installer yang dibangun dan diterbitkan CI proyek ini. Belum ditandatangani secara digital, jadi Windows mungkin menampilkan <em>“Windows melindungi PC Anda”</em>: pilih <em>Info selengkapnya</em>, lalu <em>Tetap jalankan</em>. Berkas <code>windows-sha256.txt</code> di halaman rilis untuk memeriksanya."
+		},
+		"linux": {
+			"title": "Linux (x86_64)",
+			"text": "Paket <code>.deb</code> dan AppImage, juga dibangun CI, beserta <code>linux-sha256.txt</code>. Diuji di Ubuntu lewat WSL; distribusi dan desktop lain belum diuji. AppImage butuh FUSE (<code>libfuse2</code>).",
+			"button": "Paket Linux"
+		},
+		"languages": "Onsa sendiri berbahasa Indonesia dan Inggris, dan mengikuti bahasa sistemmu. Tidak ada versi macOS."
+	},
+	"faq": {
+		"plate": "Tanya jawab",
+		"title": "Tanya jawab",
+		"list": [
+			{
+				"q": "Apakah Onsa gratis?",
+				"a": "<p>Ya. Mengunduh dan memakai Onsa tidak dipungut biaya, dan tidak ada akun, langganan, atau iklan.</p>"
+			},
+			{
+				"q": "Di mana Onsa menyimpan datanya?",
+				"a": "<p>Hanya di komputermu. Berkas musikmu tetap di tempatnya; Onsa menyimpan library, pengaturan, dan sampul di foldernya sendiri — di Windows <code>%APPDATA%\\io.github.mufuyumoku.onsa</code>, di Linux <code>~/.local/share/io.github.mufuyumoku.onsa</code>.</p><p>Tidak ada yang dikirim ke mana pun kecuali kamu menyalakan fitur internet, dan Onsa tidak punya telemetri.</p>"
+			},
+			{
+				"q": "Apakah ini layanan streaming?",
+				"a": "<p>Bukan. Onsa tidak punya katalog lagu. Ia memutar berkas yang sudah kamu punya, dan bisa mengunduh audio lewat yt-dlp — kamu yang bertanggung jawab atas hak konten yang kamu unduh.</p>"
+			},
+			{
+				"q": "Aku menemukan bug. Melapor ke mana?",
+				"a": "<p>Ke <a href=\"https://github.com/MufuyuMoku/onsa/issues\">GitHub Issues</a>. Sebutkan versi dan sistem yang kamu pakai, apa yang kamu lakukan, dan apa yang terjadi. Log Onsa membantu: Pengaturan → Tentang punya tombol untuk membuka folder log.</p>"
+			},
+			{
+				"q": "Format audio apa saja yang bisa diputar?",
+				"a": "<p>FLAC, MP3, AAC (M4A/MP4), ALAC, Ogg Vorbis, WAV, dan AIFF. Opus belum didukung; sampai itu, unduhan mendahulukan M4A.</p>"
+			}
+		]
+	},
+	"footer": {
+		"made": "Dibuat oleh Mufuyu Moku / Pyonkuro.",
+		"releases": "Rilis",
+		"issues": "Laporkan bug",
+		"privacy": "Halaman ini tanpa analitik, pelacak, atau cookie."
+	}
+}

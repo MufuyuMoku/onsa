@@ -2108,3 +2108,19 @@ bug (menu terbuka sendiri saat layout dipasang ulang), yang sudah diperbaiki.
 
 **Ditandai `v1.5.0` (2026-10-23)** sesudah pemilik proyek menguji build CI 39088286913 di
 Windows dan WSL, termasuk pemeriksaan port debugging: lancar.
+
+## 2026-10-24 · Situs promosi (`site/`)
+
+**Selesai**: halaman promosi tiga bahasa (Inggris di `/`, Indonesia di `/id/`, Jepang di
+`/ja/`) dengan hero, galeri keenam tema, fitur, program pendukung, platform, tanya jawab, dan
+footer. Situs dibangun `site/build.mjs` dan diperiksa `site/check.mjs`, lalu dideploy ke
+GitHub Pages lewat `.github/workflows/site.yml`. Keputusannya di DECISIONS 2026-10-24.
+
+**Cara verifikasi**: `check.mjs` lulus di ketiga halaman, dan diuji dengan menanam tiga cacat
+(kata "open source", gambar yang hilang, tombol unduh berversi) yang ketiganya tertangkap. Di
+browser, lebar 375 px tidak menggulir ke samping di ketiga bahasa, mode terang dan gelap
+dicoba, dan pemilih bahasa diklik (Indonesia → Jepang → Inggris). Tautan keluar dicek dengan
+`curl`: repo, rilis, dan Issues 200, dan `releases/latest` sampai di v1.5.0.
+
+**Tertunda**: tangkapan layar keenam tema, gambar pratinjau tautan, dan ikon final dari pemilik
+proyek (daftar di `site/README.md`).

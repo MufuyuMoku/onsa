@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="{{lang}}">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>{{meta.title}}</title>
+	<meta name="description" content="{{meta.description}}">
+	<meta name="color-scheme" content="dark light">
+	<meta name="theme-color" content="#1C1F1A" media="(prefers-color-scheme: dark)">
+	<meta name="theme-color" content="#E9E0C6" media="(prefers-color-scheme: light)">
+	<meta property="og:title" content="{{meta.title}}">
+	<meta property="og:description" content="{{meta.description}}">
+	<meta property="og:type" content="website">
+	<meta property="og:image" content="{{site}}og.png">
+	<meta property="og:url" content="{{here}}">
+	{{@alternates}}
+	<link rel="icon" href="{{root}}icon.svg" type="image/svg+xml">
+	<link rel="stylesheet" href="{{root}}site.css">
+</head>
+<body>
+	<a class="skip" href="#main">{{nav.skip}}</a>
+
+	<header class="top">
+		<a class="brand" href="./" aria-label="{{nav.home}}">
+			<img src="{{root}}icon.svg" width="32" height="32" alt="">
+			<span class="word">Onsa</span>
+			<span class="kanji" lang="ja">音叉</span>
+		</a>
+		<nav aria-label="{{nav.sections}}">
+			<ul class="sections">
+				<li><a href="#themes">{{nav.themes}}</a></li>
+				<li><a href="#features">{{nav.features}}</a></li>
+				<li><a href="#programs">{{nav.programs}}</a></li>
+				<li><a href="#faq">{{nav.faq}}</a></li>
+			</ul>
+		</nav>
+		<nav class="languages" aria-label="{{nav.language}}">
+			<ul>
+				{{@switcher}}
+			</ul>
+		</nav>
+	</header>
+
+	<main id="main">
+		<section class="hero" aria-labelledby="hero-title">
+			<div class="hero-text">
+				<p class="plate">{{hero.plate}}</p>
+				<h1 id="hero-title"><span class="word">Onsa</span> <span class="kanji" lang="ja">音叉</span></h1>
+				<p class="lede">{{{hero.lede}}}</p>
+				<div class="actions">
+					<a class="button primary" href="{{link.latest}}">{{hero.download}}</a>
+					<a class="button" href="{{link.repo}}">{{hero.github}}</a>
+				</div>
+				<p class="small">{{{hero.note}}}</p>
+			</div>
+			<figure class="hero-shot bezel">
+				<img src="{{root}}screens/kokpit-tua.png" width="1280" height="800" alt="{{hero.shotAlt}}">
+			</figure>
+		</section>
+
+		<section id="themes" aria-labelledby="themes-title">
+			<p class="plate">{{themes.plate}}</p>
+			<h2 id="themes-title">{{themes.title}}</h2>
+			<p class="intro">{{{themes.intro}}}</p>
+			<div class="gallery">
+				{{@themes}}
+			</div>
+		</section>
+
+		<section id="features" aria-labelledby="features-title">
+			<p class="plate">{{features.plate}}</p>
+			<h2 id="features-title">{{features.title}}</h2>
+			<ul class="features">
+					{{@features}}
+			</ul>
+			<div class="soon">
+				<h3>{{features.soon.title}}</h3>
+				<ul>
+					{{@soon}}
+				</ul>
+			</div>
+		</section>
+
+		<section id="programs" aria-labelledby="programs-title">
+			<p class="plate">{{programs.plate}}</p>
+			<h2 id="programs-title">{{programs.title}}</h2>
+			<p class="intro">{{{programs.intro}}}</p>
+			<div class="table-wrap">
+				<table>
+					<thead>
+						<tr><th scope="col">{{programs.program}}</th><th scope="col">{{programs.purpose}}</th></tr>
+					</thead>
+					<tbody>
+						{{@programs}}
+					</tbody>
+				</table>
+			</div>
+			<p>{{{programs.after}}}</p>
+		</section>
+
+		<section id="platforms" aria-labelledby="platforms-title">
+			<p class="plate">{{platforms.plate}}</p>
+			<h2 id="platforms-title">{{platforms.title}}</h2>
+			<div class="platforms">
+				<div class="panel">
+					<h3>{{platforms.windows.title}}</h3>
+					<p>{{{platforms.windows.text}}}</p>
+					<a class="button primary" href="{{link.latest}}">{{hero.download}}</a>
+				</div>
+				<div class="panel">
+					<h3>{{platforms.linux.title}}</h3>
+					<p>{{{platforms.linux.text}}}</p>
+					<a class="button" href="{{link.latest}}">{{platforms.linux.button}}</a>
+				</div>
+			</div>
+			<p class="small">{{{platforms.languages}}}</p>
+		</section>
+
+		<section id="faq" aria-labelledby="faq-title">
+			<p class="plate">{{faq.plate}}</p>
+			<h2 id="faq-title">{{faq.title}}</h2>
+			<div class="faq">
+				{{@faq}}
+			</div>
+		</section>
+	</main>
+
+	<footer class="bottom">
+		<p>{{{footer.made}}}</p>
+		<p class="small">
+			<a href="{{link.repo}}">GitHub</a> ·
+			<a href="{{link.releases}}">{{footer.releases}}</a> ·
+			<a href="{{link.issues}}">{{footer.issues}}</a>
+		</p>
+		<p class="small">{{footer.privacy}}</p>
+	</footer>
+</body>
+</html>
